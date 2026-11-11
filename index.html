@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Abacus">
+<meta name="theme-color" content="#FFF7E6">
+<title>Abacus Practice</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+:root{
+  --bg:#FFF7E6; --card:#FFFFFF; --ink:#2B2520; --muted:#8A7F72;
+  --accent:#2F7D6D; --accent-ink:#fff; --warn:#E0533A; --good:#3BA55D; --pending:#E8DFCF;
+  --key:#FFE9B8; --key-ink:#2B2520; --shadow:0 2px 0 rgba(0,0,0,.08), 0 8px 24px rgba(60,40,0,.08);
+  --r:22px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,"SF Pro Rounded",ui-rounded,"Nunito","Segoe UI",system-ui,sans-serif;
+  touch-action:manipulation;overscroll-behavior:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.active{display:flex}
+button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
+.btn{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:18px 36px;font-size:26px;font-weight:700;box-shadow:var(--shadow);min-height:64px}
+.btn.secondary{background:var(--card);color:var(--ink)}
+.btn.small{font-size:18px;padding:12px 22px;min-height:48px}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn[disabled]{opacity:.4}
+
+/* ---------- Home ---------- */
+#home{align-items:center;justify-content:center;gap:28px;position:relative}
+#home h1{font-size:44px;margin:0;letter-spacing:-.5px}
+#home .modes{display:flex;gap:28px}
+.mode-card{width:260px;height:220px;border-radius:var(--r);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:28px;font-weight:800}
+.mode-card .ico{font-size:72px;line-height:1}
+.mode-card:active{transform:scale(.97)}
+#calendar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:520px}
+#calendar .d{width:22px;height:22px;border-radius:50%;background:var(--pending)}
+#calendar .d.done{background:var(--good)}
+#calendar .d.today{outline:3px solid var(--accent);outline-offset:2px}
+#calLabel{color:var(--muted);font-size:18px}
+#grownups{position:absolute;right:18px;bottom:14px;color:var(--muted);font-size:15px;padding:10px 14px;border-radius:12px;opacity:.6}
+
+/* ---------- Drill ---------- */
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 22px}
+.topbar .exit{font-size:30px;width:56px;height:56px;border-radius:50%;background:var(--card);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center}
+.strip{display:flex;gap:8px;flex:1;justify-content:center}
+.strip .sq{width:40px;height:40px;border-radius:10px;background:var(--pending);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:var(--muted)}
+.strip .sq.cur{outline:3px solid var(--accent);outline-offset:2px;color:var(--ink)}
+.strip .sq.ok{background:var(--good);color:#fff}
+.strip .sq.bad{background:var(--warn);color:#fff}
+.timer{font-variant-numeric:tabular-nums;font-size:22px;color:var(--muted);min-width:80px;text-align:right}
+.drill-body{flex:1;display:flex;min-height:0;padding:0 24px 18px}
+.problem{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.problem .term{font-size:clamp(56px,11vh,96px);font-weight:800;line-height:1.08;font-variant-numeric:tabular-nums;width:4ch;text-align:right;transition:opacity .2s}
+.problem .term.neg{color:var(--warn)}
+.problem .term.hidden{opacity:0}
+.entry{width:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.answer{width:100%;height:92px;border-radius:18px;background:var(--card);box-shadow:var(--shadow);font-size:60px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;min-height:92px}
+.answer.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.pad button{height:72px;border-radius:16px;background:var(--key);font-size:34px;font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.1)}
+.pad button:active{transform:translateY(3px);box-shadow:none}
+.pad button.go{background:var(--accent);color:#fff;font-size:26px}
+.pad button.del{background:#F2E4C9;font-size:26px}
+.feedback{height:40px;font-size:24px;font-weight:700;text-align:center}
+.feedback.ok{color:var(--good)} .feedback.bad{color:var(--warn)}
+
+/* listening */
+.listen-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+.ear{font-size:120px;line-height:1;transition:transform .15s}
+.ear.pulse{transform:scale(1.15)}
+.listen-msg{font-size:30px;font-weight:700;color:var(--muted)}
+.speed{display:flex;align-items:center;gap:14px;font-size:20px;color:var(--muted)}
+.speed input{width:220px}
+.replay{font-size:20px;padding:12px 22px;border-radius:999px;background:var(--card);box-shadow:var(--shadow)}
+.replay[disabled]{opacity:.35}
+
+/* summary */
+#summary{align-items:center;justify-content:center;gap:22px;text-align:center}
+#summary h2{font-size:44px;margin:0}
+#summary .big{font-size:90px;font-weight:900;line-height:1}
+#summary p{font-size:22px;color:var(--muted);margin:0}
+.row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.reveal{margin-top:6px;font-size:22px;color:var(--muted)}
+.reveal b{color:var(--ink);font-size:34px}
+
+/* ---------- Parent ---------- */
+.parent{padding:18px 28px;overflow:auto;-webkit-user-select:text;user-select:text;font-size:17px;touch-action:pan-y}
+.parent h2{margin:8px 0 14px;font-size:28px}
+.parent h3{margin:22px 0 10px;font-size:20px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.parent .bar{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.parent .bar .spacer{flex:1}
+.field{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #EEE3CF}
+.field label{font-weight:600}
+.field .hint{font-size:14px;color:var(--muted);font-weight:400;display:block}
+.field select,.field input[type=number]{font:inherit;font-size:18px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6;background:#fff;min-width:110px}
+.field input[type=range]{width:200px}
+.field .val{min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+.switch{width:58px;height:34px;border-radius:17px;background:#D9CDB6;position:relative;transition:.2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch.on{background:var(--accent)} .switch.on::after{left:27px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+td,th{padding:8px 10px;text-align:left;border-bottom:1px solid #EEE3CF;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:8px;background:#F2E4C9;font-size:13px;margin-right:4px}
+.pill.bad{background:#FBD7CF}
+.rulebar{display:flex;align-items:center;gap:10px;margin:6px 0}
+.rulebar .lbl{width:150px}
+.rulebar .track{flex:1;height:14px;background:#EEE3CF;border-radius:7px;overflow:hidden}
+.rulebar .fill{height:100%;background:var(--good)}
+.rulebar .pct{width:110px;text-align:right;font-variant-numeric:tabular-nums}
+.gate{align-items:center;justify-content:center;gap:20px;text-align:center}
+.gate .q{font-size:40px;font-weight:800}
+.gate input{font:inherit;font-size:36px;width:160px;text-align:center;padding:10px;border-radius:14px;border:2px solid #D9CDB6}
+textarea{width:100%;height:120px;font:13px ui-monospace,monospace;border-radius:10px;border:1px solid #D9CDB6;padding:8px}
+.note{font-size:14px;color:var(--muted);line-height:1.45}
+.recpanel{background:#fff;border-radius:16px;padding:14px 16px;margin:10px 0;box-shadow:var(--shadow)}
+.recrow{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap}
+.recword{min-width:160px;text-align:center}
+.recword #recWord{font-size:40px;font-weight:800}
+#recBtn{background:var(--warn);min-width:240px}
+#recBtn.on{background:#b4321c;transform:scale(.98)}
+.checklist li{margin:6px 0;line-height:1.4}
+@media (max-width:700px){ .entry{width:270px} .pad button{height:58px} .mode-card{width:200px;height:170px;font-size:22px} }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HOME -->
+<section id="home" class="screen active">
+  <h1>Abacus Practice</h1>
+  <div class="modes">
+    <button class="mode-card" data-mode="visual"><span class="ico">👀</span>Look &amp; Solve</button>
+    <button class="mode-card" data-mode="listen"><span class="ico">👂</span>Listen &amp; Solve</button>
+  </div>
+  <div id="calendar"></div>
+  <div id="calLabel"></div>
+  <button id="grownups">for grown-ups</button>
+</section>
+
+<!-- DRILL -->
+<section id="drill" class="screen">
+  <div class="topbar">
+    <button class="exit" id="exitDrill">✕</button>
+    <div class="strip" id="strip"></div>
+    <div class="timer" id="timer">0:00</div>
+  </div>
+  <div class="drill-body">
+    <div class="problem" id="problemArea"></div>
+    <div class="listen-stage" id="listenStage" style="display:none">
+      <div class="ear" id="ear">👂</div>
+      <div class="listen-msg" id="listenMsg">Listen…</div>
+      <button class="replay" id="replayBtn">🔁 say it again</button>
+      <div class="speed"><span>slow</span><input type="range" id="gapSlider" step="0.25"><span>fast</span><span id="gapVal"></span></div>
+    </div>
+    <div class="entry">
+      <div class="feedback" id="feedback"></div>
+      <div class="answer" id="answer">&nbsp;</div>
+      <div class="pad" id="pad">
+        <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+        <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+        <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+        <button data-k="del" class="del">⌫</button><button data-k="0">0</button><button data-k="go" class="go">GO</button>
+      </div>
+      <div class="reveal" id="reveal"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary" class="screen">
+  <h2 id="sumTitle">Great job!</h2>
+  <div class="big" id="sumScore"></div>
+  <p id="sumTime"></p>
+  <div class="row">
+    <button class="btn secondary" id="fixBtn">Fix the red ones</button>
+    <button class="btn" id="againBtn">Play again</button>
+    <button class="btn secondary" id="homeBtn">Home</button>
+  </div>
+</section>
+
+<!-- PARENT GATE -->
+<section id="gate" class="screen gate">
+  <div class="q" id="gateQ"></div>
+  <input id="gateA" type="number" inputmode="numeric" placeholder="?">
+  <div class="row"><button class="btn small secondary" id="gateCancel">Back</button><button class="btn small" id="gateOk">Open</button></div>
+</section>
+
+<!-- PARENT -->
+<section id="parent" class="screen parent">
+  <div class="bar"><h2>Grown-ups</h2><span class="spacer"></span><button class="btn small secondary" id="parentDone">Done</button></div>
+
+  <h3>Level</h3>
+  <div class="field"><label>Preset<span class="hint">Picks the rules the problems may use</span></label><select id="sPreset"></select></div>
+  <div class="field"><label>Numbers per problem</label><div><input type="range" id="sOperands" min="2" max="7" step="1"><span class="val" id="sOperandsV"></span></div></div>
+  <div class="field"><label>Digits per number</label><div><input type="range" id="sDigits" min="1" max="3" step="1"><span class="val" id="sDigitsV"></span></div></div>
+  <div class="field"><label>Allow subtraction</label><button class="switch" id="sSub"></button></div>
+  <div class="field"><label>Problems per set</label><div><input type="range" id="sCount" min="5" max="20" step="1"><span class="val" id="sCountV"></span></div></div>
+  <div class="field"><label>Largest running total<span class="hint">Set automatically from digits; override if needed</span></label><input type="number" id="sMax" min="9" max="9999"></div>
+
+  <h3>Listening</h3>
+  <div class="field"><label>Seconds between numbers<span class="hint">Start of one number to start of the next. She can adjust within the limits below.</span></label><div><input type="range" id="sGap" min="0.5" max="12" step="0.25"><span class="val" id="sGapV"></span></div></div>
+  <div class="field"><label>Fastest she may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
+  <div class="field"><label>Slowest she may choose</label><div><input type="range" id="sGapMax" min="0.5" max="12" step="0.25"><span class="val" id="sGapMaxV"></span></div></div>
+  <div class="field"><label>Say "plus" before added numbers<span class="hint">Off = only "minus" is spoken, like many classes</span></label><button class="switch" id="sSayPlus"></button></div>
+  <div class="field"><label>Voice<span class="hint">"My recorded voice" needs the words below recorded once. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small secondary" id="sVoiceTest">▶︎ test</button></div></div>
+  <div class="recpanel" id="recPanel">
+    <div class="note">Record your own voice (about 3 minutes, 33 words). Hold the button, say the word, release. It plays back and moves to the next word. Re-record any word by going back to it.</div>
+    <div class="recrow">
+      <button class="btn small secondary" id="recStart">Start recording session</button>
+      <button class="btn small secondary" id="recPrev">◀</button>
+      <div class="recword"><div id="recWord">—</div><div class="note" id="recCount"></div></div>
+      <button class="btn small secondary" id="recNext">▶</button>
+      <button class="btn small secondary" id="recPlay" disabled>🔊</button>
+    </div>
+    <div class="recrow"><button id="recBtn" class="btn">● Hold to record</button><span class="note" id="recStatus"></span></div>
+    <div class="recrow"><button class="btn small secondary" id="recClear">Erase all my recordings</button></div>
+  </div>
+  <div class="field"><label>Voice speed<span class="hint">Leave at 1.00× for the most natural sound; higher values also raise the pitch</span></label><div><input type="range" id="sRate" min="0.8" max="1.5" step="0.05"><span class="val" id="sRateV"></span></div></div>
+  <div class="field"><label>Pause before "Your answer?"</label><div><input type="range" id="sPause" min="0" max="5" step="0.5"><span class="val" id="sPauseV"></span></div></div>
+  <div class="field"><label>Spoken feedback in drills</label><button class="switch" id="sSpeakFb"></button></div>
+
+  <h3>Progress</h3>
+  <div id="ruleStats"></div>
+  <div class="note" id="ruleNote"></div>
+  <h3>Recent sessions</h3>
+  <table id="sessions"><thead><tr><th>When</th><th>Mode</th><th>Score</th><th>Time</th><th>Missed</th></tr></thead><tbody></tbody></table>
+
+  <h3>Technique checklist (watch for these)</h3>
+  <ul class="checklist note">
+    <li><b>Thumb</b> pushes earth beads <b>up</b>; <b>index finger</b> pushes them <b>down</b> and moves the five-bead both ways.</li>
+    <li>Work <b>left to right</b> on multi-digit numbers; one fixed movement per case, never counting beads one by one.</li>
+    <li>Small friends (5-family): 1&amp;4, 2&amp;3. Have her <b>say the partner out loud</b> ("4 needs 1") before moving.</li>
+    <li>Big friends (10-family): 1&amp;9, 2&amp;8, 3&amp;7, 4&amp;6, 5&amp;5. "+7 is +10, take 3."</li>
+    <li>The beads are the authority: she should read the answer <b>off the abacus</b>, not compute in her head and then set it.</li>
+    <li>Short daily sessions beat long weekly ones. Stop while she still has energy.</li>
+  </ul>
+
+  <h3>Backup</h3>
+  <div class="row" style="justify-content:flex-start"><button class="btn small secondary" id="exportBtn">Export progress</button><button class="btn small secondary" id="importBtn">Import</button><button class="btn small secondary" id="resetBtn">Reset all</button></div>
+  <textarea id="ioArea" placeholder="Exported JSON appears here. Paste JSON here to import."></textarea>
+</section>
+
+</div>
+
+<script src="engine.js"></script>
+<script>
+(function(){
+'use strict';
+const E = window.SorobanEngine;
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---------------- storage ---------------- */
+const DEFAULTS = {
+  preset:'ten_family', operands:4, digits:1, allowSubtraction:true, count:10, maxTotal:99,
+  gap:2, gapMin:0.5, gapMax:6, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5, speakFeedback:true, settingsVersion:4,
+};
+let settings = Object.assign({}, DEFAULTS, load('settings', {}));
+if ((settings.settingsVersion||1) < 2){ Object.assign(settings, {gap:2, gapMin:0.5, gapMax:6, answerPause:0.5}); }
+if ((settings.settingsVersion||1) < 4){ Object.assign(settings, {voice:'device', voiceRate:1.0, settingsVersion:4}); }
+let history = load('history', []);     // sessions
+let days = load('days', {});           // 'YYYY-MM-DD' -> true
+function load(k, d){ try{ const v = localStorage.getItem('abacus.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem('abacus.'+k, JSON.stringify(v)); }catch(e){} }
+function saveSettings(){ save('settings', settings); }
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+/* ---------------- speech ----------------
+   Voice kinds:
+     'mine'        parent-recorded words (IndexedDB), stitched: "plus" + "seventy" + "three"
+     'device'      the iPad/Mac built-in voice (auto-picks the best English one), or 'device:<voiceURI>'
+     'ljspeech'    bundled synthetic voice (audio/voice-ljspeech.js), fallback when nothing else is available
+   Clip voices are scheduled on the Web Audio clock so pacing is exact.                   */
+const SPRITES = { ljspeech:'Built-in synthetic (Linda)' };
+const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+const RECORD_WORDS = [...ONES, ...TENS.slice(2), 'hundred', 'plus', 'minus', 'yes', 'not quite'];
+function numberWords(n){ const out=[]; if(n>=100){ out.push(ONES[Math.floor(n/100)],'hundred'); n%=100; if(!n) return out; } if(n<20) out.push(ONES[n]); else { out.push(TENS[Math.floor(n/10)]); if(n%10) out.push(ONES[n%10]); } return out; }
+function termTokens(d, first){ const w=numberWords(Math.abs(d)); if(first) return w; if(d<0) return ['minus',...w]; return settings.sayPlus ? ['plus',...w] : w; }
+function termText(d, first){ return termTokens(d, first).join(' '); }
+
+const ClipStore = { // IndexedDB for parent-recorded words
+  db:null,
+  open(){ return this.db ? Promise.resolve(this.db) : new Promise((res,rej)=>{ const r=indexedDB.open('abacus-voice',1); r.onupgradeneeded=()=>r.result.createObjectStore('clips'); r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
+  async put(word, blob){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips','readwrite'); t.objectStore('clips').put(blob, word); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+  async getAll(){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips'); const st=t.objectStore('clips'); const out={}; const req=st.openCursor(); req.onsuccess=()=>{ const c=req.result; if(c){ out[c.key]=c.value; c.continue(); } else res(out); }; req.onerror=()=>rej(req.error); }); },
+  async clear(){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips','readwrite'); t.objectStore('clips').clear(); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+};
+
+const Speaker = {
+  ctx:null, sprite:{}, spriteMap:{}, mine:{}, mineLoaded:false, loading:{}, playing:[], ttsVoices:[], ttsReady:false,
+  init(){
+    if ('speechSynthesis' in window){
+      const loadV = () => { this.ttsVoices = speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)); fillVoiceSelect(); };
+      loadV(); speechSynthesis.onvoiceschanged = loadV;
+    }
+    this.prepare();
+  },
+  kind(){ const v=settings.voice||'device'; if (v==='mine') return 'mine'; if (SPRITES[v]) return 'sprite'; return 'device'; },
+  ensureCtx(){ if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); return this.ctx; },
+  unlock(){ // must run inside a user gesture on iOS
+    try{ const c=this.ensureCtx(); if (c.state==='suspended') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
+    if ('speechSynthesis' in window && !this.ttsReady){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); this.ttsReady=true; }
+  },
+  async prepare(){ // load whatever the current voice needs; resolves when ready (or when it gave up)
+    const k=this.kind();
+    if (k==='mine') return this.loadMine();
+    if (k==='sprite') return this.loadSprite(settings.voice);
+  },
+  async loadMine(force){
+    if (this.mineLoaded && !force) return;
+    if (this.loading.mine) return this.loading.mine;
+    this.loading.mine=(async()=>{ try{
+      const c=this.ensureCtx(); const blobs=await ClipStore.getAll(); const out={};
+      for (const [w,b] of Object.entries(blobs)){ try{ out[w]=await new Promise((res,rej)=>c.decodeAudioData(b, res, rej)); }catch(e){ console.warn('decode failed', w, e); } }
+      // also accept the browser's own decode via arrayBuffer for Safari quirks
+      this.mine=out; this.mineLoaded=true;
+    }catch(e){ console.warn('mine load failed', e); } delete this.loading.mine; })();
+    return this.loading.mine;
+  },
+  mineComplete(){ return RECORD_WORDS.every(w=>this.mine[w]); },
+  async loadSprite(key){
+    if (!SPRITES[key] || this.sprite[key]) return;
+    if (this.loading[key]) return this.loading[key];
+    this.loading[key]=(async()=>{ try{
+      const c=this.ensureCtx();
+      const {map,b64}=await new Promise((res,rej)=>{ window.__VOICE_LOADED=(k,m,b)=>{ if(k===key) res({map:m,b64:b}); }; const s=document.createElement('script'); s.src='audio/voice-'+key+'.js'; s.onerror=()=>rej(new Error('no voice file')); document.head.appendChild(s); setTimeout(()=>rej(new Error('timeout')),60000); });
+      const raw=atob(b64), bin=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) bin[i]=raw.charCodeAt(i);
+      this.sprite[key]=await new Promise((res,rej)=>c.decodeAudioData(bin.buffer,res,rej)); this.spriteMap[key]=map.sprite;
+    }catch(e){ console.warn('sprite load failed', key, e); } delete this.loading[key]; })();
+    return this.loading[key];
+  },
+  canSchedule(){ const k=this.kind(); return (k==='mine' && this.mineLoaded && this.mineComplete()) || (k==='sprite' && !!this.sprite[settings.voice]); },
+  // Schedule one term at audio-clock time `when`; returns end time. Only when canSchedule().
+  scheduleTerm(d, first, when){
+    const c=this.ctx; let t=Math.max(when||0, c.currentTime+0.02); const rate=settings.voiceRate||1;
+    if (this.kind()==='mine'){
+      for (const w of termTokens(d, first)){ const b=this.mine[w]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; s.connect(c.destination); s.start(t); this.playing.push(s); t+=b.duration/rate+0.06; }
+    } else {
+      const buf=this.sprite[settings.voice], m=this.spriteMap[settings.voice];
+      const a=Math.abs(d), pre=first?'n':d<0?'m':(settings.sayPlus?'p':'n');
+      const ids = a<100 ? [pre+a] : [pre+Math.floor(a/100),'hundred'].concat(a%100?['n'+(a%100)]:[]);
+      for (const id of ids){ const sp=m[id]; if(!sp) continue; const s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; s.connect(c.destination); s.start(t, sp[0], sp[1]); this.playing.push(s); t+=sp[1]/rate+0.05; }
+    }
+    return t;
+  },
+  schedulePhrase(word, when){ // feedback words ('yes', 'not quite') for clip voices
+    const c=this.ctx; const t=Math.max(when||0,c.currentTime+0.02);
+    if (this.kind()==='mine' && this.mine[word]){ const s=c.createBufferSource(); s.buffer=this.mine[word]; s.connect(c.destination); s.start(t); this.playing.push(s); return t+this.mine[word].duration; }
+    const m=this.spriteMap[settings.voice], id=word==='yes'?'yes':'notquite'; if (m&&m[id]){ const s=c.createBufferSource(); s.buffer=this.sprite[settings.voice]; s.connect(c.destination); s.start(t, m[id][0], m[id][1]); this.playing.push(s); return t+m[id][1]; }
+    return t;
+  },
+  deviceVoice(){
+    const v=settings.voice||'device'; const uri=v.startsWith('device:')?v.slice(7):'';
+    return this.ttsVoices.find(x=>x.voiceURI===uri) || this.ttsVoices.find(x=>/Samantha/.test(x.name)) || this.ttsVoices.find(x=>/Karen|Moira|Daniel|Tessa|Alex|Ava|Allison|Zoe|Nicky/.test(x.name)) || this.ttsVoices.find(x=>x.default) || this.ttsVoices[0];
+  },
+  sayDevice(text){
+    return new Promise(res=>{
+      if (!('speechSynthesis' in window)) return res();
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text); const v=this.deviceVoice(); if (v) u.voice=v;
+      u.rate=settings.voiceRate||1; u.pitch=1;
+      let done=false; const fin=()=>{ if(!done){done=true;res();} }; u.onend=fin; u.onerror=fin; setTimeout(fin, 2500+text.length*70);
+      speechSynthesis.speak(u);
+    });
+  },
+  // Generic: say a term or feedback word now, with whatever voice is active.
+  say(text, word){
+    if (this.canSchedule()){
+      const end = word ? this.schedulePhrase(word) : this.scheduleTerm(text, true);
+      return new Promise(res=>setTimeout(res, Math.max(0,(end-this.ctx.currentTime)*1000)));
+    }
+    return this.sayDevice(word ? (word==='yes'?'Yes!':'Not quite') : termText(text, true));
+  },
+  stop(){ for (const s of this.playing){ try{ s.stop(); }catch(e){} } this.playing=[]; if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+};
+function fillVoiceSelect(){
+  const sel=$('#sVoice'); if(!sel) return; sel.innerHTML='';
+  const add=(v,l)=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); };
+  add('mine', 'My recorded voice' + (Speaker.mineLoaded && !Speaker.mineComplete() ? ' (not finished)' : ''));
+  add('device', 'This device’s voice (auto)');
+  Speaker.ttsVoices.forEach(v=>add('device:'+v.voiceURI, 'Device: '+v.name));
+  Object.entries(SPRITES).forEach(([k,l])=>add(k,l));
+  sel.value = settings.voice; if (sel.value!==settings.voice) sel.value='device';
+}
+
+/* ---------------- voice recorder (parent mode) ---------------- */
+const Recorder = {
+  stream:null, rec:null, chunks:[], idx:0, clips:{},
+  async start(){
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ $('#recStatus').textContent='Recording needs Safari on https (the hosted link), not a local file.'; return false; }
+    try{ this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }
+    catch(e){ $('#recStatus').textContent='Microphone permission was not granted.'; return false; }
+    this.clips = await ClipStore.getAll(); this.idx = RECORD_WORDS.findIndex(w=>!this.clips[w]); if (this.idx<0) this.idx=0;
+    this.render(); return true;
+  },
+  render(){
+    const w=RECORD_WORDS[this.idx]; $('#recWord').textContent=w; $('#recCount').textContent=(this.idx+1)+' / '+RECORD_WORDS.length;
+    const done=Object.keys(this.clips).length; $('#recStatus').textContent = done+' of '+RECORD_WORDS.length+' recorded'+(this.clips[w]?' — this word is done; hold to re-record':'');
+    $('#recPlay').disabled=!this.clips[w];
+  },
+  begin(){ if(!this.stream) return; this.chunks=[]; const mt=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t))||''; this.rec=new MediaRecorder(this.stream, mt?{mimeType:mt}:{}); this.rec.ondataavailable=e=>{ if(e.data.size) this.chunks.push(e.data); }; this.rec.start(); $('#recBtn').classList.add('on'); },
+  async end(){
+    if(!this.rec || this.rec.state!=='recording') return; const rec=this.rec;
+    await new Promise(res=>{ rec.onstop=res; rec.stop(); }); $('#recBtn').classList.remove('on');
+    const blob=new Blob(this.chunks,{type:rec.mimeType||'audio/mp4'});
+    const trimmed = await this.trim(blob);
+    const w=RECORD_WORDS[this.idx]; await ClipStore.put(w, trimmed); this.clips[w]=trimmed;
+    Speaker.mineLoaded=false; this.render(); await this.play();
+    if (this.idx < RECORD_WORDS.length-1){ this.idx++; this.render(); }
+  },
+  async trim(blob){ // decode, cut leading/trailing silence, re-encode as WAV (decodes reliably everywhere)
+    try{
+      const c=Speaker.ensureCtx(); const ab=await blob.arrayBuffer(); const buf=await new Promise((res,rej)=>c.decodeAudioData(ab,res,rej));
+      const d=buf.getChannelData(0), sr=buf.sampleRate; let peak=0; for(let i=0;i<d.length;i++) peak=Math.max(peak,Math.abs(d[i]));
+      const th=Math.max(0.02, peak*0.08); let a=0,b=d.length-1; while(a<b && Math.abs(d[a])<th) a++; while(b>a && Math.abs(d[b])<th) b--;
+      a=Math.max(0,a-Math.floor(sr*0.03)); b=Math.min(d.length,b+Math.floor(sr*0.08)); if (b-a < sr*0.08) return blob;
+      const g = peak>0 ? 0.9/peak : 1; const n=b-a; const wav=new DataView(new ArrayBuffer(44+n*2));
+      const str=(o,s)=>{ for(let i=0;i<s.length;i++) wav.setUint8(o+i,s.charCodeAt(i)); };
+      str(0,'RIFF'); wav.setUint32(4,36+n*2,true); str(8,'WAVE'); str(12,'fmt '); wav.setUint32(16,16,true); wav.setUint16(20,1,true); wav.setUint16(22,1,true); wav.setUint32(24,sr,true); wav.setUint32(28,sr*2,true); wav.setUint16(32,2,true); wav.setUint16(34,16,true); str(36,'data'); wav.setUint32(40,n*2,true);
+      for(let i=0;i<n;i++){ const v=Math.max(-1,Math.min(1,d[a+i]*g)); wav.setInt16(44+i*2, v<0?v*32768:v*32767, true); }
+      return new Blob([wav],{type:'audio/wav'});
+    }catch(e){ console.warn('trim failed', e); return blob; }
+  },
+  async play(){ const w=RECORD_WORDS[this.idx]; const b=this.clips[w]; if(!b) return; const c=Speaker.ensureCtx(); try{ const ab=await b.arrayBuffer(); const buf=await new Promise((res,rej)=>c.decodeAudioData(ab,res,rej)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){} },
+  prev(){ this.idx=Math.max(0,this.idx-1); this.render(); }, next(){ this.idx=Math.min(RECORD_WORDS.length-1,this.idx+1); this.render(); },
+  stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
+};
+
+/* ---------------- screens ---------------- */
+function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
+
+/* ---------------- calendar ---------------- */
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderCalendar(){
+  const now = new Date(), y=now.getFullYear(), m=now.getMonth();
+  const n = new Date(y, m+1, 0).getDate();
+  const cal = $('#calendar'); cal.innerHTML='';
+  let done=0;
+  for (let d=1; d<=n; d++){
+    const key = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const el = document.createElement('div'); el.className='d'+(days[key]?' done':'')+(d===now.getDate()?' today':'');
+    if (days[key]) done++;
+    cal.appendChild(el);
+  }
+  $('#calLabel').textContent = done===0 ? 'Practice days this month' : done+' practice day'+(done===1?'':'s')+' this month';
+}
+
+/* ---------------- drill state ---------------- */
+let mode='visual', problems=[], idx=0, results=[], entry='', t0=0, tick=null, reviewing=false, locked=false;
+let wakeLock=null;
+
+function levelConfig(){
+  const base = E.LEVELS[settings.preset] || E.LEVELS.ten_family;
+  return {
+    allowedRules: base.allowedRules, requiredRules: base.requiredRules,
+    operands: settings.operands, digits: settings.digits,
+    maxTotal: settings.maxTotal, allowSubtraction: settings.allowSubtraction,
+  };
+}
+async function startDrill(m){
+  mode = m; reviewing=false; locked=false;
+  Speaker.unlock();
+  try { problems = E.generateSet(levelConfig(), settings.count); }
+  catch(e){ alert('These settings cannot make problems. Ask a grown-up to loosen them.'); return; }
+  results = problems.map(()=>null);
+  idx=0; t0=Date.now();
+  clearInterval(tick); tick=setInterval(renderTimer, 500);
+  show('drill');
+  $('#problemArea').style.display = mode==='visual' ? 'flex' : 'none';
+  $('#listenStage').style.display = mode==='listen' ? 'flex' : 'none';
+  if (mode==='listen'){ setupGapSlider(); }
+  try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+  renderStrip(); presentProblem();
+}
+function endDrill(){
+  clearInterval(tick); Speaker.stop();
+  if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; }
+}
+function renderTimer(){ const s=Math.floor((Date.now()-t0)/1000); $('#timer').textContent = Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function renderStrip(){
+  const st = $('#strip'); st.innerHTML='';
+  problems.forEach((p,i)=>{ const d=document.createElement('div'); d.className='sq'+(i===idx?' cur':'')+(results[i]===true?' ok':results[i]===false?' bad':''); d.textContent=i+1; st.appendChild(d); });
+}
+function setEntry(v){ entry=v; $('#answer').textContent = v || ' '; }
+function presentProblem(){
+  const p = problems[idx];
+  setEntry(''); $('#feedback').textContent=''; $('#feedback').className='feedback'; $('#reveal').textContent='';
+  renderStrip();
+  if (mode==='visual'){
+    const area = $('#problemArea'); area.innerHTML='';
+    p.terms.forEach(t=>{ const d=document.createElement('div'); d.className='term'+(t<0?' neg':''); d.textContent = t<0 ? '−'+Math.abs(t) : t; area.appendChild(d); });
+    locked=false;
+  } else {
+    dictate(p);
+  }
+}
+let dictateToken=0;
+async function dictate(p){
+  const my = ++dictateToken;
+  locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Listen…';
+  Speaker.stop();
+  const gap = settings.gap;                       // seconds, start of one number to start of the next
+  const pulse = (ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'), ms); };
+  await Speaker.prepare();
+  if (my!==dictateToken) return;
+  if (Speaker.canSchedule()){
+    const t0 = Speaker.ctx.currentTime + 0.3; let lastEnd = t0;
+    p.terms.forEach((d,i)=>{
+      const when = t0 + i*gap; const end = Speaker.scheduleTerm(d, i===0, when); lastEnd = end;
+      setTimeout(()=>{ if (my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
+    });
+    await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
+  } else {
+    for (let i=0;i<p.terms.length;i++){
+      if (my!==dictateToken) return;
+      const started = Date.now(); pulse(800);
+      await Speaker.sayDevice(termText(p.terms[i], i===0));
+      const spent = (Date.now()-started)/1000;
+      if (i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000));
+    }
+  }
+  if (my!==dictateToken) return;
+  await sleep(settings.answerPause*1000);
+  if (my!==dictateToken) return;
+  $('#listenMsg').textContent='Your answer?';
+  locked=false; $('#replayBtn').disabled = p._replayed===true;
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+$('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; dictate(p); });
+function setupGapSlider(){
+  const s=$('#gapSlider'); s.min=settings.gapMin; s.max=settings.gapMax; s.value=settings.gap;
+  // slider: left=slow (big gap), right=fast; invert visually by reversing direction
+  s.style.direction='rtl';
+  $('#gapVal').textContent=settings.gap+'s';
+  s.oninput=()=>{ settings.gap=parseFloat(s.value); $('#gapVal').textContent=settings.gap+'s'; saveSettings(); };
+}
+
+/* answer entry */
+$('#pad').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b || locked) return;
+  const k=b.dataset.k;
+  if (k==='del') setEntry(entry.slice(0,-1));
+  else if (k==='go') submit();
+  else if (entry.length < String(settings.maxTotal).length) setEntry(entry+k);
+});
+document.addEventListener('keydown', e=>{
+  if (!$('#drill').classList.contains('active') || locked) return;
+  if (/^[0-9]$/.test(e.key) && entry.length < String(settings.maxTotal).length) setEntry(entry+e.key);
+  else if (e.key==='Backspace') setEntry(entry.slice(0,-1));
+  else if (e.key==='Enter') submit();
+});
+async function submit(){
+  if (entry==='') return;
+  const p = problems[idx]; const ok = parseInt(entry,10)===p.answer;
+  locked=true;
+  const fb=$('#feedback');
+  if (ok){
+    fb.textContent='Yes! ✓'; fb.className='feedback ok';
+    if (!reviewing) results[idx]=true; else p._fixed=true;
+    if (settings.speakFeedback) Speaker.say(null, 'yes');
+    await sleep(700);
+  } else {
+    fb.textContent='Not quite'; fb.className='feedback bad'; $('#answer').classList.add('shake'); setTimeout(()=>$('#answer').classList.remove('shake'),500);
+    if (settings.speakFeedback) Speaker.say(null, 'not quite');
+    if (!reviewing){ results[idx]=false; p._given=entry; await sleep(900); }
+    else {
+      // review: a miss reveals the answer so she can rework it on the abacus, then move on
+      p._fixed=true;
+      $('#reveal').innerHTML = 'It was <b>'+p.answer+'</b>'; await sleep(3500);
+    }
+  }
+  next();
+}
+function next(){
+  if (reviewing){
+    const rest = reviewQueue.slice(reviewQueue.indexOf(idx)+1);
+    if (rest.length){ idx=rest[0]; presentProblem(); } else finish();
+    return;
+  }
+  if (idx < problems.length-1){ idx++; presentProblem(); } else finish();
+}
+let reviewQueue=[];
+function finish(){
+  endDrill();
+  const correct = results.filter(r=>r===true).length;
+  const secs = Math.round((Date.now()-t0)/1000);
+  if (!reviewing){
+    history.unshift({ at:new Date().toISOString(), mode, preset:settings.preset, count:problems.length, correct, secs, gap: mode==='listen'?settings.gap:null,
+      missed: problems.map((p,i)=>results[i]===false ? {terms:p.terms, answer:p.answer, given:p._given, rules:p.rulesUsed} : null).filter(Boolean),
+      problems: problems.map((p,i)=>({terms:p.terms, rules:p.rulesUsed, ok:results[i]===true})) });
+    history = history.slice(0,200); save('history', history);
+    days[todayKey()]=true; save('days', days);
+  }
+  $('#sumTitle').textContent = correct===problems.length ? 'Perfect! 🌟' : correct>=problems.length*0.7 ? 'Great job! 🎉' : 'Good practice! 💪';
+  $('#sumScore').textContent = correct+' / '+problems.length;
+  $('#sumTime').textContent = Math.floor(secs/60)+' min '+(secs%60)+' sec';
+  const toFix = problems.map((p,i)=>results[i]===false && !p._fixed ? i : -1).filter(i=>i>=0);
+  $('#fixBtn').style.display = toFix.length ? '' : 'none';
+  show('summary');
+}
+$('#fixBtn').addEventListener('click', ()=>{
+  reviewQueue = problems.map((p,i)=>results[i]===false && !p._fixed ? i : -1).filter(i=>i>=0);
+  if (!reviewQueue.length) return;
+  reviewing=true; idx=reviewQueue[0]; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500);
+  show('drill'); presentProblem();
+});
+$('#againBtn').addEventListener('click', ()=>startDrill(mode));
+$('#homeBtn').addEventListener('click', ()=>{ renderCalendar(); show('home'); });
+$('#exitDrill').addEventListener('click', ()=>{ endDrill(); dictateToken++; renderCalendar(); show('home'); });
+$$('.mode-card').forEach(b=>b.addEventListener('click', ()=>startDrill(b.dataset.mode)));
+
+/* ---------------- parent gate ---------------- */
+let holdT=null, gateAnswer=0;
+const gu=$('#grownups');
+const startHold=()=>{ holdT=setTimeout(openGate, 1200); };
+const cancelHold=()=>{ clearTimeout(holdT); };
+gu.addEventListener('pointerdown', startHold); gu.addEventListener('pointerup', cancelHold); gu.addEventListener('pointerleave', cancelHold); gu.addEventListener('pointercancel', cancelHold);
+function openGate(){
+  const a=10+Math.floor(Math.random()*80), b=3+Math.floor(Math.random()*7); gateAnswer=a*b;
+  $('#gateQ').textContent = a+' × '+b+' = ?'; $('#gateA').value=''; show('gate'); setTimeout(()=>$('#gateA').focus(),50);
+}
+$('#gateCancel').addEventListener('click', ()=>show('home'));
+$('#gateOk').addEventListener('click', ()=>{ if (parseInt($('#gateA').value,10)===gateAnswer){ renderParent(); show('parent'); } else { $('#gateA').value=''; openGate(); } });
+$('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
+
+/* ---------------- parent screen ---------------- */
+const PRESET_ORDER = ['direct_add','direct_sub','five_family','ten_family','combined','two_digit'];
+function bindRange(id, key, fmt){
+  const el=$(id), v=$(id+'V');
+  el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]);
+  el.oninput=()=>{ settings[key]=parseFloat(el.value); v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); };
+}
+function bindSwitch(id, key, after){
+  const el=$(id); el.classList.toggle('on', !!settings[key]);
+  el.onclick=()=>{ settings[key]=!settings[key]; el.classList.toggle('on', settings[key]); saveSettings(); if(after) after(); };
+}
+function renderParent(){
+  const sel=$('#sPreset'); sel.innerHTML='';
+  PRESET_ORDER.forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=E.LEVELS[k].label; sel.appendChild(o); });
+  sel.value=settings.preset;
+  sel.onchange=()=>{ settings.preset=sel.value; const L=E.LEVELS[sel.value]; settings.operands=L.operands; settings.digits=L.digits; settings.allowSubtraction=L.allowSubtraction; settings.maxTotal=L.maxTotal; saveSettings(); renderParent(); };
+  bindRange('#sOperands','operands'); bindRange('#sCount','count');
+  bindRange('#sDigits','digits'); $('#sDigits').oninput=()=>{ settings.digits=parseInt($('#sDigits').value,10); $('#sDigitsV').textContent=settings.digits; settings.maxTotal = settings.digits===1 ? (settings.preset==='direct_add'||settings.preset==='direct_sub'||settings.preset==='five_family' ? 9 : 99) : Math.pow(10,settings.digits+1)-1; $('#sMax').value=settings.maxTotal; saveSettings(); };
+  bindSwitch('#sSub','allowSubtraction');
+  $('#sMax').value=settings.maxTotal; $('#sMax').onchange=()=>{ settings.maxTotal=Math.max(9,parseInt($('#sMax').value,10)||99); saveSettings(); };
+  const s=x=>x+' s';
+  bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s);
+  bindSwitch('#sSayPlus','sayPlus'); bindSwitch('#sSpeakFb','speakFeedback');
+  fillVoiceSelect(); $('#sVoice').onchange=()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.prepare(); };
+  bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s);
+  $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare();
+    const seq=[[7,true],[3,false],[-4,false],[12,false]];
+    if (Speaker.canSchedule()){ const t0=Speaker.ctx.currentTime+0.1; seq.forEach(([d,f],i)=>Speaker.scheduleTerm(d,f,t0+i*1.3)); }
+    else { for (const [d,f] of seq){ await Speaker.sayDevice(termText(d,f)); await sleep(300); } } };
+  // recorder
+  $('#recStart').onclick=async()=>{ Speaker.unlock(); if (await Recorder.start()) $('#recStatus').textContent+=' — ready'; };
+  const rb=$('#recBtn'); rb.onpointerdown=e=>{ e.preventDefault(); if(!Recorder.stream){ $('#recStatus').textContent='Tap "Start recording session" first.'; return; } Recorder.begin(); };
+  rb.onpointerup=rb.onpointerleave=rb.onpointercancel=()=>Recorder.end();
+  $('#recPrev').onclick=()=>Recorder.prev(); $('#recNext').onclick=()=>Recorder.next(); $('#recPlay').onclick=()=>Recorder.play();
+  $('#recClear').onclick=async()=>{ if(confirm('Erase all recorded words?')){ await ClipStore.clear(); Recorder.clips={}; Speaker.mine={}; Speaker.mineLoaded=false; if(Recorder.stream) Recorder.render(); fillVoiceSelect(); } };
+  renderStats();
+}
+function renderStats(){
+  // per-rule accuracy over the last 20 problems that used each rule
+  const recent = history.flatMap(h=>h.problems||[]);
+  const names={direct:'Direct',five:'5 family',ten:'10 family',combined:'Combined'};
+  const box=$('#ruleStats'); box.innerHTML='';
+  Object.keys(names).forEach(r=>{
+    const ps = recent.filter(p=>p.rules.includes(r)).slice(0,20);
+    if (!ps.length) return;
+    const ok = ps.filter(p=>p.ok).length, pct=Math.round(100*ok/ps.length);
+    const d=document.createElement('div'); d.className='rulebar';
+    d.innerHTML='<div class="lbl">'+names[r]+'</div><div class="track"><div class="fill" style="width:'+pct+'%;background:'+(pct>=80?'var(--good)':pct>=60?'#E6A23C':'var(--warn)')+'"></div></div><div class="pct">'+pct+'% ('+ok+'/'+ps.length+')</div>';
+    box.appendChild(d);
+  });
+  $('#ruleNote').textContent = recent.length ? 'Accuracy over the last 20 problems that used each rule. A problem counts toward every rule it needed. 80% on two separate days is the usual bar for moving up.' : 'No sessions yet.';
+  const tb=$('#sessions tbody'); tb.innerHTML='';
+  history.slice(0,15).forEach(h=>{
+    const tr=document.createElement('tr');
+    const when=new Date(h.at); const ws=when.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    const missed=(h.missed||[]).map(m=>'<span class="pill bad">'+m.terms.map((t,i)=>i===0?t:(t<0?' − '+(-t):' + '+t)).join('')+' = '+m.answer+(m.given?' (said '+m.given+')':'')+'</span>').join(' ');
+    tr.innerHTML='<td>'+ws+'</td><td>'+(h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):'Look')+'<br><span class="pill">'+(E.LEVELS[h.preset]||{}).label+'</span></td><td>'+h.correct+'/'+h.count+'</td><td>'+Math.floor(h.secs/60)+':'+String(h.secs%60).padStart(2,'0')+'</td><td>'+(missed||'—')+'</td>';
+    tb.appendChild(tr);
+  });
+}
+$('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderCalendar(); show('home'); });
+$('#exportBtn').addEventListener('click', ()=>{ $('#ioArea').value=JSON.stringify({settings,history,days}); $('#ioArea').select(); });
+$('#importBtn').addEventListener('click', ()=>{ try{ const o=JSON.parse($('#ioArea').value); if(o.settings) settings=Object.assign({},DEFAULTS,o.settings); if(o.history) history=o.history; if(o.days) days=o.days; saveSettings(); save('history',history); save('days',days); renderParent(); alert('Imported.'); }catch(e){ alert('That is not valid export text.'); } });
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase all settings and progress?')){ settings=Object.assign({},DEFAULTS); history=[]; days={}; saveSettings(); save('history',history); save('days',days); renderParent(); } });
+
+/* ---------------- boot ---------------- */
+Speaker.init(); renderCalendar();
+document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
