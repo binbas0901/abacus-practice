@@ -52,6 +52,8 @@ function numberWords(n){ const out=[]; if(n>=100){ out.push(ONES[Math.floor(n/10
 function termTokens(d, first){ const w=numberWords(Math.abs(d)); if(first) return w; if(d<0) return ['minus',...w]; return settings.sayPlus ? ['plus',...w] : w; }
 function termText(d, first){ return termTokens(d, first).join(' '); }
 
+async function clipBytes(v){ if (!v) return null; if (v instanceof Blob) return await v.arrayBuffer(); if (v.buf) return v.buf.slice(0); if (v instanceof ArrayBuffer) return v.slice(0); return null; }
+function decode(ctx, ab){ return new Promise((res,rej)=>{ try{ const p=ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }catch(e){ rej(e); } }); }
 const ClipStore = { // IndexedDB for parent-recorded words
   db:null,
   open(){ return this.db ? Promise.resolve(this.db) : new Promise((res,rej)=>{ const r=indexedDB.open('abacus-voice',1); r.onupgradeneeded=()=>r.result.createObjectStore('clips'); r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
@@ -88,10 +90,10 @@ const Speaker = {
     if (this.mineLoaded && !force) return;
     if (this.loading.mine) return this.loading.mine;
     this.loading.mine=(async()=>{ try{
-      const c=this.ensureCtx(); const blobs=await ClipStore.getAll(); const out={};
-      for (const [w,b] of Object.entries(blobs)){ try{ out[w]=await new Promise((res,rej)=>c.decodeAudioData(b, res, rej)); }catch(e){ console.warn('decode failed', w, e); } }
-      // also accept the browser's own decode via arrayBuffer for Safari quirks
+      const c=this.ensureCtx(); const stored=await ClipStore.getAll(); const out={}; let bad=[];
+      for (const [w,v] of Object.entries(stored)){ try{ const ab=await clipBytes(v); out[w]=await decode(c, ab); }catch(e){ bad.push(w); } }
       this.mine=out; this.mineLoaded=true;
+      Diag.add(`my voice: ${Object.keys(out).length}/${RECORD_WORDS.length} words loaded`+(bad.length?`, failed: ${bad.join(', ')}`:'')+(this.mineComplete()?'':`, missing: ${RECORD_WORDS.filter(w=>!out[w]).join(', ')}`));
     }catch(e){ console.warn('mine load failed', e); } delete this.loading.mine; })();
     return this.loading.mine;
   },
@@ -186,13 +188,18 @@ const Recorder = {
     await new Promise(res=>{ rec.onstop=res; rec.stop(); }); $('#recBtn').classList.remove('on');
     const blob=new Blob(this.chunks,{type:rec.mimeType||'audio/mp4'});
     const trimmed = await this.trim(blob);
-    const w=RECORD_WORDS[this.idx]; await ClipStore.put(w, trimmed); this.clips[w]=trimmed;
+    const w=RECORD_WORDS[this.idx]; const rec2={buf:await trimmed.arrayBuffer(), type:trimmed.type}; await ClipStore.put(w, rec2); this.clips[w]=rec2;
     Speaker.mineLoaded=false; this.render(); await this.play();
-    if (this.idx < RECORD_WORDS.length-1){ this.idx++; this.render(); }
+    if (RECORD_WORDS.every(x=>this.clips[x])){
+      settings.voice='mine'; saveSettings(); await Speaker.loadMine(true); fillVoiceSelect();
+      $('#recStatus').textContent = Speaker.mineComplete() ? 'All 33 words recorded. Listen mode now uses your voice. Tap ▶︎ test to hear it.' : 'Some words could not be read back; see Sound check.';
+      return;
+    }
+    const nxt=RECORD_WORDS.findIndex((x,i)=>i>this.idx && !this.clips[x]); this.idx = nxt>=0 ? nxt : Math.min(RECORD_WORDS.length-1, this.idx+1); this.render();
   },
   async trim(blob){ // decode, cut leading/trailing silence, re-encode as WAV (decodes reliably everywhere)
     try{
-      const c=Speaker.ensureCtx(); const ab=await blob.arrayBuffer(); const buf=await new Promise((res,rej)=>c.decodeAudioData(ab,res,rej));
+      const c=Speaker.ensureCtx(); const ab=await blob.arrayBuffer(); const buf=await decode(c, ab);
       const d=buf.getChannelData(0), sr=buf.sampleRate; let peak=0; for(let i=0;i<d.length;i++) peak=Math.max(peak,Math.abs(d[i]));
       const th=Math.max(0.02, peak*0.08); let a=0,b=d.length-1; while(a<b && Math.abs(d[a])<th) a++; while(b>a && Math.abs(d[b])<th) b--;
       a=Math.max(0,a-Math.floor(sr*0.03)); b=Math.min(d.length,b+Math.floor(sr*0.08)); if (b-a < sr*0.08) return blob;
@@ -203,7 +210,7 @@ const Recorder = {
       return new Blob([wav],{type:'audio/wav'});
     }catch(e){ console.warn('trim failed', e); return blob; }
   },
-  async play(){ const w=RECORD_WORDS[this.idx]; const b=this.clips[w]; if(!b) return; const c=Speaker.ensureCtx(); try{ const ab=await b.arrayBuffer(); const buf=await new Promise((res,rej)=>c.decodeAudioData(ab,res,rej)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){} },
+  async play(){ const w=RECORD_WORDS[this.idx]; const v=this.clips[w]; if(!v) return; const c=Speaker.ensureCtx(); try{ if (c.state!=='running') await c.resume(); const buf=await decode(c, await clipBytes(v)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){ Diag.add('playback failed for '+w+': '+(e&&e.message||e)); } },
   prev(){ this.idx=Math.max(0,this.idx-1); this.render(); }, next(){ this.idx=Math.min(RECORD_WORDS.length-1,this.idx+1); this.render(); },
   stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
 };
@@ -455,7 +462,8 @@ $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').cl
 /* ---------------- parent ---------------- */
 function bindRange(id,key,fmt){ const el=$(id), v=$(id+'V'); el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]); el.oninput=()=>{ settings[key]=parseFloat(el.value); v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); }; }
 function bindSwitch(id,key,after){ const el=$(id); el.classList.toggle('on',!!settings[key]); el.onclick=()=>{ settings[key]=!settings[key]; el.classList.toggle('on',settings[key]); saveSettings(); if(after) after(); }; }
-function renderParent(){
+async function renderParent(){
+  try{ await Speaker.loadMine(true); }catch(e){}
   const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
   sel.onchange=()=>{ progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
   $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); };
@@ -468,7 +476,7 @@ function renderParent(){
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
   const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
   bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
-  fillVoiceSelect(); $('#sVoice').onchange=()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.prepare(); };
+  fillVoiceSelect(); $('#sVoice').onchange=async()=>{ settings.voice=$('#sVoice').value; saveSettings(); if (settings.voice==='mine') await Speaker.loadMine(true); else Speaker.prepare(); fillVoiceSelect(); $('#diagLog').textContent=Diag.lines.join('\n'); };
   $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare(); const seq=[[7,true],[3,false],[-4,false],[12,false]];
     if (Speaker.canSchedule()){ const t0=Speaker.ctx.currentTime+0.1; seq.forEach(([d,f],i)=>Speaker.scheduleTerm(d,f,t0+i*1.3)); } else { for (const [d,f] of seq){ await Speaker.sayDevice(termText(d,f)); await sleep(300); } } };
   $('#recStart').onclick=async()=>{ Speaker.unlock(); if (await Recorder.start()) $('#recStatus').textContent+=' — ready'; };
@@ -492,6 +500,7 @@ $('#importBtn').addEventListener('click', ()=>{ try{ const o=JSON.parse($('#ioAr
 $('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase all settings and progress?')){ localStorage.clear(); location.reload(); } });
 
 /* ---------------- boot ---------------- */
+window.__diag = Diag;
 Speaker.init(); renderHome(); saveSettings();
 document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
