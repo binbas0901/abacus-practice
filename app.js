@@ -427,8 +427,7 @@ async function showMe(p){
 }
 
 /* ---------------- parent gate ---------------- */
-let holdT=null, gateAnswer=0; const gu=$('#grownups');
-gu.addEventListener('pointerdown', ()=>{ holdT=setTimeout(openGate,1200); }); ['pointerup','pointerleave','pointercancel'].forEach(ev=>gu.addEventListener(ev, ()=>clearTimeout(holdT)));
+let gateAnswer=0; $('#grownups').addEventListener('click', openGate);
 function openGate(){ const a=10+Math.floor(Math.random()*80), b=3+Math.floor(Math.random()*7); gateAnswer=a*b; $('#gateQ').textContent=a+' × '+b+' = ?'; $('#gateA').value=''; show('gate'); setTimeout(()=>$('#gateA').focus(),50); }
 $('#gateCancel').addEventListener('click', ()=>show('home'));
 $('#gateOk').addEventListener('click', ()=>{ if(parseInt($('#gateA').value,10)===gateAnswer){ renderParent(); show('parent'); } else { openGate(); } });

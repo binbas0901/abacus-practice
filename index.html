@@ -61,7 +61,7 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none;font-w
 .calrow{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;justify-content:center}
 #calendar{display:flex;gap:5px;flex-wrap:wrap}
 #calendar .d{width:14px;height:14px;border-radius:50%;background:var(--pending)} #calendar .d.done{background:var(--good)} #calendar .d.tdy{outline:2px solid var(--teal);outline-offset:1px}
-#grownups{position:absolute;right:18px;bottom:8px;color:var(--muted);font-size:14px;padding:8px 12px;opacity:.6}
+#grownups{position:absolute;right:18px;bottom:8px;color:var(--muted);font-size:15px;padding:10px 14px;opacity:.8;background:var(--card);border-radius:999px;box-shadow:var(--shadow)}
 
 /* ---------- Soroban ---------- */
 .soroban{--bead:34px;--rodh:230px;display:inline-block;padding:14px 16px;background:linear-gradient(#8B5A2B,#6F4420);border-radius:18px;box-shadow:inset 0 0 0 4px #5a361a, var(--shadow)}
@@ -193,7 +193,7 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
     <button class="tile" data-mode="flash"><span class="ic">⚡️</span>Flash</button>
     <button class="tile" data-mode="learn"><span class="ic">📖</span>Learn</button>
   </div>
-  <button id="grownups">for grown-ups</button>
+  <button id="grownups">⚙️ Grown-ups</button>
 </section>
 
 <section id="lesson" class="screen">
