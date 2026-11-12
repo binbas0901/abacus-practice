@@ -161,3 +161,91 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SorobanEngine = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
+
+/* ---- Phase 2 extension: per-move detail and move-level allow/require ---- */
+(function (root) {
+  'use strict';
+  const E = (typeof module !== 'undefined' && module.exports) ? module.exports : root.SorobanEngine;
+  const R = E.RULES;
+
+  // Every bead "move" a step needs: {rod, op:'add'|'sub', d, rule, carry:boolean}
+  // rod 0 = units. Carry/borrow propagations are included with carry:true.
+  function stepMoves(total, delta) {
+    if (total < 0 || total + delta < 0) throw new Error('negative total');
+    const moves = [];
+    const op = delta >= 0 ? 'add' : 'sub';
+    const digits = String(Math.abs(delta)).split('').reverse().map(Number);
+    const rods = String(total).padStart(12, '0').split('').reverse().map(Number);
+    function apply(i, d, carry) {
+      if (d === 0) return;
+      const v = rods[i];
+      let rule;
+      if (op === 'add') { rule = E.classifyAdd(v, d); if (v + d >= 10) { rods[i] = v + d - 10; apply(i + 1, 1, true); } else rods[i] = v + d; }
+      else { rule = E.classifySub(v, d); if (v - d < 0) { rods[i] = v - d + 10; apply(i + 1, 1, true); } else rods[i] = v - d; }
+      moves.push({ rod: i, op, d, v, rule, carry: !!carry });
+    }
+    digits.forEach((d, i) => apply(i, d, false));
+    return moves;
+  }
+  // Move key like "add:ten:7" (op:rule:digit)
+  function moveKey(m) { return m.op + ':' + m.rule + ':' + m.d; }
+
+  // Generator variant with move-level predicates:
+  //   cfg.allowMove(m) -> bool   (default: rule in cfg.allowedRules; carry-direct moves always ok)
+  //   cfg.requireMove(m) -> bool (optional: at least one step must contain such a move)
+  function legalDeltas2(total, cfg, isFirst) {
+    const allowed = cfg.allowedRules ? new Set(cfg.allowedRules) : null;
+    const allowMove = cfg.allowMove || (m => (m.carry && m.rule === R.DIRECT) || !allowed || allowed.has(m.rule));
+    const hi = Math.pow(10, cfg.digits) - 1, lo = cfg.minTerm || 1;
+    const out = [];
+    for (let m = lo; m <= hi; m++) {
+      const cands = (isFirst || !cfg.allowSubtraction) ? [m] : [m, -m];
+      for (const delta of cands) {
+        const t = total + delta;
+        if (t < 0 || t > cfg.maxTotal) continue;
+        if (t === 0 && !cfg.allowZeroIntermediate) continue;
+        if (isFirst && cfg.firstMax && delta > cfg.firstMax) continue;
+        const moves = stepMoves(total, delta);
+        if (!moves.every(allowMove)) continue;
+        if (cfg.allowBorrow === false && delta < 0 && String(total).length > String(t).length) continue;
+        out.push({ delta, moves });
+      }
+    }
+    return out;
+  }
+  function generateProblem2(cfg, rng) {
+    rng = rng || cfg.rng || Math.random;
+    const req = cfg.requireMove || null;
+    for (let attempt = 0; attempt < 300; attempt++) {
+      let total = 0; const terms = [], stepMovesList = []; let ok = true;
+      for (let i = 0; i < cfg.operands; i++) {
+        const legal = legalDeltas2(total, cfg, i === 0);
+        if (!legal.length) { ok = false; break; }
+        let pool = legal;
+        if (req && i >= 1) {
+          const hitSoFar = stepMovesList.some(ms => ms.some(req));
+          const hitting = legal.filter(l => l.moves.some(req));
+          if (!hitSoFar && hitting.length && rng() < 0.75) pool = hitting;
+        }
+        const pick = pool[Math.floor(rng() * pool.length)];
+        terms.push(pick.delta); stepMovesList.push(pick.moves); total += pick.delta;
+      }
+      if (!ok) continue;
+      if (req && !stepMovesList.some(ms => ms.some(req))) continue;
+      const rulesUsed = Array.from(new Set(stepMovesList.flatMap(ms => ms.filter(m => !(m.carry && m.rule === R.DIRECT)).map(m => m.rule))));
+      return { terms, answer: total, moves: stepMovesList, rulesUsed, moveKeys: Array.from(new Set(stepMovesList.flatMap(ms => ms.map(moveKey)))) };
+    }
+    return null;
+  }
+  function generateSet2(cfg, count, rng) {
+    const out = [], seen = new Set();
+    for (let i = 0; i < count; i++) {
+      let p = null;
+      for (let k = 0; k < 25; k++) { p = generateProblem2(cfg, rng); if (!p) break; const key = p.terms.join(','); if (!seen.has(key)) { seen.add(key); break; } }
+      if (!p) throw new Error('generator could not satisfy config');
+      out.push(p);
+    }
+    return out;
+  }
+  Object.assign(E, { stepMoves, moveKey, legalDeltas2, generateProblem2, generateSet2 });
+})(typeof globalThis !== 'undefined' ? globalThis : this);

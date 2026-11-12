@@ -1,0 +1,468 @@
+(function(){
+'use strict';
+const E = window.SorobanEngine, C = window.Curriculum;
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]));
+
+/* ---------------- storage ---------------- */
+const DEFAULTS = {
+  count:10, operands:0, sfx:true, speakFeedback:true, name:'',
+  gap:2, gapMin:0.5, gapMax:6, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
+  flashSec:1.0, flashN:3, settingsVersion:5,
+};
+function load(k, d){ try{ const v = localStorage.getItem('abacus.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem('abacus.'+k, JSON.stringify(v)); }catch(e){} }
+let settings = Object.assign({}, DEFAULTS, load('settings', {}));
+if ((settings.settingsVersion||1) < 5){ settings = Object.assign({}, DEFAULTS, {voice:settings.voice||'device', gap:settings.gap||2, name:settings.name||''}); }
+function saveSettings(){ save('settings', settings); }
+let history = load('history', []);
+let days = load('days', {});
+// progress: {current:nodeId, nodes:{id:{lesson:bool, mastered:'auto'|'parent'|null, hist:[{ok,day}]}}}
+let progress = load('progress', null);
+if (!progress){ progress = { current: 'bf_add_a', nodes:{} }; NODES.slice(0, NODE_IDX.bf_add_a).forEach(n=>{ progress.nodes[n.id] = {lesson:true, mastered:'parent', hist:[]}; }); save('progress', progress); }
+function node(id){ return progress.nodes[id] || (progress.nodes[id] = {lesson:false, mastered:null, hist:[]}); }
+function saveProgress(){ save('progress', progress); }
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+/* ---------------- sound effects ---------------- */
+const Sfx = {
+  tone(f, t0, dur, type='sine', vol=0.18){ try{ const c=Speaker.ensureCtx(); const o=c.createOscillator(), g=c.createGain(); o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0+dur+0.05);}catch(e){} },
+  ok(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; this.tone(523,t,0.18); this.tone(784,t+0.12,0.25); },
+  bad(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; this.tone(196,t,0.3,'triangle',0.12); },
+  tap(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; this.tone(880,t,0.05,'square',0.03); },
+  star(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; [523,659,784,1047].forEach((f,i)=>this.tone(f,t+i*0.11,0.35)); },
+};
+
+/* ---------------- speech ----------------
+   Voice kinds:
+     'mine'        parent-recorded words (IndexedDB), stitched: "plus" + "seventy" + "three"
+     'device'      the iPad/Mac built-in voice (auto-picks the best English one), or 'device:<voiceURI>'
+     'ljspeech'    bundled synthetic voice (audio/voice-ljspeech.js), fallback when nothing else is available
+   Clip voices are scheduled on the Web Audio clock so pacing is exact.                   */
+const SPRITES = { ljspeech:'Built-in synthetic (Linda)' };
+const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+const RECORD_WORDS = [...ONES, ...TENS.slice(2), 'hundred', 'plus', 'minus', 'yes', 'not quite'];
+function numberWords(n){ const out=[]; if(n>=100){ out.push(ONES[Math.floor(n/100)],'hundred'); n%=100; if(!n) return out; } if(n<20) out.push(ONES[n]); else { out.push(TENS[Math.floor(n/10)]); if(n%10) out.push(ONES[n%10]); } return out; }
+function termTokens(d, first){ const w=numberWords(Math.abs(d)); if(first) return w; if(d<0) return ['minus',...w]; return settings.sayPlus ? ['plus',...w] : w; }
+function termText(d, first){ return termTokens(d, first).join(' '); }
+
+const ClipStore = { // IndexedDB for parent-recorded words
+  db:null,
+  open(){ return this.db ? Promise.resolve(this.db) : new Promise((res,rej)=>{ const r=indexedDB.open('abacus-voice',1); r.onupgradeneeded=()=>r.result.createObjectStore('clips'); r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
+  async put(word, blob){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips','readwrite'); t.objectStore('clips').put(blob, word); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+  async getAll(){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips'); const st=t.objectStore('clips'); const out={}; const req=st.openCursor(); req.onsuccess=()=>{ const c=req.result; if(c){ out[c.key]=c.value; c.continue(); } else res(out); }; req.onerror=()=>rej(req.error); }); },
+  async clear(){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips','readwrite'); t.objectStore('clips').clear(); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+};
+
+const Speaker = {
+  ctx:null, sprite:{}, spriteMap:{}, mine:{}, mineLoaded:false, loading:{}, playing:[], ttsVoices:[], ttsReady:false,
+  init(){
+    if ('speechSynthesis' in window){
+      const loadV = () => { this.ttsVoices = speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)); fillVoiceSelect(); };
+      loadV(); speechSynthesis.onvoiceschanged = loadV;
+    }
+    this.prepare();
+  },
+  kind(){ const v=settings.voice||'device'; if (v==='mine') return 'mine'; if (SPRITES[v]) return 'sprite'; return 'device'; },
+  ensureCtx(){ if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); return this.ctx; },
+  unlock(){ // must run inside a user gesture on iOS
+    try{ const c=this.ensureCtx(); if (c.state==='suspended') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
+    if ('speechSynthesis' in window && !this.ttsReady){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); this.ttsReady=true; }
+  },
+  async prepare(){ // load whatever the current voice needs; resolves when ready (or when it gave up)
+    const k=this.kind();
+    if (k==='mine') return this.loadMine();
+    if (k==='sprite') return this.loadSprite(settings.voice);
+  },
+  async loadMine(force){
+    if (this.mineLoaded && !force) return;
+    if (this.loading.mine) return this.loading.mine;
+    this.loading.mine=(async()=>{ try{
+      const c=this.ensureCtx(); const blobs=await ClipStore.getAll(); const out={};
+      for (const [w,b] of Object.entries(blobs)){ try{ out[w]=await new Promise((res,rej)=>c.decodeAudioData(b, res, rej)); }catch(e){ console.warn('decode failed', w, e); } }
+      // also accept the browser's own decode via arrayBuffer for Safari quirks
+      this.mine=out; this.mineLoaded=true;
+    }catch(e){ console.warn('mine load failed', e); } delete this.loading.mine; })();
+    return this.loading.mine;
+  },
+  mineComplete(){ return RECORD_WORDS.every(w=>this.mine[w]); },
+  async loadSprite(key){
+    if (!SPRITES[key] || this.sprite[key]) return;
+    if (this.loading[key]) return this.loading[key];
+    this.loading[key]=(async()=>{ try{
+      const c=this.ensureCtx();
+      const {map,b64}=await new Promise((res,rej)=>{ window.__VOICE_LOADED=(k,m,b)=>{ if(k===key) res({map:m,b64:b}); }; const s=document.createElement('script'); s.src='audio/voice-'+key+'.js'; s.onerror=()=>rej(new Error('no voice file')); document.head.appendChild(s); setTimeout(()=>rej(new Error('timeout')),60000); });
+      const raw=atob(b64), bin=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) bin[i]=raw.charCodeAt(i);
+      this.sprite[key]=await new Promise((res,rej)=>c.decodeAudioData(bin.buffer,res,rej)); this.spriteMap[key]=map.sprite;
+    }catch(e){ console.warn('sprite load failed', key, e); } delete this.loading[key]; })();
+    return this.loading[key];
+  },
+  canSchedule(){ const k=this.kind(); return (k==='mine' && this.mineLoaded && this.mineComplete()) || (k==='sprite' && !!this.sprite[settings.voice]); },
+  // Schedule one term at audio-clock time `when`; returns end time. Only when canSchedule().
+  scheduleTerm(d, first, when){
+    const c=this.ctx; let t=Math.max(when||0, c.currentTime+0.02); const rate=settings.voiceRate||1;
+    if (this.kind()==='mine'){
+      for (const w of termTokens(d, first)){ const b=this.mine[w]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; s.connect(c.destination); s.start(t); this.playing.push(s); t+=b.duration/rate+0.06; }
+    } else {
+      const buf=this.sprite[settings.voice], m=this.spriteMap[settings.voice];
+      const a=Math.abs(d), pre=first?'n':d<0?'m':(settings.sayPlus?'p':'n');
+      const ids = a<100 ? [pre+a] : [pre+Math.floor(a/100),'hundred'].concat(a%100?['n'+(a%100)]:[]);
+      for (const id of ids){ const sp=m[id]; if(!sp) continue; const s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; s.connect(c.destination); s.start(t, sp[0], sp[1]); this.playing.push(s); t+=sp[1]/rate+0.05; }
+    }
+    return t;
+  },
+  schedulePhrase(word, when){ // feedback words ('yes', 'not quite') for clip voices
+    const c=this.ctx; const t=Math.max(when||0,c.currentTime+0.02);
+    if (this.kind()==='mine' && this.mine[word]){ const s=c.createBufferSource(); s.buffer=this.mine[word]; s.connect(c.destination); s.start(t); this.playing.push(s); return t+this.mine[word].duration; }
+    const m=this.spriteMap[settings.voice], id=word==='yes'?'yes':'notquite'; if (m&&m[id]){ const s=c.createBufferSource(); s.buffer=this.sprite[settings.voice]; s.connect(c.destination); s.start(t, m[id][0], m[id][1]); this.playing.push(s); return t+m[id][1]; }
+    return t;
+  },
+  deviceVoice(){
+    const v=settings.voice||'device'; const uri=v.startsWith('device:')?v.slice(7):'';
+    return this.ttsVoices.find(x=>x.voiceURI===uri) || this.ttsVoices.find(x=>/Samantha/.test(x.name)) || this.ttsVoices.find(x=>/Karen|Moira|Daniel|Tessa|Alex|Ava|Allison|Zoe|Nicky/.test(x.name)) || this.ttsVoices.find(x=>x.default) || this.ttsVoices[0];
+  },
+  sayDevice(text){
+    return new Promise(res=>{
+      if (!('speechSynthesis' in window)) return res();
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text); const v=this.deviceVoice(); if (v) u.voice=v;
+      u.rate=settings.voiceRate||1; u.pitch=1;
+      let done=false; const fin=()=>{ if(!done){done=true;res();} }; u.onend=fin; u.onerror=fin; setTimeout(fin, 2500+text.length*70);
+      speechSynthesis.speak(u);
+    });
+  },
+  // Generic: say a term or feedback word now, with whatever voice is active.
+  say(text, word){
+    if (this.canSchedule()){
+      const end = word ? this.schedulePhrase(word) : this.scheduleTerm(text, true);
+      return new Promise(res=>setTimeout(res, Math.max(0,(end-this.ctx.currentTime)*1000)));
+    }
+    return this.sayDevice(word ? (word==='yes'?'Yes!':'Not quite') : termText(text, true));
+  },
+  stop(){ for (const s of this.playing){ try{ s.stop(); }catch(e){} } this.playing=[]; if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+};
+function fillVoiceSelect(){
+  const sel=$('#sVoice'); if(!sel) return; sel.innerHTML='';
+  const add=(v,l)=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); };
+  add('mine', 'My recorded voice' + (Speaker.mineLoaded && !Speaker.mineComplete() ? ' (not finished)' : ''));
+  add('device', 'This device’s voice (auto)');
+  Speaker.ttsVoices.forEach(v=>add('device:'+v.voiceURI, 'Device: '+v.name));
+  Object.entries(SPRITES).forEach(([k,l])=>add(k,l));
+  sel.value = settings.voice; if (sel.value!==settings.voice) sel.value='device';
+}
+
+/* ---------------- voice recorder (parent mode) ---------------- */
+const Recorder = {
+  stream:null, rec:null, chunks:[], idx:0, clips:{},
+  async start(){
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ $('#recStatus').textContent='Recording needs Safari on https (the hosted link), not a local file.'; return false; }
+    try{ this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }
+    catch(e){ $('#recStatus').textContent='Microphone permission was not granted.'; return false; }
+    this.clips = await ClipStore.getAll(); this.idx = RECORD_WORDS.findIndex(w=>!this.clips[w]); if (this.idx<0) this.idx=0;
+    this.render(); return true;
+  },
+  render(){
+    const w=RECORD_WORDS[this.idx]; $('#recWord').textContent=w; $('#recCount').textContent=(this.idx+1)+' / '+RECORD_WORDS.length;
+    const done=Object.keys(this.clips).length; $('#recStatus').textContent = done+' of '+RECORD_WORDS.length+' recorded'+(this.clips[w]?' — this word is done; hold to re-record':'');
+    $('#recPlay').disabled=!this.clips[w];
+  },
+  begin(){ if(!this.stream) return; this.chunks=[]; const mt=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t))||''; this.rec=new MediaRecorder(this.stream, mt?{mimeType:mt}:{}); this.rec.ondataavailable=e=>{ if(e.data.size) this.chunks.push(e.data); }; this.rec.start(); $('#recBtn').classList.add('on'); },
+  async end(){
+    if(!this.rec || this.rec.state!=='recording') return; const rec=this.rec;
+    await new Promise(res=>{ rec.onstop=res; rec.stop(); }); $('#recBtn').classList.remove('on');
+    const blob=new Blob(this.chunks,{type:rec.mimeType||'audio/mp4'});
+    const trimmed = await this.trim(blob);
+    const w=RECORD_WORDS[this.idx]; await ClipStore.put(w, trimmed); this.clips[w]=trimmed;
+    Speaker.mineLoaded=false; this.render(); await this.play();
+    if (this.idx < RECORD_WORDS.length-1){ this.idx++; this.render(); }
+  },
+  async trim(blob){ // decode, cut leading/trailing silence, re-encode as WAV (decodes reliably everywhere)
+    try{
+      const c=Speaker.ensureCtx(); const ab=await blob.arrayBuffer(); const buf=await new Promise((res,rej)=>c.decodeAudioData(ab,res,rej));
+      const d=buf.getChannelData(0), sr=buf.sampleRate; let peak=0; for(let i=0;i<d.length;i++) peak=Math.max(peak,Math.abs(d[i]));
+      const th=Math.max(0.02, peak*0.08); let a=0,b=d.length-1; while(a<b && Math.abs(d[a])<th) a++; while(b>a && Math.abs(d[b])<th) b--;
+      a=Math.max(0,a-Math.floor(sr*0.03)); b=Math.min(d.length,b+Math.floor(sr*0.08)); if (b-a < sr*0.08) return blob;
+      const g = peak>0 ? 0.9/peak : 1; const n=b-a; const wav=new DataView(new ArrayBuffer(44+n*2));
+      const str=(o,s)=>{ for(let i=0;i<s.length;i++) wav.setUint8(o+i,s.charCodeAt(i)); };
+      str(0,'RIFF'); wav.setUint32(4,36+n*2,true); str(8,'WAVE'); str(12,'fmt '); wav.setUint32(16,16,true); wav.setUint16(20,1,true); wav.setUint16(22,1,true); wav.setUint32(24,sr,true); wav.setUint32(28,sr*2,true); wav.setUint16(32,2,true); wav.setUint16(34,16,true); str(36,'data'); wav.setUint32(40,n*2,true);
+      for(let i=0;i<n;i++){ const v=Math.max(-1,Math.min(1,d[a+i]*g)); wav.setInt16(44+i*2, v<0?v*32768:v*32767, true); }
+      return new Blob([wav],{type:'audio/wav'});
+    }catch(e){ console.warn('trim failed', e); return blob; }
+  },
+  async play(){ const w=RECORD_WORDS[this.idx]; const b=this.clips[w]; if(!b) return; const c=Speaker.ensureCtx(); try{ const ab=await b.arrayBuffer(); const buf=await new Promise((res,rej)=>c.decodeAudioData(ab,res,rej)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){} },
+  prev(){ this.idx=Math.max(0,this.idx-1); this.render(); }, next(){ this.idx=Math.min(RECORD_WORDS.length-1,this.idx+1); this.render(); },
+  stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
+};
+
+
+/* ---------------- screens ---------------- */
+function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
+
+/* ---------------- home ---------------- */
+function curIdx(){ return NODE_IDX[progress.current] ?? 0; }
+function stars(nid){ const h=node(nid).hist.slice(-20); if(!h.length) return 0; const p=h.filter(x=>x.ok).length/h.length; return node(nid).mastered ? 3 : p>=0.8 ? 2 : h.length>=5 ? 1 : 0; }
+function renderHome(){
+  const nm = settings.name ? `Hi ${settings.name}!` : 'Abacus Practice';
+  $('#greeting').textContent = nm;
+  const cur = NODES[curIdx()];
+  $('#greetSub').textContent = `Working on: ${cur.title}`;
+  const plan = todayPlan();
+  $('#todayTitle').textContent = plan.title; $('#todayMeta').textContent = plan.meta;
+  // path
+  const p=$('#path'); p.innerHTML='';
+  NODES.forEach((n,i)=>{
+    const el=document.createElement('button'); const st=node(n.id);
+    el.className='node'+(i===curIdx()?' cur':'')+(i>curIdx()?' locked':'')+(st.mastered?' done':'');
+    el.innerHTML=`<div class="ic">${n.icon}</div><div class="t">${n.short}</div><div class="stars">${'★'.repeat(stars(n.id))}</div>${i>curIdx()?'<div class="lock">🔒</div>':''}`;
+    el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); return; } openNodeMenu(n); };
+    p.appendChild(el);
+  });
+  setTimeout(()=>{ const c=p.querySelector('.node.cur'); if(c) p.scrollLeft = Math.max(0, c.offsetLeft - p.clientWidth/2 + c.clientWidth/2); },0);
+  renderCalendar();
+}
+function renderCalendar(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), n=new Date(y,m+1,0).getDate();
+  const cal=$('#calendar'); cal.innerHTML=''; let done=0;
+  for(let d=1;d<=n;d++){ const key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const el=document.createElement('div'); el.className='d'+(days[key]?' done':'')+(d===now.getDate()?' tdy':''); if(days[key]) done++; cal.appendChild(el); }
+  $('#calLabel').textContent = done+' day'+(done===1?'':'s')+' this month';
+}
+function todayPlan(){
+  const n = NODES[curIdx()]; const st=node(n.id);
+  const todays = history.filter(h=>h.at.slice(0,10)===todayKey());
+  if (!st.lesson && (n.demos || n.kind==='numbers')) return { kind:'lesson', node:n, title:`Learn: ${n.title}`, meta:'A short lesson, then you try it' };
+  if (n.kind==='flash') return { kind:'drill', mode:'flash', node:n, title:'Flash numbers', meta:`${n.title} · ${settings.count} problems` };
+  const mode = todays.length % 2 === 0 ? 'visual' : 'listen';
+  return { kind:'drill', mode, node:n, title: mode==='visual' ? 'Look & solve' : 'Listen & solve', meta:`${n.title} · ${settings.count} problems` };
+}
+$('#todayGo').addEventListener('click', ()=>{ const p=todayPlan(); if(p.kind==='lesson') startLesson(p.node); else startDrill(p.mode, p.node); });
+$$('.tile').forEach(t=>t.addEventListener('click', ()=>{
+  const n=NODES[curIdx()]; const m=t.dataset.mode;
+  if (m==='learn'){ const target = (n.demos||n.kind==='numbers') ? n : NODES.slice(0,curIdx()).reverse().find(x=>x.demos) || n; startLesson(target); }
+  else if (m==='flash') startDrill('flash', n.kind==='flash' ? n : NODES[curIdx()]);
+  else startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
+}));
+let menuNode=null;
+function openNodeMenu(n){ menuNode=n; $('#nmTitle').textContent=n.icon+' '+n.title; $('#nmIntro').textContent=n.intro; $('#nmLearn').style.display=(n.demos||n.kind==='numbers')?'':'none'; $('#nmLook').style.display=(n.drill&&!n.drill.flash)?'':'none'; $('#nmListen').style.display=(n.drill&&!n.drill.flash)?'':'none'; $('#nodemenu').classList.add('active'); }
+$('#nmClose').onclick=()=>$('#nodemenu').classList.remove('active');
+$('#nmLearn').onclick=()=>{ $('#nodemenu').classList.remove('active'); startLesson(menuNode); };
+$('#nmLook').onclick=()=>{ $('#nodemenu').classList.remove('active'); startDrill('visual', menuNode); };
+$('#nmListen').onclick=()=>{ $('#nodemenu').classList.remove('active'); startDrill('listen', menuNode); };
+
+/* ---------------- lesson ---------------- */
+let lessonAb=null, L=null;
+function friendsHtml(n){ if(n.family===5) return ['1 & 4','2 & 3'].map(x=>`<span>${x}</span>`).join(''); if(n.family===10) return ['1 & 9','2 & 8','3 & 7','4 & 6','5 & 5'].map(x=>`<span>${x}</span>`).join(''); return ''; }
+function startLesson(n){
+  Speaker.unlock();
+  if (!lessonAb){ lessonAb = new Soroban($('#lessonAbacus'), {rods:5, interactive:true, onChange:(v)=>onLessonBeads(v)}); lessonAb.el.classList.add('big'); }
+  lessonAb.showLabels=true; lessonAb.reset();
+  L = { node:n, phase:'intro', demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
+  $('#lessonTitle').textContent=n.icon+' '+n.title; $('#capFriends').innerHTML=friendsHtml(n);
+  show('lesson'); renderLesson();
+}
+function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1; }
+function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx:0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
+function cap(kind, text, prob){ $('#capKind').textContent=kind; $('#capText').innerHTML=text; $('#capProb').textContent = prob===undefined ? $('#capProb').textContent : (prob||''); }
+async function renderLesson(){
+  const n=L.node; $('#lessonProg').style.width=(100*lessonDone()/lessonTotal())+'%'; $('#lessonHint').style.display='none';
+  if (L.phase==='intro'){ cap('New skill', n.intro, ''); $('#lessonNext').textContent='Show me ▶'; lessonAb.reset(); return; }
+  if (L.phase==='numbers'){ // beads node: set each number
+    const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); $('#lessonNext').textContent='Skip ▶'; return;
+  }
+  if (L.phase==='demo'){
+    const [t,d]=n.demos[L.demoIdx]; L.steps=C.explain(t,d); L.step=0; lessonAb.value=t;
+    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', `${t} ${d<0?'−':'+'} ${Math.abs(d)}`); $('#lessonNext').textContent='Next ▶';
+    await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
+    return;
+  }
+  if (L.phase==='guided'){
+    const [t,d]=n.guided[L.guidedIdx]; L.target=t+d; lessonAb.value=t;
+    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `The abacus shows <b>${t}</b>. Now ${d<0?'take away':'add'} <b>${Math.abs(d)}</b>.`, `${t} ${d<0?'−':'+'} ${Math.abs(d)}`);
+    $('#lessonNext').textContent='Skip ▶'; $('#lessonHint').style.display=''; return;
+  }
+  if (L.phase==='done'){ cap('Done!', `You learned <b>${n.title}</b>. Now practise it with Look & Listen.`, '🎉'); $('#lessonNext').textContent='Finish ✓'; node(n.id).lesson=true; saveProgress(); Sfx.star(); return; }
+}
+let animToken=0;
+async function playSteps(ab, steps, onStep){
+  const my=++animToken; L.busy=true;
+  for (const s of steps){ if (my!==animToken) return; onStep(s); for (const m of s.do){ if (my!==animToken) return; await ab.move(m.rod, m.delta, 450); } await sleep(s.do.length?600:900); }
+  if (my===animToken) L.busy=false;
+}
+function onLessonBeads(v){
+  if (L.busy) return;
+  if (L.phase==='numbers' || L.phase==='guided'){
+    if (v===L.target){ Sfx.ok(); cap('Yes! ✓', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+  }
+}
+function advanceLesson(){
+  const n=L.node; animToken++; L.busy=false; lessonAb.clearHighlights();
+  if (L.phase==='intro'){ L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
+  else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
+  else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
+  else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase='done'; }
+  else if (L.phase==='done'){ renderHome(); show('home'); return; }
+  renderLesson();
+}
+$('#lessonNext').addEventListener('click', ()=>advanceLesson());
+$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx; const [t,d]=L.node.guided[gi]; const steps=C.explain(t,d); lessonAb.value=t; const tok=animToken+1; await playSteps(lessonAb, steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=t; cap(`Your turn ${gi+1} of ${L.node.guided.length}`, `Now you: the abacus shows <b>${t}</b>. ${d<0?'Take away':'Add'} <b>${Math.abs(d)}</b>.`); });
+$('#exitLesson').addEventListener('click', ()=>{ animToken++; renderHome(); show('home'); });
+
+/* ---------------- drills ---------------- */
+let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, tick=null, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
+function drillConfig(n){ const c=Object.assign({}, n.drill); if (settings.operands>0) c.operands=settings.operands; if (mode==='flash'){ c.operands=settings.flashN; c.allowSubtraction=false; } return c; }
+async function startDrill(m, n){
+  mode=m; drillNode=n; reviewing=false; locked=false; Speaker.unlock();
+  try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ alert('These settings cannot make problems for this skill.'); return; }
+  results = problems.map(()=>null); idx=0; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500);
+  $('#drillLevel').textContent = n.icon+' '+n.short;
+  $('#problemArea').style.display = mode==='visual'?'flex':'none';
+  $('#listenStage').style.display = mode==='listen'?'flex':'none';
+  $('#flashStage').style.display = mode==='flash'?'flex':'none';
+  $('#flashSpeed').style.display = mode==='flash'?'flex':'none';
+  if (mode==='listen') setupGapSlider(); if (mode==='flash') setupFlashSlider();
+  show('drill');
+  try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+  presentProblem();
+}
+function endDrill(){ clearInterval(tick); Speaker.stop(); dictateToken++; if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
+function renderTimer(){ const s=Math.floor((Date.now()-t0)/1000); $('#timer').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function renderStrip(){ const st=$('#strip'); st.innerHTML=''; problems.forEach((p,i)=>{ const d=document.createElement('div'); d.className='sq'+(i===idx?' cur':'')+(results[i]===true?' ok':results[i]===false?' bad':''); d.textContent=i+1; st.appendChild(d); }); }
+function setEntry(v){ entry=v; $('#answer').textContent=v||' '; }
+function presentProblem(){
+  const p=problems[idx]; setEntry(''); $('#feedback').textContent=''; $('#feedback').className='feedback'; $('#reveal').textContent=''; $('#showMeBtn').style.display=reviewing?'':'none'; renderStrip();
+  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=''; p.terms.forEach(t=>{ const d=document.createElement('div'); d.className='term'+(t<0?' neg':''); d.textContent=t<0?'−'+Math.abs(t):t; area.appendChild(d); }); locked=false; }
+  else if (mode==='listen') dictate(p);
+  else flash(p);
+}
+let dictateToken=0;
+async function dictate(p){
+  const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Listen…'; Speaker.stop();
+  const gap=settings.gap; const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
+  await Speaker.prepare(); if (my!==dictateToken) return;
+  if (Speaker.canSchedule()){
+    const t0=Speaker.ctx.currentTime+0.3; let lastEnd=t0;
+    p.terms.forEach((d,i)=>{ const when=t0+i*gap; const end=Speaker.scheduleTerm(d,i===0,when); lastEnd=end; setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000)); });
+    await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
+  } else {
+    for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); await Speaker.sayDevice(termText(p.terms[i],i===0)); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }
+  }
+  if (my!==dictateToken) return; await sleep(settings.answerPause*1000); if (my!==dictateToken) return;
+  $('#listenMsg').textContent='Your answer?'; locked=false; $('#replayBtn').disabled=p._replayed===true;
+}
+$('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; dictate(p); });
+function setupGapSlider(){ const s=$('#gapSlider'); s.min=settings.gapMin; s.max=settings.gapMax; s.value=settings.gap; s.style.direction='rtl'; $('#gapVal').textContent=settings.gap+'s'; s.oninput=()=>{ settings.gap=parseFloat(s.value); $('#gapVal').textContent=settings.gap+'s'; saveSettings(); }; }
+function setupFlashSlider(){ const s=$('#flashSlider'); s.value=settings.flashSec; s.style.direction='rtl'; $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; s.oninput=()=>{ settings.flashSec=parseFloat(s.value); $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; saveSettings(); }; }
+async function flash(p){
+  const my=++dictateToken; locked=true; const el=$('#flashNum'); el.textContent=''; await sleep(600);
+  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.textContent=(t<0?'−':'')+Math.abs(t); await sleep(settings.flashSec*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
+  if(my!==dictateToken) return; el.textContent='?'; locked=false;
+}
+$('#pad').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b||locked) return; const k=b.dataset.k; Sfx.tap(); if(k==='del') setEntry(entry.slice(0,-1)); else if(k==='go') submit(); else if(entry.length<4) setEntry(entry+k); });
+document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked) return; if(/^[0-9]$/.test(e.key)&&entry.length<4) setEntry(entry+e.key); else if(e.key==='Backspace') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
+async function submit(){
+  if (entry==='') return; const p=problems[idx]; const ok=parseInt(entry,10)===p.answer; locked=true; const fb=$('#feedback');
+  if (ok){ fb.textContent='Yes! ✓'; fb.className='feedback ok'; Sfx.ok(); if(!reviewing){ results[idx]=true; record(p,true); } else p._fixed=true; if(settings.speakFeedback) Speaker.say(null,'yes'); await sleep(650); }
+  else {
+    fb.textContent='Not quite'; fb.className='feedback bad'; Sfx.bad(); $('#answer').classList.add('shake'); setTimeout(()=>$('#answer').classList.remove('shake'),500);
+    if(settings.speakFeedback) Speaker.say(null,'not quite');
+    if(!reviewing){ results[idx]=false; p._given=entry; record(p,false); await sleep(800); }
+    else { p._fixed=true; $('#reveal').innerHTML='It was <b>'+p.answer+'</b>'; await sleep(1200); await showMe(p); }
+  }
+  next();
+}
+function record(p, ok){ const st=node(drillNode.id); st.hist.push({ok, day:todayKey()}); st.hist=st.hist.slice(-40); }
+function next(){ if(reviewing){ const rest=reviewQueue.slice(reviewQueue.indexOf(idx)+1); if(rest.length){ idx=rest[0]; presentProblem(); } else finish(); return; } if(idx<problems.length-1){ idx++; presentProblem(); } else finish(); }
+function checkMastery(nid){
+  const st=node(nid); if (st.mastered) return false; const h=st.hist.slice(-20); if (h.length<20) return false;
+  const acc=h.filter(x=>x.ok).length/h.length; const daysN=new Set(h.map(x=>x.day)).size;
+  if (acc>=0.8 && daysN>=2){ st.mastered='auto'; if (NODE_IDX[nid]===curIdx() && curIdx()<NODES.length-1) progress.current=NODES[curIdx()+1].id; return true; }
+  return false;
+}
+function finish(){
+  endDrill(); const correct=results.filter(r=>r===true).length; const secs=Math.round((Date.now()-t0)/1000); let leveled=false;
+  if (!reviewing){
+    history.unshift({ at:new Date().toISOString(), mode, node:drillNode.id, count:problems.length, correct, secs, gap:mode==='listen'?settings.gap:null,
+      missed: problems.map((p,i)=>results[i]===false?{terms:p.terms,answer:p.answer,given:p._given,rules:p.rulesUsed}:null).filter(Boolean) });
+    history=history.slice(0,200); save('history',history); days[todayKey()]=true; save('days',days);
+    leveled = checkMastery(drillNode.id); saveProgress();
+  }
+  const pct=correct/problems.length; const n= pct>=0.9?3:pct>=0.7?2:1;
+  $('#sumStars').innerHTML = [1,2,3].map(i=>`<span class="${i<=n?'':'off'}">★</span>`).join('');
+  $('#sumTitle').textContent = pct===1?'Perfect!':pct>=0.9?'Excellent!':pct>=0.7?'Great job!':'Good practice!';
+  $('#sumScore').textContent = correct+' / '+problems.length; $('#sumTime').textContent=Math.floor(secs/60)+' min '+(secs%60)+' sec';
+  $('#sumNote').textContent = leveled ? `🎉 You unlocked: ${NODES[curIdx()].title}!` : '';
+  const toFix=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); $('#fixBtn').style.display=toFix.length?'':'none';
+  show('summary'); if (n===3||leveled) Sfx.star(); else Sfx.ok();
+}
+$('#fixBtn').addEventListener('click', ()=>{ reviewQueue=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); if(!reviewQueue.length) return; reviewing=true; idx=reviewQueue[0]; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500); const m=mode; mode='visual'; $('#problemArea').style.display='flex'; $('#listenStage').style.display='none'; $('#flashStage').style.display='none'; $('#flashSpeed').style.display='none'; show('drill'); presentProblem(); mode=m; });
+$('#showMeBtn').addEventListener('click', async()=>{ if(locked) return; locked=true; await showMe(problems[idx]); locked=false; });
+$('#againBtn').addEventListener('click', ()=>startDrill(mode, drillNode));
+$('#homeBtn').addEventListener('click', ()=>{ renderHome(); show('home'); });
+$('#exitDrill').addEventListener('click', ()=>{ endDrill(); renderHome(); show('home'); });
+
+/* ---------------- show me (animated solution) ---------------- */
+let showAb=null, showToken=0;
+async function showMe(p){
+  if (!showAb) showAb = new Soroban($('#showmeAbacus'), {rods:4, interactive:false}); showAb.showLabels=true;
+  $('#showme').classList.add('active');
+  const probHtml=(k)=>p.terms.map((t,i)=>`<span class="${i===k?'cur':''}">${i===0?t:(t<0?' − '+(-t):' + '+t)}</span>`).join('');
+  const run = async()=>{ const my=++showToken; showAb.value=0; let total=0; $('#showmeText').textContent='Watch.'; $('#showmeProb').innerHTML=probHtml(-1); await sleep(500);
+    for (let i=0;i<p.terms.length;i++){ const d=p.terms[i]; $('#showmeProb').innerHTML=probHtml(i); if (i===0){ $('#showmeText').innerHTML=`Start with <b>${d}</b>.`; showAb.value=d; total=d; await sleep(900); continue; }
+      const steps=C.explain(total,d); for (const s of steps){ if(my!==showToken) return; $('#showmeText').innerHTML=s.say.replace(/(\d+)/g,'<b>$1</b>'); for(const m of s.do) await showAb.move(m.rod,m.delta,420); await sleep(s.do.length?500:800); } total+=d; }
+    if(my===showToken){ $('#showmeText').innerHTML=`The answer is <b>${p.answer}</b>.`; $('#showmeProb').innerHTML=probHtml(-1)+' = '+p.answer; } };
+  $('#showmeReplay').onclick=run;
+  await new Promise(res=>{ $('#showmeClose').onclick=()=>{ showToken++; $('#showme').classList.remove('active'); res(); }; run(); });
+}
+
+/* ---------------- parent gate ---------------- */
+let holdT=null, gateAnswer=0; const gu=$('#grownups');
+gu.addEventListener('pointerdown', ()=>{ holdT=setTimeout(openGate,1200); }); ['pointerup','pointerleave','pointercancel'].forEach(ev=>gu.addEventListener(ev, ()=>clearTimeout(holdT)));
+function openGate(){ const a=10+Math.floor(Math.random()*80), b=3+Math.floor(Math.random()*7); gateAnswer=a*b; $('#gateQ').textContent=a+' × '+b+' = ?'; $('#gateA').value=''; show('gate'); setTimeout(()=>$('#gateA').focus(),50); }
+$('#gateCancel').addEventListener('click', ()=>show('home'));
+$('#gateOk').addEventListener('click', ()=>{ if(parseInt($('#gateA').value,10)===gateAnswer){ renderParent(); show('parent'); } else { openGate(); } });
+$('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
+
+/* ---------------- parent ---------------- */
+function bindRange(id,key,fmt){ const el=$(id), v=$(id+'V'); el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]); el.oninput=()=>{ settings[key]=parseFloat(el.value); v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); }; }
+function bindSwitch(id,key,after){ const el=$(id); el.classList.toggle('on',!!settings[key]); el.onclick=()=>{ settings[key]=!settings[key]; el.classList.toggle('on',settings[key]); saveSettings(); if(after) after(); }; }
+function renderParent(){
+  const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
+  sel.onchange=()=>{ progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
+  $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); };
+  const tb=$('#nodeTable tbody'); tb.innerHTML='';
+  NODES.forEach((n,i)=>{ const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
+    const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned ✓</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
+    tr.innerHTML=`<td>${n.icon} ${n.title}</td><td>${st.lesson?'✓':'—'}</td><td>${acc===null?'—':`<span class="mini"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}" style="padding:4px 10px;min-height:30px;font-size:13px">${st.mastered?'un-learn':'mark learned'}</button></td>`;
+    tb.appendChild(tr); });
+  tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
+  bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
+  const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
+  bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
+  fillVoiceSelect(); $('#sVoice').onchange=()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.prepare(); };
+  $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare(); const seq=[[7,true],[3,false],[-4,false],[12,false]];
+    if (Speaker.canSchedule()){ const t0=Speaker.ctx.currentTime+0.1; seq.forEach(([d,f],i)=>Speaker.scheduleTerm(d,f,t0+i*1.3)); } else { for (const [d,f] of seq){ await Speaker.sayDevice(termText(d,f)); await sleep(300); } } };
+  $('#recStart').onclick=async()=>{ Speaker.unlock(); if (await Recorder.start()) $('#recStatus').textContent+=' — ready'; };
+  const rb=$('#recBtn'); rb.onpointerdown=e=>{ e.preventDefault(); if(!Recorder.stream){ $('#recStatus').textContent='Tap "Start recording session" first.'; return; } Recorder.begin(); };
+  rb.onpointerup=rb.onpointerleave=rb.onpointercancel=()=>Recorder.end();
+  $('#recPrev').onclick=()=>Recorder.prev(); $('#recNext').onclick=()=>Recorder.next(); $('#recPlay').onclick=()=>Recorder.play();
+  $('#recClear').onclick=async()=>{ if(confirm('Erase all recorded words?')){ await ClipStore.clear(); Recorder.clips={}; Speaker.mine={}; Speaker.mineLoaded=false; if(Recorder.stream) Recorder.render(); fillVoiceSelect(); } };
+  const st=$('#sessions tbody'); st.innerHTML='';
+  history.slice(0,20).forEach(h=>{ const tr=document.createElement('tr'); const when=new Date(h.at); const ws=when.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    const missed=(h.missed||[]).map(m=>'<span class="pill bad">'+m.terms.map((t,i)=>i===0?t:(t<0?' − '+(-t):' + '+t)).join('')+' = '+m.answer+(m.given?' (said '+m.given+')':'')+'</span>').join(' ');
+    const nn=C.BY_ID[h.node]||C.BY_ID[h.preset]||{short:h.preset||''};
+    tr.innerHTML=`<td>${ws}</td><td>${h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):h.mode==='flash'?'Flash':'Look'}</td><td>${nn.short||''}</td><td>${h.correct}/${h.count}</td><td>${Math.floor(h.secs/60)}:${String(h.secs%60).padStart(2,'0')}</td><td>${missed||'—'}</td>`; st.appendChild(tr); });
+}
+$('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
+$('#exportBtn').addEventListener('click', ()=>{ $('#ioArea').value=JSON.stringify({settings,history,days,progress}); $('#ioArea').select(); });
+$('#importBtn').addEventListener('click', ()=>{ try{ const o=JSON.parse($('#ioArea').value); if(o.settings) settings=Object.assign({},DEFAULTS,o.settings); if(o.history) history=o.history; if(o.days) days=o.days; if(o.progress) progress=o.progress; saveSettings(); save('history',history); save('days',days); saveProgress(); renderParent(); alert('Imported.'); }catch(e){ alert('That is not valid export text.'); } });
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase all settings and progress?')){ localStorage.clear(); location.reload(); } });
+
+/* ---------------- boot ---------------- */
+Speaker.init(); renderHome(); saveSettings();
+document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
