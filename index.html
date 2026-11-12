@@ -173,6 +173,7 @@ table{border-collapse:collapse;width:100%;font-size:14px} td,th{padding:7px 9px;
 textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:10px;border:1px solid #D9CDB6;padding:8px}
 .note{font-size:13px;color:var(--muted);line-height:1.45;font-weight:600}
 .checklist li{margin:6px 0;line-height:1.4}
+.txt{font:inherit;font-size:16px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6;background:#fff;min-width:150px}
 .recpanel{background:#fff;border-radius:16px;padding:14px 16px;margin:10px 0;box-shadow:var(--shadow)}
 .recrow{display:flex;align-items:center;gap:12px;margin:10px 0;flex-wrap:wrap} .recword{min-width:160px;text-align:center} .recword #recWord{font-size:40px;font-weight:900}
 #recBtn{background:var(--coral);min-width:240px} #recBtn.on{background:#b4321c;transform:scale(.98)}
@@ -193,7 +194,7 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
     <button class="tile" data-mode="flash"><span class="ic">⚡️</span>Flash</button>
     <button class="tile" data-mode="learn"><span class="ic">📖</span>Learn</button>
   </div>
-  <div id="ver" style="position:absolute;left:18px;bottom:12px;color:var(--muted);font-size:12px;opacity:.6">v2.6</div><button id="grownups">⚙️ Grown-ups</button>
+  <div id="ver" style="position:absolute;left:18px;bottom:12px;color:var(--muted);font-size:12px;opacity:.6">v2.7</div><button id="grownups">⚙️ Grown-ups</button>
 </section>
 
 <section id="lesson" class="screen">
@@ -270,12 +271,16 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
   <div class="field"><label>Fastest she may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
   <div class="field"><label>Slowest she may choose</label><div><input type="range" id="sGapMax" min="0.5" max="12" step="0.25"><span class="val" id="sGapMaxV"></span></div></div>
   <div class="field"><label>Say "plus" before added numbers<span class="hint">Off = only "minus" is spoken</span></label><button class="switch" id="sSayPlus"></button></div>
-  <div class="field"><label>Voice<span class="hint">"My recorded voice" needs the words below recorded once. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">▶︎ test</button></div></div>
+  <div class="field"><label>Voice<span class="hint">🎙 = a family member's recorded voice. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">▶︎ test</button></div></div>
   <div class="recpanel" id="recPanel">
-    <div class="note">Record your own voice (about 3 minutes, 33 words). Hold the button, say the word, release. It plays back and moves on. Go back to re-record any word.</div>
-    <div class="recrow"><button class="btn small ghost" id="recStart">Start recording session</button><button class="btn small ghost" id="recPrev">◀</button><div class="recword"><div id="recWord">—</div><div class="note" id="recCount"></div></div><button class="btn small ghost" id="recNext">▶</button><button class="btn small ghost" id="recPlay" disabled>🔊</button></div>
-    <div class="recrow"><button id="recBtn" class="btn">● Hold to record</button><span class="note" id="recStatus"></span></div>
-    <div class="recrow"><button class="btn small ghost" id="recClear">Erase all my recordings</button></div>
+    <div class="note">Record family voices. Each person records the same 33 short words once (about 3 minutes); the app builds every number from them. Pick a voice above, or "Take turns" once two or more people have finished.</div>
+    <div class="recrow"><input id="recNew" placeholder="Add a person, e.g. Mom" class="txt"><button class="btn small" id="recAdd">＋ Add person</button></div>
+    <div class="recrow" id="recWhoRow"><label class="note" style="font-weight:800">Recording for</label><select id="recWho" class="txt"></select><label class="note">Name</label><input id="recName" class="txt" style="width:140px"><button class="btn small ghost" id="recDelete">🗑 Delete person</button></div>
+    <div id="recBody">
+      <div class="recrow"><button class="btn small ghost" id="recStart">🎙 Start recording</button><button class="btn small ghost" id="recPrev">◀</button><div class="recword"><div id="recWord">—</div><div class="note" id="recCount"></div></div><button class="btn small ghost" id="recNext">▶</button><button class="btn small ghost" id="recPlay" disabled>🔊</button></div>
+      <div class="recrow"><button id="recBtn" class="btn">● Hold to record</button></div>
+    </div>
+    <div class="note" id="recStatus"></div>
   </div>
   <div class="field"><label>Voice speed<span class="hint">1.00× is most natural; higher also raises the pitch</span></label><div><input type="range" id="sRate" min="0.8" max="1.5" step="0.05"><span class="val" id="sRateV"></span></div></div>
   <div class="field"><label>Pause before "Your answer?"</label><div><input type="range" id="sPause" min="0" max="5" step="0.5"><span class="val" id="sPauseV"></span></div></div>
@@ -303,14 +308,15 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
   </ul>
 
   <h3>Backup</h3>
-  <div class="row" style="justify-content:flex-start"><button class="btn small ghost" id="exportBtn">Export progress</button><button class="btn small ghost" id="importBtn">Import</button><button class="btn small ghost" id="resetBtn">Reset all</button></div>
-  <textarea id="ioArea" placeholder="Exported JSON appears here. Paste JSON here to import."></textarea>
+  <div class="note">Everything (voices, her progress, settings) lives on this iPad. It survives closing the app, but is lost if the app is deleted from the home screen or Safari's website data is cleared. Save a backup file to Files → iCloud Drive now and then; you can restore it here or on another device.</div>
+  <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"><button class="btn small ghost" id="resetBtn">Reset progress & settings</button></div>
+  <div class="note" id="bkInfo"></div>
 </section>
 
 </div>
-<script src="engine.js?v=2.6"></script>
-<script src="soroban.js?v=2.6"></script>
-<script src="curriculum.js?v=2.6"></script>
-<script src="app.js?v=2.6"></script>
+<script src="engine.js?v=2.7"></script>
+<script src="soroban.js?v=2.7"></script>
+<script src="curriculum.js?v=2.7"></script>
+<script src="app.js?v=2.7"></script>
 </body>
 </html>

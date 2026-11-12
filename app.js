@@ -10,7 +10,7 @@ const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]))
 const DEFAULTS = {
   count:10, operands:0, sfx:true, speakFeedback:true, name:'',
   gap:2, gapMin:0.5, gapMax:6, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
-  flashSec:1.0, flashN:3, settingsVersion:5,
+  flashSec:1.0, flashN:3, profiles:[], recPid:null, settingsVersion:5,
 };
 function load(k, d){ try{ const v = localStorage.getItem('abacus.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
 function save(k, v){ try{ localStorage.setItem('abacus.'+k, JSON.stringify(v)); }catch(e){} }
@@ -40,7 +40,8 @@ const Sfx = {
 
 /* ---------------- speech ----------------
    Voice kinds:
-     'mine'        parent-recorded words (IndexedDB), stitched: "plus" + "seventy" + "three"
+     'rec:<id>'    a family member's recorded words (IndexedDB), stitched: "plus" + "seventy" + "three"
+     'rec:turns'   take turns: a different recorded person reads each problem
      'device'      the iPad/Mac built-in voice (auto-picks the best English one), or 'device:<voiceURI>'
      'ljspeech'    bundled synthetic voice (audio/voice-ljspeech.js), fallback when nothing else is available
    Clip voices are scheduled on the Web Audio clock so pacing is exact.                   */
@@ -54,16 +55,58 @@ function termText(d, first){ return termTokens(d, first).join(' '); }
 
 async function clipBytes(v){ if (!v) return null; if (v instanceof Blob) return await v.arrayBuffer(); if (v.buf) return v.buf.slice(0); if (v instanceof ArrayBuffer) return v.slice(0); return null; }
 function decode(ctx, ab){ return new Promise((res,rej)=>{ try{ const p=ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }catch(e){ rej(e); } }); }
-const ClipStore = { // IndexedDB for parent-recorded words
+/* ---- audio helpers ---- */
+async function resample(buf, rate){
+  if (buf.sampleRate<=rate) return buf;
+  try{
+    const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext; const oc=new OAC(1, Math.ceil(buf.duration*rate), rate);
+    const s=oc.createBufferSource(); s.buffer=buf; s.connect(oc.destination); s.start(0);
+    return await new Promise((res,rej)=>{ oc.oncomplete=e=>res(e.renderedBuffer); const p=oc.startRendering(); if (p&&p.then) p.then(res,rej); });
+  }catch(e){ return buf; }
+}
+function wavBytes(buf, a=0, b=null, gain=1){
+  const d=buf.getChannelData(0), sr=buf.sampleRate; if (b===null) b=d.length; const n=b-a; const wav=new DataView(new ArrayBuffer(44+n*2));
+  const str=(o,s)=>{ for(let i=0;i<s.length;i++) wav.setUint8(o+i,s.charCodeAt(i)); };
+  str(0,'RIFF'); wav.setUint32(4,36+n*2,true); str(8,'WAVE'); str(12,'fmt '); wav.setUint32(16,16,true); wav.setUint16(20,1,true); wav.setUint16(22,1,true); wav.setUint32(24,sr,true); wav.setUint32(28,sr*2,true); wav.setUint16(32,2,true); wav.setUint16(34,16,true); str(36,'data'); wav.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){ const v=Math.max(-1,Math.min(1,d[a+i]*gain)); wav.setInt16(44+i*2, v<0?v*32768:v*32767, true); }
+  return wav.buffer;
+}
+function b64(ab){ const u=new Uint8Array(ab); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null, u.subarray(i,i+0x8000)); return btoa(s); }
+function unb64(s){ const r=atob(s), u=new Uint8Array(r.length); for(let i=0;i<r.length;i++) u[i]=r.charCodeAt(i); return u.buffer; }
+
+/* ---- voice profiles (each person's 33 recorded words) ----
+   settings.profiles = [{id, name}]; clips are stored in IndexedDB under "<id>|<word>". */
+function profiles(){ if (!Array.isArray(settings.profiles)) settings.profiles=[]; return settings.profiles; }
+function profileName(pid){ const p=profiles().find(x=>x.id===pid); return p?p.name:'Voice'; }
+function newProfileId(){ let i=1; while(profiles().some(p=>p.id==='p'+i)) i++; return 'p'+i; }
+
+const ClipStore = {
   db:null,
   open(){ return this.db ? Promise.resolve(this.db) : new Promise((res,rej)=>{ const r=indexedDB.open('abacus-voice',1); r.onupgradeneeded=()=>r.result.createObjectStore('clips'); r.onsuccess=()=>{ this.db=r.result; res(this.db); }; r.onerror=()=>rej(r.error); }); },
-  async put(word, blob){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips','readwrite'); t.objectStore('clips').put(blob, word); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
-  async getAll(){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips'); const st=t.objectStore('clips'); const out={}; const req=st.openCursor(); req.onsuccess=()=>{ const c=req.result; if(c){ out[c.key]=c.value; c.continue(); } else res(out); }; req.onerror=()=>rej(req.error); }); },
-  async clear(){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips','readwrite'); t.objectStore('clips').clear(); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
+  async tx(mode, fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction('clips',mode); const out=fn(t.objectStore('clips')); t.oncomplete=()=>res(out); t.onerror=()=>rej(t.error); }); },
+  put(pid, word, val){ return this.tx('readwrite', st=>st.put(val, pid+'|'+word)); },
+  async getAll(){ const db=await this.open(); return new Promise((res,rej)=>{ const out={}; const req=db.transaction('clips').objectStore('clips').openCursor(); req.onsuccess=()=>{ const c=req.result; if(c){ out[c.key]=c.value; c.continue(); } else res(out); }; req.onerror=()=>rej(req.error); }); },
+  async getProfile(pid){ const all=await this.getAll(); const out={}; for (const [k,v] of Object.entries(all)) if (k.startsWith(pid+'|')) out[k.slice(pid.length+1)]=v; return out; },
+  async deleteProfile(pid){ const all=await this.getAll(); return this.tx('readwrite', st=>{ for (const k of Object.keys(all)) if (k.startsWith(pid+'|')) st.delete(k); }); },
+  // One-time move of recordings made before profiles existed (keys without "|") into a first profile.
+  async migrate(){
+    let all; try{ all=await this.getAll(); }catch(e){ return; }
+    const legacy=Object.keys(all).filter(k=>!k.includes('|'));
+    if (legacy.length){
+      if (!profiles().some(p=>p.id==='p1')) profiles().unshift({id:'p1', name:'My voice'});
+      await this.tx('readwrite', st=>{ for (const k of legacy){ st.put(all[k], 'p1|'+k); st.delete(k); } });
+      Diag.add(`moved ${legacy.length} earlier recordings into "${profileName('p1')}"`);
+    }
+    // Recordings whose person entry went missing (e.g. settings were reset) get a placeholder name back.
+    const ids=new Set(Object.keys(all).filter(k=>k.includes('|')).map(k=>k.split('|')[0]));
+    for (const id of ids) if (!profiles().some(p=>p.id===id)){ profiles().push({id, name:'Voice '+id.replace(/^p/,'')}); Diag.add('recovered recordings for '+id); }
+    if (settings.voice==='mine') settings.voice = profiles().some(p=>p.id==='p1') ? 'rec:p1' : 'device';
+    saveSettings();
+  },
 };
 
 const Speaker = {
-  ctx:null, sprite:{}, spriteMap:{}, mine:{}, mineLoaded:false, loading:{}, playing:[], ttsVoices:[], ttsReady:false,
+  ctx:null, sprite:{}, spriteMap:{}, recs:{}, recLoaded:{}, loading:{}, playing:[], ttsVoices:[], ttsReady:false, activePid:null, turn:0,
   init(){
     if ('speechSynthesis' in window){
       const loadV = () => { this.ttsVoices = speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)); fillVoiceSelect(); };
@@ -71,7 +114,9 @@ const Speaker = {
     }
     this.prepare();
   },
-  kind(){ const v=settings.voice||'device'; if (v==='mine') return 'mine'; if (SPRITES[v]) return 'sprite'; return 'device'; },
+  kind(){ const v=settings.voice||'device'; if (v.startsWith('rec:')) return 'rec'; if (SPRITES[v]) return 'sprite'; return 'device'; },
+  recPids(){ const v=settings.voice||''; if (v==='rec:turns') return profiles().map(p=>p.id); return v.startsWith('rec:') ? [v.slice(4)] : []; },
+  isComplete(pid){ const r=this.recs[pid]; return !!r && RECORD_WORDS.every(w=>r[w]); },
   ensureCtx(){ if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); return this.ctx; },
   unlock(){ // must run inside a user gesture on iOS
     try{ const c=this.ensureCtx(); if (c.state==='suspended') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
@@ -81,40 +126,52 @@ const Speaker = {
       try{ speechSynthesis.resume(); const u=new SpeechSynthesisUtterance('a'); u.volume=0.01; u.rate=2; u.onstart=()=>{ this.ttsReady=true; Diag.add('tts unlocked'); }; u.onerror=(e)=>Diag.add('tts unlock error '+(e&&e.error)); speechSynthesis.speak(u); }catch(e){ Diag.add('unlock exc '+e.message); }
     }
   },
-  async prepare(){ // load whatever the current voice needs; resolves when ready (or when it gave up)
+  async prepare(){ // load whatever the current voice needs
     const k=this.kind();
-    if (k==='mine') return this.loadMine();
+    if (k==='rec'){ for (const pid of this.recPids()) await this.loadRec(pid); return; }
     if (k==='sprite') return this.loadSprite(settings.voice);
   },
-  async loadMine(force){
-    if (this.mineLoaded && !force) return;
-    if (this.loading.mine) return this.loading.mine;
-    this.loading.mine=(async()=>{ try{
-      const c=this.ensureCtx(); const stored=await ClipStore.getAll(); const out={}; let bad=[];
-      for (const [w,v] of Object.entries(stored)){ try{ const ab=await clipBytes(v); out[w]=await decode(c, ab); }catch(e){ bad.push(w); } }
-      this.mine=out; this.mineLoaded=true;
-      Diag.add(`my voice: ${Object.keys(out).length}/${RECORD_WORDS.length} words loaded`+(bad.length?`, failed: ${bad.join(', ')}`:'')+(this.mineComplete()?'':`, missing: ${RECORD_WORDS.filter(w=>!out[w]).join(', ')}`));
-    }catch(e){ console.warn('mine load failed', e); } delete this.loading.mine; })();
-    return this.loading.mine;
+  async loadRec(pid, force){
+    if (this.recLoaded[pid] && !force) return;
+    const key='rec:'+pid; if (this.loading[key]) return this.loading[key];
+    this.loading[key]=(async()=>{ try{
+      const c=this.ensureCtx(); const stored=await ClipStore.getProfile(pid); const out={}; const bad=[];
+      for (const [w,v] of Object.entries(stored)){ try{ out[w]=await decode(c, await clipBytes(v)); }catch(e){ bad.push(w); } }
+      this.recs[pid]=out; this.recLoaded[pid]=true;
+      const missing=RECORD_WORDS.filter(w=>!out[w]);
+      Diag.add(`${profileName(pid)}: ${RECORD_WORDS.length-missing.length}/${RECORD_WORDS.length} words loaded`+(bad.length?`, failed: ${bad.join(', ')}`:'')+(missing.length&&missing.length<RECORD_WORDS.length?`, missing: ${missing.join(', ')}`:''));
+    }catch(e){ Diag.add('load failed for '+profileName(pid)+': '+(e&&e.message||e)); } delete this.loading[key]; })();
+    return this.loading[key];
   },
-  mineComplete(){ return RECORD_WORDS.every(w=>this.mine[w]); },
+  // Choose which recorded voice reads the next problem (rotates for "Take turns").
+  pickReader(advance=true){   // advance=false: look without using up a turn
+    if (this.kind()!=='rec'){ this.activePid=null; return null; }
+    const ready=this.recPids().filter(pid=>this.isComplete(pid));
+    if (!ready.length){ this.activePid=null; return null; }
+    this.activePid = settings.voice==='rec:turns' ? ready[(advance ? this.turn++ : this.turn) % ready.length] : ready[0];
+    return this.activePid;
+  },
   async loadSprite(key){
     if (!SPRITES[key] || this.sprite[key]) return;
     if (this.loading[key]) return this.loading[key];
     this.loading[key]=(async()=>{ try{
       const c=this.ensureCtx();
       const {map,b64}=await new Promise((res,rej)=>{ window.__VOICE_LOADED=(k,m,b)=>{ if(k===key) res({map:m,b64:b}); }; const s=document.createElement('script'); s.src='audio/voice-'+key+'.js'; s.onerror=()=>rej(new Error('no voice file')); document.head.appendChild(s); setTimeout(()=>rej(new Error('timeout')),60000); });
-      const raw=atob(b64), bin=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) bin[i]=raw.charCodeAt(i);
-      this.sprite[key]=await new Promise((res,rej)=>c.decodeAudioData(bin.buffer,res,rej)); this.spriteMap[key]=map.sprite;
+      this.sprite[key]=await decode(c, unb64(b64)); this.spriteMap[key]=map.sprite;
     }catch(e){ console.warn('sprite load failed', key, e); } delete this.loading[key]; })();
     return this.loading[key];
   },
-  canSchedule(){ const k=this.kind(); return (k==='mine' && this.mineLoaded && this.mineComplete()) || (k==='sprite' && !!this.sprite[settings.voice]); },
+  canSchedule(){
+    const k=this.kind();
+    if (k==='rec'){ if (!this.activePid || !this.isComplete(this.activePid)) this.pickReader(false); return !!this.activePid; }
+    return k==='sprite' && !!this.sprite[settings.voice];
+  },
   // Schedule one term at audio-clock time `when`; returns end time. Only when canSchedule().
   scheduleTerm(d, first, when){
     const c=this.ctx; let t=Math.max(when||0, c.currentTime+0.02); const rate=settings.voiceRate||1;
-    if (this.kind()==='mine'){
-      for (const w of termTokens(d, first)){ const b=this.mine[w]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; s.connect(c.destination); s.start(t); this.playing.push(s); t+=b.duration/rate+0.06; }
+    if (this.kind()==='rec'){
+      const r=this.recs[this.activePid];
+      for (const w of termTokens(d, first)){ const b=r[w]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; s.connect(c.destination); s.start(t); this.playing.push(s); t+=b.duration/rate+0.06; }
     } else {
       const buf=this.sprite[settings.voice], m=this.spriteMap[settings.voice];
       const a=Math.abs(d), pre=first?'n':d<0?'m':(settings.sayPlus?'p':'n');
@@ -125,7 +182,7 @@ const Speaker = {
   },
   schedulePhrase(word, when){ // feedback words ('yes', 'not quite') for clip voices
     const c=this.ctx; const t=Math.max(when||0,c.currentTime+0.02);
-    if (this.kind()==='mine' && this.mine[word]){ const s=c.createBufferSource(); s.buffer=this.mine[word]; s.connect(c.destination); s.start(t); this.playing.push(s); return t+this.mine[word].duration; }
+    if (this.kind()==='rec'){ const b=(this.recs[this.activePid]||{})[word]; if (b){ const s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(t); this.playing.push(s); return t+b.duration; } return t; }
     const m=this.spriteMap[settings.voice], id=word==='yes'?'yes':'notquite'; if (m&&m[id]){ const s=c.createBufferSource(); s.buffer=this.sprite[settings.voice]; s.connect(c.destination); s.start(t, m[id][0], m[id][1]); this.playing.push(s); return t+m[id][1]; }
     return t;
   },
@@ -149,7 +206,7 @@ const Speaker = {
   },
   // Generic: say a term or feedback word now, with whatever voice is active.
   say(text, word){
-    if (this.canSchedule()){
+    if (this.canSchedule() && this.ctx){
       const end = word ? this.schedulePhrase(word) : this.scheduleTerm(text, true);
       return new Promise(res=>setTimeout(res, Math.max(0,(end-this.ctx.currentTime)*1000)));
     }
@@ -157,10 +214,13 @@ const Speaker = {
   },
   stop(){ for (const s of this.playing){ try{ s.stop(); }catch(e){} } this.playing=[]; if ('speechSynthesis' in window && this.lastUtt && speechSynthesis.speaking){ speechSynthesis.cancel(); this.lastUtt=null; } }
 };
+function recCount(pid){ const r=Speaker.recs[pid]; return r ? RECORD_WORDS.filter(w=>r[w]).length : 0; }
 function fillVoiceSelect(){
   const sel=$('#sVoice'); if(!sel) return; sel.innerHTML='';
   const add=(v,l)=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); };
-  add('mine', 'My recorded voice' + (Speaker.mineLoaded && !Speaker.mineComplete() ? ' (not finished)' : ''));
+  const ready=profiles().filter(p=>Speaker.isComplete(p.id));
+  profiles().forEach(p=>{ const n=recCount(p.id); add('rec:'+p.id, `🎙 ${p.name}`+(Speaker.recLoaded[p.id] && n<RECORD_WORDS.length ? ` (${n}/${RECORD_WORDS.length} words)` : '')); });
+  if (ready.length>=2) add('rec:turns', `🎙 Take turns (${ready.map(p=>p.name).join(', ')})`);
   add('device', 'This device’s voice (auto)');
   Speaker.ttsVoices.forEach(v=>add('device:'+v.voiceURI, 'Device: '+v.name));
   Object.entries(SPRITES).forEach(([k,l])=>add(k,l));
@@ -169,17 +229,23 @@ function fillVoiceSelect(){
 
 /* ---------------- voice recorder (parent mode) ---------------- */
 const Recorder = {
-  stream:null, rec:null, chunks:[], idx:0, clips:{},
+  stream:null, rec:null, chunks:[], idx:0, clips:{}, pid:null,
+  async select(pid){ this.pid=pid; settings.recPid=pid; saveSettings(); this.clips = pid ? await ClipStore.getProfile(pid) : {}; const first=RECORD_WORDS.findIndex(w=>!this.clips[w]); this.idx = first<0 ? 0 : first; this.render(); },
   async start(){
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ $('#recStatus').textContent='Recording needs Safari on https (the hosted link), not a local file.'; return false; }
-    try{ this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }
+    if (!this.pid){ $('#recStatus').textContent='Add a person first.'; return false; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ $('#recStatus').textContent='Recording needs Safari on the hosted link, not a local file.'; return false; }
+    try{ this.stream = this.stream || await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }
     catch(e){ $('#recStatus').textContent='Microphone permission was not granted.'; return false; }
-    this.clips = await ClipStore.getAll(); this.idx = RECORD_WORDS.findIndex(w=>!this.clips[w]); if (this.idx<0) this.idx=0;
-    this.render(); return true;
+    await this.select(this.pid); return true;
   },
   render(){
+    const has=!!this.pid; $('#recBody').style.display = has ? '' : 'none';
+    if (!has) return;
     const w=RECORD_WORDS[this.idx]; $('#recWord').textContent=w; $('#recCount').textContent=(this.idx+1)+' / '+RECORD_WORDS.length;
-    const done=Object.keys(this.clips).length; $('#recStatus').textContent = done+' of '+RECORD_WORDS.length+' recorded'+(this.clips[w]?' — this word is done; hold to re-record':'');
+    const done=RECORD_WORDS.filter(x=>this.clips[x]).length, all=done===RECORD_WORDS.length, nm=profileName(this.pid);
+    $('#recStatus').textContent = all
+      ? `${nm}: all ${RECORD_WORDS.length} words recorded. To redo one, find it with ◀ ▶` + (this.stream ? ' and hold to record.' : ', tap "Start recording", then hold.')
+      : `${nm}: ${done} of ${RECORD_WORDS.length} recorded.` + (this.stream ? (this.clips[w] ? ' This word is done; hold to redo it.' : ' Hold the button and say the word.') : ' Tap "Start recording" to use the microphone.');
     $('#recPlay').disabled=!this.clips[w];
   },
   begin(){ if(!this.stream) return; this.chunks=[]; const mt=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t))||''; this.rec=new MediaRecorder(this.stream, mt?{mimeType:mt}:{}); this.rec.ondataavailable=e=>{ if(e.data.size) this.chunks.push(e.data); }; this.rec.start(); $('#recBtn').classList.add('on'); },
@@ -187,34 +253,87 @@ const Recorder = {
     if(!this.rec || this.rec.state!=='recording') return; const rec=this.rec;
     await new Promise(res=>{ rec.onstop=res; rec.stop(); }); $('#recBtn').classList.remove('on');
     const blob=new Blob(this.chunks,{type:rec.mimeType||'audio/mp4'});
-    const trimmed = await this.trim(blob);
-    const w=RECORD_WORDS[this.idx]; const rec2={buf:await trimmed.arrayBuffer(), type:trimmed.type}; await ClipStore.put(w, rec2); this.clips[w]=rec2;
-    Speaker.mineLoaded=false; this.render(); await this.play();
+    const bytes = await this.clean(blob);
+    const pid=this.pid, w=RECORD_WORDS[this.idx]; const val={buf:bytes, type:'audio/wav'}; await ClipStore.put(pid, w, val); this.clips[w]=val;
+    Speaker.recLoaded[pid]=false; this.render(); await this.play();
     if (RECORD_WORDS.every(x=>this.clips[x])){
-      settings.voice='mine'; saveSettings(); await Speaker.loadMine(true); fillVoiceSelect();
-      $('#recStatus').textContent = Speaker.mineComplete() ? 'All 33 words recorded. Listen mode now uses your voice. Tap ▶︎ test to hear it.' : 'Some words could not be read back; see Sound check.';
+      await Speaker.loadRec(pid, true);
+      if (Speaker.kind()!=='rec') { settings.voice='rec:'+pid; saveSettings(); }
+      fillVoiceSelect(); renderProfiles();
+      $('#recStatus').textContent = Speaker.isComplete(pid) ? `All ${RECORD_WORDS.length} words recorded for ${profileName(pid)}. Pick the voice above and tap ▶︎ test to hear it.` : 'Some words could not be read back; see Sound check.';
       return;
     }
     const nxt=RECORD_WORDS.findIndex((x,i)=>i>this.idx && !this.clips[x]); this.idx = nxt>=0 ? nxt : Math.min(RECORD_WORDS.length-1, this.idx+1); this.render();
   },
-  async trim(blob){ // decode, cut leading/trailing silence, re-encode as WAV (decodes reliably everywhere)
+  // decode, trim silence, normalise, store as 24 kHz WAV (small, decodes everywhere)
+  async clean(blob){
+    const c=Speaker.ensureCtx(); const raw=await blob.arrayBuffer();
     try{
-      const c=Speaker.ensureCtx(); const ab=await blob.arrayBuffer(); const buf=await decode(c, ab);
+      let buf=await decode(c, raw.slice(0)); buf=await resample(buf, 24000);
       const d=buf.getChannelData(0), sr=buf.sampleRate; let peak=0; for(let i=0;i<d.length;i++) peak=Math.max(peak,Math.abs(d[i]));
       const th=Math.max(0.02, peak*0.08); let a=0,b=d.length-1; while(a<b && Math.abs(d[a])<th) a++; while(b>a && Math.abs(d[b])<th) b--;
-      a=Math.max(0,a-Math.floor(sr*0.03)); b=Math.min(d.length,b+Math.floor(sr*0.08)); if (b-a < sr*0.08) return blob;
-      const g = peak>0 ? 0.9/peak : 1; const n=b-a; const wav=new DataView(new ArrayBuffer(44+n*2));
-      const str=(o,s)=>{ for(let i=0;i<s.length;i++) wav.setUint8(o+i,s.charCodeAt(i)); };
-      str(0,'RIFF'); wav.setUint32(4,36+n*2,true); str(8,'WAVE'); str(12,'fmt '); wav.setUint32(16,16,true); wav.setUint16(20,1,true); wav.setUint16(22,1,true); wav.setUint32(24,sr,true); wav.setUint32(28,sr*2,true); wav.setUint16(32,2,true); wav.setUint16(34,16,true); str(36,'data'); wav.setUint32(40,n*2,true);
-      for(let i=0;i<n;i++){ const v=Math.max(-1,Math.min(1,d[a+i]*g)); wav.setInt16(44+i*2, v<0?v*32768:v*32767, true); }
-      return new Blob([wav],{type:'audio/wav'});
-    }catch(e){ console.warn('trim failed', e); return blob; }
+      a=Math.max(0,a-Math.floor(sr*0.03)); b=Math.min(d.length,b+Math.floor(sr*0.08)); if (b-a < sr*0.08){ a=0; b=d.length; }
+      return wavBytes(buf, a, b, peak>0 ? 0.9/peak : 1);
+    }catch(e){ Diag.add('clean failed, keeping raw: '+(e&&e.message||e)); return raw; }
   },
   async play(){ const w=RECORD_WORDS[this.idx]; const v=this.clips[w]; if(!v) return; const c=Speaker.ensureCtx(); try{ if (c.state!=='running') await c.resume(); const buf=await decode(c, await clipBytes(v)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){ Diag.add('playback failed for '+w+': '+(e&&e.message||e)); } },
   prev(){ this.idx=Math.max(0,this.idx-1); this.render(); }, next(){ this.idx=Math.min(RECORD_WORDS.length-1,this.idx+1); this.render(); },
   stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
 };
+async function renderProfiles(){
+  const sel=$('#recWho'); sel.innerHTML='';
+  for (const p of profiles()){ if (!Speaker.recLoaded[p.id]) await Speaker.loadRec(p.id); const o=document.createElement('option'); o.value=p.id; o.textContent=`${p.name} (${recCount(p.id)}/${RECORD_WORDS.length})`; sel.appendChild(o); }
+  const pid = profiles().some(p=>p.id===Recorder.pid) ? Recorder.pid : profiles().some(p=>p.id===settings.recPid) ? settings.recPid : (profiles()[0]||{}).id || null;
+  if (pid) sel.value=pid; $('#recName').value = pid ? profileName(pid) : '';
+  $('#recWhoRow').style.display = profiles().length ? '' : 'none';
+  if (pid!==Recorder.pid || !pid) await Recorder.select(pid); else Recorder.render();
+}
 
+/* ---------------- backup file (voices + progress) ---------------- */
+const Backup = {
+  file:null,
+  async build(){
+    const voices={profiles:profiles().map(p=>({id:p.id,name:p.name})), clips:{}};
+    const c=Speaker.ensureCtx();
+    for (const p of profiles()){
+      const stored=await ClipStore.getProfile(p.id); voices.clips[p.id]={};
+      for (const [w,v] of Object.entries(stored)){
+        let bytes=await clipBytes(v);
+        try{ let buf=await decode(c, bytes.slice(0)); if (buf.sampleRate>24000){ buf=await resample(buf, 24000); bytes=wavBytes(buf); } }catch(e){}
+        voices.clips[p.id][w]=b64(bytes);
+      }
+    }
+    const data={app:'abacus-practice', format:2, savedAt:new Date().toISOString(), settings, progress, history, days, voices};
+    const name=`abacus-backup-${todayKey()}.json`;
+    this.file=new File([JSON.stringify(data)], name, {type:'application/json'});
+    return this.file;
+  },
+  async save(){ // must run directly inside a tap (iOS share sheet needs it)
+    const f=this.file; if (!f) return 'nothing';
+    if (navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f], title:'Abacus backup'}); return 'shared'; }catch(e){ if (e && e.name==='AbortError') return 'cancelled'; } }
+    const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 30000); return 'downloaded';
+  },
+  async restore(text, withProgress){
+    const d=JSON.parse(text); if (d.app!=='abacus-practice') throw new Error('Not an Abacus Practice backup file');
+    let n=0;
+    if (d.voices && d.voices.profiles){
+      for (const p of d.voices.profiles){
+        const existing=profiles().find(x=>x.id===p.id);
+        if (existing) existing.name=p.name; else profiles().push({id:p.id, name:p.name});
+        await ClipStore.deleteProfile(p.id);
+        for (const [w,s] of Object.entries((d.voices.clips||{})[p.id]||{})){ await ClipStore.put(p.id, w, {buf:unb64(s), type:'audio/wav'}); n++; }
+        Speaker.recLoaded[p.id]=false;
+      }
+    }
+    if (withProgress){
+      const keepProfiles=profiles(); settings=Object.assign({}, DEFAULTS, d.settings||{}, {profiles:keepProfiles});
+      if (d.progress) progress=d.progress; if (d.history) history=d.history; if (d.days) days=d.days;
+      save('history',history); save('days',days); saveProgress();
+    }
+    saveSettings();
+    return { voices:(d.voices&&d.voices.profiles||[]).length, clips:n };
+  },
+};
 
 /* ---------------- screens ---------------- */
 function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
@@ -332,7 +451,7 @@ $('#exitLesson').addEventListener('click', ()=>{ animToken++; renderHome(); show
 let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, tick=null, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
 function drillConfig(n){ const c=Object.assign({}, n.drill); if (settings.operands>0) c.operands=settings.operands; if (mode==='flash'){ c.operands=settings.flashN; c.allowSubtraction=false; } return c; }
 async function startDrill(m, n){
-  mode=m; drillNode=n; reviewing=false; locked=false; listenArmed=false; Speaker.unlock();
+  mode=m; drillNode=n; reviewing=false; locked=false; listenArmed=false; Speaker.turn=0; Speaker.unlock();
   try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ alert('These settings cannot make problems for this skill.'); return; }
   results = problems.map(()=>null); idx=0; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500);
   $('#drillLevel').textContent = n.icon+' '+n.short;
@@ -361,7 +480,10 @@ function armListen(p){ // show a "Ready" button; the tap that presses it starts 
   const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
 }
 async function dictate(p){
-  const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Listen…'; $('#listenGo').style.display='none';
+  const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenGo').style.display='none';
+  if (!p._reader){ await Speaker.prepare(); p._reader = Speaker.pickReader(); } else Speaker.activePid = p._reader;   // replay keeps the same reader
+  if (my!==dictateToken) return;
+  $('#listenMsg').textContent = p._reader ? `${profileName(p._reader)} is reading…` : 'Listen…';
   const gap=settings.gap; const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
   const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; locked=false; $('#replayBtn').disabled=p._replayed===true; };
   const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; locked=false; $('#replayBtn').disabled=false; } }, (p.terms.length*gap+12)*1000);
@@ -472,7 +594,7 @@ $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').cl
 function bindRange(id,key,fmt){ const el=$(id), v=$(id+'V'); el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]); el.oninput=()=>{ settings[key]=parseFloat(el.value); v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); }; }
 function bindSwitch(id,key,after){ const el=$(id); el.classList.toggle('on',!!settings[key]); el.onclick=()=>{ settings[key]=!settings[key]; el.classList.toggle('on',settings[key]); saveSettings(); if(after) after(); }; }
 async function renderParent(){
-  try{ await Speaker.loadMine(true); }catch(e){}
+  for (const pp of profiles()) { try{ await Speaker.loadRec(pp.id, true); }catch(e){} }
   const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
   sel.onchange=()=>{ progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
   $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); };
@@ -485,14 +607,24 @@ async function renderParent(){
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
   const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
   bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
-  fillVoiceSelect(); $('#sVoice').onchange=async()=>{ settings.voice=$('#sVoice').value; saveSettings(); if (settings.voice==='mine') await Speaker.loadMine(true); else Speaker.prepare(); fillVoiceSelect(); $('#diagLog').textContent=Diag.lines.join('\n'); };
-  $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare(); const seq=[[7,true],[3,false],[-4,false],[12,false]];
+  fillVoiceSelect(); $('#sVoice').onchange=async()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.activePid=null; await Speaker.prepare(); fillVoiceSelect(); $('#diagLog').textContent=Diag.lines.join('\n'); };
+  $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare(); Speaker.pickReader(); if (Speaker.activePid) Diag.add('test: '+profileName(Speaker.activePid)+' reading'); const seq=[[7,true],[3,false],[-4,false],[12,false]];
     if (Speaker.canSchedule()){ const t0=Speaker.ctx.currentTime+0.1; seq.forEach(([d,f],i)=>Speaker.scheduleTerm(d,f,t0+i*1.3)); } else { for (const [d,f] of seq){ await Speaker.sayDevice(termText(d,f)); await sleep(300); } } };
-  $('#recStart').onclick=async()=>{ Speaker.unlock(); if (await Recorder.start()) $('#recStatus').textContent+=' — ready'; };
-  const rb=$('#recBtn'); rb.onpointerdown=e=>{ e.preventDefault(); if(!Recorder.stream){ $('#recStatus').textContent='Tap "Start recording session" first.'; return; } Recorder.begin(); };
+  // recorder: who, add, rename, delete, record
+  await renderProfiles();
+  $('#recWho').onchange=async()=>{ await Recorder.select($('#recWho').value); $('#recName').value=profileName(Recorder.pid); };
+  $('#recName').onchange=()=>{ const p=profiles().find(x=>x.id===Recorder.pid); if(!p) return; p.name=$('#recName').value.trim()||p.name; saveSettings(); renderProfiles(); fillVoiceSelect(); };
+  $('#recAdd').onclick=async()=>{ const name=$('#recNew').value.trim(); if(!name){ $('#recNew').focus(); return; } const id=newProfileId(); profiles().push({id, name}); saveSettings(); $('#recNew').value=''; Recorder.pid=id; await renderProfiles(); fillVoiceSelect(); $('#recStatus').textContent=`Added ${name}. Tap "Start recording" and record the ${RECORD_WORDS.length} words.`; };
+  $('#recDelete').onclick=async()=>{ const pid=Recorder.pid; if(!pid) return; if(!confirm(`Delete ${profileName(pid)} and all of their recordings?`)) return; await ClipStore.deleteProfile(pid); settings.profiles=profiles().filter(p=>p.id!==pid); if (settings.voice==='rec:'+pid || (settings.voice==='rec:turns' && profiles().filter(p=>Speaker.isComplete(p.id)).length<2)) settings.voice=profiles()[0]?'rec:'+profiles()[0].id:'device'; delete Speaker.recs[pid]; delete Speaker.recLoaded[pid]; saveSettings(); Recorder.pid=null; await renderProfiles(); fillVoiceSelect(); };
+  $('#recStart').onclick=async()=>{ Speaker.unlock(); if (await Recorder.start()) $('#recStatus').textContent+=' — microphone ready'; };
+  const rb=$('#recBtn'); rb.onpointerdown=e=>{ e.preventDefault(); if(!Recorder.stream){ $('#recStatus').textContent='Tap "Start recording" first.'; return; } Recorder.begin(); };
   rb.onpointerup=rb.onpointerleave=rb.onpointercancel=()=>Recorder.end();
   $('#recPrev').onclick=()=>Recorder.prev(); $('#recNext').onclick=()=>Recorder.next(); $('#recPlay').onclick=()=>Recorder.play();
-  $('#recClear').onclick=async()=>{ if(confirm('Erase all recorded words?')){ await ClipStore.clear(); Recorder.clips={}; Speaker.mine={}; Speaker.mineLoaded=false; if(Recorder.stream) Recorder.render(); fillVoiceSelect(); } };
+  // backup
+  $('#bkMake').onclick=async()=>{ const b=$('#bkMake'); b.disabled=true; b.textContent='Preparing…'; try{ const f=await Backup.build(); $('#bkSave').style.display=''; $('#bkInfo').textContent=`Ready: ${f.name} (${(f.size/1048576).toFixed(1)} MB, ${profiles().length} voice${profiles().length===1?'':'s'}, progress and settings). Tap "Save file", then choose "Save to Files".`; }catch(e){ $('#bkInfo').textContent='Could not prepare backup: '+(e&&e.message||e); } b.disabled=false; b.textContent='1. Prepare backup'; };
+  $('#bkSave').onclick=async()=>{ const r=await Backup.save(); $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
+  $('#bkOpen').onclick=()=>$('#bkFile').click();
+  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=confirm('Restore her progress and settings from this backup too?\n\nOK = voices + progress + settings\nCancel = voices only'); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#diagTts').onclick=async()=>{ Speaker.unlock(); const r=await Speaker.sayDevice('seven, plus three'); Diag.add('device test: '+r); $('#diagLog').textContent=Diag.lines.join('\n'); };
@@ -504,13 +636,12 @@ async function renderParent(){
     tr.innerHTML=`<td>${ws}</td><td>${h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):h.mode==='flash'?'Flash':'Look'}</td><td>${nn.short||''}</td><td>${h.correct}/${h.count}</td><td>${Math.floor(h.secs/60)}:${String(h.secs%60).padStart(2,'0')}</td><td>${missed||'—'}</td>`; st.appendChild(tr); });
 }
 $('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
-$('#exportBtn').addEventListener('click', ()=>{ $('#ioArea').value=JSON.stringify({settings,history,days,progress}); $('#ioArea').select(); });
-$('#importBtn').addEventListener('click', ()=>{ try{ const o=JSON.parse($('#ioArea').value); if(o.settings) settings=Object.assign({},DEFAULTS,o.settings); if(o.history) history=o.history; if(o.days) days=o.days; if(o.progress) progress=o.progress; saveSettings(); save('history',history); save('days',days); saveProgress(); renderParent(); alert('Imported.'); }catch(e){ alert('That is not valid export text.'); } });
-$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase all settings and progress?')){ localStorage.clear(); location.reload(); } });
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase her progress and all settings?\n\nRecorded voices are kept.')){ const keep=profiles(); try{ ['history','days','progress'].forEach(k=>localStorage.removeItem('abacus.'+k)); localStorage.setItem('abacus.settings', JSON.stringify({profiles:keep, settingsVersion:5})); }catch(e){} location.reload(); } });
 
 /* ---------------- boot ---------------- */
 window.__diag = Diag;
-Speaker.init(); renderHome(); saveSettings();
+renderHome();
+ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
