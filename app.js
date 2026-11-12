@@ -363,20 +363,35 @@ function renderHome(){
   // today's three steps
   $('#todayTitle').textContent = allDone ? 'Today’s practice — done! 🌸' : 'Today’s practice';
   const nextI = steps.findIndex(s=>!s.done);
-  $('#todaySteps').innerHTML = steps.map((s,i)=>`<span class="step${s.done?' done':''}${i===nextI?' next':''}">${s.done?'✓':s.icon} ${s.label}</span>`).join('');
+  $('#todaySteps').innerHTML = steps.map((s,i)=>`<span class="step${s.done?' done':''}${i===nextI?' next':''}"><i class="sb">${s.done?'✓':s.icon}</i><span class="sl">${s.label}</span></span>`).join('');
   $('#todayGo').textContent = allDone ? 'Play 🎮' : (nextI===0 ? 'Start ▶' : 'Next ▶');
   // path
   const p=$('#path'); p.innerHTML='';
   NODES.forEach((n,i)=>{
     const el=document.createElement('button'); const st=node(n.id);
     el.className='node'+(i===curIdx()?' cur':'')+(i>curIdx()?' locked':'')+(st.mastered?' done':'');
-    el.innerHTML=`<div class="ic">${n.icon}</div><div class="t">${n.short}</div><div class="stars">${'★'.repeat(stars(n.id))}</div>${i>curIdx()?'<div class="lock">🔒</div>':''}`;
+    el.innerHTML=`${i===curIdx()?`<div class="here">${Fun.bixMini()}</div>`:''}<div class="ic">${n.icon}</div><div class="t">${n.short}</div><div class="stars">${'★'.repeat(stars(n.id))}</div>`;
     el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); Fun.Mascot.say(bh, 'Locked! Finish the skills before it to open it. 🔒', 3000); return; } openNodeMenu(n); };
     p.appendChild(el);
   });
-  setTimeout(()=>{ const c=p.querySelector('.node.cur'); if(c) p.scrollLeft = Math.max(0, c.offsetLeft - p.clientWidth/2 + c.clientWidth/2); },0);
+  if (!renderHome.introDone){ p.classList.add('intro'); p.querySelectorAll('.node').forEach((el,i)=>el.style.animationDelay=(i*0.06)+'s'); renderHome.introDone=true; setTimeout(()=>p.classList.remove('intro'), 1500); }
+  requestAnimationFrame(()=>{ drawWire(p); const c=p.querySelector('.node.cur'); if(c) p.scrollLeft = Math.max(0, c.offsetLeft - p.clientWidth/2 + c.clientWidth/2); });
   Fun.renderGarden($('#garden'), $('#gardenLabel'), days); Treats.renderJar();
   const unseen = Fun.count() - (Fun.data.albumSeen||0); const bd=$('#albumBadge'); bd.textContent = unseen>0 ? '+'+unseen : ''; bd.classList.toggle('on', unseen>0);
+}
+// Thread a smooth wire through the centres of the skill beads (the bead-maze look).
+function drawWire(p){
+  const old=p.querySelector('.wire'); if (old) old.remove();
+  const beads=[...p.querySelectorAll('.node .ic')]; if (beads.length<2 || !p.clientWidth) return;
+  const pr=p.getBoundingClientRect();
+  const pts=beads.map(b=>{ const r=b.getBoundingClientRect(); return [r.left-pr.left+p.scrollLeft+r.width/2, r.top-pr.top+r.height/2]; });
+  const first=pts[0], last=pts[pts.length-1];
+  let d=`M ${first[0]-90} ${first[1]+18} C ${first[0]-50} ${first[1]+18}, ${first[0]-40} ${first[1]}, ${first[0]} ${first[1]}`;
+  for (let i=1;i<pts.length;i++){ const [x0,y0]=pts[i-1], [x1,y1]=pts[i], dx=(x1-x0)/2; d+=` C ${x0+dx} ${y0}, ${x1-dx} ${y1}, ${x1} ${y1}`; }
+  d+=` C ${last[0]+40} ${last[1]}, ${last[0]+50} ${last[1]-18}, ${last[0]+90} ${last[1]-18}`;
+  const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg'); svg.setAttribute('class','wire');
+  svg.setAttribute('width', p.scrollWidth); svg.setAttribute('height', p.scrollHeight); svg.style.width=p.scrollWidth+'px'; svg.style.height=p.scrollHeight+'px';
+  const path=document.createElementNS(ns,'path'); path.setAttribute('d', d); svg.appendChild(path); p.prepend(svg);
 }
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
 const STEP_INFO = { lesson:['📖','Learn'], visual:['👀','Look'], listen:['👂','Listen'], flash:['⚡️','Flash'], game:['🎮','Game'] };
@@ -631,7 +646,7 @@ function finish(){
   Fun.Mascot.say(bs, leveled ? 'You unlocked a new skill! 🎉' : n===3 ? 'Amazing work!' : n===2 ? 'Great job! Fix the red ones with me?' : 'Good practice! Every try makes you stronger.', 0);
   show('summary'); Fun.Mascot.react(bs, n>=2||leveled?'cheer':'happy', 1800);
   if (n===3||leveled){ Sfx.star(); Fun.confetti(); } else Sfx.ok();
-  if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 900);
+  if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 2400);   // let the stars and Bix land first
 }
 $('#fixBtn').addEventListener('click', ()=>{ reviewQueue=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); if(!reviewQueue.length) return; reviewing=true; idx=reviewQueue[0]; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500); const m=mode; mode='visual'; $('#problemArea').style.display='flex'; $('#listenStage').style.display='none'; $('#flashStage').style.display='none'; $('#flashSpeed').style.display='none'; show('drill'); presentProblem(); mode=m; });
 $('#showMeBtn').addEventListener('click', async()=>{ if(locked) return; locked=true; await showMe(problems[idx]); locked=false; });

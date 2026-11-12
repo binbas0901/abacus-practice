@@ -68,7 +68,8 @@
     function spawn() {
       const W = field.clientWidth, H = field.clientHeight; if (!W) return;
       const onScreen = bubbles.some(b => !b.gone && b.v === target.ans);
-      const v = (!onScreen || Math.random() < 0.3) ? target.ans : rnd(1, target.F - 1);
+      // Always one answer on screen; after that mostly other numbers, so she has to look for it.
+      let v; if (!onScreen || Math.random() < 0.18) v = target.ans; else { do { v = rnd(1, target.F - 1); } while (v === target.ans && target.F > 2); }
       const el = document.createElement('button'); el.className = 'bub'; el.textContent = v; el.dataset.v = v;
       const b = { el, v, x: rnd(10, Math.max(10, W - 110)), y: H + 10, sp: 70 + Math.random() * 45, ph: Math.random() * 6, gone: false };
       el.addEventListener('pointerdown', e => { e.preventDefault(); tap(b); });

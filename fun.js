@@ -143,5 +143,7 @@
     document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
   }
 
-  root.Fun = { data, save, replace, Mascot, give, renderAlbum, renderGarden, confetti, ALL, PACKS, count };
+  // Small, non-interactive Bix used as the "you are here" marker on the skill path.
+  function bixMini() { return bixSVG().replace('class="bix"', 'class="bixmini"'); }
+  root.Fun = { data, save, replace, Mascot, give, renderAlbum, renderGarden, confetti, ALL, PACKS, count, bixMini };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
