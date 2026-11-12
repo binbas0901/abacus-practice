@@ -374,10 +374,19 @@ function renderHome(){
     el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); Fun.Mascot.say(bh, 'Locked! Finish the skills before it to open it. 🔒', 3000); return; } openNodeMenu(n); };
     p.appendChild(el);
   });
+  layoutPath(p);
   if (!renderHome.introDone){ p.classList.add('intro'); p.querySelectorAll('.node').forEach((el,i)=>el.style.animationDelay=(i*0.06)+'s'); renderHome.introDone=true; setTimeout(()=>p.classList.remove('intro'), 1500); }
-  requestAnimationFrame(()=>{ drawWire(p); const c=p.querySelector('.node.cur'); if(c) p.scrollLeft = Math.max(0, c.offsetLeft - p.clientWidth/2 + c.clientWidth/2); });
+  requestAnimationFrame(()=>{ layoutPath(p); drawWire(p); });
   Fun.renderGarden($('#garden'), $('#gardenLabel'), days); Treats.renderJar();
   const unseen = Fun.count() - (Fun.data.albumSeen||0); const bd=$('#albumBadge'); bd.textContent = unseen>0 ? '+'+unseen : ''; bd.classList.toggle('on', unseen>0);
+}
+// Lay the skill beads out as a snake that fits the screen: row 1 left->right, row 2 right->left, ...
+function layoutPath(p){
+  const nodes=[...p.querySelectorAll('.node')]; if (!nodes.length) return;
+  const cs=getComputedStyle(p), w=(p.clientWidth || window.innerWidth) - parseFloat(cs.paddingLeft||0) - parseFloat(cs.paddingRight||0);
+  const rows = Math.max(2, Math.ceil(nodes.length*124 / Math.max(1,w))), per = Math.ceil(nodes.length/rows);
+  p.style.gridTemplateColumns = `repeat(${per}, 1fr)`;
+  nodes.forEach((el,i)=>{ const r=Math.floor(i/per), c=i%per; el.style.gridRow = r+1; el.style.gridColumn = (r%2===0 ? c : per-1-c) + 1; });
 }
 // Thread a smooth wire through the centres of the skill beads (the bead-maze look).
 function drawWire(p){
@@ -385,14 +394,24 @@ function drawWire(p){
   const beads=[...p.querySelectorAll('.node .ic')]; if (beads.length<2 || !p.clientWidth) return;
   const pr=p.getBoundingClientRect();
   const pts=beads.map(b=>{ const r=b.getBoundingClientRect(); return [r.left-pr.left+p.scrollLeft+r.width/2, r.top-pr.top+r.height/2]; });
-  const first=pts[0], last=pts[pts.length-1];
-  let d=`M ${first[0]-90} ${first[1]+18} C ${first[0]-50} ${first[1]+18}, ${first[0]-40} ${first[1]}, ${first[0]} ${first[1]}`;
-  for (let i=1;i<pts.length;i++){ const [x0,y0]=pts[i-1], [x1,y1]=pts[i], dx=(x1-x0)/2; d+=` C ${x0+dx} ${y0}, ${x1-dx} ${y1}, ${x1} ${y1}`; }
-  d+=` C ${last[0]+40} ${last[1]}, ${last[0]+50} ${last[1]-18}, ${last[0]+90} ${last[1]-18}`;
+  const first=pts[0], last=pts[pts.length-1], prev=pts[pts.length-2];
+  const lead = 46, endDir = Math.sign(last[0]-prev[0]) || 1;
+  let d=`M ${first[0]-lead} ${first[1]} L ${first[0]} ${first[1]}`;
+  for (let i=1;i<pts.length;i++){
+    const [x0,y0]=pts[i-1], [x1,y1]=pts[i];
+    if (Math.abs(x1-x0) < 30){            // U-turn down to the next row: loop out past the edge bead
+      const dir = (i>=2 && pts[i-2][0] > x0) ? -1 : 1, bulge = 115*dir;
+      d+=` C ${x0+bulge} ${y0}, ${x1+bulge} ${y1}, ${x1} ${y1}`;
+    } else { const dx=(x1-x0)/2; d+=` C ${x0+dx} ${y0}, ${x1-dx} ${y1}, ${x1} ${y1}`; }
+  }
+  d+=` L ${last[0]+lead*endDir} ${last[1]}`;
   const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg'); svg.setAttribute('class','wire');
+  // small end caps so the wire looks fastened, like a bead-maze toy
+  for (const [x,y] of [[first[0]-lead, first[1]], [last[0]+lead*endDir, last[1]]]){ const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',7); c.setAttribute('class','cap'); svg.appendChild(c); }
   svg.setAttribute('width', p.scrollWidth); svg.setAttribute('height', p.scrollHeight); svg.style.width=p.scrollWidth+'px'; svg.style.height=p.scrollHeight+'px';
   const path=document.createElementNS(ns,'path'); path.setAttribute('d', d); svg.appendChild(path); p.prepend(svg);
 }
+window.addEventListener('resize', ()=>{ if ($('#home').classList.contains('active')){ const p=$('#path'); layoutPath(p); requestAnimationFrame(()=>drawWire(p)); } });
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
 const STEP_INFO = { lesson:['📖','Learn'], visual:['👀','Look'], listen:['👂','Listen'], flash:['⚡️','Flash'], game:['🎮','Game'] };
 // Three short steps a day: learn/practise, a game, then the other practice mode. Regenerated each day.
