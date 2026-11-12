@@ -28,6 +28,8 @@ if (navigator.storage && navigator.storage.persist) navigator.storage.persist().
 function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 /* ---------------- sound effects ---------------- */
+const Diag = { lines:[], add(m){ const t=new Date().toLocaleTimeString(); this.lines.unshift(t+' '+m); this.lines=this.lines.slice(0,40); const el=document.getElementById('diagLog'); if(el) el.textContent=this.lines.join('\n'); } };
+window.addEventListener('error', e=>Diag.add('ERROR '+e.message)); window.addEventListener('unhandledrejection', e=>Diag.add('REJECT '+(e.reason&&e.reason.message||e.reason)));
 const Sfx = {
   tone(f, t0, dur, type='sine', vol=0.18){ try{ const c=Speaker.ensureCtx(); const o=c.createOscillator(), g=c.createGain(); o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0+dur+0.05);}catch(e){} },
   ok(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; this.tone(523,t,0.18); this.tone(784,t+0.12,0.25); },
@@ -74,7 +76,7 @@ const Speaker = {
     if ('speechSynthesis' in window && !this.ttsReady){
       // iOS: speech is unlocked only once an utterance really starts inside a tap. Speak something
       // tiny and silent, and never cancel() it (cancelling before it starts leaves speech locked).
-      try{ speechSynthesis.resume(); const u=new SpeechSynthesisUtterance('a'); u.volume=0.01; u.rate=2; u.onstart=()=>{ this.ttsReady=true; }; speechSynthesis.speak(u); this.ttsPending=true; }catch(e){}
+      try{ speechSynthesis.resume(); const u=new SpeechSynthesisUtterance('a'); u.volume=0.01; u.rate=2; u.onstart=()=>{ this.ttsReady=true; Diag.add('tts unlocked'); }; u.onerror=(e)=>Diag.add('tts unlock error '+(e&&e.error)); speechSynthesis.speak(u); }catch(e){ Diag.add('unlock exc '+e.message); }
     }
   },
   async prepare(){ // load whatever the current voice needs; resolves when ready (or when it gave up)
@@ -131,12 +133,12 @@ const Speaker = {
   },
   sayDevice(text){
     return new Promise(res=>{
-      if (!('speechSynthesis' in window)) return res();
+      if (!('speechSynthesis' in window)) return res('no speechSynthesis');
       const go=()=>{
         try{ speechSynthesis.resume(); }catch(e){}
         const u=new SpeechSynthesisUtterance(text); const v=this.deviceVoice(); if (v) u.voice=v;
         u.rate=settings.voiceRate||1; u.pitch=1;
-        let done=false; const fin=()=>{ if(!done){done=true;res();} }; u.onend=fin; u.onerror=fin; setTimeout(fin, 2500+text.length*70);
+        let done=false, started=false; const fin=(why)=>{ if(!done){done=true;res(why);} }; u.onstart=()=>{started=true;}; u.onend=()=>fin(started?'ok':'ended-without-start'); u.onerror=(e)=>fin('error '+(e&&e.error)); setTimeout(()=>fin(started?'ok(timeout)':'TIMEOUT never started'), 2500+text.length*70);
         this.lastUtt=u; speechSynthesis.speak(u);
       };
       // Only cancel if one of OUR real utterances is still going; iOS drops a speak() issued right after cancel(), so wait a beat.
@@ -323,7 +325,7 @@ $('#exitLesson').addEventListener('click', ()=>{ animToken++; renderHome(); show
 let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, tick=null, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
 function drillConfig(n){ const c=Object.assign({}, n.drill); if (settings.operands>0) c.operands=settings.operands; if (mode==='flash'){ c.operands=settings.flashN; c.allowSubtraction=false; } return c; }
 async function startDrill(m, n){
-  mode=m; drillNode=n; reviewing=false; locked=false; Speaker.unlock();
+  mode=m; drillNode=n; reviewing=false; locked=false; listenArmed=false; Speaker.unlock();
   try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ alert('These settings cannot make problems for this skill.'); return; }
   results = problems.map(()=>null); idx=0; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500);
   $('#drillLevel').textContent = n.icon+' '+n.short;
@@ -343,23 +345,40 @@ function setEntry(v){ entry=v; $('#answer').textContent=v||' '; }
 function presentProblem(){
   const p=problems[idx]; setEntry(''); $('#feedback').textContent=''; $('#feedback').className='feedback'; $('#reveal').textContent=''; $('#showMeBtn').style.display=reviewing?'':'none'; renderStrip();
   if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=''; p.terms.forEach(t=>{ const d=document.createElement('div'); d.className='term'+(t<0?' neg':''); d.textContent=t<0?'−'+Math.abs(t):t; area.appendChild(d); }); locked=false; }
-  else if (mode==='listen') dictate(p);
+  else if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else flash(p);
 }
-let dictateToken=0;
+let dictateToken=0, listenArmed=false;
+function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
+  locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
+  const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
+}
 async function dictate(p){
-  const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Listen…'; Speaker.stop();
+  const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Listen…'; $('#listenGo').style.display='none';
   const gap=settings.gap; const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
-  if (Speaker.kind()!=='device'){ await Speaker.prepare(); if (my!==dictateToken) return; }
-  if (Speaker.canSchedule()){
-    const t0=Speaker.ctx.currentTime+0.3; let lastEnd=t0;
-    p.terms.forEach((d,i)=>{ const when=t0+i*gap; const end=Speaker.scheduleTerm(d,i===0,when); lastEnd=end; setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000)); });
-    await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
-  } else {
-    for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); await Speaker.sayDevice(termText(p.terms[i],i===0)); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }
-  }
-  if (my!==dictateToken) return; await sleep(settings.answerPause*1000); if (my!==dictateToken) return;
-  $('#listenMsg').textContent='Your answer?'; locked=false; $('#replayBtn').disabled=p._replayed===true;
+  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; locked=false; $('#replayBtn').disabled=p._replayed===true; };
+  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; locked=false; $('#replayBtn').disabled=false; } }, (p.terms.length*gap+12)*1000);
+  try{
+    Speaker.stop();
+    Diag.add(`dictate start voice=${settings.voice} kind=${Speaker.kind()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} tts=${('speechSynthesis' in window)?('voices '+speechSynthesis.getVoices().length+(speechSynthesis.speaking?' speaking':'')+(speechSynthesis.paused?' paused':'')):'n/a'}`);
+    let scheduled=false;
+    if (Speaker.kind()!=='device'){
+      await Speaker.prepare(); if (my!==dictateToken) return;
+      try{ if (Speaker.ctx && Speaker.ctx.state!=='running') await Promise.race([Speaker.ctx.resume(), sleep(1500)]); }catch(e){}
+      scheduled = Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';
+      Diag.add(`clips ready=${Speaker.canSchedule()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} -> ${scheduled?'audio clock':'device voice fallback'}`);
+    }
+    if (scheduled){
+      const t0=Speaker.ctx.currentTime+0.3; let lastEnd=t0;
+      p.terms.forEach((d,i)=>{ const when=t0+i*gap; const end=Speaker.scheduleTerm(d,i===0,when); lastEnd=end; setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000)); });
+      await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
+    } else {
+      for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(termText(p.terms[i],i===0)); Diag.add(`said "${termText(p.terms[i],i===0)}" ${r}`); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }
+    }
+    if (my!==dictateToken) return; await sleep(settings.answerPause*1000);
+    finishUI();
+  }catch(e){ Diag.add('dictate error '+(e&&e.message||e)); finishUI(); }
+  finally{ clearTimeout(watchdog); }
 }
 $('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; dictate(p); });
 function setupGapSlider(){ const s=$('#gapSlider'); s.min=settings.gapMin; s.max=settings.gapMax; s.value=settings.gap; s.style.direction='rtl'; $('#gapVal').textContent=settings.gap+'s'; s.oninput=()=>{ settings.gap=parseFloat(s.value); $('#gapVal').textContent=settings.gap+'s'; saveSettings(); }; }
@@ -457,6 +476,10 @@ function renderParent(){
   rb.onpointerup=rb.onpointerleave=rb.onpointercancel=()=>Recorder.end();
   $('#recPrev').onclick=()=>Recorder.prev(); $('#recNext').onclick=()=>Recorder.next(); $('#recPlay').onclick=()=>Recorder.play();
   $('#recClear').onclick=async()=>{ if(confirm('Erase all recorded words?')){ await ClipStore.clear(); Recorder.clips={}; Speaker.mine={}; Speaker.mineLoaded=false; if(Recorder.stream) Recorder.render(); fillVoiceSelect(); } };
+  $('#diagLog').textContent=Diag.lines.join('\n');
+  $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
+  $('#diagTts').onclick=async()=>{ Speaker.unlock(); const r=await Speaker.sayDevice('seven, plus three'); Diag.add('device test: '+r); $('#diagLog').textContent=Diag.lines.join('\n'); };
+  $('#diagBeep').onclick=()=>{ Speaker.unlock(); Sfx.star(); Diag.add('beep ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); $('#diagLog').textContent=Diag.lines.join('\n'); };
   const st=$('#sessions tbody'); st.innerHTML='';
   history.slice(0,20).forEach(h=>{ const tr=document.createElement('tr'); const when=new Date(h.at); const ws=when.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
     const missed=(h.missed||[]).map(m=>'<span class="pill bad">'+m.terms.map((t,i)=>i===0?t:(t<0?' − '+(-t):' + '+t)).join('')+' = '+m.answer+(m.given?' (said '+m.given+')':'')+'</span>').join(' ');
