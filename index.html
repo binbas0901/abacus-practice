@@ -179,22 +179,189 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 #recBtn{background:var(--coral);min-width:240px} #recBtn.on{background:#b4321c;transform:scale(.98)}
 .nodetable .mini{width:72px;height:8px;background:#EEE0C6;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px} .nodetable .mini i{display:block;height:100%;background:var(--good)}
 @media (max-width:760px){ .entry{width:270px} .pad button{height:56px} .lesson-side{width:300px} .soroban.big{--bead:30px;--rodh:210px} .today .big{font-size:24px} }
+
+/* ---------- Home v2.8 ---------- */
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:96px}
+.garden-box{display:flex;flex-direction:column;align-items:flex-end;gap:4px;width:300px}
+.garden{display:flex;flex-wrap:wrap;gap:1px;justify-content:flex-end;font-size:19px;line-height:1;max-width:300px}
+.garden .plot{width:21px;height:23px;display:inline-flex;align-items:flex-end;justify-content:center}
+.garden .soil::after{content:"";width:12px;height:5px;border-radius:3px;background:#E3CFAE;margin-bottom:3px}
+.garden .bloom{animation:grow .5s cubic-bezier(.2,1.6,.4,1) both} .garden .full{filter:drop-shadow(0 0 4px #FFC83D)}
+.garden .sprout{opacity:.75;animation:sway 2.4s ease-in-out infinite;transform-origin:bottom}
+@keyframes grow{from{transform:scale(.2) translateY(8px);opacity:0}} @keyframes sway{50%{transform:rotate(-8deg)}}
+.glabel{color:var(--muted);font-size:14px}
+.today .tleft{display:flex;flex-direction:column;gap:8px;min-width:0}
+.steps{display:flex;gap:8px;flex-wrap:wrap}
+.step{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);border-radius:999px;padding:6px 12px;font-size:16px}
+.step.done{background:#fff;color:var(--teal)} .step.next{outline:2px solid #fff}
+.today .meta{opacity:.85;font-size:14px;margin-top:0}
+.tile{position:relative} .tile.hot{background:linear-gradient(135deg,#FFE7A3,#FFC83D)}
+.badge{position:absolute;top:8px;right:10px;background:var(--coral);color:#fff;border-radius:999px;font-size:13px;padding:2px 8px;display:none} .badge.on{display:block}
+
+/* ---------- Bix ---------- */
+.bixwrap{position:relative;display:flex;align-items:center;gap:12px;--bix:92px}
+.bix{width:var(--bix);height:var(--bix);flex:none;cursor:pointer;overflow:visible;touch-action:manipulation}
+.bix .b-body{transform-box:view-box;transform-origin:60px 106px;animation:bixbob 2.6s ease-in-out infinite}
+@keyframes bixbob{50%{transform:translateY(-3px) scale(1.02,.98)}}
+.bix.happy .b-body{animation:bixhop .45s ease-out 2}
+@keyframes bixhop{30%{transform:translateY(-18px) scale(.94,1.07)}65%{transform:translateY(0) scale(1.08,.92)}}
+.bix.cheer .b-body{animation:bixcheer .8s ease-in-out 2}
+@keyframes bixcheer{25%{transform:rotate(-12deg) translateY(-10px)}75%{transform:rotate(12deg) translateY(-10px)}}
+.bix.oops .b-body{animation:bixwob .55s ease-in-out 1}
+@keyframes bixwob{25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.bix .b-eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}95.5%{transform:scaleY(.1)}}
+.bix .b-arm{transform-box:fill-box}
+.bix .b-armL{transform-origin:100% 100%} .bix .b-armR{transform-origin:0% 100%}
+.bix.cheer .b-armL,.bix.happy .b-armL{animation:waveL .4s ease-in-out 4} .bix.cheer .b-armR,.bix.happy .b-armR{animation:waveR .4s ease-in-out 4}
+@keyframes waveL{50%{transform:rotate(25deg)}} @keyframes waveR{50%{transform:rotate(-25deg)}}
+.bix .b-grin,.bix .b-oh{display:none} .bix.happy .b-smile,.bix.cheer .b-smile,.bix.oops .b-smile{display:none}
+.bix.happy .b-grin,.bix.cheer .b-grin{display:inline} .bix.oops .b-oh{display:inline}
+.bubble{background:#fff;border-radius:18px;padding:10px 16px;font-size:18px;box-shadow:var(--shadow);position:relative;max-width:360px;line-height:1.3;visibility:hidden}
+.bubble.on{visibility:visible}
+.bubble::before{content:"";position:absolute;left:-9px;top:50%;margin-top:-9px;border:9px solid transparent;border-right-color:#fff;border-left:0}
+.dmascot{position:absolute;left:14px;bottom:10px;--bix:70px;z-index:2} .dmascot .bubble{font-size:16px;max-width:220px}
+.drill-body{position:relative}
+#bixSum{--bix:110px} #bixSum .bubble{font-size:20px}
+.gmascot{position:absolute;left:14px;bottom:10px;--bix:76px;z-index:5;pointer-events:auto} .gmascot .bubble{font-size:16px;max-width:200px}
+#game{position:relative}
+
+/* ---------- sticker reveal ---------- */
+#stickerReveal{position:fixed;inset:0;background:rgba(42,33,24,.6);display:none;align-items:center;justify-content:center;z-index:70}
+#stickerReveal.active{display:flex}
+.rv-card{background:var(--bg);border-radius:30px;padding:26px 34px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:var(--shadow);animation:pop .35s cubic-bezier(.2,1.6,.4,1);min-width:340px}
+.rv-title{font-size:28px;font-weight:900}
+.rv-pack{width:200px;height:200px;border-radius:32px;background:linear-gradient(135deg,#FFE7A3,#FFC83D);box-shadow:0 8px 0 #D9A21E, var(--shadow);position:relative;font-size:90px;display:flex;align-items:center;justify-content:center;animation:wiggle 1.2s ease-in-out infinite}
+.rv-pack.gold{background:linear-gradient(135deg,#FFF6C8,#F7C948 45%,#E2A400);box-shadow:0 8px 0 #B88300,0 0 40px #FFD54F}
+.rv-pack .rv-wrap{display:flex;flex-direction:column;align-items:center;gap:2px} .rv-pack small{font-size:16px;color:#6b4e00}
+.rv-face{display:none;font-size:120px} .rv-face.gold{filter:drop-shadow(0 0 12px #FFD54F)}
+.rv-pack.open{animation:flip .5s ease both;background:#fff;box-shadow:var(--shadow)} .rv-pack.open.gold{box-shadow:0 0 0 6px #F7C948,0 0 40px #FFD54F}
+.rv-pack.open .rv-wrap{display:none} .rv-pack.open .rv-face{display:block;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-4deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-2deg)}}
+@keyframes flip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+.rv-name{font-size:18px;color:var(--muted);min-height:24px}
+
+/* ---------- album ---------- */
+.album-body{flex:1;overflow:auto;padding:4px 22px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;touch-action:pan-y;align-content:start}
+.apage{background:var(--card);border-radius:22px;padding:14px 16px;box-shadow:var(--shadow)}
+.ahead{font-size:20px;font-weight:900;margin-bottom:10px;display:flex;justify-content:space-between} .ahead span{color:var(--muted);font-size:16px}
+.agrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.slot{aspect-ratio:1;border-radius:14px;border:2px dashed #E3D3B6;display:flex;align-items:center;justify-content:center;font-size:30px;color:#D6C4A3;position:relative}
+.slot.has{border:0;background:#FFF7E8} .slot.has span{animation:none} .slot.gold{background:radial-gradient(circle,#FFF3B8,#FFE07A);box-shadow:0 0 10px #FFD54F}
+.slot b{position:absolute;right:3px;bottom:1px;font-size:11px;color:var(--muted)}
+
+/* ---------- play hub & games ---------- */
+.play-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:0 24px 24px}
+.gcards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.gcard{width:270px;min-height:250px;border-radius:28px;background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px;text-align:center}
+.gcard:active{transform:scale(.97)} .gc-icon{font-size:70px;line-height:1} .gc-name{font-size:26px;font-weight:900} .gc-desc{font-size:16px;color:var(--muted);font-weight:700;line-height:1.3} .gc-best{font-size:15px;background:var(--bg2);border-radius:999px;padding:4px 12px}
+.gtitle{font-size:20px!important;color:var(--ink)!important;font-weight:900}
+.gbar{flex:1;height:14px;background:var(--pending);border-radius:7px;overflow:hidden} .gbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#38B26A,#FFC83D);border-radius:7px;transition:width .2s linear}
+.gscore{font-size:22px;font-weight:900;min-width:110px;text-align:right;font-variant-numeric:tabular-nums}
+.game-stage{flex:1;position:relative;min-height:0;display:flex;flex-direction:column}
+.pop-head{display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:4px;z-index:3;pointer-events:none}
+.pop-q{display:flex;align-items:center;gap:14px;font-size:64px;font-weight:900;font-variant-numeric:tabular-nums}
+.pop-q .pq-q{color:#3A8FD8;background:#E3F3FF;border-radius:18px;padding:0 18px} .pop-q .pq-op{color:var(--muted)} .pop-q .pq-f{color:var(--teal)}
+.pop-hint{font-size:20px;color:var(--muted)}
+.pop-field{position:relative;flex:1;overflow:hidden;margin:6px 16px 0;border-radius:26px;background:linear-gradient(#E9F7FF,#CDEBFF)}
+.bub{position:absolute;left:0;top:0;width:98px;height:98px;border-radius:50%;font-size:42px;font-weight:900;color:#0D3B66;display:flex;align-items:center;justify-content:center;will-change:transform;
+  background:radial-gradient(circle at 32% 28%,#fff 0 9%,#D7F0FF 16%,#8FD3FA 55%,#4FA6E8 100%);box-shadow:inset -6px -9px 16px rgba(0,40,90,.18),0 6px 14px rgba(0,60,120,.18)}
+.bub.popped{animation:bubpop .3s ease-out forwards} @keyframes bubpop{to{scale:1.7;opacity:0}}
+.bub.nope{animation:nope .35s ease-in-out} @keyframes nope{25%{rotate:-16deg}75%{rotate:16deg}}
+.gresult{position:absolute;inset:0;margin:auto;width:min(520px,90%);height:fit-content;background:var(--card);border-radius:30px;box-shadow:var(--shadow);padding:26px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:6;text-align:center}
+.gr-icon{font-size:64px;line-height:1} .gr-big{font-size:48px;font-weight:900} .gr-sub{font-size:18px;color:var(--muted)} .gr-sub2{font-size:16px;color:var(--muted)} .gr-best{font-size:22px;color:#C27C00;font-weight:900}
+.rd-wrap,.bd-wrap{flex:1;display:flex;align-items:center;justify-content:center;gap:34px;padding:0 24px 16px}
+.rd-left{display:flex;flex-direction:column;align-items:center;gap:14px} .rd-msg{font-size:28px;font-weight:900;min-height:38px}
+.rd-ab{position:relative}
+.rd-cover{position:absolute;inset:0;border-radius:18px;background:repeating-linear-gradient(45deg,#2F7D6D 0 18px,#28A08C 18px 36px);display:flex;align-items:center;justify-content:center;font-size:70px;transform:scaleY(0);transform-origin:top;transition:transform .25s ease;box-shadow:var(--shadow)}
+.rd-cover.on{transform:scaleY(1)}
+.rd-right{width:330px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.bd-q{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:220px} .bd-k{font-size:24px;color:var(--muted)} .bd-num{font-size:110px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:var(--coral)}
+
+/* ---------- confetti ---------- */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:11px;height:15px;border-radius:2px;animation-name:fall;animation-timing-function:cubic-bezier(.3,.6,.6,1);animation-fill-mode:forwards}
+@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
+@media (max-width:760px){ .gcard{width:210px;min-height:200px} .pop-q{font-size:44px} .bub{width:80px;height:80px;font-size:34px} .rd-right{width:270px} }
+
+/* ---------- treats ---------- */
+.hright{display:flex;align-items:center;gap:18px}
+.jar{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:22px;padding:8px 16px 8px 8px;box-shadow:var(--shadow)}
+.jar:active{transform:scale(.97)} .jarsvg{width:54px;height:64px}
+.jar-txt{display:flex;flex-direction:column;align-items:flex-start} .jar-n{font-size:26px;font-weight:900;line-height:1} .jar-n span{font-size:20px} .jar-sub{font-size:13px;color:var(--muted)}
+.jar.ready{animation:wiggle 1.4s ease-in-out infinite;box-shadow:0 0 0 3px var(--sun),var(--shadow)}
+.beadfloat{position:fixed;left:50%;top:42%;transform:translate(-50%,0);z-index:95;pointer-events:none;text-align:center;font-size:54px;font-weight:900;color:#C27C00;text-shadow:0 2px 0 #fff,0 0 18px #FFE07A;animation:beadup 2.1s ease-out forwards}
+.beadfloat small{display:block;font-size:20px;color:var(--muted);text-shadow:none}
+@keyframes beadup{0%{opacity:0;transform:translate(-50%,30px) scale(.6)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-90px) scale(1)}}
+.shop-wallet{font-size:22px;font-weight:900;background:linear-gradient(135deg,#FFF3C4,#FFD54F);border-radius:999px;padding:8px 18px;box-shadow:var(--shadow)}
+.shop-body{flex:1;overflow:auto;padding:0 22px 18px;display:flex;flex-direction:column;gap:12px;touch-action:pan-y}
+.shop-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.shop-tickets{display:flex;align-items:center;gap:8px;flex-wrap:wrap} .tk-head{font-weight:900}
+.ticket{display:inline-flex;align-items:center;gap:8px;background:#FFF;border:2px dashed var(--coral);border-radius:14px;padding:6px 12px;font-size:18px;font-weight:800;margin:3px 0}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.tcard{background:var(--card);border-radius:24px;box-shadow:var(--shadow);padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;position:relative}
+.tcard.goal{box-shadow:0 0 0 4px var(--sun),var(--shadow)} .tcard.can{background:linear-gradient(#FFFFFF,#FFF5DA)}
+.tgoal{position:absolute;top:-12px;background:var(--sun);border-radius:999px;padding:2px 10px;font-size:13px}
+.temoji{font-size:64px;line-height:1.1} .tcard.can .temoji{animation:wiggle 1.6s ease-in-out infinite}
+.tname{font-size:18px;font-weight:900} .tprice{font-size:20px;font-weight:900;color:#C27C00}
+.tbar{width:100%;height:10px;background:var(--pending);border-radius:5px;overflow:hidden} .tbar i{display:block;height:100%;background:linear-gradient(90deg,#FFD54F,#F2B21B)}
+.tneed{font-size:13px;color:var(--muted)} .tbtns{display:flex;flex-direction:column;gap:6px;width:100%} .tbtns .btn{width:100%}
+.shop-how{text-align:center}
+.askm{position:fixed;inset:0;background:rgba(42,33,24,.5);display:none;align-items:center;justify-content:center;z-index:60} .askm.active{display:flex}
+.ask-card{background:var(--bg);border-radius:28px;padding:26px 30px;display:flex;flex-direction:column;align-items:center;gap:18px;box-shadow:var(--shadow);animation:pop .3s}
+.ask-t{font-size:28px;text-align:center}
+.tptable input.txt{min-width:0}
+@media (max-width:760px){ .hright{flex-direction:column;align-items:flex-end;gap:6px} .jarsvg{width:40px;height:48px} }
 </style>
 </head>
 <body>
 <div id="app">
 
 <section id="home" class="screen active">
-  <div class="hdr"><div><h1 id="greeting">Abacus Practice</h1><div class="sub" id="greetSub"></div></div><div class="calrow"><div id="calendar"></div><span id="calLabel"></span></div></div>
-  <div class="today"><div><div class="big" id="todayTitle">Today's practice</div><div class="meta" id="todayMeta"></div></div><button class="go" id="todayGo">Start ▶</button></div>
+  <div class="hdr">
+    <div id="bixHome"></div>
+    <div class="hright"><button class="jar" id="jar"></button><div class="garden-box"><div class="garden" id="garden"></div><div class="glabel" id="gardenLabel"></div></div></div>
+  </div>
+  <div class="today">
+    <div class="tleft"><div class="big" id="todayTitle">Today's practice</div><div class="steps" id="todaySteps"></div><div class="meta" id="greetSub"></div></div>
+    <button class="go" id="todayGo">Start ▶</button>
+  </div>
   <div class="path" id="path"></div>
   <div class="tiles">
     <button class="tile" data-mode="visual"><span class="ic">👀</span>Look</button>
     <button class="tile" data-mode="listen"><span class="ic">👂</span>Listen</button>
     <button class="tile" data-mode="flash"><span class="ic">⚡️</span>Flash</button>
     <button class="tile" data-mode="learn"><span class="ic">📖</span>Learn</button>
+    <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
+    <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
   </div>
-  <div id="ver" style="position:absolute;left:18px;bottom:12px;color:var(--muted);font-size:12px;opacity:.6">v2.7</div><button id="grownups">⚙️ Grown-ups</button>
+  <div id="ver" style="position:absolute;left:18px;bottom:12px;color:var(--muted);font-size:12px;opacity:.6">v2.8</div><button id="grownups">⚙️ Grown-ups</button>
+</section>
+
+<section id="play" class="screen">
+  <div class="topbar"><button class="exit" id="exitPlay">✕</button><div class="lvl" style="font-size:24px;color:var(--ink);font-weight:900">🎮 Play</div><div style="flex:1"></div></div>
+  <div class="play-body"><div id="bixPlay"></div><div class="gcards" id="playCards"></div></div>
+</section>
+
+<section id="game" class="screen">
+  <div class="topbar"><button class="exit" id="exitGame">✕</button><div class="lvl gtitle" id="gameTitle"></div><div class="gbar"><i id="gameBar"></i></div><div class="gscore" id="gameScore"></div></div>
+  <div class="game-stage" id="gameStage"></div>
+  <div class="gmascot" id="bixGame"></div>
+</section>
+
+<section id="shop" class="screen">
+  <div class="topbar"><button class="exit" id="exitShop">✕</button><div class="lvl" style="font-size:24px;color:var(--ink);font-weight:900">🍭 Treat Shop</div><div style="flex:1"></div><div class="shop-wallet"><span id="shopBeads">0</span> 🟡 golden beads</div></div>
+  <div class="shop-body">
+    <div class="shop-top"><div id="bixShop"></div><div id="shopTickets" class="shop-tickets"></div></div>
+    <div class="tcards" id="shopCards"></div>
+    <div class="note shop-how">Earn golden beads: finish a lesson, drill or game +1 · gold sticker +1 · finish Today's practice +3 · unlock a new skill +5</div>
+  </div>
+  <div id="shopAsk" class="askm"><div class="ask-card"><div class="ask-t" id="askText"></div><div class="row"><button class="btn coral" id="askYes">Yes please!</button><button class="btn ghost" id="askNo">Not yet</button></div></div></div>
+</section>
+
+<section id="album" class="screen">
+  <div class="topbar"><button class="exit" id="exitAlbum">✕</button><div class="lvl" style="font-size:24px;color:var(--ink);font-weight:900">📒 My stickers</div><div style="flex:1"></div><div class="gscore" id="albumCount"></div></div>
+  <div class="album-body" id="albumPages"></div>
 </section>
 
 <section id="lesson" class="screen">
@@ -211,6 +378,7 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 <section id="drill" class="screen">
   <div class="topbar"><button class="exit" id="exitDrill">✕</button><div class="lvl" id="drillLevel"></div><div class="strip" id="strip"></div><div class="timer" id="timer">0:00</div></div>
   <div class="drill-body">
+    <div class="dmascot" id="bixDrill"></div>
     <div class="problem" id="problemArea"></div>
     <div class="listen-stage" id="listenStage" style="display:none">
       <div class="ear" id="ear">👂</div><div class="listen-msg" id="listenMsg">Listen…</div>
@@ -235,6 +403,7 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 </section>
 
 <section id="summary" class="screen">
+  <div id="bixSum"></div>
   <div class="bigstars" id="sumStars"></div>
   <h2 id="sumTitle">Great job!</h2>
   <div class="big" id="sumScore"></div>
@@ -243,6 +412,8 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 </section>
 
 <div id="showme"><div class="showme-card"><div id="showmeAbacus"></div><div class="showme-side"><div class="caption"><div class="k">Show me</div><div class="prob" id="showmeProb"></div><div id="showmeText"></div></div><div class="lesson-nav"><button class="btn ghost small" id="showmeReplay">🔁 Again</button><span style="flex:1"></span><button class="btn small" id="showmeClose">Got it</button></div></div></div></div>
+
+<div id="stickerReveal"><div class="rv-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack"><span class="rv-wrap">🎁<small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="btn" id="rvOk">Add to my album</button></div></div>
 
 <div id="nodemenu"><div class="menu-card"><h3 id="nmTitle"></h3><div class="intro" id="nmIntro"></div><button class="btn" id="nmLearn">📖 Learn</button><button class="btn ghost" id="nmLook">👀 Look &amp; solve</button><button class="btn ghost" id="nmListen">👂 Listen &amp; solve</button><button class="btn ghost small" id="nmClose">Close</button></div></div>
 
@@ -259,6 +430,13 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
   <div class="field"><label>Her name (for the greeting)</label><input type="text" id="sName" style="font:inherit;font-size:17px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6"></div>
   <table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table>
   <div class="note">A skill unlocks the next one automatically at 80% or better over the last 20 problems, practised on at least 2 different days. You can mark any skill learned or not learned by hand.</div>
+
+  <h3>Treats &amp; golden beads</h3>
+  <div class="note">She earns golden beads 🟡 for finishing things (lesson, drill or game +1; gold sticker +1; all of Today's practice +3; new skill unlocked +5) and spends them in the Treat Shop. When she buys a treat, a ticket appears here for you to hand over.</div>
+  <div class="field"><label>Golden beads she has<span class="hint" id="tpTotal"></span></label><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn small ghost" data-adj="-5">−5</button><button class="btn small ghost" data-adj="-1">−1</button><span class="val" id="tpBeads" style="font-size:22px;min-width:40px;text-align:center"></span><button class="btn small ghost" data-adj="1">+1</button><button class="btn small ghost" data-adj="5">+5</button></div></div>
+  <div class="field" style="align-items:flex-start"><label>Rewards to give</label><div id="tpTickets" style="flex:1;max-width:60%"></div></div>
+  <table class="tptable"><thead><tr><th>Icon</th><th>Treat</th><th>Price</th><th></th></tr></thead><tbody id="tpList"></tbody></table>
+  <div class="row" style="justify-content:flex-start;margin:8px 0"><button class="btn small ghost" id="tpAdd">＋ Add a treat</button><button class="btn small ghost" id="tpDefaults">Reset to original list</button></div>
 
   <h3>Drills</h3>
   <div class="field"><label>Problems per set</label><div><input type="range" id="sCount" min="5" max="20" step="1"><span class="val" id="sCountV"></span></div></div>
@@ -314,9 +492,12 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 </section>
 
 </div>
-<script src="engine.js?v=2.7"></script>
-<script src="soroban.js?v=2.7"></script>
-<script src="curriculum.js?v=2.7"></script>
-<script src="app.js?v=2.7"></script>
+<script src="engine.js?v=2.8"></script>
+<script src="soroban.js?v=2.8"></script>
+<script src="curriculum.js?v=2.8"></script>
+<script src="fun.js?v=2.8"></script>
+<script src="games.js?v=2.8"></script>
+<script src="treats.js?v=2.8"></script>
+<script src="app.js?v=2.8"></script>
 </body>
 </html>

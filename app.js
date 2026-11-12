@@ -36,6 +36,11 @@ const Sfx = {
   bad(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; this.tone(196,t,0.3,'triangle',0.12); },
   tap(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; this.tone(880,t,0.05,'square',0.03); },
   star(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; [523,659,784,1047].forEach((f,i)=>this.tone(f,t+i*0.11,0.35)); },
+  sweep(f1,f2,dur,type='sine',vol=0.16){ if(!settings.sfx) return; try{ const c=Speaker.ensureCtx(), t=c.currentTime; const o=c.createOscillator(), g=c.createGain(); o.type=type; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur+0.02); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+0.05);}catch(e){} },
+  pop(){ this.sweep(950,260,0.09,'sine',0.2); },
+  soft(){ this.sweep(330,220,0.14,'triangle',0.08); },
+  boing(){ this.sweep(260,720,0.18,'sine',0.12); },
+  sparkle(){ if(!settings.sfx) return; const t=Speaker.ctx?Speaker.ctx.currentTime:0; [1319,1568,2093,2637].forEach((f,i)=>this.tone(f,t+i*0.07,0.22,'sine',0.09)); },
 };
 
 /* ---------------- speech ----------------
@@ -303,7 +308,7 @@ const Backup = {
         voices.clips[p.id][w]=b64(bytes);
       }
     }
-    const data={app:'abacus-practice', format:2, savedAt:new Date().toISOString(), settings, progress, history, days, voices};
+    const data={app:'abacus-practice', format:2, savedAt:new Date().toISOString(), settings, progress, history, days, fun:Fun.data, voices};
     const name=`abacus-backup-${todayKey()}.json`;
     this.file=new File([JSON.stringify(data)], name, {type:'application/json'});
     return this.file;
@@ -327,7 +332,7 @@ const Backup = {
     }
     if (withProgress){
       const keepProfiles=profiles(); settings=Object.assign({}, DEFAULTS, d.settings||{}, {profiles:keepProfiles});
-      if (d.progress) progress=d.progress; if (d.history) history=d.history; if (d.days) days=d.days;
+      if (d.progress) progress=d.progress; if (d.history) history=d.history; if (d.days) days=d.days; if (d.fun) Fun.replace(d.fun);
       save('history',history); save('days',days); saveProgress();
     }
     saveSettings();
@@ -341,43 +346,102 @@ function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===
 /* ---------------- home ---------------- */
 function curIdx(){ return NODE_IDX[progress.current] ?? 0; }
 function stars(nid){ const h=node(nid).hist.slice(-20); if(!h.length) return 0; const p=h.filter(x=>x.ok).length/h.length; return node(nid).mastered ? 3 : p>=0.8 ? 2 : h.length>=5 ? 1 : 0; }
+const HOME_LINES = (n)=>{
+  const nm = settings.name ? `, ${settings.name}` : '';
+  const L=[`Hi${nm}! Ready for ${n.short}?`, `Let's move some beads${nm}!`, `Hello${nm}! Tap Start when you're ready.`];
+  if (n.family===10) L.push('Big friends make 10. Let\'s practise!');
+  if (n.family===5) L.push('Small friends make 5. Let\'s practise!');
+  return L;
+};
 function renderHome(){
-  const nm = settings.name ? `Hi ${settings.name}!` : 'Abacus Practice';
-  $('#greeting').textContent = nm;
   const cur = NODES[curIdx()];
-  $('#greetSub').textContent = `Working on: ${cur.title}`;
-  const plan = todayPlan();
-  $('#todayTitle').textContent = plan.title; $('#todayMeta').textContent = plan.meta;
+  $('#greetSub').textContent = `Skill: ${cur.icon} ${cur.title}`;
+  // Bix
+  const bh=$('#bixHome'); if (!bh.querySelector('.bix')) Fun.Mascot.mount(bh, {size:92, keep:true});
+  const steps = todaySteps(); const allDone = steps.every(s=>s.done);
+  Fun.Mascot.say(bh, allDone ? `All done today${settings.name?', '+settings.name:''}! 🌸 Play a game or collect stickers.` : HOME_LINES(cur)[Fun.data.seen++ % HOME_LINES(cur).length], 0); Fun.save();
+  // today's three steps
+  $('#todayTitle').textContent = allDone ? 'Today’s practice — done! 🌸' : 'Today’s practice';
+  const nextI = steps.findIndex(s=>!s.done);
+  $('#todaySteps').innerHTML = steps.map((s,i)=>`<span class="step${s.done?' done':''}${i===nextI?' next':''}">${s.done?'✓':s.icon} ${s.label}</span>`).join('');
+  $('#todayGo').textContent = allDone ? 'Play 🎮' : (nextI===0 ? 'Start ▶' : 'Next ▶');
   // path
   const p=$('#path'); p.innerHTML='';
   NODES.forEach((n,i)=>{
     const el=document.createElement('button'); const st=node(n.id);
     el.className='node'+(i===curIdx()?' cur':'')+(i>curIdx()?' locked':'')+(st.mastered?' done':'');
     el.innerHTML=`<div class="ic">${n.icon}</div><div class="t">${n.short}</div><div class="stars">${'★'.repeat(stars(n.id))}</div>${i>curIdx()?'<div class="lock">🔒</div>':''}`;
-    el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); return; } openNodeMenu(n); };
+    el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); Fun.Mascot.say(bh, 'Locked! Finish the skills before it to open it. 🔒', 3000); return; } openNodeMenu(n); };
     p.appendChild(el);
   });
   setTimeout(()=>{ const c=p.querySelector('.node.cur'); if(c) p.scrollLeft = Math.max(0, c.offsetLeft - p.clientWidth/2 + c.clientWidth/2); },0);
-  renderCalendar();
+  Fun.renderGarden($('#garden'), $('#gardenLabel'), days); Treats.renderJar();
+  const unseen = Fun.count() - (Fun.data.albumSeen||0); const bd=$('#albumBadge'); bd.textContent = unseen>0 ? '+'+unseen : ''; bd.classList.toggle('on', unseen>0);
 }
-function renderCalendar(){
-  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), n=new Date(y,m+1,0).getDate();
-  const cal=$('#calendar'); cal.innerHTML=''; let done=0;
-  for(let d=1;d<=n;d++){ const key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const el=document.createElement('div'); el.className='d'+(days[key]?' done':'')+(d===now.getDate()?' tdy':''); if(days[key]) done++; cal.appendChild(el); }
-  $('#calLabel').textContent = done+' day'+(done===1?'':'s')+' this month';
+function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
+const STEP_INFO = { lesson:['📖','Learn'], visual:['👀','Look'], listen:['👂','Listen'], flash:['⚡️','Flash'], game:['🎮','Game'] };
+// Three short steps a day: learn/practise, a game, then the other practice mode. Regenerated each day.
+function todaySteps(){
+  const F=Fun.data, day=todayKey(), n=NODES[curIdx()];
+  if (!F.today || F.today.day!==day){
+    const k = Object.keys(days).length;
+    const drill = n.kind==='flash' ? 'flash' : (k%2===0 ? 'visual' : 'listen');
+    const s1 = (!node(n.id).lesson && hasLesson(n)) ? 'lesson' : drill;
+    const s3 = n.kind==='flash' ? (k%2===0?'visual':'listen') : (s1==='visual' ? 'listen' : 'visual');
+    const gameIds = Games.family()===5 && curIdx()<NODE_IDX.sf_add ? ['build','reader'] : ['pop','reader','build'];
+    const g = gameIds[k % gameIds.length];
+    F.today = { day, celebrated:false, steps:[ {kind:s1}, {kind:'game', game:g}, {kind:s3} ].map(s=>Object.assign(s,{done:false})) };
+    Fun.save();
+  }
+  // Keep the plan in step with the current skill (it can change mid-day: unlocked, or set by a grown-up).
+  const needLesson = hasLesson(n) && !node(n.id).lesson; let changed=false;
+  for (const s of F.today.steps){
+    if (s.done) continue;
+    if (s.kind==='lesson' && !needLesson){ const used=F.today.steps.map(x=>x.kind); s.kind = n.kind==='flash' ? 'flash' : (used.includes('visual') ? 'listen' : 'visual'); changed=true; }
+  }
+  const first=F.today.steps[0];
+  if (needLesson && !first.done && first.kind!=='lesson' && !F.today.steps.some(x=>x.kind==='lesson')){ first.kind='lesson'; changed=true; }
+  if (changed) Fun.save();
+  return F.today.steps.map(s=>{ const [icon,label]=STEP_INFO[s.kind]; const g=s.game&&Games.GAMES[s.game]; return Object.assign({}, s, { icon: g?g.icon:icon, label: g?g.name:label }); });
 }
-function todayPlan(){
-  const n = NODES[curIdx()]; const st=node(n.id);
-  const todays = history.filter(h=>h.at.slice(0,10)===todayKey());
-  if (!st.lesson && (n.demos || n.kind==='numbers')) return { kind:'lesson', node:n, title:`Learn: ${n.title}`, meta:'A short lesson, then you try it' };
-  if (n.kind==='flash') return { kind:'drill', mode:'flash', node:n, title:'Flash numbers', meta:`${n.title} · ${settings.count} problems` };
-  const mode = todays.length % 2 === 0 ? 'visual' : 'listen';
-  return { kind:'drill', mode, node:n, title: mode==='visual' ? 'Look & solve' : 'Listen & solve', meta:`${n.title} · ${settings.count} problems` };
+function startStep(s){
+  const n=NODES[curIdx()];
+  if (s.kind==='lesson') return startLesson(n);
+  if (s.kind==='game') return Games.open(s.game);
+  if ((s.kind==='visual'||s.kind==='listen') && hasLesson(n) && !node(n.id).lesson) return startLesson(n);   // learn a new skill before drilling it
+  if (s.kind==='flash') return startDrill('flash', n);
+  return startDrill(s.kind, n.kind==='flash' ? C.BY_ID.combined : n);
 }
-$('#todayGo').addEventListener('click', ()=>{ const p=todayPlan(); if(p.kind==='lesson') startLesson(p.node); else startDrill(p.mode, p.node); });
+// Called whenever she finishes something: plants today's flower, gives a sticker, ticks today's step.
+async function activityDone(kind, info={}){
+  days[todayKey()]=true; save('days',days);
+  const F=Fun.data; if (F.today && F.today.day===todayKey()){ const st=F.today.steps.find(s=>!s.done && s.kind===kind); if (st) st.done=true; }
+  Fun.save();
+  await Fun.give({gold: !!info.gold});
+  Treats.earn(Treats.EARN.activity + (info.gold ? Treats.EARN.gold : 0), info.gold ? 'finished + gold sticker' : 'for finishing');
+  if (info.leveled){ await sleep(2300); Treats.earn(Treats.EARN.skill, 'new skill unlocked!'); }
+  if (F.today && F.today.day===todayKey() && F.today.steps.every(s=>s.done) && !F.today.celebrated){
+    F.today.celebrated=true; F.garden[todayKey()]='full'; Fun.save();
+    await sleep(2300); Fun.confetti(120); Sfx.star();
+    await Fun.give({gold:true, title:'Today’s practice is done! 🌸'});
+    Treats.earn(Treats.EARN.today, 'Today’s practice done!');
+  }
+  if ($('#home').classList.contains('active')) renderHome();
+}
+$('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
+function goPlay(){ Games.renderHub(); const bp=$('#bixPlay'); if (!bp.querySelector('.bix')) Fun.Mascot.mount(bp,{size:84}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0); show('play'); }
+function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
+$('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
+$('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
+$('#exitAlbum').addEventListener('click', ()=>{ renderHome(); show('home'); });
+$('#jar').addEventListener('click', ()=>{ Sfx.tap(); Treats.open(); });
+$('#exitShop').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $$('.tile').forEach(t=>t.addEventListener('click', ()=>{
+  Speaker.unlock();
   const n=NODES[curIdx()]; const m=t.dataset.mode;
-  if (m==='learn'){ const target = (n.demos||n.kind==='numbers') ? n : NODES.slice(0,curIdx()).reverse().find(x=>x.demos) || n; startLesson(target); }
+  if (m==='play') return goPlay();
+  if (m==='album') return goAlbum();
+  if (m==='learn'){ const target = hasLesson(n) ? n : NODES.slice(0,curIdx()).reverse().find(x=>x.demos) || n; startLesson(target); }
   else if (m==='flash') startDrill('flash', n.kind==='flash' ? n : NODES[curIdx()]);
   else startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
 }));
@@ -420,7 +484,7 @@ async function renderLesson(){
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `The abacus shows <b>${t}</b>. Now ${d<0?'take away':'add'} <b>${Math.abs(d)}</b>.`, `${t} ${d<0?'−':'+'} ${Math.abs(d)}`);
     $('#lessonNext').textContent='Skip ▶'; $('#lessonHint').style.display=''; return;
   }
-  if (L.phase==='done'){ cap('Done!', `You learned <b>${n.title}</b>. Now practise it with Look & Listen.`, '🎉'); $('#lessonNext').textContent='Finish ✓'; node(n.id).lesson=true; saveProgress(); Sfx.star(); return; }
+  if (L.phase==='done'){ cap('Done!', `You learned <b>${n.title}</b>. Now practise it with Look & Listen.`, '🎉'); $('#lessonNext').textContent='Finish ✓'; node(n.id).lesson=true; saveProgress(); Sfx.star(); if (!L.awarded){ L.awarded=true; Fun.confetti(70); activityDone('lesson'); } return; }
 }
 let animToken=0;
 async function playSteps(ab, steps, onStep){
@@ -460,6 +524,7 @@ async function startDrill(m, n){
   $('#flashStage').style.display = mode==='flash'?'flex':'none';
   $('#flashSpeed').style.display = mode==='flash'?'flex':'none';
   if (mode==='listen') setupGapSlider(); if (mode==='flash') setupFlashSlider();
+  const bd=$('#bixDrill'); if (!bd.querySelector('.bix')) Fun.Mascot.mount(bd,{size:70}); Fun.Mascot.say(bd, mode==='listen'?'Listen carefully!':mode==='flash'?'Watch the numbers!':'You can do it!', 2200);
   show('drill');
   presentProblem();                       // start speaking while we are still inside the tap
   try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
@@ -530,9 +595,10 @@ $('#pad').addEventListener('click', e=>{ const b=e.target.closest('button'); if(
 document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked) return; if(/^[0-9]$/.test(e.key)&&entry.length<4) setEntry(entry+e.key); else if(e.key==='Backspace') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 async function submit(){
   if (entry==='') return; const p=problems[idx]; const ok=parseInt(entry,10)===p.answer; locked=true; const fb=$('#feedback');
-  if (ok){ fb.textContent='Yes! ✓'; fb.className='feedback ok'; Sfx.ok(); if(!reviewing){ results[idx]=true; record(p,true); } else p._fixed=true; if(settings.speakFeedback) Speaker.say(null,'yes'); await sleep(650); }
+  const bd=$('#bixDrill');
+  if (ok){ fb.textContent='Yes! ✓'; fb.className='feedback ok'; Sfx.ok(); Fun.Mascot.react(bd,'happy'); if (Math.random()<0.35) Fun.Mascot.say(bd, ['Yes!','Nice!','You got it!','Bead-tastic!','Super!','Wow!'][Math.floor(Math.random()*6)], 1400); if(!reviewing){ results[idx]=true; record(p,true); } else p._fixed=true; if(settings.speakFeedback) Speaker.say(null,'yes'); await sleep(650); }
   else {
-    fb.textContent='Not quite'; fb.className='feedback bad'; Sfx.bad(); $('#answer').classList.add('shake'); setTimeout(()=>$('#answer').classList.remove('shake'),500);
+    fb.textContent='Not quite'; fb.className='feedback bad'; Sfx.bad(); Fun.Mascot.react(bd,'oops'); if (!reviewing) Fun.Mascot.say(bd, ['Oops! We\'ll fix it later.','Almost! Keep going.','That\'s OK. Next one!'][Math.floor(Math.random()*3)], 1800); $('#answer').classList.add('shake'); setTimeout(()=>$('#answer').classList.remove('shake'),500);
     if(settings.speakFeedback) Speaker.say(null,'not quite');
     if(!reviewing){ results[idx]=false; p._given=entry; record(p,false); await sleep(800); }
     else { p._fixed=true; $('#reveal').innerHTML='It was <b>'+p.answer+'</b>'; await sleep(1200); await showMe(p); }
@@ -561,7 +627,11 @@ function finish(){
   $('#sumScore').textContent = correct+' / '+problems.length; $('#sumTime').textContent=Math.floor(secs/60)+' min '+(secs%60)+' sec';
   $('#sumNote').textContent = leveled ? `🎉 You unlocked: ${NODES[curIdx()].title}!` : '';
   const toFix=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); $('#fixBtn').style.display=toFix.length?'':'none';
-  show('summary'); if (n===3||leveled) Sfx.star(); else Sfx.ok();
+  const bs=$('#bixSum'); if (!bs.querySelector('.bix')) Fun.Mascot.mount(bs,{size:110});
+  Fun.Mascot.say(bs, leveled ? 'You unlocked a new skill! 🎉' : n===3 ? 'Amazing work!' : n===2 ? 'Great job! Fix the red ones with me?' : 'Good practice! Every try makes you stronger.', 0);
+  show('summary'); Fun.Mascot.react(bs, n>=2||leveled?'cheer':'happy', 1800);
+  if (n===3||leveled){ Sfx.star(); Fun.confetti(); } else Sfx.ok();
+  if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 900);
 }
 $('#fixBtn').addEventListener('click', ()=>{ reviewQueue=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); if(!reviewQueue.length) return; reviewing=true; idx=reviewQueue[0]; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500); const m=mode; mode='visual'; $('#problemArea').style.display='flex'; $('#listenStage').style.display='none'; $('#flashStage').style.display='none'; $('#flashSpeed').style.display='none'; show('drill'); presentProblem(); mode=m; });
 $('#showMeBtn').addEventListener('click', async()=>{ if(locked) return; locked=true; await showMe(problems[idx]); locked=false; });
@@ -604,6 +674,7 @@ async function renderParent(){
     tr.innerHTML=`<td>${n.icon} ${n.title}</td><td>${st.lesson?'✓':'—'}</td><td>${acc===null?'—':`<span class="mini"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}" style="padding:4px 10px;min-height:30px;font-size:13px">${st.mastered?'un-learn':'mark learned'}</button></td>`;
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
+  Treats.renderParent(); Treats.bindParent();
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
   const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
   bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
@@ -636,8 +707,17 @@ async function renderParent(){
     tr.innerHTML=`<td>${ws}</td><td>${h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):h.mode==='flash'?'Flash':'Look'}</td><td>${nn.short||''}</td><td>${h.correct}/${h.count}</td><td>${Math.floor(h.secs/60)}:${String(h.secs%60).padStart(2,'0')}</td><td>${missed||'—'}</td>`; st.appendChild(tr); });
 }
 $('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
-$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase her progress and all settings?\n\nRecorded voices are kept.')){ const keep=profiles(); try{ ['history','days','progress'].forEach(k=>localStorage.removeItem('abacus.'+k)); localStorage.setItem('abacus.settings', JSON.stringify({profiles:keep, settingsVersion:5})); }catch(e){} location.reload(); } });
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase her progress, stickers, garden and all settings?\n\nRecorded voices are kept.')){ const keep=profiles(); try{ ['history','days','progress','fun'].forEach(k=>localStorage.removeItem('abacus.'+k)); localStorage.setItem('abacus.settings', JSON.stringify({profiles:keep, settingsVersion:5})); }catch(e){} location.reload(); } });
 
+/* ---------------- bridge for fun.js and games.js ---------------- */
+window.App = {
+  show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
+  nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
+  unlock: ()=>Speaker.unlock(), activityDone, goPlay,
+  async voiceReady(){ try{ await Speaker.prepare(); Speaker.pickReader(false); }catch(e){} },
+  say(n){ try{ Speaker.stop(); return Speaker.say(n); }catch(e){} },
+  gameSeconds: null,
+};
 /* ---------------- boot ---------------- */
 window.__diag = Diag;
 renderHome();
