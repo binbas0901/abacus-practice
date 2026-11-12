@@ -361,7 +361,9 @@ function renderHome(){
   // Bix
   const bh=$('#bixHome'); if (!bh.querySelector('.bix')) Fun.Mascot.mount(bh, {size:92, keep:true});
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
-  Fun.Mascot.say(bh, allDone ? `All done today${settings.name?', '+settings.name:''}! 🌸 Play a game or collect stickers.` : HOME_LINES(cur)[Fun.data.seen++ % HOME_LINES(cur).length], 0); Fun.save();
+  if (!settings.name) Fun.Mascot.say(bh, "I don't know your name yet! Tap me to tell me. 😊", 0);
+  else Fun.Mascot.say(bh, allDone ? `All done today, ${settings.name}! 🌸 Play a game or collect stickers.` : HOME_LINES(cur)[Fun.data.seen++ % HOME_LINES(cur).length], 0);
+  Fun.save();
   // today's three steps
   $('#todayTitle').textContent = allDone ? 'Today’s practice — done! 🌸' : 'Today’s practice';
   const nextI = steps.findIndex(s=>!s.done);
@@ -414,6 +416,12 @@ function drawWire(p){
   const path=document.createElementNS(ns,'path'); path.setAttribute('d', d); svg.appendChild(path); p.prepend(svg);
 }
 window.addEventListener('resize', ()=>{ if ($('#home').classList.contains('active')){ const p=$('#path'); layoutPath(p); requestAnimationFrame(()=>drawWire(p)); } });
+// Tapping Bix on the home screen asks for a name if the device doesn't have one yet.
+$('#bixHome').addEventListener('pointerup', ()=>{ if (settings.name) return; setTimeout(()=>{ Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me. 😊", 0); $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200); }, 250); });
+function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you! 🎉`, 0); }
+$('#nameAskOk').addEventListener('click', saveAskedName);
+$('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
+$('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
 const STEP_INFO = { lesson:['📖','Learn'], visual:['👀','Look'], listen:['👂','Listen'], flash:['⚡️','Flash'], game:['🎮','Game'] };
 // Three short steps a day: learn/practise, a game, then the other practice mode. Regenerated each day.
@@ -718,11 +726,34 @@ $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').cl
 /* ---------------- parent ---------------- */
 function bindRange(id,key,fmt){ const el=$(id), v=$(id+'V'); el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]); el.oninput=()=>{ settings[key]=parseFloat(el.value); v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); }; }
 function bindSwitch(id,key,after){ const el=$(id); el.classList.toggle('on',!!settings[key]); el.onclick=()=>{ settings[key]=!settings[key]; el.classList.toggle('on',settings[key]); saveSettings(); if(after) after(); }; }
+// One glance at whether this device is set up well. Each row: status, what it means, and a button to fix it.
+async function renderChecklist(){
+  const box=$('#setupList'); if(!box) return;
+  const standalone = (navigator.standalone===true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  let persisted=null; try{ if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted(); }catch(e){}
+  const n=NODES[curIdx()], learned=NODES.filter(x=>node(x.id).mastered).length;
+  const treats=Treats.list(), isDefault = JSON.stringify(treats.map(t=>[t.emoji,t.name,t.price]))===JSON.stringify(Treats.DEFAULT_TREATS.map(t=>[t.emoji,t.name,t.price]));
+  const vk=Speaker.kind(), voice = vk==='rec' ? (settings.voice==='rec:turns' ? 'Family voices taking turns' : `${profileName(settings.voice.slice(4))}'s recorded voice`) : vk==='sprite' ? 'Built-in recorded voice' : 'The device voice';
+  const lb=settings.lastBackup ? new Date(settings.lastBackup) : null, days_ = lb ? Math.floor((Date.now()-lb)/864e5) : null;
+  const rows=[
+    [settings.name?'ok':'todo', 'Child’s name', settings.name ? settings.name : 'Not set yet. Bix will greet them by name.', settings.name?'':'<button class="btn small ghost" data-go="name">Set name</button>'],
+    ['ok', 'Current skill', `${n.icon} ${n.title} (${learned} skill${learned===1?'':'s'} learned). Check this matches their class.`, '<button class="btn small ghost" data-go="skill">Change</button> <button class="btn small ghost" data-go="check">Level check</button>'],
+    [standalone?'ok':'todo', 'Home Screen app', standalone ? 'Installed. Safari will keep the data.' : 'Running in a browser tab. Safari can delete data after about a week without use. In Safari: Share ⬆︎ → Add to Home Screen, then open it from the icon.', ''],
+    [persisted===false && !standalone ? 'todo':'ok', 'Storage', persisted ? 'Protected by the browser.' : standalone ? 'Home Screen app storage.' : 'Not protected yet (install to the Home Screen).', ''],
+    [isDefault?'warn':'ok', 'Treats', isDefault ? 'Starter list: candy, lollipop, mac n cheese, cake, Chick-fil-A, McDonald’s. Edit it if this child likes other treats.' : `${treats.length} treats set.`, '<button class="btn small ghost" data-go="treats">Edit treats</button>'],
+    ['ok', 'Listening voice', voice+'.', '<button class="btn small ghost" data-go="voice">Change</button>'],
+    [lb ? (days_>30?'warn':'ok') : 'warn', 'Backup', lb ? `Last saved ${days_===0?'today':days_===1?'yesterday':days_+' days ago'}.` : 'Never saved. Save one so progress can be restored if the device is lost or reset.', '<button class="btn small ghost" data-go="backup">Back up</button>'],
+  ];
+  box.innerHTML = rows.map(([st,t,d,btn])=>`<div class="ck ${st}"><span class="ck-i">${st==='ok'?'✓':st==='warn'?'!':'○'}</span><div class="ck-t"><b>${t}</b><span>${d}</span></div><div class="ck-b">${btn}</div></div>`).join('');
+  const go={ name:'#sName', skill:'#sNode', treats:'#tpList', voice:'#sVoice', backup:'#bkMake' };
+  box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ const k=b.dataset.go; if (k==='check'){ Recorder.stop(); return Setup.open('check'); } const el=$(go[k]); el.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(()=>{ el.focus && el.focus(); el.classList.add('flashme'); setTimeout(()=>el.classList.remove('flashme'),1600); }, 400); });
+}
 async function renderParent(){
   for (const pp of profiles()) { try{ await Speaker.loadRec(pp.id, true); }catch(e){} }
   const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
-  sel.onchange=()=>{ progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
-  $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); };
+  sel.onchange=()=>{ setTimeout(renderChecklist,0); progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
+  $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); renderChecklist(); };
+  renderChecklist();
   const tb=$('#nodeTable tbody'); tb.innerHTML='';
   NODES.forEach((n,i)=>{ const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
     const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned ✓</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':st.mastered==='placed'?'<span class="pill good">learned (level check)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
@@ -734,7 +765,7 @@ async function renderParent(){
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
   const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
   bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
-  fillVoiceSelect(); $('#sVoice').onchange=async()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.activePid=null; await Speaker.prepare(); fillVoiceSelect(); $('#diagLog').textContent=Diag.lines.join('\n'); };
+  fillVoiceSelect(); $('#sVoice').onchange=async()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.activePid=null; await Speaker.prepare(); fillVoiceSelect(); $('#diagLog').textContent=Diag.lines.join('\n'); renderChecklist(); };
   $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare(); Speaker.pickReader(); if (Speaker.activePid) Diag.add('test: '+profileName(Speaker.activePid)+' reading'); const seq=[[7,true],[3,false],[-4,false],[12,false]];
     if (Speaker.canSchedule()){ const t0=Speaker.ctx.currentTime+0.1; seq.forEach(([d,f],i)=>Speaker.scheduleTerm(d,f,t0+i*1.3)); } else { for (const [d,f] of seq){ await Speaker.sayDevice(termText(d,f)); await sleep(300); } } };
   // recorder: who, add, rename, delete, record
@@ -749,9 +780,9 @@ async function renderParent(){
   $('#recPrev').onclick=()=>Recorder.prev(); $('#recNext').onclick=()=>Recorder.next(); $('#recPlay').onclick=()=>Recorder.play();
   // backup
   $('#bkMake').onclick=async()=>{ const b=$('#bkMake'); b.disabled=true; b.textContent='Preparing…'; try{ const f=await Backup.build(); $('#bkSave').style.display=''; $('#bkInfo').textContent=`Ready: ${f.name} (${(f.size/1048576).toFixed(1)} MB, ${profiles().length} voice${profiles().length===1?'':'s'}, progress and settings). Tap "Save file", then choose "Save to Files".`; }catch(e){ $('#bkInfo').textContent='Could not prepare backup: '+(e&&e.message||e); } b.disabled=false; b.textContent='1. Prepare backup'; };
-  $('#bkSave').onclick=async()=>{ const r=await Backup.save(); $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
+  $('#bkSave').onclick=async()=>{ const r=await Backup.save(); if (r==='shared'||r==='downloaded'){ settings.lastBackup=new Date().toISOString(); saveSettings(); renderChecklist(); } $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
   $('#bkOpen').onclick=()=>$('#bkFile').click();
-  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=confirm('Restore her progress and settings from this backup too?\n\nOK = voices + progress + settings\nCancel = voices only'); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
+  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=confirm('Restore the child's progress and settings from this backup too?\n\nOK = voices + progress + settings\nCancel = voices only'); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#diagTts').onclick=async()=>{ Speaker.unlock(); const r=await Speaker.sayDevice('seven, plus three'); Diag.add('device test: '+r); $('#diagLog').textContent=Diag.lines.join('\n'); };
@@ -769,7 +800,7 @@ $('#resetBtn').addEventListener('click', ()=>{ if(confirm('Start over for a new 
 window.App = {
   show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
   nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
-  unlock: ()=>Speaker.unlock(), activityDone, goPlay,
+  unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist,
   nodes: ()=>NODES, nodeTitle: id=>(C.BY_ID[id]||{}).title||id,
   goHome(){ renderHome.introDone=false; renderHome(); show('home'); },
   // Apply the first-time setup (or a repeated level check): name, current skill, and what counts as learned.

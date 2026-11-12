@@ -14,7 +14,7 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=3.3">
+<link rel="stylesheet" href="styles.css?v=3.4">
 </head>
 <body>
 <div id="app">
@@ -37,7 +37,7 @@
     <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
     <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
   </div>
-  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.3</div><button id="grownups">⚙️ Grown-ups</button></div>
+  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.4</div><button id="grownups">⚙️ Grown-ups</button></div>
 </section>
 
 <section id="setup" class="screen">
@@ -153,6 +153,8 @@
 
 <div id="stickerReveal"><div class="rv-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack"><span class="rv-wrap"><span class="bow">🎀</span><small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="btn" id="rvOk">Add to my album</button></div></div>
 
+<div id="nameAsk" class="askm"><div class="ask-card"><div class="ask-t">What's your name?</div><input id="nameAskIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name"><div class="row"><button class="btn" id="nameAskOk">That's me!</button><button class="btn ghost" id="nameAskNo">Later</button></div></div></div>
+
 <div id="nodemenu"><div class="menu-card"><h3 id="nmTitle"></h3><div class="intro" id="nmIntro"></div><button class="btn" id="nmLearn">📖 Learn</button><button class="btn ghost" id="nmLook">👀 Look &amp; solve</button><button class="btn ghost" id="nmListen">👂 Listen &amp; solve</button><button class="btn ghost small" id="nmClose">Close</button></div></div>
 
 <section id="gate" class="screen gate">
@@ -163,16 +165,19 @@
 <section id="parent" class="screen parent">
   <div class="bar"><h2>Grown-ups</h2><span class="spacer"></span><button class="btn small ghost" id="parentDone">Done</button></div>
 
-  <h3>Where she is</h3>
-  <div class="field"><label>Current skill<span class="hint">Everything before it counts as learned. Change this if her class left her further along.</span></label><select id="sNode"></select></div>
-  <div class="field"><label>Her name (for the greeting)</label><input type="text" id="sName" style="font:inherit;font-size:17px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6"></div>
+  <h3>Setup checklist</h3>
+  <div class="checkl" id="setupList"></div>
+
+  <h3>Where they are</h3>
+  <div class="field"><label>Current skill<span class="hint">Everything before it counts as learned. Change this if their class is further along.</span></label><select id="sNode"></select></div>
+  <div class="field"><label>Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" style="font:inherit;font-size:17px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6"></div>
   <div class="row" style="justify-content:flex-start;margin:6px 0 10px"><button class="btn small ghost" id="levelAgain">🔍 Run the level check again</button></div>
   <table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table>
   <div class="note">A skill unlocks the next one automatically at 80% or better over the last 20 problems, practised on at least 2 different days. You can mark any skill learned or not learned by hand.</div>
 
   <h3>Treats &amp; golden beads</h3>
-  <div class="note">She earns golden beads 🟡 for finishing things (lesson, drill or game +1; gold sticker +1; all of Today's practice +3; new skill unlocked +5) and spends them in the Treat Shop. When she buys a treat, a ticket appears here for you to hand over.</div>
-  <div class="field"><label>Golden beads she has<span class="hint" id="tpTotal"></span></label><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn small ghost" data-adj="-5">−5</button><button class="btn small ghost" data-adj="-1">−1</button><span class="val" id="tpBeads" style="font-size:22px;min-width:40px;text-align:center"></span><button class="btn small ghost" data-adj="1">+1</button><button class="btn small ghost" data-adj="5">+5</button></div></div>
+  <div class="note">They earn golden beads 🟡 for finishing things (lesson, drill or game +1; gold sticker +1; all of Today's practice +3; new skill unlocked +5) and spends them in the Treat Shop. When they buy a treat, a ticket appears here for you to hand over.</div>
+  <div class="field"><label>Golden beads they have<span class="hint" id="tpTotal"></span></label><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn small ghost" data-adj="-5">−5</button><button class="btn small ghost" data-adj="-1">−1</button><span class="val" id="tpBeads" style="font-size:22px;min-width:40px;text-align:center"></span><button class="btn small ghost" data-adj="1">+1</button><button class="btn small ghost" data-adj="5">+5</button></div></div>
   <div class="field" style="align-items:flex-start"><label>Rewards to give</label><div id="tpTickets" style="flex:1;max-width:60%"></div></div>
   <table class="tptable"><thead><tr><th>Icon</th><th>Treat</th><th>Price</th><th></th></tr></thead><tbody id="tpList"></tbody></table>
   <div class="row" style="justify-content:flex-start;margin:8px 0"><button class="btn small ghost" id="tpAdd">＋ Add a treat</button><button class="btn small ghost" id="tpDefaults">Reset to original list</button></div>
@@ -185,8 +190,8 @@
 
   <h3>Listening</h3>
   <div class="field"><label>Seconds between numbers<span class="hint">Start of one number to the start of the next. A number never starts before the last one has finished, so very low values mean "as fast as the words allow".</span></label><div><input type="range" id="sGap" min="0.5" max="12" step="0.25"><span class="val" id="sGapV"></span></div></div>
-  <div class="field"><label>Fastest she may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
-  <div class="field"><label>Slowest she may choose</label><div><input type="range" id="sGapMax" min="0.5" max="12" step="0.25"><span class="val" id="sGapMaxV"></span></div></div>
+  <div class="field"><label>Fastest they may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
+  <div class="field"><label>Slowest they may choose</label><div><input type="range" id="sGapMax" min="0.5" max="12" step="0.25"><span class="val" id="sGapMaxV"></span></div></div>
   <div class="field"><label>Say "plus" before added numbers<span class="hint">Off = only "minus" is spoken</span></label><button class="switch" id="sSayPlus"></button></div>
   <div class="field"><label>Voice<span class="hint">🎙 = a family member's recorded voice. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">▶︎ test</button></div></div>
   <div class="recpanel" id="recPanel">
@@ -218,26 +223,26 @@
   <ul class="checklist note">
     <li><b>Thumb</b> pushes 1-beads <b>up</b>; <b>index finger</b> pushes them <b>down</b> and moves the 5-bead both ways.</li>
     <li>Work <b>left to right</b> on multi-digit numbers; one fixed movement per case, never counting beads one by one.</li>
-    <li>Small friends (make 5): 1&amp;4, 2&amp;3. Have her <b>say the partner out loud</b> before moving.</li>
+    <li>Small friends (make 5): 1&amp;4, 2&amp;3. Have them <b>say the partner out loud</b> before moving.</li>
     <li>Big friends (make 10): 1&amp;9, 2&amp;8, 3&amp;7, 4&amp;6, 5&amp;5. "+7 is +10, take 3."</li>
     <li>The beads are the authority: read the answer <b>off the abacus</b>, don't compute in the head and then set it.</li>
-    <li>Short daily sessions beat long weekly ones. Stop while she still has energy.</li>
+    <li>Short daily sessions beat long weekly ones. Stop while they still have energy.</li>
   </ul>
 
   <h3>Backup</h3>
-  <div class="note">Everything (voices, her progress, settings) lives on this iPad. It survives closing the app, but is lost if the app is deleted from the home screen or Safari's website data is cleared. Save a backup file to Files → iCloud Drive now and then; you can restore it here or on another device.</div>
+  <div class="note">Everything (voices, progress, settings) lives on this device. It survives closing the app, but is lost if the app is deleted from the home screen or Safari's website data is cleared. Save a backup file to Files → iCloud Drive now and then; you can restore it here or on another device.</div>
   <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"><button class="btn small ghost" id="resetBtn">Start over for a new child</button></div>
   <div class="note" id="bkInfo"></div>
 </section>
 
 </div>
-<script src="engine.js?v=3.3"></script>
-<script src="soroban.js?v=3.3"></script>
-<script src="curriculum.js?v=3.3"></script>
-<script src="fun.js?v=3.3"></script>
-<script src="games.js?v=3.3"></script>
-<script src="treats.js?v=3.3"></script>
-<script src="onboarding.js?v=3.3"></script>
-<script src="app.js?v=3.3"></script>
+<script src="engine.js?v=3.4"></script>
+<script src="soroban.js?v=3.4"></script>
+<script src="curriculum.js?v=3.4"></script>
+<script src="fun.js?v=3.4"></script>
+<script src="games.js?v=3.4"></script>
+<script src="treats.js?v=3.4"></script>
+<script src="onboarding.js?v=3.4"></script>
+<script src="app.js?v=3.4"></script>
 </body>
 </html>
