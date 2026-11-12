@@ -2,6 +2,9 @@
 
 Soroban practice app for a young learner. Static site; live at the GitHub Pages link for this repo. On an iPad open it in Safari → Share → Add to Home Screen.
 
+**Sharing with other families**
+Each child uses their own device and opens the same link. A device that has never used the app runs a first-time setup (name, then: start from the beginning / find my level / a grown-up picks the skill) and reminds the grown-up to add it to the Home Screen. Everything is stored only on that device, so children never see each other's data. Grown-ups → Backup moves a child's progress to a new device.
+
 **What it does**
 - A curriculum of skills in the standard soroban order (beads → direct add/subtract → small friends → big friends → combined → two-digit → mental), each with an animated lesson on a touchable on-screen soroban, guided practice, then drills.
 - Drills: Look & solve (stacked numbers), Listen & solve (spoken numbers at an adjustable pace), Flash (numbers flash for mental abacus).
@@ -17,6 +20,7 @@ Soroban practice app for a young learner. Static site; live at the GitHub Pages 
 - `engine.js` — bead-rule classifier and rule-aware problem generator (`node engine.test.js`)
 - `curriculum.js` — skill nodes and the left-to-right explanation generator
 - `soroban.js` — on-screen soroban component
+- `onboarding.js` — first-time setup and level check
 - `fun.js` — mascot, stickers, garden, confetti · `games.js` — mini-games · `treats.js` — golden beads and Treat Shop
 - `styles.css` — the design system · `fonts/` — self-hosted fonts
 - `app.js`, `index.html` — the app

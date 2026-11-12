@@ -21,7 +21,9 @@ let history = load('history', []);
 let days = load('days', {});
 // progress: {current:nodeId, nodes:{id:{lesson:bool, mastered:'auto'|'parent'|null, hist:[{ok,day}]}}}
 let progress = load('progress', null);
-if (!progress){ progress = { current: 'bf_add_a', nodes:{} }; NODES.slice(0, NODE_IDX.bf_add_a).forEach(n=>{ progress.nodes[n.id] = {lesson:true, mastered:'parent', hist:[]}; }); save('progress', progress); }
+// A device that has never been set up gets the first-time setup (name + where to start). Nothing is saved until then.
+const firstRun = !progress;
+if (!progress){ progress = { current: 'beads', nodes:{} }; }
 function node(id){ return progress.nodes[id] || (progress.nodes[id] = {lesson:false, mastered:null, hist:[]}); }
 function saveProgress(){ save('progress', progress); }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
@@ -723,11 +725,12 @@ async function renderParent(){
   $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); };
   const tb=$('#nodeTable tbody'); tb.innerHTML='';
   NODES.forEach((n,i)=>{ const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
-    const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned ✓</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
+    const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned ✓</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':st.mastered==='placed'?'<span class="pill good">learned (level check)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
     tr.innerHTML=`<td>${n.icon} ${n.title}</td><td>${st.lesson?'✓':'—'}</td><td>${acc===null?'—':`<span class="mini"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}" style="padding:4px 10px;min-height:30px;font-size:13px">${st.mastered?'un-learn':'mark learned'}</button></td>`;
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
   Treats.renderParent(); Treats.bindParent();
+  $('#levelAgain').onclick=()=>{ Recorder.stop(); Setup.open('check'); };
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
   const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
   bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
@@ -760,13 +763,27 @@ async function renderParent(){
     tr.innerHTML=`<td>${ws}</td><td>${h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):h.mode==='flash'?'Flash':'Look'}</td><td>${nn.short||''}</td><td>${h.correct}/${h.count}</td><td>${Math.floor(h.secs/60)}:${String(h.secs%60).padStart(2,'0')}</td><td>${missed||'—'}</td>`; st.appendChild(tr); });
 }
 $('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
-$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Erase her progress, stickers, garden and all settings?\n\nRecorded voices are kept.')){ const keep=profiles(); try{ ['history','days','progress','fun'].forEach(k=>localStorage.removeItem('abacus.'+k)); localStorage.setItem('abacus.settings', JSON.stringify({profiles:keep, settingsVersion:5})); }catch(e){} location.reload(); } });
+$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Start over for a new child?\n\nThis erases progress, stickers, beads, the garden and settings on this device, then runs the first-time setup. Recorded voices are kept.')){ const keep=profiles(); try{ ['history','days','progress','fun'].forEach(k=>localStorage.removeItem('abacus.'+k)); localStorage.setItem('abacus.settings', JSON.stringify({profiles:keep, settingsVersion:5})); }catch(e){} location.reload(); } });
 
 /* ---------------- bridge for fun.js and games.js ---------------- */
 window.App = {
   show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
   nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
   unlock: ()=>Speaker.unlock(), activityDone, goPlay,
+  nodes: ()=>NODES, nodeTitle: id=>(C.BY_ID[id]||{}).title||id,
+  goHome(){ renderHome.introDone=false; renderHome(); show('home'); },
+  // Apply the first-time setup (or a repeated level check): name, current skill, and what counts as learned.
+  applySetup({name, current, how, mastered=[]}){
+    if (name) settings.name=name;
+    const ci=NODE_IDX[current] ?? 0, label = how==='check' ? 'placed' : 'parent';
+    progress.current=current;
+    NODES.forEach((n,i)=>{ const st=node(n.id);
+      if (i<ci && (how!=='check' || mastered.includes(n.id) || n.id==='beads')){ st.mastered = st.mastered==='auto' ? 'auto' : label; st.lesson=true; }
+      else if (i>=ci && st.mastered && st.mastered!=='auto'){ st.mastered=null; }
+    });
+    if (Fun.data.today) Fun.data.today=null;          // rebuild today's plan for the new starting point
+    Fun.save(); saveSettings(); saveProgress();
+  },
   async voiceReady(){ try{ await Speaker.prepare(); Speaker.pickReader(false); }catch(e){} },
   say(n){ try{ Speaker.stop(); return Speaker.say(n); }catch(e){} },
   gameSeconds: null,
@@ -774,7 +791,8 @@ window.App = {
 /* ---------------- boot ---------------- */
 window.__diag = Diag;
 window.__drill = ()=>({ idx, reviewing, mode, terms: problems[idx]&&problems[idx].terms, answer: problems[idx]&&problems[idx].answer, strip: [...document.querySelectorAll('#strip .sq')].map(e=>e.className.replace('sq','').trim()) });
-renderHome();
+Setup.bind();
+if (firstRun){ show('setup'); Setup.open(); } else renderHome();
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});

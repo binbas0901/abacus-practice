@@ -14,7 +14,7 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=3.2">
+<link rel="stylesheet" href="styles.css?v=3.3">
 </head>
 <body>
 <div id="app">
@@ -37,7 +37,43 @@
     <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
     <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
   </div>
-  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.2</div><button id="grownups">⚙️ Grown-ups</button></div>
+  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.3</div><button id="grownups">⚙️ Grown-ups</button></div>
+</section>
+
+<section id="setup" class="screen">
+  <div class="su-body">
+    <div id="bixSetup"></div>
+    <div class="su-step" id="suName">
+      <h2 class="su-h">What's your name?</h2>
+      <input id="suNameIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name">
+      <button class="btn" id="suNameGo">Next ▶</button>
+    </div>
+    <div class="su-step" id="suLevel">
+      <h2 class="su-h">Where should we start?</h2>
+      <div class="su-cards">
+        <button class="su-card" data-lv="new"><span class="ic">🌱</span><b>I'm new to the abacus</b><small>Start from the very beginning</small></button>
+        <button class="su-card" data-lv="check"><span class="ic">🔍</span><b>Find my level</b><small>A few quick problems on your abacus</small></button>
+        <button class="su-card" data-lv="pick"><span class="ic">🧑‍🏫</span><b>A grown-up will choose</b><small>Pick the skill your class is on</small></button>
+      </div>
+    </div>
+    <div class="su-step" id="suPick">
+      <h2 class="su-h">Which skill are they working on?</h2>
+      <div class="su-skills" id="suPickList"></div>
+      <button class="btn ghost small" id="suPickBack">◀ Back</button>
+    </div>
+    <div class="su-step" id="suCheck">
+      <div class="su-checkhead"><div class="su-lname" id="suLevelName"></div><div class="su-dots" id="suDots"></div><button class="btn ghost small" id="suStop">Start here</button></div>
+      <div class="su-checkbody"><div class="problem su-prob" id="suProb"></div>
+        <div class="entry"><div class="feedback" id="suFb"></div><div class="answer" id="suAns">&nbsp;</div><div class="pad" id="suPad"></div></div></div>
+    </div>
+    <div class="su-step" id="suDone">
+      <h2 class="su-h" id="suDoneH"></h2>
+      <p class="su-p" id="suDoneP"></p>
+      <div class="su-install" id="suInstall"><b>Grown-up: add this to the Home Screen</b> so progress is kept safe. In Safari tap the Share button <span class="share">⬆︎</span> then <b>Add to Home Screen</b>, and open it from the new icon.</div>
+      <p class="su-p su-note">Grown-ups can set treats, record voices and see progress under ⚙️ Grown-ups.</p>
+      <button class="btn" id="suStart">Let's go! ▶</button>
+    </div>
+  </div>
 </section>
 
 <section id="play" class="screen">
@@ -130,6 +166,7 @@
   <h3>Where she is</h3>
   <div class="field"><label>Current skill<span class="hint">Everything before it counts as learned. Change this if her class left her further along.</span></label><select id="sNode"></select></div>
   <div class="field"><label>Her name (for the greeting)</label><input type="text" id="sName" style="font:inherit;font-size:17px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6"></div>
+  <div class="row" style="justify-content:flex-start;margin:6px 0 10px"><button class="btn small ghost" id="levelAgain">🔍 Run the level check again</button></div>
   <table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table>
   <div class="note">A skill unlocks the next one automatically at 80% or better over the last 20 problems, practised on at least 2 different days. You can mark any skill learned or not learned by hand.</div>
 
@@ -189,17 +226,18 @@
 
   <h3>Backup</h3>
   <div class="note">Everything (voices, her progress, settings) lives on this iPad. It survives closing the app, but is lost if the app is deleted from the home screen or Safari's website data is cleared. Save a backup file to Files → iCloud Drive now and then; you can restore it here or on another device.</div>
-  <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"><button class="btn small ghost" id="resetBtn">Reset progress & settings</button></div>
+  <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"><button class="btn small ghost" id="resetBtn">Start over for a new child</button></div>
   <div class="note" id="bkInfo"></div>
 </section>
 
 </div>
-<script src="engine.js?v=3.2"></script>
-<script src="soroban.js?v=3.2"></script>
-<script src="curriculum.js?v=3.2"></script>
-<script src="fun.js?v=3.2"></script>
-<script src="games.js?v=3.2"></script>
-<script src="treats.js?v=3.2"></script>
-<script src="app.js?v=3.2"></script>
+<script src="engine.js?v=3.3"></script>
+<script src="soroban.js?v=3.3"></script>
+<script src="curriculum.js?v=3.3"></script>
+<script src="fun.js?v=3.3"></script>
+<script src="games.js?v=3.3"></script>
+<script src="treats.js?v=3.3"></script>
+<script src="onboarding.js?v=3.3"></script>
+<script src="app.js?v=3.3"></script>
 </body>
 </html>

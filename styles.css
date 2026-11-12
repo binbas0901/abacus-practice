@@ -460,3 +460,36 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 /* a bead she fixed in the fix pass: green, with a gold ring so "fixed" reads differently from "right first time" */
 .strip .sq.fixed{box-shadow:0 0 0 3px var(--sun),0 2px 3px rgba(28,37,71,.25)}
 .strip .sq.fixed.cur{box-shadow:0 0 0 3px var(--grape),0 3px 6px rgba(28,37,71,.3)}
+
+/* =====================================================================
+   FIRST-TIME SETUP
+   ===================================================================== */
+#setup{overflow-y:auto}
+.su-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;min-height:100%}
+#bixSetup{--bix:104px} #bixSetup .bubble{font-size:22px}
+.su-step{display:none;flex-direction:column;align-items:center;gap:18px;width:100%}
+.su-step.on{display:flex}
+.su-h{font-family:var(--display);font-weight:800;font-size:40px;line-height:1.1;margin:0;text-align:center}
+.su-p{font-size:20px;color:var(--ink-2);text-align:center;margin:0;max-width:640px;line-height:1.45}
+.su-note{font-size:16px}
+.su-input{font-family:var(--display);font-weight:800;font-size:40px;text-align:center;width:min(460px,90%);padding:14px 18px 8px;border-radius:22px;border:4px solid var(--line);background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
+.su-input:focus{outline:none;border-color:var(--grape)}
+.su-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.su-card{width:270px;min-height:230px;border-radius:30px;background:var(--paper);border:4px solid var(--line);box-shadow:0 7px 0 var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center}
+.su-card:active{transform:translateY(6px);box-shadow:0 1px 0 var(--line)}
+.su-card[data-lv=new]{border-color:var(--grass);box-shadow:0 7px 0 var(--grass-d)} .su-card[data-lv=check]{border-color:var(--grape);box-shadow:0 7px 0 var(--grape-d)} .su-card[data-lv=pick]{border-color:var(--sun);box-shadow:0 7px 0 var(--sun-d)}
+.su-card .ic{font-size:64px;line-height:1} .su-card b{font-family:var(--display);font-weight:800;font-size:24px;line-height:1.1} .su-card small{font-size:16px;color:var(--ink-2)}
+.su-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;width:min(1000px,100%)}
+.su-skill{display:flex;align-items:center;gap:12px;background:var(--paper);border-radius:18px;padding:12px 14px;box-shadow:0 4px 0 var(--line);text-align:left}
+.su-skill:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.su-skill .ic{font-size:34px;width:52px;height:52px;border-radius:50%;background:var(--sky);display:flex;align-items:center;justify-content:center;flex:none}
+.su-skill b{display:block;font-family:var(--display);font-weight:800;font-size:18px;line-height:1.15} .su-skill small{font-size:14px;color:var(--ink-2)}
+.su-checkhead{display:flex;align-items:center;gap:18px;width:min(1000px,100%)}
+.su-lname{font-family:var(--display);font-weight:800;font-size:24px;white-space:nowrap}
+.su-dots{flex:1;display:flex;gap:6px;align-items:center}
+.su-dots i{width:22px;height:16px;border-radius:50%;background:#C9D9F2} .su-dots i.ok{background:var(--grass)} .su-dots i.cur{background:var(--grape);transform:scale(1.25)}
+.su-checkbody{display:flex;gap:20px;width:min(1000px,100%);height:min(560px,62vh)}
+.su-prob{margin:0}
+.su-install{background:var(--sun-l);border:3px solid var(--sun);border-radius:20px;padding:14px 18px;max-width:640px;font-size:17px;line-height:1.45;text-align:center}
+.su-install .share{display:inline-block;background:#fff;border-radius:8px;padding:0 8px;font-weight:700}
+@media (max-width:760px){ .su-h{font-size:30px} .su-card{width:220px;min-height:190px} .su-checkbody{flex-direction:column;height:auto} }
