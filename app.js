@@ -376,8 +376,17 @@ async function dictate(p){
       Diag.add(`clips ready=${Speaker.canSchedule()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} -> ${scheduled?'audio clock':'device voice fallback'}`);
     }
     if (scheduled){
-      const t0=Speaker.ctx.currentTime+0.3; let lastEnd=t0;
-      p.terms.forEach((d,i)=>{ const when=t0+i*gap; const end=Speaker.scheduleTerm(d,i===0,when); lastEnd=end; setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000)); });
+      // Each number starts `gap` seconds after the previous one started, but never before the
+      // previous one has finished speaking (+ a short breath). No overlap at any speed.
+      const MIN_PAUSE = 0.25;
+      let prevStart=null, prevEnd=Speaker.ctx.currentTime+0.3, lastEnd=prevEnd; const sched=[];
+      p.terms.forEach((d,i)=>{
+        const when = i===0 ? prevEnd : Math.max(prevStart+gap, prevEnd+MIN_PAUSE);
+        const end = Speaker.scheduleTerm(d, i===0, when);
+        sched.push([when,end]); prevStart=when; prevEnd=end; lastEnd=end;
+        setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
+      });
+      Diag.add('schedule: '+sched.map(([w,e])=>`${(w-sched[0][0]).toFixed(2)}–${(e-sched[0][0]).toFixed(2)}`).join(', '));
       await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
     } else {
       for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(termText(p.terms[i],i===0)); Diag.add(`said "${termText(p.terms[i],i===0)}" ${r}`); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }

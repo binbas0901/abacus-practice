@@ -193,7 +193,7 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
     <button class="tile" data-mode="flash"><span class="ic">⚡️</span>Flash</button>
     <button class="tile" data-mode="learn"><span class="ic">📖</span>Learn</button>
   </div>
-  <div id="ver" style="position:absolute;left:18px;bottom:12px;color:var(--muted);font-size:12px;opacity:.6">v2.5</div><button id="grownups">⚙️ Grown-ups</button>
+  <div id="ver" style="position:absolute;left:18px;bottom:12px;color:var(--muted);font-size:12px;opacity:.6">v2.6</div><button id="grownups">⚙️ Grown-ups</button>
 </section>
 
 <section id="lesson" class="screen">
@@ -266,7 +266,7 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
   <div class="field"><label>Spoken feedback ("Yes!" / "Not quite")</label><button class="switch" id="sSpeakFb"></button></div>
 
   <h3>Listening</h3>
-  <div class="field"><label>Seconds between numbers<span class="hint">Start of one number to the start of the next</span></label><div><input type="range" id="sGap" min="0.5" max="12" step="0.25"><span class="val" id="sGapV"></span></div></div>
+  <div class="field"><label>Seconds between numbers<span class="hint">Start of one number to the start of the next. A number never starts before the last one has finished, so very low values mean "as fast as the words allow".</span></label><div><input type="range" id="sGap" min="0.5" max="12" step="0.25"><span class="val" id="sGapV"></span></div></div>
   <div class="field"><label>Fastest she may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
   <div class="field"><label>Slowest she may choose</label><div><input type="range" id="sGapMax" min="0.5" max="12" step="0.25"><span class="val" id="sGapMaxV"></span></div></div>
   <div class="field"><label>Say "plus" before added numbers<span class="hint">Off = only "minus" is spoken</span></label><button class="switch" id="sSayPlus"></button></div>
@@ -308,9 +308,9 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 </section>
 
 </div>
-<script src="engine.js?v=2.5"></script>
-<script src="soroban.js?v=2.5"></script>
-<script src="curriculum.js?v=2.5"></script>
-<script src="app.js?v=2.5"></script>
+<script src="engine.js?v=2.6"></script>
+<script src="soroban.js?v=2.6"></script>
+<script src="curriculum.js?v=2.6"></script>
+<script src="app.js?v=2.6"></script>
 </body>
 </html>
