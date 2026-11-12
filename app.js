@@ -10,7 +10,7 @@ const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]))
 const DEFAULTS = {
   count:10, operands:0, sfx:true, speakFeedback:true, name:'',
   gap:2, gapMin:0.5, gapMax:6, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
-  flashSec:1.0, flashN:3, profiles:[], recPid:null, settingsVersion:5,
+  flashSec:1.0, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:5,
 };
 function load(k, d){ try{ const v = localStorage.getItem('abacus.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
 function save(k, v){ try{ localStorage.setItem('abacus.'+k, JSON.stringify(v)); }catch(e){} }
@@ -348,21 +348,36 @@ function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===
 /* ---------------- home ---------------- */
 function curIdx(){ return NODE_IDX[progress.current] ?? 0; }
 function stars(nid){ const h=node(nid).hist.slice(-20); if(!h.length) return 0; const p=h.filter(x=>x.ok).length/h.length; return node(nid).mastered ? 3 : p>=0.8 ? 2 : h.length>=5 ? 1 : 0; }
+// Home greetings: [bubble text, voice line]. Bubbles can use the name; the recorded voice never does.
 const HOME_LINES = (n)=>{
-  const nm = settings.name ? `, ${settings.name}` : '';
-  const L=[`Hi${nm}! Ready for ${n.short}?`, `Let's move some beads${nm}!`, `Hello${nm}! Tap Start when you're ready.`];
-  if (n.family===10) L.push('Big friends make 10. Let\'s practise!');
-  if (n.family===5) L.push('Small friends make 5. Let\'s practise!');
+  const nm = settings.name ? `, ${settings.name}` : '', h=new Date().getHours();
+  const tod = h<12 ? ['Good morning'+nm+'! Ready to move some beads?','hello_morning'] : h<17 ? ['Good afternoon'+nm+'! Let\'s do some abacus!','hello_afternoon'] : ['Good evening'+nm+'! A little practice before bed?','hello_evening'];
+  const L=[tod, [`You're back${nm}! I missed you!`,'hello_back'], [`Hi${nm}! Ready for ${n.short}? Tap Start!`,'hello_ready']];
+  if (n.family===10) L.push(['Big friends make 10. Let\'s practise!','hello_big']);
+  if (n.family===5) L.push(['Small friends make 5. Let\'s practise!','hello_small']);
   return L;
 };
+let greeted=false;
+function greetIdx(){ return (Fun.data.seen++) % 2 === 0 ? 0 : 1; }
+document.addEventListener('pointerdown', e=>{
+  if (greeted || !$('#home').classList.contains('active')) return;
+  const onButton = e.target.closest('button') && !e.target.closest('#bixHome');
+  setTimeout(()=>{ if (!onButton && !greeted && $('#home').classList.contains('active')) renderHome(); }, 120);
+}, true);
 function renderHome(){
   const cur = NODES[curIdx()];
   $('#greetSub').textContent = `Skill: ${cur.icon} ${cur.title}`;
   // Bix
   const bh=$('#bixHome'); if (!bh.querySelector('.bix')) Fun.Mascot.mount(bh, {size:92, keep:true});
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
-  if (!settings.name) Fun.Mascot.say(bh, "I don't know your name yet! Tap me to tell me. 😊", 0);
-  else Fun.Mascot.say(bh, allDone ? `All done today, ${settings.name}! 🌸 Play a game or collect stickers.` : HOME_LINES(cur)[Fun.data.seen++ % HOME_LINES(cur).length], 0);
+  // Bix talks on the home screen once per visit to the app (the first time sound is allowed), and when today is finished.
+  const canTalk = Speaker.ctx && Speaker.ctx.state==='running';
+  const line = !settings.name ? ["I don't know your name yet! Tap me to tell me. 😊", 'ask_name']
+    : allDone ? [`All done today, ${settings.name}! 🌸 Play a game or collect stickers.`, 'all_done']
+    : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
+  const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
+  Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null);
+  if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; }
   Fun.save();
   // today's three steps
   $('#todayTitle').textContent = allDone ? 'Today’s practice — done! 🌸' : 'Today’s practice';
@@ -375,7 +390,7 @@ function renderHome(){
     const el=document.createElement('button'); const st=node(n.id);
     el.className='node'+(i===curIdx()?' cur':'')+(i>curIdx()?' locked':'')+(st.mastered?' done':'');
     el.innerHTML=`${i===curIdx()?`<div class="here">${Fun.bixMini()}</div>`:''}<div class="ic">${n.icon}</div><div class="t">${n.short}</div><div class="stars">${'★'.repeat(stars(n.id))}</div>`;
-    el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); Fun.Mascot.say(bh, 'Locked! Finish the skills before it to open it. 🔒', 3000); return; } openNodeMenu(n); };
+    el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); Fun.Mascot.say(bh, 'Locked! Finish the skills before it to open it. 🔒', 3000, 'locked'); return; } openNodeMenu(n); };
     p.appendChild(el);
   });
   layoutPath(p);
@@ -417,8 +432,8 @@ function drawWire(p){
 }
 window.addEventListener('resize', ()=>{ if ($('#home').classList.contains('active')){ const p=$('#path'); layoutPath(p); requestAnimationFrame(()=>drawWire(p)); } });
 // Tapping Bix on the home screen asks for a name if the device doesn't have one yet.
-$('#bixHome').addEventListener('pointerup', ()=>{ if (settings.name) return; setTimeout(()=>{ Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me. 😊", 0); $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200); }, 250); });
-function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you! 🎉`, 0); }
+$('#bixHome').addEventListener('pointerup', ()=>{ if (settings.name) return; setTimeout(()=>{ Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me. 😊", 0, 'ask_name'); $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200); }, 250); });
+function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you! 🎉`, 0, 'got_name'); }
 $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
@@ -467,13 +482,13 @@ async function activityDone(kind, info={}){
   if (F.today && F.today.day===todayKey() && F.today.steps.every(s=>s.done) && !F.today.celebrated){
     F.today.celebrated=true; F.garden[todayKey()]='full'; Fun.save();
     await sleep(2300); Fun.confetti(120); Sfx.star();
-    await Fun.give({gold:true, title:'Today’s practice is done! 🌸'});
+    await Fun.give({gold:true, title:'Today’s practice is done! 🌸', voice:'today_done'});
     Treats.earn(Treats.EARN.today, 'Today’s practice done!');
   }
   if ($('#home').classList.contains('active')) renderHome();
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ Games.renderHub(); const bp=$('#bixPlay'); if (!bp.querySelector('.bix')) Fun.Mascot.mount(bp,{size:84}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0); show('play'); }
+function goPlay(){ Games.renderHub(); const bp=$('#bixPlay'); if (!bp.querySelector('.bix')) Fun.Mascot.mount(bp,{size:84}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
@@ -519,16 +534,16 @@ async function renderLesson(){
   }
   if (L.phase==='demo'){
     const [t,d]=n.demos[L.demoIdx]; L.steps=C.explain(t,d); L.step=0; lessonAb.value=t;
-    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', `${t} ${d<0?'−':'+'} ${Math.abs(d)}`); $('#lessonNext').textContent='Next ▶';
+    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', `${t} ${d<0?'−':'+'} ${Math.abs(d)}`); if (L.demoIdx===0) Fun.BixVoice.play('lesson_watch'); $('#lessonNext').textContent='Next ▶';
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
     return;
   }
   if (L.phase==='guided'){
     const [t,d]=n.guided[L.guidedIdx]; L.target=t+d; lessonAb.value=t;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `The abacus shows <b>${t}</b>. Now ${d<0?'take away':'add'} <b>${Math.abs(d)}</b>.`, `${t} ${d<0?'−':'+'} ${Math.abs(d)}`);
-    $('#lessonNext').textContent='Skip ▶'; $('#lessonHint').style.display=''; return;
+    $('#lessonNext').textContent='Skip ▶'; $('#lessonHint').style.display=''; if (L.guidedIdx===0) Fun.BixVoice.play('lesson_turn'); return;
   }
-  if (L.phase==='done'){ cap('Done!', `You learned <b>${n.title}</b>. Now practise it with Look & Listen.`, '🎉'); $('#lessonNext').textContent='Finish ✓'; node(n.id).lesson=true; saveProgress(); Sfx.star(); if (!L.awarded){ L.awarded=true; Fun.confetti(70); activityDone('lesson'); } return; }
+  if (L.phase==='done'){ cap('Done!', `You learned <b>${n.title}</b>. Now practise it with Look & Listen.`, '🎉'); $('#lessonNext').textContent='Finish ✓'; node(n.id).lesson=true; saveProgress(); Sfx.star(); if (!L.awarded){ L.awarded=true; Fun.confetti(70); Fun.BixVoice.play('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
 }
 let animToken=0;
 async function playSteps(ab, steps, onStep){
@@ -539,7 +554,7 @@ async function playSteps(ab, steps, onStep){
 function onLessonBeads(v){
   if (L.busy) return;
   if (L.phase==='numbers' || L.phase==='guided'){
-    if (v===L.target){ Sfx.ok(); cap('Yes! ✓', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+    if (v===L.target){ Sfx.ok(); Fun.BixVoice.play('lesson_yes'); cap('Yes! ✓', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
 function advanceLesson(){
@@ -564,7 +579,7 @@ async function startDrill(m, n){
   results = problems.map(()=>null); idx=0; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500);
   $('#drillLevel').textContent = n.icon+' '+n.short;
   setStages();
-  const bd=$('#bixDrill'); if (!bd.querySelector('.bix')) Fun.Mascot.mount(bd,{size:70}); Fun.Mascot.say(bd, mode==='listen'?'Listen carefully!':mode==='flash'?'Watch the numbers!':'You can do it!', 2200);
+  const bd=$('#bixDrill'); if (!bd.querySelector('.bix')) Fun.Mascot.mount(bd,{size:70}); Fun.Mascot.say(bd, mode==='listen'?'Listen carefully!':mode==='flash'?'Watch the numbers!':'You can do it!', 2200, mode==='listen' ? null : mode==='flash' ? 'drill_flash' : 'drill_look');
   show('drill');
   presentProblem();                       // start speaking while we are still inside the tap
   try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
@@ -594,6 +609,7 @@ function armListen(p){ // show a "Ready" button; the tap that presses it starts 
   const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
 }
 async function dictate(p){
+  Fun.BixVoice.stop();
   const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenGo').style.display='none';
   if (!p._reader){ await Speaker.prepare(); p._reader = Speaker.pickReader(); } else Speaker.activePid = p._reader;   // replay keeps the same reader
   if (my!==dictateToken) return;
@@ -645,14 +661,14 @@ document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('ac
 async function submit(){
   if (entry==='') return; const p=problems[idx]; const ok=parseInt(entry,10)===p.answer; locked=true; const fb=$('#feedback');
   const bd=$('#bixDrill');
-  if (ok){ fb.textContent='Yes! ✓'; fb.className='feedback ok'; Sfx.ok(); Fun.Mascot.react(bd,'happy'); if (Math.random()<0.35) Fun.Mascot.say(bd, ['Yes!','Nice!','You got it!','Bead-tastic!','Super!','Wow!'][Math.floor(Math.random()*6)], 1400); if(!reviewing){ results[idx]=true; record(p,true); } else { p._fixed=true; fb.textContent='Fixed! ✓'; renderStrip(); } if(settings.speakFeedback) Speaker.say(null,'yes'); await sleep(650); }
+  if (ok){ fb.textContent='Yes! ✓'; fb.className='feedback ok'; Sfx.ok(); Fun.Mascot.react(bd,'happy'); if (Math.random()<0.35) { const k=Math.floor(Math.random()*6); Fun.Mascot.say(bd, ['Yes!','Nice!','You got it!','Fantastic!','Super!','Wow!'][k], 1400, (!settings.speakFeedback && mode!=='listen') ? 'yes_'+(k+1) : null); } if(!reviewing){ results[idx]=true; record(p,true); } else { p._fixed=true; fb.textContent='Fixed! ✓'; renderStrip(); } if(settings.speakFeedback) Speaker.say(null,'yes'); await sleep(650); }
   else {
-    fb.textContent='Not quite'; fb.className='feedback bad'; Sfx.bad(); Fun.Mascot.react(bd,'oops'); if (!reviewing) Fun.Mascot.say(bd, ['Oops! We\'ll fix it later.','Almost! Keep going.','That\'s OK. Next one!'][Math.floor(Math.random()*3)], 1800); $('#answer').classList.add('shake'); setTimeout(()=>$('#answer').classList.remove('shake'),500);
+    fb.textContent='Not quite'; fb.className='feedback bad'; Sfx.bad(); Fun.Mascot.react(bd,'oops'); if (!reviewing) { const k=Math.floor(Math.random()*3); Fun.Mascot.say(bd, ['Oops! We\'ll fix it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 1800, (!settings.speakFeedback && mode!=='listen') ? 'oops_'+(k+1) : null); } $('#answer').classList.add('shake'); setTimeout(()=>$('#answer').classList.remove('shake'),500);
     if(settings.speakFeedback) Speaker.say(null,'not quite');
     if(!reviewing){ results[idx]=false; p._given=entry; record(p,false); await sleep(800); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
-      Fun.Mascot.say(bd, 'Let\'s watch the beads together.', 2200);
+      Fun.Mascot.say(bd, 'Let\'s watch the beads together.', 2200, 'fix_watch');
       await sleep(900); await showMe(p);
       if (!$('#drill').classList.contains('active')) return;
       presentProblem(); return;
@@ -685,7 +701,7 @@ function finish(){
   $('#sumNote').textContent = leveled ? `🎉 You unlocked: ${NODES[curIdx()].title}!` : allFixed ? 'All fixed ✓ Great fixing!' : '';
   const toFix=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); $('#fixBtn').style.display=toFix.length?'':'none';
   const bs=$('#bixSum'); if (!bs.querySelector('.bix')) Fun.Mascot.mount(bs,{size:110});
-  Fun.Mascot.say(bs, allFixed ? 'You fixed every one! 🌟' : leveled ? 'You unlocked a new skill! 🎉' : n===3 ? 'Amazing work!' : n===2 ? 'Great job! Fix the red ones with me?' : 'Good practice! Every try makes you stronger.', 0);
+  Fun.Mascot.say(bs, allFixed ? 'You fixed every one! 🌟' : leveled ? 'You unlocked a new skill! 🎉' : n===3 ? 'Amazing work!' : n===2 ? 'Great job! Fix the red ones with me?' : 'Good practice! Every try makes you stronger.', 0, allFixed ? 'sum_fixed' : leveled ? 'sum_unlock' : n===3 ? 'sum_amazing' : n===2 ? 'sum_great' : 'sum_good');
   show('summary'); Fun.Mascot.react(bs, n>=2||leveled?'cheer':'happy', 1800);
   if (n===3||leveled){ Sfx.star(); Fun.confetti(); } else Sfx.ok();
   if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 2400);   // let the stars and Bix land first
@@ -694,7 +710,7 @@ $('#fixBtn').addEventListener('click', ()=>{
   reviewQueue=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); if(!reviewQueue.length) return;
   Speaker.unlock(); reviewing=true; idx=reviewQueue[0]; t0=Date.now(); clearInterval(tick); tick=setInterval(renderTimer,500);
   setStages(); show('drill');
-  Fun.Mascot.say($('#bixDrill'), reviewQueue.length===1 ? 'Let\'s fix this one!' : `Let's fix these ${reviewQueue.length}!`, 2200);
+  Fun.Mascot.say($('#bixDrill'), reviewQueue.length===1 ? 'Let\'s fix this one!' : `Let's fix these ${reviewQueue.length}!`, 2200, mode==='listen' ? null : (reviewQueue.length===1 ? 'fix_one' : 'fix_start'));
   presentProblem();            // same mode as the drill: Listen re-reads the problem, Look shows it, Flash re-flashes it
 });
 $('#showMeBtn').addEventListener('click', async()=>{ if(locked) return; locked=true; await showMe(problems[idx]); locked=false; });
@@ -761,6 +777,11 @@ async function renderParent(){
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
   Treats.renderParent(); Treats.bindParent();
+  bindSwitch('#sBixTalks','bixTalks', ()=>{ if(!settings.bixTalks) Fun.BixVoice.stop(); });
+  $('#sBixVoice').innerHTML=Object.entries(Fun.BixVoice.voices).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  $('#sBixVoice').value=Fun.BixVoice.tag();
+  $('#sBixVoice').onchange=async()=>{ settings.bixVoice=$('#sBixVoice').value; saveSettings(); Fun.BixVoice.stop(); Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); };
+  $('#sBixTest').onclick=async()=>{ Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play(['intro_hi','tap_3','tap_4','sum_amazing'][Math.floor(Math.random()*4)]); };
   $('#levelAgain').onclick=()=>{ Recorder.stop(); Setup.open('check'); };
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
   const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
@@ -801,6 +822,7 @@ window.App = {
   show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
   nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
   unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist,
+  quietNow: ()=> $('#drill').classList.contains('active') && mode==='listen' && (locked || dictateToken>0 && $('#listenMsg').textContent!=='Your answer?'),
   nodes: ()=>NODES, nodeTitle: id=>(C.BY_ID[id]||{}).title||id,
   goHome(){ renderHome.introDone=false; renderHome(); show('home'); },
   // Apply the first-time setup (or a repeated level check): name, current skill, and what counts as learned.
@@ -824,6 +846,7 @@ window.__diag = Diag;
 window.__drill = ()=>({ idx, reviewing, mode, terms: problems[idx]&&problems[idx].terms, answer: problems[idx]&&problems[idx].answer, strip: [...document.querySelectorAll('#strip .sq')].map(e=>e.className.replace('sq','').trim()) });
 Setup.bind();
 if (firstRun){ show('setup'); Setup.open(); } else renderHome();
+setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});

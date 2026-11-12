@@ -13,14 +13,20 @@
 
   function step(id) { $$('#setup .su-step').forEach(s => s.classList.toggle('on', s.id === id)); }
   function bix() { return $('#bixSetup'); }
-  function say(t, ms = 0) { root.Fun.Mascot.say(bix(), t, ms); }
+  function say(t, ms = 0, vid) { root.Fun.Mascot.say(bix(), t, ms, vid); }
 
   function open(from) {
     const my = ++token; App().show('setup');
     if (!bix().querySelector('.bix')) root.Fun.Mascot.mount(bix(), { size: 104 });
     if (from === 'level' || from === 'check') { state.name = App().settings.name || ''; state.keepName = true; if (from === 'check') check(); else toLevel(); return; }
     state = { name: '', keepName: false };
-    $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix. I help you learn the abacus!");
+    $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! Tap me to say hello! 👋");
+    // iPads only allow sound after a tap, so Bix introduces himself on the first touch.
+    const hello = () => { if (my !== token || state.introDone) return; state.introDone = true; say("Hi there! I'm Bix! I'm a little bead from an abacus, and I love numbers!", 0, 'intro_hi');
+      root.Fun.Mascot.react(bix(), 'happy'); setTimeout(async () => { await root.Fun.BixVoice.load(); }, 0);
+      const wait = () => root.Fun.BixVoice.src ? setTimeout(wait, 200) : (my === token && $('#suName').classList.contains('on') && say("What's your name? Type it in for me!", 0, 'intro_name'));
+      setTimeout(wait, 900); };
+    $('#setup').addEventListener('pointerdown', () => { App().unlock(); setTimeout(hello, 60); }, { once: true });
     setTimeout(() => { if (my === token) $('#suNameIn').focus(); }, 300);
   }
   function nameGo() {
@@ -28,7 +34,7 @@
     if (!n) { say('Type your name first! 😊', 2500); $('#suNameIn').focus(); return; }
     state.name = n; App().Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy'); toLevel();
   }
-  function toLevel() { step('suLevel'); say(`Nice to meet you, ${state.name}! Where should we start?`); }
+  function toLevel() { step('suLevel'); say(`Nice to meet you, ${state.name}! Where should we start?`, 0, 'intro_meet'); }
 
   /* ---------- grown-up picks the skill ---------- */
   function toPick() {
@@ -39,7 +45,7 @@
       b.onclick = () => finish(n.id, 'parent', `We'll start with ${n.title}.`);
       box.appendChild(b);
     });
-    step('suPick'); say('Grown-up: pick the skill they are working on now.');
+    step('suPick'); say('Grown-up: pick the skill they are working on now.', 0, 'intro_pick');
   }
   function example(n) {
     if (n.kind === 'numbers') return 'Showing numbers on the abacus';
@@ -51,7 +57,7 @@
   /* ---------- level check ---------- */
   async function check() {
     const my = ++token; const E = root.SorobanEngine, C = root.Curriculum;
-    step('suCheck'); say('Use your abacus for each one. No rush!');
+    step('suCheck'); say('Use your abacus for each one. No rush!', 0, 'intro_check');
     const pad = makePad($('#suPad'), $('#suAns'));
     $('#suStop').onclick = () => { stopAt = true; };
     let stopAt = false; const mastered = [];
@@ -100,7 +106,7 @@
     $('#suDoneP').textContent = `${state.name}, your first stop is ${App().nodeTitle(current)}. Tap Start each day for a short practice.`;
     const standalone = (window.navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     $('#suInstall').style.display = standalone ? 'none' : '';
-    step('suDone'); root.Fun.Mascot.react(bix(), 'cheer', 2000); say('Yay! Let’s go!'); root.Fun.confetti(70); App().Sfx.star();
+    step('suDone'); root.Fun.Mascot.react(bix(), 'cheer', 2000); say('Yay! Let’s go!', 0, 'intro_done'); root.Fun.confetti(70); App().Sfx.star();
   }
 
   function bind() {

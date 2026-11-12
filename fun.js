@@ -33,6 +33,43 @@
   <path class="b-oh" d="M56 75 a4 5 0 1 0 8 0 a4 5 0 1 0 -8 0" fill="#2A2118"/>
 </g></svg>`;
   }
+  /* ---------------- Bix's voice (pre-recorded lines, see tools/make_bix_voice.py) ---------------- */
+  const LINES = () => root.BIX_LINES || {};
+  const BixVoice = {
+    buf: {}, map: {}, loading: {}, src: null, talkingEl: null, spokenIntro: false,
+    voices: { sweet:'Sweet' },
+    tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] ? t : 'sweet'; },
+    enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
+    load(tag) {
+      tag = tag || this.tag(); if (this.buf[tag]) return Promise.resolve(); if (this.loading[tag]) return this.loading[tag];
+      this.loading[tag] = new Promise((res) => {
+        const prev = root.__BIX_LOADED;
+        root.__BIX_LOADED = async (t, meta, b64) => {
+          if (t !== tag) { if (prev) prev(t, meta, b64); return; }
+          try { const ctx = App().Speaker.ensureCtx(); const raw = atob(b64), u = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i);
+            this.buf[tag] = await new Promise((ok, no) => { const p = ctx.decodeAudioData(u.buffer, ok, no); if (p && p.then) p.then(ok, no); }); this.map[tag] = meta.sprite; } catch (e) {}
+          delete this.loading[tag]; res();
+        };
+        const s = document.createElement('script'); s.src = `audio/bix-${tag}.js`; s.onerror = () => { delete this.loading[tag]; res(); }; document.head.appendChild(s);
+      });
+      return this.loading[tag];
+    },
+    // Play a line by id. Returns a promise that resolves when it ends (or right away if Bix can't talk now).
+    async play(id, el) {
+      if (!id || !this.enabled()) return;
+      const a = App(); if (!a || (a.quietNow && a.quietNow())) return;
+      const ctx = a.Speaker.ensureCtx(); if (ctx.state !== 'running') return;     // no sound before the first tap (iPad rule)
+      const tag = this.tag(); await this.load(tag);
+      const buf = this.buf[tag], sp = this.map[tag] && this.map[tag][id]; if (!buf || !sp) return;
+      this.stop();
+      const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start(ctx.currentTime + 0.02, sp[0], sp[1]); this.src = s;
+      const bx = el && el.querySelector('.bix'); if (bx) { bx.classList.add('talking'); this.talkingEl = bx; }
+      await new Promise(r => { s.onended = r; setTimeout(r, sp[1] * 1000 + 400); });
+      if (this.src === s) { this.src = null; if (bx) bx.classList.remove('talking'); }
+    },
+    stop() { if (this.src) { try { this.src.stop(); } catch (e) {} this.src = null; } if (this.talkingEl) { this.talkingEl.classList.remove('talking'); this.talkingEl = null; } },
+  };
+
   const TAP_LINES = [
     '4 and 6 are big friends. Together they make 10!', '2 and 3 are small friends. They make 5!', 'The top bead is worth 5. Each bottom bead is 1.',
     'Thumb pushes beads up. Pointer finger pushes them down!', '7 needs 3 to make 10!', '9 needs 1 to make 10!', '1 and 4 make 5. Small friends!',
@@ -45,7 +82,9 @@
       el.innerHTML = bixSVG() + (opts.bubble === false ? '' : '<div class="bubble"></div>');
       el.querySelector('.bix').addEventListener('pointerdown', () => {
         Mascot.react(el, 'happy'); const a = App(); if (a) a.Sfx.boing();
-        Mascot.say(el, pick(TAP_LINES), opts.keep ? 0 : 3500);
+        if (opts.onTap && opts.onTap() === false) return;
+        const id = 'tap_' + (1 + Math.floor(Math.random() * 16)); const text = LINES()[id] || pick(TAP_LINES);
+        Mascot.say(el, text, opts.keep ? 0 : 3500, id);
       });
     },
     react(el, state, ms = 1300) {
@@ -53,7 +92,10 @@
       s.classList.remove('happy', 'cheer', 'oops'); void s.getBoundingClientRect(); s.classList.add(state);
       clearTimeout(s._t); s._t = setTimeout(() => s.classList.remove(state), ms);
     },
-    say(el, text, ms = 3500) {
+    // say(el, text, ms, voiceId): show the speech bubble; if a voice line id is given, Bix says it out loud too.
+    say(el, text, ms = 3500, vid) {
+      if (vid && (text === null || text === undefined)) text = LINES()[vid] || '';
+      if (vid) BixVoice.play(vid, el);
       const b = el && el.querySelector('.bubble'); if (!b) return;
       b.textContent = text; b.classList.add('on'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
       clearTimeout(b._t); if (ms) b._t = setTimeout(() => b.classList.remove('on'), ms);
@@ -84,13 +126,14 @@
   const queue = []; let showing = false;
   function give(opts = {}) {
     const s = draw(opts.gold);
-    return new Promise(res => { queue.push({ s, title: opts.title, res }); if (!showing) next(); });
+    return new Promise(res => { queue.push({ s, title: opts.title, voice: opts.voice, res }); if (!showing) next(); });
   }
   function next() {
     const item = queue.shift(); if (!item) { showing = false; return; }
     showing = true; const { s } = item;
     const ov = $('#stickerReveal'); const pack = $('#rvPack'), face = $('#rvFace');
     $('#rvTitle').textContent = item.title || (s.gold ? 'A GOLD sticker!' : 'You earned a sticker!');
+    BixVoice.play(item.voice || (s.gold ? 'gift_gold' : 'gift'), null);
     face.textContent = s.emoji; face.classList.toggle('gold', s.gold);
     $('#rvName').textContent = ''; $('#rvOk').style.visibility = 'hidden';
     pack.classList.remove('open'); pack.classList.toggle('gold', s.gold); ov.classList.add('active');
@@ -145,5 +188,5 @@
 
   // Small, non-interactive Bix used as the "you are here" marker on the skill path.
   function bixMini() { return bixSVG().replace('class="bix"', 'class="bixmini"'); }
-  root.Fun = { data, save, replace, Mascot, give, renderAlbum, renderGarden, confetti, ALL, PACKS, count, bixMini };
+  root.Fun = { data, save, replace, Mascot, give, renderAlbum, renderGarden, confetti, ALL, PACKS, count, bixMini, BixVoice };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -14,7 +14,7 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=3.5">
+<link rel="stylesheet" href="styles.css?v=3.6">
 </head>
 <body>
 <div id="app">
@@ -37,7 +37,7 @@
     <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
     <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
   </div>
-  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.5</div><button id="grownups">⚙️ Grown-ups</button></div>
+  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.6</div><button id="grownups">⚙️ Grown-ups</button></div>
 </section>
 
 <section id="setup" class="screen">
@@ -188,6 +188,10 @@
   <div class="field"><label>Sound effects</label><button class="switch" id="sSfx"></button></div>
   <div class="field"><label>Spoken feedback ("Yes!" / "Not quite")</label><button class="switch" id="sSpeakFb"></button></div>
 
+  <h3>Bix</h3>
+  <div class="field"><label>Bix talks out loud<span class="hint">Greetings, jokes, cheers and tips. Bix stays quiet while numbers are being read in Listen mode.</span></label><button class="switch" id="sBixTalks"></button></div>
+  <div class="field"><label>Bix's voice</label><div><select id="sBixVoice"></select> <button class="btn small ghost" id="sBixTest">▶︎ test</button></div></div>
+
   <h3>Listening</h3>
   <div class="field"><label>Seconds between numbers<span class="hint">Start of one number to the start of the next. A number never starts before the last one has finished, so very low values mean "as fast as the words allow".</span></label><div><input type="range" id="sGap" min="0.5" max="12" step="0.25"><span class="val" id="sGapV"></span></div></div>
   <div class="field"><label>Fastest they may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
@@ -236,13 +240,14 @@
 </section>
 
 </div>
-<script src="engine.js?v=3.5"></script>
-<script src="soroban.js?v=3.5"></script>
-<script src="curriculum.js?v=3.5"></script>
-<script src="fun.js?v=3.5"></script>
-<script src="games.js?v=3.5"></script>
-<script src="treats.js?v=3.5"></script>
-<script src="onboarding.js?v=3.5"></script>
-<script src="app.js?v=3.5"></script>
+<script src="engine.js?v=3.6"></script>
+<script src="soroban.js?v=3.6"></script>
+<script src="curriculum.js?v=3.6"></script>
+<script src="audio/bix-lines.js?v=3.6"></script>
+<script src="fun.js?v=3.6"></script>
+<script src="games.js?v=3.6"></script>
+<script src="treats.js?v=3.6"></script>
+<script src="onboarding.js?v=3.6"></script>
+<script src="app.js?v=3.6"></script>
 </body>
 </html>

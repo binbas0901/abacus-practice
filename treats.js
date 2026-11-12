@@ -65,7 +65,7 @@
         <div class="tbtns">${can ? `<button class="btn small coral" data-get="${t.id}">Get it!</button>` : ''}${isGoal ? '' : `<button class="btn small ghost" data-goal="${t.id}">Save for this</button>`}</div>`;
       box.appendChild(c);
     }
-    box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).emoji}!`, 3000); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
+    box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).emoji}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
     box.querySelectorAll('[data-get]').forEach(b => b.onclick = () => ask(byId(b.dataset.get)));
     const open = w.tickets.filter(x => !x.given);
     $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">🎟 Show a grown-up:</div>` + open.map(x => `<div class="ticket">${x.emoji} ${esc(x.name)}</div>`).join('') : '';
@@ -80,13 +80,13 @@
     w.beads -= t.price; w.tickets.push({ id: 'k' + Date.now(), tid: t.id, emoji: t.emoji, name: t.name, price: t.price, at: new Date().toISOString(), given: false });
     if (w.goal === t.id) w.goal = null; F().save();
     F().confetti(110); App().Sfx.star();
-    const bx = $('#bixShop'); F().Mascot.react(bx, 'cheer', 2200); F().Mascot.say(bx, `Yum! ${t.emoji} Show your ticket to a grown-up!`, 0);
+    const bx = $('#bixShop'); F().Mascot.react(bx, 'cheer', 2200); F().Mascot.say(bx, `Yum! ${t.emoji} Show your ticket to a grown-up!`, 0, 'shop_yum');
     renderShop(); renderJar();
   }
   function open() {
     const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 80 });
     const g = goal(), w = wallet();
-    F().Mascot.say(bx, g ? (w.beads >= g.price ? `You can get ${g.emoji} now!` : `${g.price - w.beads} more beads for ${g.emoji}. You can do it!`) : 'Pick a treat to save for!', 0);
+    F().Mascot.say(bx, g ? (w.beads >= g.price ? `You can get ${g.emoji} now!` : `${g.price - w.beads} more beads for ${g.emoji}. You can do it!`) : 'Pick a treat to save for!', 0, g ? (w.beads >= g.price ? 'shop_ready' : 'shop_saving') : 'shop_pick');
     renderShop(); App().show('shop');
   }
 

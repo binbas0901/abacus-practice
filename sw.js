@@ -1,5 +1,5 @@
-const CACHE = 'abacus-v3-5';
-const FILES = ['./', './index.html', './styles.css?v=3.5', './fonts/baloo-2-latin-500-normal.woff2', './fonts/baloo-2-latin-700-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/andika-latin-400-normal.woff2', './fonts/andika-latin-700-normal.woff2', './fun.js?v=3.5', './games.js?v=3.5', './onboarding.js?v=3.5', './treats.js?v=3.5', './app.js?v=3.5', './engine.js?v=3.5', './soroban.js?v=3.5', './curriculum.js?v=3.5', './manifest.json', './icon.png', './audio/voice-ljspeech.js'];
+const CACHE = 'abacus-v3-6';
+const FILES = ['./', './index.html', './styles.css?v=3.6', './fonts/baloo-2-latin-500-normal.woff2', './fonts/baloo-2-latin-700-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/andika-latin-400-normal.woff2', './fonts/andika-latin-700-normal.woff2', './audio/bix-lines.js?v=3.6', './audio/bix-sweet.js', './fun.js?v=3.6', './games.js?v=3.6', './onboarding.js?v=3.6', './treats.js?v=3.6', './app.js?v=3.6', './engine.js?v=3.6', './soroban.js?v=3.6', './curriculum.js?v=3.6', './manifest.json', './icon.png', './audio/voice-ljspeech.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

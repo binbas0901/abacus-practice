@@ -80,13 +80,13 @@
       if (b.v === target.ans) {
         b.gone = true; b.el.classList.add('popped'); setTimeout(() => b.el.remove(), 320);
         App().Sfx.pop(); score++; setScore('⭐ ' + score);
-        if (score % 5 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); root.Fun.Mascot.say(bix(), pick(['Pop-tastic!', `${score} friends!`, 'So fast!', 'Friend finder!']), 1800); }
+        if (score % 5 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); { const c = pick([['Great popping!','pop_cheer'], [`${score} friends!`, null], ["You're so fast!",'pop_fast'], ['Friend finder!', null]]); root.Fun.Mascot.say(bix(), c[0], 1800, c[1]); } }
         newTarget();
       } else { b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore('⭐ 0');
     requestAnimationFrame(()=>{ const H=field.clientHeight; for (let k=0;k<4;k++){ spawn(); const b=bubbles[bubbles.length-1]; if (b) b.y = H*(0.25+0.18*k); } });
-    root.Fun.Mascot.say(bix(), 'Pop the friend!', 2000);
+    root.Fun.Mascot.say(bix(), 'Pop the friend!', 2000, 'pop_go');
     return new Promise(res => {
       function frame(now) {
         if (tok !== token) return res(null);
@@ -133,7 +133,7 @@
       if (ans === v) {
         score++; streak++; misses = 0; show = Math.max(0.6, show * 0.85);
         $('#rdFb').textContent = 'Yes! ✓'; $('#rdFb').className = 'feedback ok'; a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
-        if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; $('#rdMsg').textContent = 'Super detective! One more rod! 🎉'; root.Fun.Mascot.say(bix(), 'More beads now!', 2000); await sleep(1500); }
+        if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; $('#rdMsg').textContent = 'Super detective! One more rod! 🎉'; root.Fun.Mascot.say(bix(), 'More beads now!', 2000, 'reader_more'); await sleep(1500); }
         else await sleep(900);
       } else {
         streak = 0; misses++; show = Math.min(3.5, show * 1.25);
@@ -171,7 +171,7 @@
         await new Promise(r => { hit = r; });
         if (tok !== token) return null;
         a.Sfx.pop(); a.Sfx.ok(); root.Fun.Mascot.react(bix(), k === N - 1 ? 'cheer' : 'happy');
-        if (k === 3) root.Fun.Mascot.say(bix(), 'Halfway!', 1500);
+        if (k === 3) root.Fun.Mascot.say(bix(), 'Halfway there!', 1500, 'build_half');
         await sleep(650);
       }
     } finally { clearInterval(tick); }
@@ -199,7 +199,7 @@
       card = { icon: '🧱', big: `${r.time} seconds`, sub: `to make ${r.n} numbers`, best: isBest, bestText: `Your best: ${best[k]} s` };
     }
     root.Fun.save();
-    root.Fun.Mascot.react(bix(), 'cheer', 2000); root.Fun.Mascot.say(bix(), isBest ? 'A new best! Wow!' : 'Great playing!', 3000);
+    root.Fun.Mascot.react(bix(), 'cheer', 2000); root.Fun.Mascot.say(bix(), isBest ? 'A new best! Wow!' : 'Great playing!', 3000, isBest ? 'game_best' : 'game_good');
     if (isBest) root.Fun.confetti(60);
     a.activityDone('game', { gold: isBest, game: id });
     const choice = await results(card);
