@@ -6,7 +6,7 @@
 //   TOY.bix(mood, size, opts)          happy | wave | cheer | think | oops | sleepy | wow | proud   opts.still: no idle motion
 //   TOY.moon(mood, size, opts)        the calm second lead: calm | happy | proud | sleepy | wow | wink
 //                                      opts.phase 0..1 (crescent -> full, default 1), opts.sky (no stand, for the window), opts.stars
-//   TOY.moonName                       her display name (placeholder "Luna"; set it before drawing)
+//   TOY.moonName                       her display name (placeholder "Juni"; set it before drawing)
 //   TOY.moonPhases(done, total, opts)  a row (or opts.arc) of small phase moons; finished ones glow
 //   TOY.skyMoon(mood, phase)           the moon wrapped for the window slot of .toy-scene
 //   TOY.buddy(n, size, mood, opts)     number friends 1-9; mood happy | wave | cheer | wow | oops | sleepy | think
@@ -570,7 +570,7 @@
   }
 
   const TOY = {
-    colors: LAC, defs, bix, moon, moonName: 'Luna', moonPhases, skyMoon, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
+    colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
     MOODS: Object.keys(BIX), MOON_MOODS: Object.keys(MOON), ICONS: ['practice', 'play', 'room', 'lock', 'close', 'back', 'backspace', 'check', 'speaker', 'star', 'book', 'eye', 'ear', 'flash', 'gear', 'retry', 'plus'],
     FRIENDS: { small: [[1, 4], [2, 3]], big: [[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]] },
   };

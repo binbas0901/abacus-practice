@@ -14,7 +14,7 @@ Open `toykit.html` first. It is the kit showcase and the character sheet. Refere
 |---|---|
 | `TOY.bix(mood, size, {still})` | Bix. Moods: happy, wave, cheer, think, oops, sleepy, wow, proud |
 | `TOY.moon(mood, size, {phase, sky, stars})` | The moon. Moods: calm, happy, proud, sleepy, wow, wink. `phase` 0..1 |
-| `TOY.moonName` | Her display name. Placeholder `"Luna"`; the owner will supply the real one. Never hard-code the name in a screen |
+| `TOY.moonName` | Her display name. Placeholder `"Juni"`; the owner will supply the real one. Never hard-code the name in a screen |
 | `TOY.moonPhases(done, total, {arc})` | Progress as small phase moons in wooden hollows |
 | `TOY.skyMoon(mood, phase)` | The moon wrapped for the window slot of `.toy-scene` |
 | `TOY.buddy(n, size, mood, {prop})` | Number friends 1-9. Moods: happy, wave, cheer, wow, oops, sleepy, think. Props: glasses, magnifier, book |
