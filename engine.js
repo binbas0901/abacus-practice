@@ -349,9 +349,11 @@
     rng = rng || cfg.rng || Math.random;
     const req = cfg.requireMove || null;
     const allowMove = defaultAllowMove(cfg);
+    // operandsMax (optional): rows vary from operands to operandsMax terms (one rng call, only when set).
+    const nOps = cfg.operandsMax > cfg.operands ? cfg.operands + Math.floor(rng() * (cfg.operandsMax - cfg.operands + 1)) : cfg.operands;
     for (let attempt = 0; attempt < 300; attempt++) {
       let total = 0; const terms = [], stepMovesList = []; let ok = true;
-      for (let i = 0; i < cfg.operands; i++) {
+      for (let i = 0; i < nOps; i++) {
         // Exactly the pool legalDeltas2 would build, sampled with the same rng calls (see deltaSampler).
         const S = E.deltaSampler(total, cfg, i === 0, allowMove, req);
         let N = S.count(false), hitOnly = false;
@@ -389,10 +391,8 @@
  * callers use either SorobanEngine.levelTest(nodeId, opts) or Curriculum.levelTest(nodeId, opts).
  * Shapes are documented next to the implementation in curriculum.js.
  *
- * Multiplication (not built, scope undecided): it would be a separate generator here, e.g.
- * generateMul(cfg, rng) -> { terms: [a, b], op: 'mul', answer, partials: [...] }, with its own per-rod
- * move model for placing partial products, plus an explainer in curriculum.js and a node with
- * kind: 'mul'. The add/subtract generator and stepMoves above would stay unchanged.
+ * Multiplication lives in the Phase 4 block below (generateMul); the add/subtract generator and
+ * stepMoves above are unchanged by it.
  */
 (function (root) {
   'use strict';
@@ -400,4 +400,77 @@
   const cur = () => root.Curriculum || (typeof require === 'function' ? require('./curriculum.js') : null);
   E.levelTest = function (nodeId, opts) { return cur().levelTest(nodeId, opts); };
   E.scoreLevelTest = function (test, answers, elapsedMs) { return cur().scoreLevelTest(test, answers, elapsedMs); };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+/* ---- Phase 4: multiplication (times tables, 2-digit x 1-digit, 3-digit x 1-digit) ----
+ * Soroban method used by kids' programmes, worked left to right: the abacus starts at 0, the problem
+ * stays on the card, and each digit of the multiplicand (a) is multiplied by the 1-digit multiplier (b).
+ * Every times answer takes two rods (6 is "06"); its units digit lands on the rod of the digit you
+ * multiplied. So each partial product is ADDED to the abacus as digit*b*10^place, using the same bead
+ * moves (direct / five / ten / combined) as adding, which is why partials carry stepMoves.
+ *
+ * Config (a node drill with op: 'mul'):
+ *   a: [min, max]        multiplicand range (inclusive)
+ *   b: [min, max] | bSet: [..]   multiplier range or list (1-digit)
+ *   zeros: 'none' (default; no 0 digit in a) | 'inner' (0 allowed inside a, never as its last digit)
+ *   twoDigitPartial: true -> at least one digit product is >= 10 (so the two-rod placement matters)
+ * Problem = { op: 'mul', terms: [a, b], answer: a*b,
+ *   partials: [{ digit, place, product, value, total }]   left to right; value = product*10^place,
+ *                                                          total = abacus after adding it
+ *   moves: [stepMoves(...)]   one list per partial (aligned with partials, NOT with terms),
+ *   rulesUsed, moveKeys }     as for add/subtract problems (bead rules met while adding the partials)
+ * generateSet2(cfg) dispatches here when cfg.op === 'mul' (cfg.operands etc. are ignored).
+ */
+(function (root) {
+  'use strict';
+  const E = (typeof module !== 'undefined' && module.exports) ? module.exports : root.SorobanEngine;
+  function mulPartials(a, b) {
+    const ds = String(a).split('').map(Number), out = [];
+    let total = 0;
+    ds.forEach((digit, i) => {
+      const place = ds.length - 1 - i, product = digit * b, value = product * Math.pow(10, place);
+      const moves = value ? E.stepMoves(total, value) : [];
+      total += value;
+      out.push({ digit, place, product, value, total, moves });
+    });
+    return out;
+  }
+  function mulProblem(a, b) {
+    const parts = mulPartials(a, b), moves = parts.map(p => p.moves);   // [] for a 0 digit
+    const flat = moves.flat();
+    return { op: 'mul', terms: [a, b], answer: a * b,
+      partials: parts.map(p => ({ digit: p.digit, place: p.place, product: p.product, value: p.value, total: p.total })),
+      moves,
+      rulesUsed: Array.from(new Set(flat.filter(m => !(m.carry && m.rule === 'direct')).map(m => m.rule))),
+      moveKeys: Array.from(new Set(flat.map(E.moveKey))) };
+  }
+  function mulOk(cfg, a, b) {
+    const ds = String(a).split('').map(Number);
+    if ((cfg.zeros || 'none') === 'none' ? ds.includes(0) : ds[ds.length - 1] === 0) return false;
+    if (cfg.twoDigitPartial && !ds.some(d => d * b >= 10)) return false;
+    return true;
+  }
+  function generateMul(cfg, rng) {
+    rng = rng || cfg.rng || Math.random;
+    const [alo, ahi] = cfg.a, bs = cfg.bSet || (() => { const o = []; for (let k = cfg.b[0]; k <= cfg.b[1]; k++) o.push(k); return o; })();
+    for (let attempt = 0; attempt < 500; attempt++) {
+      const a = alo + Math.floor(rng() * (ahi - alo + 1)), b = bs[Math.floor(rng() * bs.length)];
+      if (mulOk(cfg, a, b)) return mulProblem(a, b);
+    }
+    return null;
+  }
+  function generateMulSet(cfg, count, rng) {
+    rng = rng || cfg.rng || Math.random;
+    const out = [], seen = new Set();
+    for (let i = 0; i < count; i++) {
+      let p = null;
+      for (let k = 0; k < 200; k++) { p = generateMul(cfg, rng); if (!p) break; const key = p.terms.join('x'); if (!seen.has(key)) { seen.add(key); break; } }
+      if (!p) throw new Error('generator could not satisfy config');
+      out.push(p);
+    }
+    return out;
+  }
+  const addSet2 = E.generateSet2;
+  function generateSet2(cfg, count, rng) { return cfg && cfg.op === 'mul' ? generateMulSet(cfg, count, rng) : addSet2(cfg, count, rng); }
+  Object.assign(E, { generateMul, generateMulSet, mulProblem, mulPartials, generateSet2 });
 })(typeof globalThis !== 'undefined' ? globalThis : this);
