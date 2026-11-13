@@ -680,13 +680,14 @@ function markTiles(){
   const p=problems[idx]; let reached=-1;
   if (Tool.kind==='beads' && Tool.ab && !LT && p && p.op!=='mul') reached=segmentMoves(p.terms, Tool.ab.moves()).length-1;
   const on = Tool.kind==='beads' && !LT && p && p.op!=='mul';
-  tiles.forEach((t,i)=>{ t.classList.toggle('done', on && i<=reached); t.classList.toggle('now', on && i===reached+1); });
+  const all=reached>=tiles.length-1;   // every number is on the beads: show the whole problem again for checking
+  tiles.forEach((t,i)=>{ t.classList.toggle('done', on && !all && i<=reached); t.classList.toggle('now', on && i===reached+1); });
 }
 function beadW(n, max){ return n<=12 ? max : Math.max(26, Math.floor(max*12/n)); }
 function renderStrip(popIdx){
   const st=$('#strip'); const fixing=reviewing && !LT; $('#fixLabel').hidden=!fixing; st.classList.toggle('fixing', fixing);
   const list = fixing ? reviewQueue : problems.map((_,i)=>i);
-  const w=beadW(list.length, fixing?62:58);
+  const room=st.clientWidth || 1000, w=Math.min(beadW(list.length, fixing?62:58), Math.floor(room/list.length*0.78));
   st.innerHTML = list.map((i,k)=>{
     const p=problems[i], cur=i===idx, ok=results[i]===true||p._fixed, bad=results[i]===false&&!p._fixed;
     let svg, label=`Problem ${k+1}`;
@@ -706,7 +707,15 @@ function renderTimeBar(){
 }
 
 /* ---- starting, stages ---- */
-function drillConfig(n){ const c=Object.assign({}, n.drill); if (settings.operands>0) c.operands=settings.operands; if (mode==='flash'){ c.operands=settings.flashN; c.allowSubtraction=false; } return c; }
+// The node's own drill is the default; a grown-up's own choice (a setting changed from its default) wins.
+function drillConfig(n){
+  const c=Object.assign({}, n.drill); if (c.op==='mul') return c;
+  if (settings.operands>0){ c.operands=settings.operands; delete c.operandsMax; }
+  if (mode==='flash'){ c.allowSubtraction=false;
+    if (!n.drill.flash || settings.flashN!==DEFAULTS.flashN){ c.operands=settings.flashN; delete c.operandsMax; } }
+  return c;
+}
+function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec) ? d.flashSec : settings.flashSec; }
 function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now();
   Tool.kind = Tool.preferred(); Tool.apply();
@@ -723,9 +732,9 @@ async function startDrill(m, n){
 // Show only the stage for the current mode (Look: number tiles; Listen: the listening card; Flash: the flash card). Used by drills, the fix pass and level tests.
 function setStages(){
   $('#problemArea').innerHTML='';
-  $('#problemArea').style.display = mode==='visual'?'flex':'none';
-  $('#listenStage').style.display = mode==='listen'?'flex':'none';
-  $('#flashStage').style.display = mode==='flash'?'flex':'none';
+  $('#problemArea').style.display = mode==='visual'?'':'none';
+  $('#listenStage').style.display = mode==='listen'?'':'none';
+  $('#flashStage').style.display = mode==='flash'?'':'none';
   $('#drill').dataset.mode = mode;
   const speed = (mode==='listen'||mode==='flash') && !LT;
   $('#speedBtn').hidden=!speed; $('#speedPop').hidden=true; $('#speedBtn').setAttribute('aria-expanded','false');
@@ -750,7 +759,7 @@ function presentProblem(){
   Tool.apply(); Tool.reset();
   $('#showMeBtn').style.display = reviewing && !LT ? '' : 'none';
   renderStrip();
-  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); area.classList.toggle('many', p.terms.length>4); area.classList.toggle('lots', p.terms.length>6); markTiles(); locked=false; }
+  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', p.terms.length>4 && p.terms.length<=6); area.classList.toggle('lots', p.terms.length>6); area.classList.toggle('wide', dg>=3); area.style.setProperty('--rows', Math.ceil(p.terms.length/2)); markTiles(); locked=false; }
   PB.setBase(baseLine(), baseMood());
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
@@ -777,7 +786,7 @@ async function dictate(p){
     if (Speaker.kind()!=='device'){
       await Speaker.prepare(); if (my!==dictateToken) return;
       try{ if (Speaker.ctx && Speaker.ctx.state!=='running') await Promise.race([Speaker.ctx.resume(), sleep(1500)]); }catch(e){}
-      scheduled = Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';
+      scheduled = p.op!=='mul' && Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';   // clips have no "times": mul problems use the device voice
       Diag.add(`clips ready=${Speaker.canSchedule()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} -> ${scheduled?'audio clock':'device voice fallback'}`);
     }
     if (scheduled){
@@ -794,7 +803,8 @@ async function dictate(p){
       Diag.add('schedule: '+sched.map(([w,e])=>`${(w-sched[0][0]).toFixed(2)}–${(e-sched[0][0]).toFixed(2)}`).join(', '));
       await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
     } else {
-      for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(termText(p.terms[i],i===0)); Diag.add(`said "${termText(p.terms[i],i===0)}" ${r}`); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }
+      const words=i=>p.op==='mul' ? (i===0 ? termText(p.terms[0],true) : 'times '+termText(p.terms[i],true)) : termText(p.terms[i],i===0);
+      for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(words(i)); Diag.add(`said "${words(i)}" ${r}`); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }
     }
     if (my!==dictateToken) return; await sleep(settings.answerPause*1000);
     finishUI();
@@ -816,13 +826,13 @@ function armFlash(p){
 async function flash(p){
   const my=++dictateToken; locked=true; const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
   $('#flashMsg').textContent='Watch…'; $('#flashGo').style.display='none'; $('#flashAgain').style.display='none'; flashDots(p.terms.length, 0); await sleep(600);
-  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(settings.flashSec*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
+  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
   if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='= ?';
   $('#flashMsg').textContent = Tool.kind==='beads' ? 'What did you get? Show it on the beads.' : 'What did you get? Tap it in.'; $('#flashAgain').style.display = LT ? 'none' : ''; locked=false;
 }
 $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
-$('#pad').addEventListener('click', e=>{ const b=e.target.closest('button[data-k]'); if(!b||locked||demoing) return; const k=b.dataset.k; if(k==='go') return submit(); Sfx.tap(); if (Tool.kind!=='keys') return; if(k==='del') setEntry(entry.slice(0,-1)); else if(entry.length<4) setEntry(entry+k); });
-document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<4&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
+$('#pad').addEventListener('click', e=>{ const b=e.target.closest('button[data-k]'); if(!b||locked||demoing) return; const k=b.dataset.k; if(k==='go') return submit(); Sfx.tap(); if (Tool.kind!=='keys') return; if(k==='del') setEntry(entry.slice(0,-1)); else if(entry.length<6) setEntry(entry+k); });
+document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('ws-shake'); void t.offsetWidth; t.classList.add('ws-shake'); setTimeout(()=>t.classList.remove('ws-shake'),400); }
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
@@ -869,7 +879,7 @@ function checkMastery(nid){
 }
 
 /* ---- end of set ---- */
-function sumBeads(list){ const w=beadW(list.length, 76); $('#sumStars').innerHTML=list.map((c,i)=>`<span role="listitem" aria-label="${i+1}: ${c==='jade'?'green':c==='red'?'red, to fix':'done'}" class="pr-b ws-pop" style="animation-delay:${(i*0.05).toFixed(2)}s">${WS.bead(c, w)}</span>`).join(''); }
+function sumBeads(list){ const w=Math.min(beadW(list.length, 76), Math.floor((Math.min(window.innerWidth||1180, 1180)-180)/list.length)-14); $('#sumStars').innerHTML=list.map((c,i)=>`<span role="listitem" aria-label="${i+1}: ${c==='jade'?'green':c==='red'?'red, to fix':'done'}" class="pr-b ws-pop" style="animation-delay:${(i*0.05).toFixed(2)}s">${WS.bead(c, w)}</span>`).join(''); }
 function sumBix(mood){ const el=$('#bixSum'); el.innerHTML=bixArt(mood, 170); return el; }
 let sumVoice=null;
 $('#sumSay').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
@@ -880,8 +890,8 @@ function finish(){
   if (!reviewing){
     const checked=problems.filter(p=>p._method!==undefined);
     history.unshift({ at:new Date().toISOString(), mode, node:drillNode.id, count:problems.length, correct, secs, gap:mode==='listen'?settings.gap:null,
-      tool:Tool.kind, methodChecked:checked.length, methodOk:checked.filter(p=>p._method).length,
-      missed: problems.map((p,i)=>results[i]===false?{terms:p.terms,answer:p.answer,given:p._given,rules:p.rulesUsed}:null).filter(Boolean) });
+      op:drillNode.drill&&drillNode.drill.op, tool:Tool.kind, methodChecked:checked.length, methodOk:checked.filter(p=>p._method).length,
+      missed: problems.map((p,i)=>results[i]===false?{terms:p.terms,answer:p.answer,given:p._given,rules:p.rulesUsed,op:p.op}:null).filter(Boolean) });
     history=history.slice(0,200); save('history',history); days[todayKey()]=true; save('days',days);
     leveled = checkMastery(drillNode.id); saveProgress();
     if (leveled && C.levelTest && (()=>{ try{ return !!C.levelTest(drillNode.id); }catch(e){ return false; } })()) pendingTest=drillNode.id;
@@ -929,10 +939,11 @@ function stepHtml(s){ return esc(s.say).replace(/(\d+)/g,'<b>$1</b>'); }
 // Animate a solution on an AbacusInput: set the first number, then each bead move from Curriculum.explain.
 async function playSolution(ab, p, isLive, onText, onTerm){
   ab.clear({animate:false}); let total=0; onText('Watch.'); await sleep(500);
-  if (p.op==='mul'){ if(!isLive()) return; onTerm(1); ab.setValue(p.answer); if (ab===Tool.ab) Tool.readout(); onText(`${p.terms[0]} × ${p.terms[1]} is ${p.answer}.`); return; }
+  const run=async(steps)=>{ for (const s of steps){ if(!isLive()) return; onText(stepHtml(s)); let v=ab.value(); for (const m of s.do){ if(!isLive()) return; v+=m.delta*Math.pow(10,m.rod); ab.setValue(Math.max(0,v)); if (ab===Tool.ab) Tool.readout(); await sleep(420); } await sleep(s.do.length?500:1100); } };
+  if (p.op==='mul'){ onTerm(1); await run(C.explainMul ? C.explainMul(p.terms[0], p.terms[1]) : []); if (isLive() && ab.value()!==p.answer){ ab.setValue(p.answer); if (ab===Tool.ab) Tool.readout(); } if (isLive()) onText(`${p.terms[0]} × ${p.terms[1]} = <b>${p.answer}</b>.`); return; }
   for (let i=0;i<p.terms.length;i++){ const d=p.terms[i]; if(!isLive()) return; onTerm(i);
     if (i===0){ onText(`Start with <b>${d}</b>.`); ab.setValue(d); if (ab===Tool.ab) Tool.readout(); total=d; await sleep(900); continue; }
-    for (const s of C.explain(total,d)){ if(!isLive()) return; onText(stepHtml(s)); let v=ab.value(); for (const m of s.do){ if(!isLive()) return; v+=m.delta*Math.pow(10,m.rod); ab.setValue(Math.max(0,v)); if (ab===Tool.ab) Tool.readout(); await sleep(420); } await sleep(s.do.length?500:800); }
+    await run(C.explain(total,d));
     total+=d; }
   if (isLive()) onText(`The answer is <b>${p.answer}</b>.`);
 }

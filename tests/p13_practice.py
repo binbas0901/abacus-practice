@@ -35,16 +35,6 @@ async def by_method(pg, cur, term):   # the bead moves a teacher would use (from
     plan = await pg.evaluate(f"AbacusInput.checkMethod({cur},{term},[]).expected.beads")
     for a in plan: cur = await do_action(pg, cur, a)
     return cur
-async def rebuild(pg, cur, target):   # right number, wrong way: wipe the rods and set the answer
-    for rod in range(4):
-        v = digit(cur, rod)
-        if v >= 5: await tap(pg, rod, 'h'); cur -= 5 * 10 ** rod
-        if v % 5: await tap(pg, rod, 'e', 0); cur -= (v % 5) * 10 ** rod
-    for rod in range(4):
-        v = digit(target, rod)
-        if v >= 5: await tap(pg, rod, 'h')
-        if v % 5: await tap(pg, rod, 'e', v % 5 - 1)
-    return target
 async def beads_value(pg): return int((await pg.text_content('#answer')).strip())
 
 async def main():
@@ -82,10 +72,12 @@ async def main():
         st = (await drill(pg))['strip']
         check('beads, right answer, right method -> green bead, Bix praises (no hint)', 'ok' in st[0] and 'Try' not in bt, bt)
         await pg.wait_for_timeout(1200)
-        # problem 2: right number, but the beads were wiped and set again -> still green, gentle hint
+        # problem 2: right number, but with extra bead moves -> still green, gentle hint
         d = await drill(pg); cur = 0
         for t in d['terms'][:-1]: cur = await by_method(pg, cur, t)
-        await rebuild(pg, cur, d['answer'])
+        await tap(pg, 2, 'h'); cur += 500          # a stray bead on the hundreds rod...
+        cur = await by_method(pg, cur, d['terms'][-1])
+        await tap(pg, 2, 'h'); cur -= 500          # ...put back: right number, not the soroban way
         await pg.click('#checkBtn'); await pg.wait_for_timeout(250); bt = await bubble(pg); st = (await drill(pg))['strip']
         check('right answer, other method -> still green, never marked wrong', 'ok' in st[1] and 'bad' not in st[1], st[1])
         check('...and Bix gives gentle method feedback', bt.startswith(f"Yes, {d['answer']}!") and len(bt) > len(f"Yes, {d['answer']}!") + 8, bt)

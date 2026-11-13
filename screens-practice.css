@@ -52,11 +52,15 @@
 #drill .pr-problem .ws-tile.done{opacity:.5}
 #drill .pr-problem.many{gap:10px}
 #drill .pr-problem.many .ws-tile{height:66px;font-size:46px}
-#drill .pr-problem.lots{gap:8px}
-#drill .pr-problem.lots .ws-tile{height:54px;font-size:38px}
+/* long rows (7-10 numbers): two columns, read down the first, then the second */
+#drill .pr-problem.lots{display:grid;grid-auto-flow:column;grid-template-rows:repeat(var(--rows,5), auto);gap:10px 12px;padding-right:0;justify-content:end}
+#drill .pr-problem.lots .ws-tile{width:144px;height:60px;font-size:38px;padding:0 18px}
+/* 3-4 digit numbers: smaller digits so "+ 4567" fits a tile */
+#drill .pr-problem.wide .ws-tile{font-size:44px;padding:0 22px}
+#drill .pr-problem.wide.lots .ws-tile{font-size:30px;padding:0 14px}
 
 /* listen: numbers stay hidden; a calm listening card */
-#drill .pr-listen,#drill .pr-flash{flex-direction:column;align-items:center;gap:16px;background:var(--ws-white);border-radius:var(--ws-r-lg);
+#drill .pr-listen,#drill .pr-flash{display:flex;flex-direction:column;align-items:center;gap:16px;background:var(--ws-white);border-radius:var(--ws-r-lg);
   padding:26px 20px 22px;box-shadow:0 3px 0 var(--ws-line);margin-left:0}
 #drill .pr-ear{position:relative;width:132px;height:132px;border-radius:50%;background:var(--ws-ochre);box-shadow:0 7px 0 var(--ws-ochre-dk);
   display:flex;align-items:center;justify-content:center;color:#3D2412}
@@ -81,7 +85,7 @@
 #drill .flash-num.ask{color:var(--ws-indigo)}
 
 #drill .pr-showme{align-self:flex-end;margin-right:20px;width:204px;padding:0;font-size:26px}
-#drill .pr-listen ~ .pr-showme,#drill[data-mode=listen] .pr-showme,#drill[data-mode=flash] .pr-showme{align-self:center;margin-right:0}
+#drill[data-mode=listen] .pr-showme,#drill[data-mode=flash] .pr-showme{align-self:center;margin-right:0}
 
 /* right: the answer tool */
 #drill .pr-right{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:18px}
@@ -136,6 +140,8 @@
 #summary .pr-sumnote::before{display:none}
 #summary .pr-sumtest[hidden]{display:none}
 #summary .pr-sumbtns{display:flex;gap:22px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:6px}
+#summary .pr-sumbtns .ws-btn{color:var(--t)}
+#summary .pr-sumbtns .ws-btn.big,#summary .pr-sumtest .ws-btn.big{font-size:32px;font-weight:700;line-height:1;color:var(--t)}
 #summary #homeBtn{font-size:26px;font-weight:600;padding:0 36px}
 
 /* ============ show me (grown-up-free replay of the bead moves) ============ */
@@ -215,6 +221,9 @@
   #drill .pr-bix{width:100%;max-width:620px}
   #drill .pr-problem{flex-direction:row;flex-wrap:wrap;justify-content:center;padding-right:0;gap:12px}
   #drill .pr-problem .ws-tile{width:150px;padding:0 24px}
+  #drill .pr-problem.lots{display:flex}
+  #drill .pr-problem.lots .ws-tile{width:132px}
+  #drill .pr-problem.wide .ws-tile{width:180px}
   #drill .pr-listen,#drill .pr-flash{width:100%;max-width:620px;box-sizing:border-box;flex-direction:row;flex-wrap:wrap;justify-content:center}
   #drill .pr-flash .flash-num,#drill .pr-flash .pr-msg,#drill .pr-listen .pr-msg{flex-basis:100%}
   #drill .pr-showme{align-self:center;margin-right:0}
@@ -226,7 +235,8 @@
 @media (min-width:1300px) and (min-height:960px){
   #drill.pr{padding:32px 56px 40px;gap:30px}
   #drill .pr-left{width:340px}
-  #drill .pr-problem .ws-tile{width:220px;height:92px;font-size:62px}
+  #drill .pr-problem:not(.lots):not(.many) .ws-tile{width:220px;height:92px;font-size:62px}
+  #drill .pr-problem.wide:not(.lots) .ws-tile{font-size:50px}
   #drill .pr-bubble{font-size:22px}
   #drill .pr-abacus .abx-svg{height:min(580px, calc(100vh - 380px))}
   #drill .pr-keys{grid-template-columns:repeat(3,120px)}
