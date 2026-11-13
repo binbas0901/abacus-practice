@@ -651,44 +651,81 @@ function doorDrillNode(m, n){
 }
 function pathName(n){ return PATH_NAMES[n.id] || n.short || n.title; }
 function lessonTarget(n){ return hasLesson(n) ? n : NODES.slice(0, NODE_IDX[n.id]).reverse().find(x=>x.demos) || n; }
-const DOOR_ART = {
-  visual: ()=>`<span class="door-tiles" aria-hidden="true"><span>7</span><span><i class="plus">+</i>8</span><span><i class="minus">−</i>4</span></span>`,
-  listen: ()=>`<svg class="door-art" width="132" height="114" viewBox="0 0 120 104" aria-hidden="true"><rect class="a-maple" x="10" y="30" width="100" height="66" rx="16"/><circle class="a-wood" cx="44" cy="63" r="20"/><circle class="a-maple" cx="44" cy="63" r="9"/><rect class="a-wood" x="74" y="48" width="24" height="8" rx="4"/><rect class="a-wood" x="74" y="62" width="24" height="8" rx="4"/><rect class="a-wood" x="74" y="76" width="24" height="8" rx="4"/><path class="a-wood-s" d="M30 30 L70 6" stroke-width="5" stroke-linecap="round"/><g class="door-waves"><path class="a-ink-s" d="M92 18 q8 8 0 16" stroke-width="4" fill="none" stroke-linecap="round"/><path class="a-ink-s" d="M102 10 q14 16 0 32" stroke-width="4" fill="none" stroke-linecap="round"/></g></svg>`,
-  flash: ()=>`<svg class="door-art" width="132" height="114" viewBox="0 0 120 104" aria-hidden="true"><rect class="a-maple" x="22" y="14" width="76" height="76" rx="16"/><text class="a-num" x="60" y="72" text-anchor="middle">9</text><g class="door-rays a-ochre-s" stroke-width="5" stroke-linecap="round"><line x1="10" y1="10" x2="18" y2="18"/><line x1="110" y1="10" x2="102" y2="18"/><line x1="4" y1="52" x2="14" y2="52"/><line x1="116" y1="52" x2="106" y2="52"/><line x1="10" y1="94" x2="18" y2="86"/><line x1="110" y1="94" x2="102" y2="86"/></g></svg>`,
-};
-const DOOR_LABEL = { visual:['eye','Look'], listen:['ear','Listen'], flash:['bolt','Flash'] };
+/* Toy Table pieces shared by the door, the path and lessons (local helpers; the drawings come from TOY). */
+// Bix: Fun.Mascot keeps the behaviour (tap, voice, reactions); the figurine on the table is TOY.bix and follows his mood.
+const TOY_MOOD_D = { concerned:'oops' };
+function toyBixD(el, size, opts){
+  if (!el) return;
+  if (!el.querySelector('.bix')) Fun.Mascot.mount(el, Object.assign({size}, opts||{}));
+  const bx=el.querySelector('.bix'); if (!bx || bx.querySelector('.toy-bix')) return;
+  const fig=document.createElement('span'); fig.className='td-bixfig'; bx.appendChild(fig); bx.classList.add('td-bixed');
+  const draw=()=>{ const m=bx.dataset.mood || bx.dataset.base || 'happy'; if (fig.dataset.m===m) return; fig.dataset.m=m; fig.innerHTML=TOY.bix(TOY_MOOD_D[m]||m, size); };
+  draw(); new MutationObserver(draw).observe(bx, {attributes:true, attributeFilter:['data-mood']});
+  const say=el.querySelector('.ws-say'); if (say) say.innerHTML=TOY.icon('speaker', 26, 'currentColor');
+}
+// The moon in the window fills with today's steps (she never shrinks: no plan yet = her resting crescent).
+function toySky(el){
+  const t=Fun.data && Fun.data.today, ok=t && t.day===todayKey() && t.steps && t.steps.length;
+  const tot=ok ? t.steps.length : 3, done=ok ? t.steps.filter(x=>x.done).length : 0;
+  el.innerHTML=TOY.skyMoon(done>=tot ? 'proud' : done ? 'happy' : 'calm', done>=tot ? 1 : .4+.45*done/tot);
+}
+function replay(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+$('#exitDoor').innerHTML=TOY.icon('back', 32, 'currentColor'); $('#exitLesson').innerHTML=TOY.icon('back', 32, 'currentColor');
+
+// The three ways to practise: wooden toy blocks with a lacquer face. [TOY icon, label, icon colour, accent]
+const DOOR_TOYS = { visual:['eye','Look','#fff','#FFD25E'], listen:['ear','Listen','#4A2C06','#FFFDF6'], flash:['flash','Flash','#fff','#FFD25E'] };
 function renderDoor(){
-  const n=NODES[curIdx()];
-  $$('#door .door-block').forEach(b=>{ const m=b.dataset.door, [ic,lab]=DOOR_LABEL[m];
-    if (!b.dataset.drawn){ b.innerHTML=DOOR_ART[m]()+`<span class="door-label">${WS.icon(ic, 36, 'currentColor', 2.4)}${lab}</span>`; b.dataset.drawn='1'; } });
-  const all=$('#doorAll'); if (!all.innerHTML) all.innerHTML=WS.icon('lock', 18, 'currentColor')+'<span>See all skills</span>';
+  $$('#door .door-block').forEach(b=>{ const [ic,lab,col,acc]=DOOR_TOYS[b.dataset.door];
+    if (!b.dataset.drawn){ b.innerHTML=`<span class="td-toy-face">${TOY.icon(ic, 96, col, {accent:acc, stroke:2.3})}</span><span class="door-label">${lab}</span>`; b.dataset.drawn='1'; } });
+  const all=$('#doorAll'); if (!all.innerHTML) all.innerHTML=TOY.icon('lock', 22, 'currentColor')+'<span>See all skills</span>';
+  const props=$('#doorProps'); if (!props.innerHTML) props.innerHTML=TOY.prop('rainbow', 150)+TOY.prop('plant', 170);
+  toySky($('#doorSky'));
   renderDoorPath();
-  const bd=$('#bixDoor'); mountBix(bd, 72);
+  const bd=$('#bixDoor'); toyBixD(bd, 190, {keep:true});
   bixSay(bd, 'How do you want to play with numbers?', 'door_ask');
   $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
 }
+// My path: every skill is a bead on one brass rod that winds across the table. Learned beads are glossy teal, the
+// current one is gold and glows, the ones still to come are bare wood. A small wooden flag starts each level.
+function doorFlag(lv, x, y, k){
+  return `<span class="dp-flag" style="left:${x}px;top:${y}px;width:${Math.round(112*k)}px" role="img" aria-label="Level ${lv}"><svg viewBox="0 0 112 150" aria-hidden="true">`
+    + `<ellipse cx="30" cy="139" rx="34" ry="7" fill="url(#toy-g-shadow)" opacity=".5"/><ellipse cx="21" cy="138" rx="21" ry="5.5" fill="url(#toy-g-shadow)"/>`
+    + `<ellipse cx="18" cy="135" rx="17" ry="6" fill="url(#toy-g-maple-side)"/><ellipse cx="18" cy="132" rx="17" ry="5.6" fill="url(#toy-g-maple)"/>`
+    + `<rect x="13.5" y="12" width="9" height="121" rx="4" fill="url(#toy-g-post)"/>`
+    + `<path d="M24,21 H106 L95,36.5 L106,52 H24Z" fill="#CDBFA4"/><path d="M22,18 H104 L93,33.5 L104,49 H22Z" fill="#FFFDF6"/><path d="M22,41 H98.5 L104,49 H22Z" fill="#F0E6D0"/>`
+    + `<text x="58" y="40.5" text-anchor="middle" font-family="Fredoka,'Baloo 2',system-ui,sans-serif" font-weight="600" font-size="19" fill="#2B3674">Level ${lv}</text>`
+    + `<circle cx="18" cy="11" r="8" fill="url(#toy-lac-red)"/><ellipse cx="15.4" cy="7.8" rx="3" ry="1.6" transform="rotate(-30 15.4 7.8)" fill="#fff" opacity=".85"/></svg></span>`;
+}
 function renderDoorPath(){
-  const ci=curIdx(), from=Math.max(0, ci-2), to=Math.min(NODES.length-1, ci+2), out=[];
-  const more=(side)=>`<span class="dp-more dp-${side}" aria-hidden="true">…</span>`;
-  out.push(from>0 ? more('l') : '<span class="dp-more dp-l" aria-hidden="true"></span>');
-  for (let i=from;i<=to;i++){
-    const n=NODES[i], name=esc(pathName(n)), far=Math.abs(i-ci)>1 ? ' far' : '';
-    if (i<ci) out.push(`<div class="dp-node done${far}"><button class="dp-bead" data-node="${n.id}" aria-label="${name}: learned">${WS.bead('jade', 100)}<span class="dp-mark">${WS.icon('check', 28, '#fff', 3.4)}</span></button><span class="dp-name">${name}</span></div>`);
-    else if (i===ci){ const t=lessonTarget(n), fresh=!node(t.id).lesson;
-      out.push(`<div class="dp-node cur"><button class="dp-bead" data-node="${n.id}" aria-label="${name}: you are here"><svg class="ws-bead" width="170" height="104" viewBox="0 0 170 104" aria-hidden="true"><path class="a-indigo a-ring" d="M4 52 Q85 -12 166 52 Q85 116 4 52Z" stroke-width="7"/><ellipse cx="62" cy="30" rx="24" ry="7" fill="#fff" opacity=".25"/></svg><span class="dp-mark">${WS.icon('star', 40, WS.colors.ochre)}</span></button><span class="dp-name">${name}</span>`
-        +`<button class="ws-btn small dp-learn${fresh?' ws-nudge':''}" id="doorLearn">${WS.icon('play', 22, '#fff')}Learn it with Bix</button></div>`); }
-    else out.push(`<div class="dp-node locked${far}"><button class="dp-bead" data-node="${n.id}" aria-label="${name}: not yet">${WS.bead('locked', 100)}<span class="dp-mark">${WS.icon('lock', 24, 'currentColor', 2.4)}</span></button><span class="dp-name">${name}</span></div>`);
-  }
-  out.push(to<NODES.length-1 ? more('r') : '<span class="dp-more dp-r" aria-hidden="true"></span>');
-  const p=$('#doorPath'); p.innerHTML='<div class="dp-row"><div class="dp-rod" aria-hidden="true"></div>'+out.join('')+'</div>';
+  const p=$('#doorPath'), ci=curIdx(), k=(innerWidth>=1300 && innerHeight>=960) ? 1.14 : 1, R=v=>Math.round(v*k);
+  const SLOT=R(170), CUR=R(256), FLAG=R(100), HB=R(98), HC=R(122), AMP=R(13), Y0=R(78), H=R(268);
+  let x=R(26), lvl=0, curX=0; const pts=[], out=[];
+  NODES.forEach((n,i)=>{
+    const lv=levelOf(n), label=esc(pathName(n)), name=label.split(' ').map(w=>`<span>${w}</span>`).join(' ');
+    if (lv!==lvl){ lvl=lv; out.push(doorFlag(lv, x+R(10), Y0-R(92), k)); x+=FLAG; }
+    const w=i===ci ? CUR : SLOT, cx=x+w/2, cy=Math.round(Y0+AMP*Math.sin(i*1.3+.5)); pts.push([cx, cy]); x+=w;
+    const at=(h)=>`style="left:${cx}px;top:${cy-Math.round(h*.47)}px;width:${w}px"`;
+    if (i<ci) out.push(`<div class="dp-node done" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: learned">${TOY.bead('teal', HB, {tall:true})}<span class="dp-mark">${TOY.icon('check', R(34), '#fff', {stroke:3.6})}</span></button><span class="dp-name">${name}</span></div>`);
+    else if (i===ci){ curX=cx;
+      out.push(`<div class="dp-node cur" ${at(HC)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: you are here"><span class="dp-glow"></span>${TOY.bead('mustard', HC, {tall:true})}<span class="dp-mark">${TOY.icon('star', R(42), '#FFFDF6')}</span></button><span class="dp-name">${name}</span>`
+        +`<button class="toy-block toy-block--teal toy-block--sm dp-learn" id="doorLearn">${TOY.icon('play', 26, '#fff')}<span class="toy-block-label">Learn it with Bix</span></button></div>`); }
+    else out.push(`<div class="dp-node locked" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: not yet">${TOY.bead('wood', HB, {tall:true})}<span class="dp-mark">${TOY.icon('lock', R(28), 'currentColor', {accent:'#F6D9AA'})}</span></button><span class="dp-name">${name}</span></div>`);
+  });
+  const W=x+R(26), ends=[[-30, pts[0][1]]].concat(pts, [[W+30, pts[pts.length-1][1]]]);
+  const d=ends.map((q,i)=>{ if (!i) return `M${q[0]},${q[1]}`; const a=ends[i-1], mx=Math.round((a[0]+q[0])/2); return `C${mx},${a[1]} ${mx},${q[1]} ${q[0]},${q[1]}`; }).join(' ');
+  const rod=`<svg class="dp-cord" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" fill="none" stroke-linecap="round" aria-hidden="true"><path d="${d}" transform="translate(5,10)" stroke="#3A1E06" stroke-opacity=".16" stroke-width="15"/><path d="${d}" transform="translate(3,7)" stroke="#3A1E06" stroke-opacity=".2" stroke-width="9"/>`
+    +`<path d="${d}" stroke="#8E6A1C" stroke-width="12"/><path d="${d}" stroke="#E2B54A" stroke-width="8"/><path d="${d}" transform="translate(0,-2)" stroke="#FFF1B8" stroke-width="2.4" stroke-opacity=".85"/></svg>`;
+  p.innerHTML=`<div class="dp-row" style="width:${W}px;height:${H}px">${rod}${out.join('')}</div>`;
+  p.scrollLeft=Math.max(0, curX-p.clientWidth*.42);
   p.querySelectorAll('.dp-node .dp-bead').forEach(b=>b.onclick=()=>{
     const i=NODE_IDX[b.dataset.node], bd=$('#bixDoor'); Sfx.tap();
-    if (i>ci){ b.classList.remove('ws-shake'); void b.offsetWidth; b.classList.add('ws-shake'); bixSay(bd, 'Locked! Finish the skills before it to open it.', 'locked', 3500); }
-    else if (i<ci){ b.classList.remove('ws-pop'); void b.offsetWidth; b.classList.add('ws-pop'); bixSay(bd, 'You already know this one. Great job!', 'path_done', 3500); }
+    if (i>ci){ replay(b, 'td-shake'); bixSay(bd, 'Locked! Finish the skills before it to open it.', 'locked', 3500); }
+    else if (i<ci){ replay(b, 'td-pop'); bixSay(bd, 'You already know this one. Great job!', 'path_done', 3500); }
     else bixSay(bd, 'This is your skill right now! Tap “Learn it with Bix”.', 'path_here', 3500);
   });
   $('#doorLearn').onclick=()=>{ Speaker.unlock(); startLesson(lessonTarget(NODES[curIdx()]), 'door'); };
 }
+window.addEventListener('resize', ()=>{ if ($('#door').classList.contains('active')) renderDoorPath(); });
 window.renderDoor = renderDoor;
 // Whoever opens the door (home calls show('door')), it draws itself fresh.
 new MutationObserver(()=>{ const d=$('#door'); if (d.classList.contains('active')){ if (!d._shown){ d._shown=true; renderDoor(); } } else d._shown=false; })
@@ -702,7 +739,31 @@ $('#exitDoor').addEventListener('click', ()=>{ Fun.BixVoice.stop(); renderHome()
 $('#doorAll').addEventListener('click', ()=>openGate('skills'));
 
 /* ---- lesson: Bix shows each trick on a wooden soroban, then she tries it ---- */
-function friendsHtml(n){ if(n.family===5) return ['1 & 4','2 & 3'].map(x=>`<span>${x}</span>`).join(''); if(n.family===10) return ['1 & 9','2 & 8','3 & 7','4 & 6','5 & 5'].map(x=>`<span>${x}</span>`).join(''); return ''; }
+// Number friends in lessons: the family as small lacquer chips in Bix's bubble, and the pair a step is about
+// standing on the table next to Bix, holding hands around what they make.
+function friendsHtml(n){
+  const ps = n.family===5 ? TOY.FRIENDS.small : n.family===10 ? TOY.FRIENDS.big : [];
+  const dot=v=>`<b class="toy-lac--${FRIEND_LAC[v]}">${v}</b>`;
+  return ps.map(([a,b])=>`<span data-pair="${a}-${b}" aria-label="${a} and ${b}">${dot(a)}${dot(b)}</span>`).join('');
+}
+const FRIEND_LAC = {1:'red', 9:'red', 2:'plum', 8:'plum', 3:'teal', 7:'teal', 4:'indigo', 6:'indigo', 5:'mustard'};
+function friendIn(text){ const m=/(?:Small|Big) friend of (\d) is (\d)/.exec(String(text||'').replace(/<[^>]+>/g,'')); return m ? [+m[1], +m[2]] : null; }
+function friendOfSteps(steps){ for (const st of steps||[]){ const f=friendIn(st.say); if (f) return f; } return null; }
+function lessonPair(f, mood){
+  const el=$('#lessonPair'), key=f ? f.join('-')+(mood||'') : 'none'; if (el.dataset.k===key) return; el.dataset.k=key;
+  el.classList.toggle('has-pair', !!f); $('#lesson').classList.toggle('with-pair', !!f);
+  el.innerHTML = f ? TOY.pair(f[0], f[1], 150, {mood:mood||'happy'}) : '';
+  const pk=f ? Math.min(f[0],f[1])+'-'+Math.max(f[0],f[1]) : ''; $$('#capFriends span').forEach(x=>x.classList.toggle('on', x.dataset.pair===pk));
+}
+// The speaker mark on the lesson bubble: shown only while the caption has a spoken line; tap the bubble to hear it again.
+function capVoice(id, extra){
+  const c=$('#lessonCap'), mark=$('#capSay'); c._v=null; mark.hidden=true; c.classList.remove('has-voice'); if (!id || !Fun.BixVoice.enabled()) return;
+  const on=()=>{ c._v={id, extra}; mark.hidden=false; c.classList.add('has-voice'); };
+  if (!extra){ if (window.BIX_LINES && window.BIX_LINES[id]) on(); return; }
+  const tag=Fun.BixVoice.tag(), tok=c._vt=(c._vt||0)+1; BixExtra.load(tag).then(()=>{ if (c._vt===tok && BixExtra.map[tag] && BixExtra.map[tag][id]) on(); });
+}
+$('#capSay').innerHTML=TOY.icon('speaker', 26, 'currentColor');
+$('#lessonCap').addEventListener('click', ()=>{ const v=$('#lessonCap')._v; if (!v) return; Speaker.unlock(); if (v.extra) BixExtra.play(v.id, $('#bixLesson')); else Fun.BixVoice.play(v.id, $('#bixLesson')); });
 function startLesson(n, from){
   Speaker.unlock(); lessonFrom = from || 'home';
   // The practice soroban (AbacusInput via DemoAbacus): Bix moves it in demos, the child moves it on "Your turn".
@@ -712,7 +773,11 @@ function startLesson(n, from){
   lessonAb.reset();
   L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
-  const bl=$('#bixLesson'); if (!bl.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(bl, {size:96, bubble:false});
+  toyBixD($('#bixLesson'), 170, {bubble:false}); toySky($('#lessonSky'));
+  // Room under the soroban is kept for the friends only in lessons where a friend rule can come up.
+  let friendly=false; try{ friendly=[...(n.demos||[]), ...(n.guided||[])].some(pr=>friendOfSteps(lessonStep(n, pr).steps)); }catch(e){}
+  $('#lesson').classList.toggle('may-pair', friendly); $('#lesson').dataset.rods=rods;
+  $('#lessonPair').dataset.k=''; lessonPair(n.family && n.demos ? friendOfSteps(lessonStep(n, n.demos[0]).steps) : null);
   show('lesson'); renderLesson();
 }
 // One demo/guided pair of any skill -> {start, target, label, op, steps} (Curriculum.lessonStep knows multiplication).
@@ -729,7 +794,8 @@ function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson
 function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx:0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
 // The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
 function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>').replace(/×/g,'<i class="times">×</i>'); }
-function cap(kind, text, prob){ $('#capKind').textContent=kind; const t=$('#capText'); t.classList.remove('tight'); t.innerHTML=text; if (capLines()>3) t.classList.add('tight'); if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? WS.icon('star', 64, WS.colors.ochre) : probHtml(prob||''); } }
+function cap(kind, text, prob){ $('#capKind').textContent=kind; const t=$('#capText'); t.classList.remove('tight'); t.innerHTML=text; if (capLines()>3) t.classList.add('tight'); if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? TOY.icon('star', 64, '#F2B632') : probHtml(prob||''); }
+  capVoice(null); const f=friendIn(text); if (f) lessonPair(f, 'cheer'); }
 // Bix's lesson bubble holds at most 3 lines: long explanations are split into extra pages (measured, so it fits every iPad size).
 function capLines(){ const t=$('#capText'); if (!t || !t.offsetParent || !t.textContent.trim()) return 0; const lh=parseFloat(getComputedStyle(t).lineHeight)||30; return Math.round(t.getBoundingClientRect().height/lh); }
 function fitPages(pieces, wrap){
@@ -753,13 +819,14 @@ function lessonPages(n){
   if (Array.isArray(n.method)) n.method.forEach((m,i)=>fitPages(sentences(m).map(esc), h=>`<ol class="method" start="${i+1}"><li>${h}</li></ol>`).forEach(html=>pages.push({kind:`How to: step ${i+1} of ${n.method.length}`, html})));
   return pages;
 }
-function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); b.className='ws-btn big'+(kind?' '+kind:''); b.innerHTML=(icon?WS.icon(icon, 30, 'currentColor', 3):'')+`<span>${label}</span>`; }
-function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); }
-// Lesson progress as a row of beads (one per demo / try): done jade, the one you are on indigo, the rest pale.
+// The one obvious next step is the teal block; "Skip" is plain wood.
+function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); b.className='toy-block td-next toy-block--'+(kind==='maple' ? 'wood' : 'teal'); b.innerHTML=(icon?TOY.icon(icon, 36, 'currentColor', {stroke:3.2}):'')+`<span class="toy-block-label">${label}</span>`; }
+function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); capVoice(id); }
+// Lesson progress as beads on a brass rod (one per demo / try): done teal, the one you are on gold, the rest bare wood.
 function renderLessonSteps(){
   const tot=lessonTotal()-1, done=Math.min(tot, lessonDone()), live=['numbers','demo','guided'].includes(L.phase);
   const el=$('#lessonSteps'); el.setAttribute('aria-label', L.phase==='done' ? 'All steps done' : live ? `Step ${done+1} of ${tot}` : `${tot} steps`);
-  el.innerHTML=Array.from({length:tot},(_,i)=>`<i class="ls-dot${i<done?' ok':i===done&&live?' cur':''}"></i>`).join('');
+  el.innerHTML=Array.from({length:tot},(_,i)=>{ const ok=i<done, cur=i===done&&live; return `<i class="ls-dot${ok?' ok':cur?' cur':''}">${TOY.bead(ok?'teal':cur?'mustard':'wood', 48, {tall:true, shadow:false})}</i>`; }).join('');
 }
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
@@ -768,8 +835,8 @@ async function renderLesson(){
     $('#capProb').innerHTML=''; $('#capProb').dataset.p='';
     if (!L.pages) L.pages=lessonPages(n);
     const pg=L.pages[Math.min(L.page, L.pages.length-1)], last=L.page>=L.pages.length-1;
-    cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null, last?'ws-nudge':'');
-    if (L.page===0){ lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); }
+    cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null);
+    if (L.page===0){ lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); capVoice('learn_'+n.id, true); }
     return;
   }
   if (L.phase==='numbers'){ // beads node: set each number
@@ -777,20 +844,19 @@ async function renderLesson(){
     cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonBtn('Skip', null, 'maple'); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
   }
   if (L.phase==='demo'){
-    const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start;
+    const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
     cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); if (L.demoIdx===0) lessonSay('lesson_watch'); lessonBtn('Next', 'play');
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
-    if (L.phase==='demo' && !L.busy) $('#lessonNext').classList.add('ws-nudge');
     return;
   }
   if (L.phase==='guided'){
     const ls=lessonStep(n, n.guided[L.guidedIdx]); L.target=ls.target; lessonAb.value=ls.start;
-    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label);
+    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label); { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
     lessonBtn('Skip', null, 'maple'); $('#lessonHint').style.display=''; if (L.guidedIdx===0) lessonSay('lesson_turn'); return;
   }
-  if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check', 'jade ws-nudge'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
+  if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
 }
-$('#lessonHint').innerHTML=WS.icon('eye', 26, 'currentColor')+'<span>Show me</span>';
+$('#lessonHint').innerHTML=TOY.icon('eye', 30, 'currentColor')+'<span class="toy-block-label">Show me</span>';
 let animToken=0;
 async function playSteps(ab, steps, onStep){
   const my=++animToken; L.busy=true;
