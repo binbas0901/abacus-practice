@@ -956,7 +956,6 @@ window.addEventListener('resize', ()=>{ if ($('#drill').classList.contains('acti
 // Refit whenever the room changes (bubble mounted, "Show me" appears, fonts arrive, rotation).
 if (window.ResizeObserver){ let q=0; const ro=new ResizeObserver(()=>{ if (q) return; q=requestAnimationFrame(()=>{ q=0; if ($('#drill').classList.contains('active') && mode==='visual') fitTiles(); }); }); ro.observe($('#sheet')); ro.observe($('#drill .tp-body')); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if ($('#drill').classList.contains('active')) fitTiles(); });
-function beadW(n, max){ return n<=12 ? max : Math.max(26, Math.floor(max*12/n)); }
 // The set as beads on a brass rod: finished ones have slid to the left (teal = right, red = one to fix),
 // the one she is on glows in the middle, the rest wait on the right.
 function renderStrip(popIdx){

@@ -186,13 +186,13 @@
 #showme .abx-svg{width:auto;height:min(400px,62vh);max-width:54vw}
 
 /* ============ end of set ============ */
-#summary.tp-sum{--pad:28px;--bw:clamp(320px,38vw,520px);--sbix:clamp(200px,22vw,290px);--toy-window-x:clamp(60px,8vw,120px);padding:0;gap:0;box-sizing:border-box;align-items:stretch;text-align:left}
+#summary.tp-sum{--pad:28px;--bw:clamp(320px,38vw,520px);--sbix:clamp(200px,22vw,290px);--toy-window-x:clamp(40px,5vw,90px);padding:0;gap:0;box-sizing:border-box;align-items:stretch;text-align:left}
 body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:none}
 #summary .tp-sumwall{position:relative;flex:none;height:var(--toy-wall-h);box-sizing:border-box}
 #summary .tp-sumwall{--win-w:calc((var(--toy-wall-h) - 16px)*2.15)}
-#summary .tp-headslot{position:absolute;left:calc(var(--toy-window-x) + var(--win-w));right:264px;bottom:30px;display:flex;justify-content:center;z-index:1}
+#summary .tp-headslot{position:absolute;left:calc(var(--toy-window-x) + var(--win-w));right:236px;bottom:30px;display:flex;justify-content:center;z-index:1}
 #summary .tp-sumhead{white-space:nowrap;padding:16px 34px 18px}
-#summary .tp-sumhead .toy-h1{font-size:clamp(38px,4.6vw,54px)}
+#summary .tp-sumhead .toy-h1{font-size:clamp(34px,3.9vw,52px)}
 /* rewards hang at the top right of the wall */
 #summary .tp-rewards{position:absolute;right:var(--pad);top:22px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;z-index:2}
 #summary .tp-rewards .toy-chip{min-height:44px;padding:4px 18px 4px 8px;gap:10px;font-size:22px;box-shadow:0 2px 0 rgba(138,90,38,.5),4px 8px 10px rgba(var(--toy-shade),.28)}
@@ -206,12 +206,12 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
 @keyframes tp-moonin{from{opacity:0}to{opacity:.9}}
 #summary .tp-moons{position:absolute;right:var(--pad);bottom:26px;z-index:2;padding:8px 14px 10px;line-height:0}
 #summary .tp-moons .tp-moonstack{position:relative;display:block}
-#summary .tp-moons svg{display:block}
+#summary .tp-moons svg{display:block;width:158px}
 #summary .tp-moons .after{position:absolute;left:0;top:0;animation:tp-fadein .8s ease 1.6s both}
 
 #summary .tp-sumstage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;align-content:center;gap:20px;padding:18px var(--pad) 0}
 #summary .tp-sumbixcol{position:relative;justify-self:end;align-self:end;display:flex;flex-direction:column;align-items:flex-start;gap:22px;max-width:360px}
-#summary .tp-sumbub{display:flex;align-items:center;gap:12px;padding:16px 16px 18px 24px;max-width:100%}
+#summary .tp-sumbub{display:flex;align-items:center;gap:12px;padding:16px 16px 18px 24px;max-width:100%;min-width:0}
 #summary .tp-sumnote{margin:0;font:600 clamp(19px,2vw,22px)/1.3 var(--toy-display);color:var(--toy-ink)}
 #summary .tp-saybtn{flex:none;width:60px;height:60px;margin-right:-4px}
 #summary .tp-sumbix{line-height:0;cursor:pointer;margin-left:22px}
@@ -268,6 +268,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   html,body{height:auto!important;overflow:visible!important;background:#fff!important}
   #app{position:static!important;padding:0!important}
   #app > :not(#certificate), body > :not(#app):not(#toy-defs):not(#abx-defs){display:none!important}
+  body > #toy-defs,body > #abx-defs{display:block!important}
   #certificate{display:flex!important;min-height:0!important;background:#fff!important;padding:0!important}
   #certificate::before,#certificate::after,#certificate .tp-certbtns,#certificate .tp-certbix,#certificate .toy-sky-moon{display:none!important}
   #certificate .tp-certstage{padding:0}
@@ -314,7 +315,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #summary.tp-sum{--bw:clamp(360px,56vw,520px);--sbix:clamp(210px,30vw,280px);--toy-window-x:40px}
   #summary .tp-headslot{left:0;right:0;bottom:auto;top:calc(100% + 34px)}
   #summary .tp-sumstage{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto auto;gap:34px 16px;padding-top:120px}
-  #summary .tp-sumbixcol{grid-column:1 / -1;justify-self:center;flex-direction:row-reverse;align-items:flex-end;max-width:none;gap:26px}
+  #summary .tp-sumbixcol{grid-column:1 / -1;justify-self:center;flex-direction:row-reverse;align-items:flex-end;max-width:100%;gap:26px}
   #summary .tp-sumbub.toy-bubble--left::after{left:-22px;bottom:26px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
   #summary .tp-sumbub{margin-bottom:40px}
   #summary .tp-sumbix{margin:0}
