@@ -168,7 +168,6 @@
     <span class="pr-fixlabel" id="fixLabel" hidden>Fixing</span>
     <div class="pr-rodwrap">
       <div class="pr-rod" id="strip" role="list" aria-label="Problems in this set"></div>
-      <div class="pr-time" id="testTime" hidden></div>
     </div>
     <button class="ws-iconbtn quiet pr-speedbtn" id="speedBtn" aria-label="Speed (grown-ups)" aria-expanded="false" hidden><span class="pr-ic" data-ic="gear"></span></button>
     <div class="pr-speed ws-card" id="speedPop" hidden>
@@ -199,12 +198,7 @@
       <div class="pr-readout" id="readout"><span class="pr-rolabel" id="readoutLabel">beads show</span><b id="answer">&nbsp;</b></div>
       <div class="pr-abacus" id="abHost"></div>
       <div class="pr-pad" id="pad">
-      <div class="pr-keys" id="padKeys">
-        <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
-        <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
-        <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
-        <button data-k="0" class="zero">0</button><button data-k="del" class="del" aria-label="Delete"><span class="pr-ic" data-ic="back"></span></button>
-      </div>
+      <div class="pr-keys" id="padKeys"></div>
       <div class="pr-foot">
         <button class="ws-btn ghost pr-switch" id="toolSwitch"></button>
         <button class="ws-btn pr-check" data-k="go" id="checkBtn"><span class="pr-ic" data-ic="check"></span>Check</button>
@@ -216,13 +210,13 @@
 </section>
 
 <section id="summary" class="screen ws-screen pr-sum">
-  <div class="ws-chip pr-goldchip" id="sumGold" hidden></div>
+  <div class="pr-rewards" id="sumRewards" aria-live="polite"><div class="ws-chip pr-goldchip" id="sumGold" hidden></div><div class="ws-chip pr-newchip" id="sumNew" hidden></div></div>
   <div class="pr-sumbix" id="bixSum"></div>
   <div class="pr-sumhead"><h1 class="ws-h1" id="sumScore"></h1><button class="pr-say" id="sumSay" aria-label="Hear it again"><span class="pr-ic" data-ic="speaker"></span></button></div>
   <div class="ws-frame pr-sumrod"><div class="ws-inner"><div class="pr-sumbeads" id="sumStars" role="list"></div></div></div>
   <p class="bubble on pr-sumnote" id="sumNote"></p>
-  <div class="pr-sumtest" id="sumTest" hidden><button class="ws-btn ochre big" id="testBtn"><span class="pr-ic" data-ic="star"></span>Level test</button></div>
   <div class="pr-sumbtns">
+    <button class="ws-btn ochre big" id="testBtn" style="display:none"><span class="pr-ic" data-ic="star"></span>Level test</button>
     <button class="ws-btn big" id="fixBtn"><span class="pr-ic" data-ic="retry"></span>Fix the red ones</button>
     <button class="ws-btn big jade" id="againBtn"><span class="pr-ic" data-ic="retry"></span>Play again</button>
     <button class="ws-btn big maple" id="homeBtn">I’m done</button>
@@ -230,7 +224,6 @@
 </section>
 
 <section id="certificate" class="screen ws-screen pr-cert">
-  <div class="pr-certtop"><button class="ws-iconbtn" id="certClose" aria-label="Close"><span class="pr-ic" data-ic="close"></span></button></div>
   <div class="ws-frame pr-certframe"><div class="ws-inner pr-certcard" id="certCard">
     <div class="pr-certbix" id="certBix"></div>
     <div class="pr-certkick">Certificate of mastery</div>
@@ -240,7 +233,7 @@
     <div class="pr-certbeads" id="certBeads" aria-hidden="true"></div>
     <div class="pr-certmeta"><span id="certDate"></span><span class="dot">·</span><span>Bix Abacus</span></div>
   </div></div>
-  <div class="pr-certbtns"><button class="ws-btn indigo" id="certPrint"><span class="pr-ic" data-ic="share"></span>Print</button><button class="ws-btn jade big" id="certDone"><span class="pr-ic" data-ic="check"></span>Done</button></div>
+  <div class="pr-certbtns"><button class="ws-btn indigo big" id="certPrint"><span class="pr-ic" data-ic="print"></span>Print</button><button class="ws-btn jade big" id="certDone"><span class="pr-ic" data-ic="check"></span>Done</button></div>
 </section>
 
 <div id="showme" role="dialog" aria-label="Show me"><div class="pr-showcard ws-card">

@@ -3,6 +3,7 @@
 // Node: module.exports (pure parts only: Model, bead logic, checkMethod).
 //
 //   const ab = AbacusInput.create(container, { rods: 3, showReadout: true, onChange(value, lastMove) {}, onBead(move) {} });
+//   readOnly: true -> a demo abacus (Show me, lessons): same drawing, no touch/keyboard input; setValue still animates it.
 //   ab.value(); ab.setValue(15, { animate: false }); ab.clear(); ab.moves(sinceIndex); ab.destroy();
 //   AbacusInput.checkMethod(startValue, term, movesLog) -> { ok, valueOk, expected, actual, hint }
 //
@@ -237,8 +238,9 @@
     const minRods = model.rods;
     const scale = opts.scale || 1.4;            // 1.4 => bead slot ~48px tall on screen
     let showReadout = opts.showReadout !== false;
+    const readOnly = !!opts.readOnly;
     const wrap = document.createElement('div');
-    wrap.className = 'abx';
+    wrap.className = 'abx' + (readOnly ? ' abx-readonly' : '');
     wrap.setAttribute('role', 'group');
     wrap.setAttribute('aria-roledescription', 'abacus');
     const live = document.createElement('div');
@@ -260,7 +262,7 @@
       for (let j = 0; j < model.rods; j++) {
         const r = model.rods - 1 - j;                 // leftmost drawn first; rod 0 = ones at the right
         const x = G.FR + G.PADX + G.ROD / 2 + j * G.ROD;
-        const g = el('g', { class: 'abx-rod', role: 'group', 'data-rod': r, tabindex: r === 0 ? 0 : -1 }, rodsG);
+        const g = el('g', readOnly ? { class: 'abx-rod', role: 'group', 'data-rod': r } : { class: 'abx-rod', role: 'group', 'data-rod': r, tabindex: r === 0 ? 0 : -1 }, rodsG);
         el('rect', { x: x - 4, y: G.FR, width: 8, height: G.H - 2 * G.FR, class: 'abx-rodline' }, g);
         const beads = [];
         const mk = (kind, k) => {
@@ -274,11 +276,13 @@
         rodEls[r] = { g, x, h, es };
         if (r % 3 === 0) el('circle', { cx: x, cy: G.beamY + G.BM / 2, r: 3.2, class: 'abx-dot' }, svg);
       }
-      svg.addEventListener('pointerdown', onDown);
-      svg.addEventListener('pointermove', onMove);
-      svg.addEventListener('pointerup', onUp);
-      svg.addEventListener('pointercancel', onCancel);
-      svg.addEventListener('keydown', onKey);
+      if (!readOnly) {
+        svg.addEventListener('pointerdown', onDown);
+        svg.addEventListener('pointermove', onMove);
+        svg.addEventListener('pointerup', onUp);
+        svg.addEventListener('pointercancel', onCancel);
+        svg.addEventListener('keydown', onKey);
+      }
       wrap.insertBefore(svg, wrap.firstChild);
       paint();
     }
@@ -383,6 +387,7 @@
       },
       moves: since => model.moves(since),
       rods: () => model.rods,
+      readOnly,
       setReadout(on) { showReadout = !!on; paint(); return api; },
       destroy() {
         if (destroyed) return; destroyed = true;

@@ -16,6 +16,8 @@ async def collect_all(pg):
         except Exception: return
         await pg.click('#rvPack', force=True); await pg.wait_for_timeout(450); await pg.click('#rvOk'); await pg.wait_for_timeout(350)
 async def drill(pg): return await pg.evaluate("window.__drill()")
+# every visible child button on these screens is at least 60px (the grown-up speed control may be 44px)
+SMALL = "(sel)=>[...document.querySelectorAll(sel+' button')].filter(b=>b.getClientRects().length && getComputedStyle(b).visibility!=='hidden').map(b=>[b.id||b.dataset.k||b.textContent.trim(), b.getBoundingClientRect()]).filter(([n,r])=>Math.min(r.width,r.height)<(n==='speedBtn'?44:60)).map(([n,r])=>n+':'+Math.round(r.width)+'x'+Math.round(r.height))"
 async def bubble(pg): return (await pg.text_content('#bixDrill .pr-bubble')).strip()
 async def keypad(pg, v):
     for ch in str(v): await pg.click(f'#pad [data-k="{ch}"]')
@@ -53,7 +55,11 @@ async def main():
         # ===== 1. Look: beads with method feedback, keypad, end of set, fix =====
         ctx, pg = await newpage(base)
         await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
-        check('no timer on the child practice screen', await pg.evaluate("!document.querySelector('#timer') && document.querySelector('#testTime').hidden"))
+        check('no timer on the child practice screen', await pg.evaluate("!document.querySelector('#timer') && !document.querySelector('#testTime')"))
+        kp = await pg.evaluate("""()=>{ const r=k=>document.querySelector(`#pad [data-k="${k}"]`).getBoundingClientRect(); const c=document.querySelector('#checkBtn').getBoundingClientRect(), g=document.querySelector('#padKeys .ws-keypad').getBoundingClientRect();
+          return { rows: [r(7).top===r(8).top && r(8).top===r(9).top, r(4).top===r(5).top && r(1).top===r(3).top, r(7).top<r(4).top && r(4).top<r(1).top && r(1).top<r(0).top],
+                   delLeft: r('del').left<r(0).left && r('del').top===r(0).top && r(0).width>r(1).width*1.8, checkOutside: c.top>=g.bottom-1, kit: !!document.querySelector('#padKeys .ws-keypad') }; }""")
+        check('keypad is the kit keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ left + wide 0, red Check outside the grid', all(kp['rows']) and kp['delLeft'] and kp['checkOutside'] and kp['kit'], kp)
         d = await drill(pg); check('physical abacus (default) -> keypad first, with a "Use the beads" switch', d['tool'] == 'keys' and 'Use the beads' in await pg.text_content('#toolSwitch'))
         check('problem shown as stacked tiles, first unsigned', await pg.evaluate("document.querySelectorAll('#problemArea .ws-tile.term').length") == len(d['terms'])
               and not re.search(r'[+−]', await pg.text_content('#problemArea .term')))
@@ -103,6 +109,9 @@ async def main():
         check('end of set: golden bead chip + "Fix the red ones" + "I\'m done"', await pg.locator('#sumGold').is_visible() and 'golden bead' in await pg.text_content('#sumGold')
               and await pg.locator('#fixBtn').is_visible() and await pg.locator('#homeBtn').is_visible())
         await shot(pg, 'end_of_set')
+        check('child targets >= 60px on the end of set', not await pg.evaluate(SMALL, '#summary'), await pg.evaluate(SMALL, '#summary'))
+        await pg.wait_for_timeout(2600)
+        check('end of set: no floating "+n" toast over the headline / bead rod (rewards go to the top-right chip)', await pg.evaluate("""()=>[...document.querySelectorAll('.beadfloat')].every(f=>getComputedStyle(f).display==='none')"""))
         await collect_all(pg)
         # fix the red ones
         await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(2500)
@@ -110,6 +119,7 @@ async def main():
         check('fix: "Fixing" rod with only the red ones', await pg.locator('#fixLabel').is_visible() and await pg.evaluate("document.querySelectorAll('#strip .pr-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
         check('fix: Bix "This one was tricky. Want me to show you first?" + indigo Show me', 'tricky' in await bubble(pg) and await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'fix')
+        check('child targets >= 60px on the practice screen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
         # show me on the on-screen soroban
         await pg.click('#toolSwitch'); await pg.wait_for_timeout(200)
         await pg.click('#showMeBtn'); seen = set()
@@ -127,6 +137,7 @@ async def main():
         # second red one with the keypad: wrong -> show me card -> right
         await pg.click('#toolSwitch'); await pg.wait_for_timeout(200); d = await drill(pg)
         await keypad(pg, d['answer'] + 1); await pg.wait_for_selector('#showme.active', timeout=8000); await pg.wait_for_timeout(2400); await shot(pg, 'showme_card')
+        check('Show me card uses the practice soroban (AbacusInput, read-only demo)', await pg.evaluate("!!document.querySelector('#showmeAbacus .abx.abx-readonly .abx-svg') && !document.querySelector('#showmeAbacus .abx-rod[tabindex]')"))
         await pg.click('#showmeClose'); await pg.wait_for_timeout(400)
         check('fix: wrong with keypad -> Show me card -> same problem again', (await drill(pg))['idx'] == d['idx'])
         await keypad(pg, d['answer']); await pg.wait_for_selector('#summary.active', timeout=6000)
@@ -143,11 +154,17 @@ async def main():
             d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(800)
         await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(400)
         check('skill mastered -> end of set offers the Level test', await pg.locator('#testBtn').is_visible() and not await pg.locator('#fixBtn').is_visible())
+        lay = await pg.evaluate("""()=>{ const t=document.querySelector('#testBtn').getBoundingClientRect(), h=document.querySelector('#homeBtn').getBoundingClientRect(); return Math.abs(t.top-h.top)<2 && t.right<=h.left; }""")
+        check('...Level test sits in the same button row as "I\'m done" (same layout as Fix / Play again)', lay)
+        await pg.wait_for_timeout(1700)
+        check('...new skill reward lands in the top-right chips, not over the headline', await pg.locator('#sumNew').is_visible() and await pg.evaluate("""()=>{ const a=document.querySelector('#sumRewards').getBoundingClientRect(), h=document.querySelector('#sumScore').getBoundingClientRect(), r=document.querySelector('#sumStars').getBoundingClientRect();
+              const hit=(x,y)=>!(x.right<=y.left||y.right<=x.left||x.bottom<=y.top||y.bottom<=x.top); return !hit(a,h) && !hit(a,r); }"""))
         await shot(pg, 'end_mastered')
         await collect_all(pg)
         await pg.click('#testBtn'); await pg.wait_for_selector('#drill.active'); d = await drill(pg)
-        check('level test runs in the practice layout with time beads (only here)', d['levelTest'] and await pg.locator('#testTime').is_visible()
-              and await pg.evaluate("document.querySelectorAll('#testTime svg').length") == 10 and not await pg.locator('#showMeBtn').is_visible())
+        check('level test runs in the practice layout with NO visible time beads or countdown (timing is silent)', d['levelTest'] and not await pg.locator('#testTime').count()
+              and await pg.evaluate("document.querySelectorAll('#drill .pr-top svg').length") == len(d['strip']) + 2
+              and not re.search(r'second|time left|hurry', await pg.text_content('#drill'), re.I) and not await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'level_test')
         n = len(d['strip'])
         for i in range(n):
@@ -158,6 +175,7 @@ async def main():
         check('certificate saved per child as {nodeId,title,date,accuracy}', isinstance(certs, list) and len(certs) == 1 and set(certs[0]) == {'nodeId', 'title', 'date', 'accuracy'} and certs[0]['nodeId'] == 'bf_add_a' and certs[0]['accuracy'] == 1, certs)
         await pg.evaluate("()=>{ window.print=()=>{ window.__printed=(window.__printed||0)+1; }; }"); await pg.click('#certPrint'); await pg.wait_for_timeout(200)
         check('certificate is printable (window.print)', await pg.evaluate("window.__printed") == 1)
+        check('certificate: one way out (Done, no duplicate X) and a printer icon on Print', not await pg.locator('#certClose').count() and await pg.evaluate("document.querySelector('#certPrint svg').innerHTML.includes('M6 9V3h12v6')"))
         await shot(pg, 'certificate')
         await collect_all(pg)
         await pg.click('#certDone'); await pg.wait_for_selector('#home.active')
@@ -175,6 +193,25 @@ async def main():
         ctx, pg = await newpage(dict(base, hasAbacus=False))
         await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         check('no physical abacus -> on-screen soroban by default, "Type it instead"', (await drill(pg))['tool'] == 'beads' and 'Type it instead' in await pg.text_content('#toolSwitch'))
+        # multiplication on the beads: its own Bix line, rods sized to the answer
+        await pg.evaluate("__drillSet([26,6],'mul','beads')"); await pg.wait_for_timeout(200); bt = await bubble(pg)
+        check('mul on beads: Bix says work it out, then show the answer (not "for each number")', 'show the answer on the beads' in bt and 'each number' not in bt, bt)
+        await pg.evaluate("__drillSet([748,9],'mul','beads')"); await pg.wait_for_timeout(200)
+        r3 = await pg.evaluate("document.querySelectorAll('#abHost .abx-rod').length")
+        await pg.evaluate("__drillSet([4867,9],'mul','beads')"); await pg.wait_for_timeout(200)
+        r5 = await pg.evaluate("document.querySelectorAll('#abHost .abx-rod').length")
+        fits = await pg.evaluate("(()=>{ const a=document.querySelector('#abHost .abx-svg').getBoundingClientRect(); return a.left>=0 && a.right<=innerWidth && a.bottom<=innerHeight && a.height>120; })()")
+        check('mul on beads: rods sized to the answer (3-digit×1 -> 4 rods, 4-digit×1 -> 5 rods), abacus fits the screen', r3 == 4 and r5 == 5 and fits, (r3, r5))
+        await shot(pg, 'mul_beads')
+        # long rows: ONE column of smaller tiles, up to 10 numbers of 4 digits, never clipped
+        for terms in ([7, 9, 9, -5, -1, -7, -7, -1, 2, 8], [6155, -3294, 4896, 8102, 1234, -2345, 3456, 4567, -1111, 2222]):
+            for tool in ('keys', 'beads'):
+                await pg.evaluate("([t,tool])=>__drillSet(t,null,tool)", [terms, tool]); await pg.wait_for_timeout(250)
+                g = await pg.evaluate("""()=>{ const ts=[...document.querySelectorAll('#problemArea .ws-tile')].map(t=>t.getBoundingClientRect());
+                  return { n: ts.length, oneCol: ts.every(r=>Math.abs(r.left-ts[0].left)<1), down: ts.every((r,i)=>!i||r.top>=ts[i-1].bottom),
+                    inView: ts.every(r=>r.top>=0 && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth), digitsFit: [...document.querySelectorAll('#problemArea .ws-tile')].every(t=>t.scrollWidth<=t.clientWidth+1) }; }""")
+                check(f'long row ({len(terms)} numbers, {len(str(abs(terms[0])))} digits, {tool}): one column, top to bottom, nothing clipped', g['n'] == 10 and g['oneCol'] and g['down'] and g['inView'] and g['digitsFit'], g)
+        await shot(pg, 'long_row')
         await pg.click('#toolSwitch'); await pg.click('#exitDrill'); await pg.reload(); await pg.wait_for_timeout(600)
         await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         check('...but her last choice wins next time', (await drill(pg))['tool'] == 'keys')
@@ -184,10 +221,23 @@ async def main():
         check('Listen: numbers hidden, listening card + Ready, speed behind a small control', await pg.evaluate("getComputedStyle(document.getElementById('problemArea')).display==='none'")
               and await pg.locator('#speedBtn').is_visible() and not await pg.locator('#speedPop').is_visible())
         await shot(pg, 'listen_ready')
-        await pg.click('#listenGo'); await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000); await shot(pg, 'listen_answer')
+        check('child targets >= 60px on Listen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
+        fit = "(()=>{ const els=['#checkBtn','#toolSwitch','#listenStage','#flashStage'].map(q=>document.querySelector(q)).concat([...document.querySelectorAll('#answerTool .abx-svg, #padKeys .ws-keypad')]).filter(e=>e.getClientRects().length); return els.every(e=>{ const r=e.getBoundingClientRect(); return r.bottom<=innerHeight && r.right<=innerWidth && r.left>=0; }); })()"
+        for k in range(2):
+            ok = await pg.evaluate(fit); await pg.click('#toolSwitch'); await pg.wait_for_timeout(150)
+            check(f'Listen ({(await drill(pg))["tool"]=="keys" and "beads" or "keys"}): card, answer tool and Check all fit on screen', ok)
+        off = "document.querySelector('#checkBtn').disabled && [...document.querySelectorAll('#pad [data-k]')].filter(b=>b.dataset.k!=='go').every(b=>b.disabled) && document.querySelector('#answerTool').classList.contains('waiting')"
+        check('Listen: keypad + Check disabled (dimmed) before the numbers are read', await pg.evaluate(off))
+        await pg.click('#listenGo'); await pg.wait_for_timeout(150)
+        check('Listen: ...and still disabled while Bix reads', await pg.evaluate(off) or await pg.text_content('#listenMsg') == 'Your answer?')
+        await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000); await shot(pg, 'listen_answer')
+        check('Listen: "Your answer?" -> keypad + Check live', await pg.evaluate("!document.querySelector('#checkBtn').disabled && !document.querySelector('#pad [data-k=\"5\"]').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
         await pg.click('#speedBtn'); check('speed control opens the slider', await pg.locator('#gapSlider').is_visible()); await shot(pg, 'listen_speed'); await pg.click('#speedBtn')
         await pg.click('#exitDrill'); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_selector('#flashGo', state='visible'); await shot(pg, 'flash_ready')
+        check('Flash: keypad + Check disabled (dimmed) until the numbers have flashed', await pg.evaluate(off))
+        check('Flash: card, answer tool and Check all fit on screen', await pg.evaluate(fit))
         await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=20000); await shot(pg, 'flash_ask')
+        check('Flash: "= ?" -> keypad + Check live', await pg.evaluate("!document.querySelector('#checkBtn').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
         d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(900)
         check('Flash: Ready -> flash -> "= ?" -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
         await ctx.close()

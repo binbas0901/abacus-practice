@@ -756,7 +756,7 @@ function bixArt(mood, size){ return WS.bix(mood, size).replace('class="ws-bix ',
 const PB = {
   base:null, cur:null, t:null,
   el(){ return $('#bixDrill'); },
-  mount(){ const el=this.el(); if (el.querySelector('.pr-bubble')) return; el.innerHTML='<span class="pr-bixfig"></span><div class="bubble pr-bubble ws-bubble on"><span class="pr-btxt"></span><span class="ws-say">'+WS.icon('speaker',22,WS.colors.indigo)+'</span></div>';
+  mount(){ const el=this.el(); if (el.querySelector('.pr-bubble')) return; el.innerHTML='<span class="pr-bixfig"></span><div class="bubble pr-bubble ws-bubble on"><span class="pr-btxt"></span><span class="ws-say">'+WS.icon('speaker',24,WS.colors.indigo)+'</span></div>';
     el.addEventListener('click', ()=>{ if (this.cur && this.cur.vid && !(mode==='listen' && locked)) Fun.BixVoice.play(this.cur.vid, el); }); },
   draw(mood){ const f=this.el().querySelector('.pr-bixfig'); if (f.dataset.mood!==mood){ f.dataset.mood=mood; f.innerHTML=bixArt(mood, 76); } },
   // set the line Bix comes back to (the instruction for this problem)
@@ -766,18 +766,33 @@ const PB = {
   show(text, mood, vid){
     this.mount(); this.draw(mood||'happy'); this.cur={text, vid};
     const b=this.el().querySelector('.pr-bubble'); b.classList.toggle('on', !!text); b.classList.toggle('empty', !text);
-    const tx=b.querySelector('.pr-btxt'); if (tx.textContent!==text){ tx.textContent=text||''; b.classList.remove('ws-pop'); void b.offsetWidth; b.classList.add('ws-pop'); }
+    const tx=b.querySelector('.pr-btxt'); if (tx.textContent!==text){ tx.textContent=text||''; this.fit(); b.classList.remove('ws-pop'); void b.offsetWidth; b.classList.add('ws-pop'); }
     b.querySelector('.ws-say').style.visibility = vid ? '' : 'hidden';
     if (vid) Fun.BixVoice.play(vid, this.el());
   },
+  // The bubble keeps a fixed two-line height (nothing below it jumps); a longer line gets slightly smaller letters.
+  fit(){
+    const tx=this.el().querySelector('.pr-btxt'); if (!tx) return; tx.style.fontSize='';
+    const lines=()=>tx.scrollHeight/(parseFloat(getComputedStyle(tx).lineHeight)||25);
+    let fs=parseFloat(getComputedStyle(tx).fontSize)||20;
+    while (tx.scrollHeight && lines()>2.15 && fs>15){ fs-=1; tx.style.fontSize=fs+'px'; }
+  },
 };
 
-/* ---- the answer tool: keypad or on-screen soroban (AbacusInput) ---- */
+/* ---- the answer tool: keypad (the kit's one keypad, WS.keypad) or on-screen soroban (AbacusInput) ---- */
+const Keys = WS.keypad($('#padKeys'), {
+  onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<6) setEntry(entry+k); },
+  onBackspace: ()=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys') setEntry(entry.slice(0,-1)); },
+});
 const Tool = {
   kind:'keys', ab:null, rods:0, sayT:null,
   // A child with a physical abacus types answers (beads one tap away); without one, the on-screen soroban is the default.
   preferred(){ const c=Fun.data.answerTool; if (c==='beads'||c==='keys') return c; return settings.hasAbacus===false ? 'beads' : 'keys'; },
+  setRods:0,
+  // Rods for one problem: enough for its answer (multiplication) or its biggest running total (up to 5 digits and more).
   rodsFor(p){ let run=0, mx=Math.abs(p.answer||0); if (p.op!=='mul') p.terms.forEach(t=>{ run+=t; mx=Math.max(mx, Math.abs(run)); }); return Math.max(3, String(mx).length); },
+  // The whole set uses one abacus size, so the frame never jumps between problems.
+  rodsForSet(){ return Math.max(this.setRods||0, problems[idx] ? this.rodsFor(problems[idx]) : 3); },
   ensureAb(rods){
     if (this.ab && this.rods===rods) return this.ab;
     if (this.ab) this.ab.destroy();
@@ -791,11 +806,13 @@ const Tool = {
     $('#answerTool').classList.toggle('beads', beads); $('#answerTool').classList.toggle('keys', !beads);
     $('#readoutLabel').textContent = beads ? 'beads show' : '';
     $('#toolSwitch').innerHTML = beads ? WS.icon('keypad',26)+'Type it instead' : WS.icon('abacus',28)+'Use the beads';
-    if (beads && problems[idx]) this.ensureAb(this.rodsFor(problems[idx]));
+    if (beads && problems[idx]) this.ensureAb(this.rodsForSet());
     this.readout();
   },
   switchTo(kind){ this.kind=kind; Fun.data.answerTool=kind; Fun.save(); this.apply(); if (kind==='beads'){ this.ab.clear({animate:false}); this.readout(); PB.setBase(baseLine(), baseMood()); } else setEntry(''); markTiles(); },
-  reset(){ setEntry(''); if (this.kind==='beads' && problems[idx]){ this.ensureAb(this.rodsFor(problems[idx])).clear({animate:false}); } this.readout(); },
+  reset(){ setEntry(''); if (this.kind==='beads' && problems[idx]){ this.ensureAb(this.rodsForSet()).clear({animate:false}); } this.readout(); },
+  // Listen / Flash: the keypad, the beads and Check wait (dimmed) until the numbers are done and Bix asks "Your answer?".
+  setReady(on){ $('#answerTool').classList.toggle('waiting', !on); Keys.setEnabled(on); $('#checkBtn').disabled=!on; },
   value(){ return this.kind==='beads' ? (this.ab ? this.ab.value() : 0) : (entry==='' ? null : parseInt(entry,10)); },
   readout(){ if (this.kind==='beads'){ $('#answer').textContent = this.ab ? this.ab.value() : 0; } else $('#answer').textContent = entry || '?'; $('#readout').classList.toggle('empty', this.kind!=='beads' && !entry); },
   changed(v){
@@ -825,7 +842,7 @@ function methodFeedback(p){
   if (segs.length<p.terms.length) return null;            // worked some of it in the head: nothing to say about the beads
   const res=segs.map(s=>AbacusInput.checkMethod(s.from, s.term, s.moves));
   const bad=res.find(r=>!r.ok);
-  if (bad) return { ok:false, text:`Yes, ${p.answer}! ${bad.hint}` };
+  if (bad) return { ok:false, text:`Yes, ${p.answer}! ${bad.hint.replace(/ \(.*\)/, '')}` };   // the short form fits Bix's two-line bubble
   const best=res.slice().sort((a,b)=>Math.max(-1,...b.expected.rules.map(r=>RULE_RANK[r]))-Math.max(-1,...a.expected.rules.map(r=>RULE_RANK[r])))[0];
   const usedFriend=best && best.expected.rules.some(r=>r!=='direct');
   return { ok:true, text: usedFriend ? best.hint : null };
@@ -845,6 +862,17 @@ function markTiles(){
   const all=reached>=tiles.length-1;   // every number is on the beads: show the whole problem again for checking
   tiles.forEach((t,i)=>{ t.classList.toggle('done', on && !all && i<=reached); t.classList.toggle('now', on && i===reached+1); });
 }
+// Long rows (up to 10 numbers, up to 4 digits): always ONE column, read top to bottom; the tiles shrink to fit the height.
+function fitTiles(){
+  const area=$('#problemArea'); const tiles=[...area.querySelectorAll('.ws-tile')]; area.style.removeProperty('--th'); area.style.removeProperty('--tf');
+  if (!tiles.length || area.style.display==='none' || !$('#drill').classList.contains('active')) return;
+  const row=getComputedStyle(area).flexDirection==='row'; if (row) return;          // portrait, short rows: tiles side by side
+  const n=tiles.length, gap=parseFloat(getComputedStyle(area).rowGap)||12, avail=area.clientHeight;
+  const max=parseFloat(getComputedStyle(tiles[0]).height)||82, dg=Math.max(...(problems[idx]||{terms:[1]}).terms.map(t=>String(Math.abs(t)).length));
+  const h=Math.max(36, Math.min(max, Math.floor((avail-gap*(n-1)-5)/n)));
+  if (h<max){ area.style.setProperty('--th', h+'px'); area.style.setProperty('--tf', Math.round(h*(dg>=4?0.56:dg>=3?0.62:0.68))+'px'); }
+}
+window.addEventListener('resize', ()=>{ if ($('#drill').classList.contains('active')){ fitTiles(); PB.fit(); } });
 function beadW(n, max){ return n<=12 ? max : Math.max(26, Math.floor(max*12/n)); }
 function renderStrip(popIdx){
   const st=$('#strip'); const fixing=reviewing && !LT; $('#fixLabel').hidden=!fixing; st.classList.toggle('fixing', fixing);
@@ -861,12 +889,6 @@ function renderStrip(popIdx){
     return `<span role="listitem" aria-label="${label}" class="pr-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${i===popIdx?' ws-pop':''}">${svg}</span>`;
   }).join('');
 }
-function renderTimeBar(){
-  const el=$('#testTime'); if (!LT){ el.hidden=true; return; } el.hidden=false;
-  const lim=LT.test.timeLimitSec*1000, left=Math.max(0, 1-(Date.now()-LT.start)/lim), lit=Math.ceil(left*10);
-  const html=Array.from({length:10},(_,i)=>WS.bead(i<lit?'ochre':'pale', 26)).join('');
-  if (el.dataset.lit!==String(lit)){ el.dataset.lit=lit; el.innerHTML=html; el.setAttribute('aria-label', 'Time beads left: '+lit); }
-}
 
 /* ---- starting, stages ---- */
 // The node's own drill is the default; a grown-up's own choice (a setting changed from its default) wins.
@@ -880,6 +902,7 @@ function drillConfig(n){
 function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec) ? d.flashSec : settings.flashSec; }
 function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now();
+  Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred(); Tool.apply();
   setStages(); show('drill');
 }
@@ -902,17 +925,18 @@ function setStages(){
   $('#speedBtn').hidden=!speed; $('#speedPop').hidden=true; $('#speedBtn').setAttribute('aria-expanded','false');
   $('#listenSpeed').style.display = mode==='listen'?'flex':'none'; $('#flashSpeed').style.display = mode==='flash'?'flex':'none';
   if (mode==='listen') setupGapSlider(); if (mode==='flash') setupFlashSlider();
-  renderTimeBar();
 }
 $('#speedBtn').addEventListener('click', ()=>{ const p=$('#speedPop'); p.hidden=!p.hidden; $('#speedBtn').setAttribute('aria-expanded', String(!p.hidden)); });
 function endDrill(){ dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
-function stopTest(){ if (LT && LT.tick) clearInterval(LT.tick); if (LT) LT.tick=null; }
+function stopTest(){ /* the level test keeps a silent, generous time measure only (LT.start); nothing ticks on screen */ }
 function setEntry(v){ entry=v; Tool.readout(); }
 function baseLine(){
   if (LT) return 'Take your time. Check each one.';
   if (reviewing) return 'This one was tricky. Want me to show you first?';
   if (mode==='listen') return '';
   if (mode==='flash') return '';
+  const p=problems[idx];
+  if (p && p.op==='mul') return Tool.kind==='beads' ? 'Work it out, then show the answer on the beads.' : 'Work it out, then type the answer.';
   return Tool.kind==='beads' ? 'Move the beads for each number, then tap Check.' : 'Solve it on your abacus, then type the answer.';
 }
 function baseMood(){ return reviewing && !LT ? 'concerned' : mode==='listen' ? 'think' : 'happy'; }
@@ -921,26 +945,28 @@ function presentProblem(){
   Tool.apply(); Tool.reset();
   $('#showMeBtn').style.display = reviewing && !LT ? '' : 'none';
   renderStrip();
-  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', p.terms.length>4 && p.terms.length<=6); area.classList.toggle('lots', p.terms.length>6); area.classList.toggle('wide', dg>=3); area.style.setProperty('--rows', Math.ceil(p.terms.length/2)); markTiles(); locked=false; }
+  const long = mode==='visual' && p.terms.length>4;
+  $('#drill').classList.toggle('long', long);
+  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', long); area.classList.toggle('wide', dg>=3); area.classList.toggle('xwide', dg>=4); markTiles(); fitTiles(); locked=false; Tool.setReady(true); }
   PB.setBase(baseLine(), baseMood());
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
 }
 let dictateToken=0, listenArmed=false;
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
-  locked=true; $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
+  locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
   const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
 }
 async function dictate(p){
   Fun.BixVoice.stop();
-  const my=++dictateToken; locked=true; $('#replayBtn').disabled=true; $('#listenGo').style.display='none';
+  const my=++dictateToken; locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenGo').style.display='none';
   if (!p._reader){ await Speaker.prepare(); p._reader = Speaker.pickReader(); } else Speaker.activePid = p._reader;   // replay keeps the same reader
   if (my!==dictateToken) return;
   $('#listenMsg').textContent = p._reader ? `${profileName(p._reader)} is reading…` : 'Listen…';
   $('#listenStage').classList.add('reading');
   const gap=settings.gap; const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
-  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); locked=false; $('#replayBtn').disabled=p._replayed===true; };
-  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; $('#replayBtn').disabled=false; } }, (p.terms.length*gap+12)*1000);
+  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
+  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, (p.terms.length*gap+12)*1000);
   try{
     Speaker.stop();
     Diag.add(`dictate start voice=${settings.voice} kind=${Speaker.kind()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} tts=${('speechSynthesis' in window)?('voices '+speechSynthesis.getVoices().length+(speechSynthesis.speaking?' speaking':'')+(speechSynthesis.paused?' paused':'')):'n/a'}`);
@@ -980,20 +1006,20 @@ function setupFlashSlider(){ const s=$('#flashSlider'); s.value=settings.flashSe
 function flashDots(n, on){ $('#flashDots').innerHTML = Array.from({length:n},(_,i)=>WS.bead(i<on?'jade':'pale', 30)).join(''); }
 function flashSign(t, i, p){ if (p && p.op==='mul') return i===0 ? String(t) : `<b class="times">×</b>${t}`; return (i===0 ? (t<0?'<b class="minus">−</b>':'') : `<b class="${t<0?'minus':'plus'}">${t<0?'−':'+'}</b>`) + Math.abs(t); }
 function armFlash(p){
-  ++dictateToken; locked=true; const el=$('#flashNum'); el.className='flash-num hint'; el.innerHTML=WS.icon('bolt', 64);
+  ++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.className='flash-num hint'; el.innerHTML=WS.icon('bolt', 64);
   flashDots(p.terms.length, 0); $('#flashAgain').style.display='none';
   $('#flashMsg').textContent = idx===0 && !reviewing ? 'Clear your abacus. Numbers pop up one at a time.' : 'Clear your abacus, then tap Ready.';
   const b=$('#flashGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; Speaker.unlock(); flash(p); };
 }
 async function flash(p){
-  const my=++dictateToken; locked=true; const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
+  const my=++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
   $('#flashMsg').textContent='Watch…'; $('#flashGo').style.display='none'; $('#flashAgain').style.display='none'; flashDots(p.terms.length, 0); await sleep(600);
   for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
   if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='= ?';
-  $('#flashMsg').textContent = Tool.kind==='beads' ? 'What did you get? Show it on the beads.' : 'What did you get? Tap it in.'; $('#flashAgain').style.display = LT ? 'none' : ''; locked=false;
+  $('#flashMsg').textContent = Tool.kind==='beads' ? 'What did you get? Show it on the beads.' : 'What did you get? Tap it in.'; $('#flashAgain').style.display = LT ? 'none' : ''; locked=false; Tool.setReady(true);
 }
 $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
-$('#pad').addEventListener('click', e=>{ const b=e.target.closest('button[data-k]'); if(!b||locked||demoing) return; const k=b.dataset.k; if(k==='go') return submit(); Sfx.tap(); if (Tool.kind!=='keys') return; if(k==='del') setEntry(entry.slice(0,-1)); else if(entry.length<6) setEntry(entry+k); });
+$('#checkBtn').addEventListener('click', ()=>{ if(locked||demoing) return; submit(); });
 document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('ws-shake'); void t.offsetWidth; t.classList.add('ws-shake'); setTimeout(()=>t.classList.remove('ws-shake'),400); }
 async function submit(){
@@ -1069,16 +1095,18 @@ function finish(){
     sum_great:'Great job! Want to fix the red ones with me?', sum_good:'Good practice! Every try makes you stronger.' }[vid];
   const fixLine = toFix.length && vid!=='sum_great' ? ` Let’s turn the ${toFix.length===1?'red one':toFix.length+' red ones'} green together.` : '';
   $('#sumNote').textContent = say + fixLine;
-  // golden beads earned for finishing (handed out by activityDone below)
-  const gold = !reviewing ? Treats.EARN.activity + (n===3 ? Treats.EARN.gold : 0) : 0;
+  // Golden beads earned here (handed out by activityDone below) all land in ONE place: the chip at the top right,
+  // after the headline has settled (the floating "+n" toasts stay off this screen, see screens-practice.css).
+  const gold = !reviewing ? Treats.EARN.activity + (n===3 ? Treats.EARN.gold : 0) + (leveled ? Treats.EARN.skill : 0) : 0;
   $('#sumGold').hidden = !gold; $('#sumGold').innerHTML = gold ? WS.bead('ochre', 40)+`<span>+${gold} golden bead${gold===1?'':'s'}</span>` : '';
-  // one obvious next step: fix the red ones; then the level test; else done
+  $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? WS.icon('sprout', 26, WS.colors.jade)+'<span>New skill!</span>' : '';
+  // one obvious next step: fix the red ones; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
-  $('#sumTest').hidden = !(pendingTest && !toFix.length);
+  $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=WS.icon('retry',28)+'Play again';
   const mood = (n>=2||leveled||allFixed) ? 'cheer' : 'happy';
-  sumVoice=vid; show('summary'); const bs=sumBix(mood); Fun.BixVoice.play(vid, bs);
+  sumVoice=vid; $('#sumSay').style.visibility=''; show('summary'); const bs=sumBix(mood); Fun.BixVoice.play(vid, bs);
   if (n===3||leveled||allFixed){ Sfx.star(); if (n===3||leveled) Fun.confetti(); } else Sfx.ok();
   if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 2400);   // let the beads and Bix land first
 }
@@ -1112,8 +1140,8 @@ async function playSolution(ab, p, isLive, onText, onTerm){
 async function showMe(p){
   if (Tool.kind==='beads' && Tool.ab && $('#drill').classList.contains('active')) return showMeHere(p);
   $('#showme').classList.add('active');
-  const rods=Tool.rodsFor(p);
-  if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.1}); }
+  const rods=Tool.rodsForSet();
+  if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.1, readOnly:true}); }
   $('#showmeBix').innerHTML=bixArt('happy', 64);
   const probHtml=(k)=>p.op==='mul' ? `${p.terms[0]} <i>×</i> ${p.terms[1]}` : p.terms.map((t,i)=>`<span class="${i===k?'cur':''}">${i===0?t:(t<0?'<i class="minus">−</i>'+(-t):'<i class="plus">+</i>'+t)}</span>`).join('');
   const run = async()=>{ const my=++showToken; $('#showmeProb').innerHTML=probHtml(-1);
@@ -1137,14 +1165,14 @@ async function showMeHere(p){
 
 /* ---- level test + certificate ---- */
 function startLevelTest(nodeId){
-  let test=null; try{ test=C.levelTest(nodeId); }catch(e){ Diag.add('level test: '+(e&&e.message||e)); }
+  let test=null; try{ test=C.levelTest(nodeId, {timeScale:2}); }catch(e){ Diag.add('level test: '+(e&&e.message||e)); }
   if (!test) return false;
   endDrill(); Speaker.unlock();
   mode = test.kind==='flash' ? 'flash' : 'visual'; drillNode=C.BY_ID[nodeId]; reviewing=false; locked=false; listenArmed=false;
-  problems=test.problems; LT={test, answers:[], start:Date.now(), tick:null};
-  beginSet(); LT.tick=setInterval(renderTimeBar, 1000); renderTimeBar();
+  problems=test.problems; LT={test, answers:[], start:Date.now()};   // timing is silent and generous: nothing counts down on screen
+  beginSet();
   presentProblem();
-  PB.say(`Level test: ${test.title}. Take your time!`, 'happy', null, 2600);
+  PB.say('Level test! Take your time.', 'happy', null, 2600);
   return true;
 }
 function certificates(){ const l=Store.get('certificates', []); return Array.isArray(l) ? l : []; }
@@ -1154,7 +1182,7 @@ function saveCertificate(c){
   Store.set('certificates', list);
 }
 function finishLevelTest(){
-  const lt=LT; endDrill(); LT=null; renderTimeBar();
+  const lt=LT; endDrill(); LT=null;
   const score=C.scoreLevelTest(lt.test, lt.answers, Date.now()-lt.start);
   if (score.passed){
     const cert={ nodeId:lt.test.nodeId, title:lt.test.title, date:todayKey(), accuracy:Math.round(score.accuracy*100)/100 };
@@ -1170,9 +1198,9 @@ function finishLevelTest(){
   $('#sumNote').textContent = score.correctAny/score.total >= score.minAccuracy
     ? 'So many right! Let’s practise a little more to get quicker, then try the test again.'
     : `Almost there! Let’s practise ${lt.test.title} a little more, then try again.`;
-  $('#sumGold').hidden=true; $('#fixBtn').style.display='none'; $('#sumTest').hidden=true;
+  $('#sumGold').hidden=true; $('#sumNew').hidden=true; $('#fixBtn').style.display='none'; $('#testBtn').style.display='none';
   $('#againBtn').style.display=''; $('#againBtn').innerHTML=WS.icon('retry',28)+'Practise';   // practises the tested skill
-  sumVoice=null; show('summary'); sumBix('happy'); Sfx.ok();
+  sumVoice=null; $('#sumSay').style.visibility='hidden'; show('summary'); sumBix('happy'); Sfx.ok();
 }
 function niceDate(key){ const [y,m,d]=key.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'}); }
 function showCertificate(c){
@@ -1185,7 +1213,6 @@ function showCertificate(c){
 }
 $('#certPrint').addEventListener('click', ()=>{ Sfx.tap(); window.print(); });
 $('#certDone').addEventListener('click', ()=>{ renderHome(); show('home'); });
-$('#certClose').addEventListener('click', ()=>{ renderHome(); show('home'); });
 // Other screens (practice door, grown-ups) can start a level test or read this child's certificates.
 window.LevelTest = { start: startLevelTest, certificates, show: c=>showCertificate(c) };
 
@@ -1453,6 +1480,10 @@ window.App = {
 };
 /* ---------------- boot ---------------- */
 window.__diag = Diag;
+// Test hook: put a given problem on the practice screen (layout checks for long rows, 4-digit numbers, multiplication on beads).
+window.__drillSet = (terms, op, tool)=>{ const p={terms, answer: op==='mul' ? terms[0]*terms[1] : terms.reduce((a,b)=>a+b,0)}; if (op) p.op=op;
+  problems[idx]=p; Tool.setRods=Math.max(3, ...problems.map(q=>Tool.rodsFor(q))); if (tool) Tool.kind=tool; presentProblem(); };
+window.__drillSay = text=>PB.say(text, 'happy', null, 0);
 window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
 Setup.bind();
 if (firstRun){ show('setup'); Setup.open(); }
