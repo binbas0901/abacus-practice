@@ -524,39 +524,154 @@ $('#nmLook').onclick=()=>{ $('#nodemenu').classList.remove('active'); startDrill
 $('#nmListen').onclick=()=>{ $('#nodemenu').classList.remove('active'); startDrill('listen', menuNode); };
 
 /* ---------------- lesson ---------------- */
-let lessonAb=null, L=null;
+let lessonAb=null, L=null, lessonFrom='home';
+
+/* ---- Bix's extra lines (door, lessons, games, gate): a small second voice pack, audio/bix-extra-<voice>.js ----
+   Same voices as the main pack, built by tools/make_bix_extra.py. Plays through Fun.BixVoice so a newer line
+   (from either pack) always replaces the one playing, and Bix's mouth moves while he talks. */
+const BixExtra = {
+  buf:{}, map:{}, loading:{},
+  load(tag){
+    if (this.buf[tag]) return Promise.resolve(); if (this.loading[tag]) return this.loading[tag];
+    this.loading[tag]=new Promise(res=>{
+      const prev=window.__BIX_EXTRA;
+      window.__BIX_EXTRA=async(t, meta, b64)=>{
+        if (t!==tag){ if (prev) prev(t, meta, b64); return; }
+        try{ const ctx=Speaker.ensureCtx(); this.buf[tag]=await decode(ctx, unb64(b64)); this.map[tag]=meta.sprite; }catch(e){ Diag.add('bix extra decode failed'); }
+        delete this.loading[tag]; res();
+      };
+      const s=document.createElement('script'); s.src=`audio/bix-extra-${tag}.js`; s.onerror=()=>{ delete this.loading[tag]; res(); }; document.head.appendChild(s);
+    });
+    return this.loading[tag];
+  },
+  async play(id, el){
+    const BV=Fun.BixVoice; if (!id || !BV.enabled() || App.quietNow() || !Speaker.gestured) return;
+    const ctx=Speaker.ensureCtx(), tag=BV.tag(); const my=++BV.seq; BV.queued++;
+    try{ if (ctx.state!=='running'){ try{ await Promise.race([ctx.resume(), sleep(800)]); }catch(e){} } await this.load(tag); } finally { BV.queued--; }
+    if (my!==BV.seq || ctx.state!=='running') return;
+    const buf=this.buf[tag], sp=this.map[tag] && this.map[tag][id]; if (!buf || !sp) return;
+    BV.stop();
+    const s=ctx.createBufferSource(); s.buffer=buf; s.connect(ctx.destination); s.start(ctx.currentTime+0.02, sp[0], sp[1]); BV.src=s;
+    const bx=el && el.querySelector('.bix, .ws-bix'); if (bx){ bx.classList.add('talking'); BV.talkingEl=bx; }
+    await new Promise(r=>{ s.onended=r; setTimeout(r, sp[1]*1000+400); });
+    if (BV.src===s){ BV.src=null; if (bx) bx.classList.remove('talking'); }
+  },
+};
+// Bix says a line: the bubble shows the text and he says it out loud (main pack or extra pack, whichever has the id).
+function bixSay(el, text, id, ms=0){
+  const main = id && window.BIX_LINES && window.BIX_LINES[id];
+  Fun.Mascot.say(el, text, ms, main ? id : null);
+  if (id && !main) BixExtra.play(id, el);
+  if (el) el.dataset.line = JSON.stringify([text, id||'']);
+}
+window.BixSay = bixSay;
+// Tap Bix's bubble to hear the line again (children who cannot read yet).
+document.addEventListener('click', e=>{
+  const b=e.target.closest('.c-topbix .bubble, .lesson-bix .bubble, .gate-bix .bubble'); if (!b) return;
+  const el=b.closest('[data-line]'); if (!el) return; try{ const [t,id]=JSON.parse(el.dataset.line); Speaker.unlock(); bixSay(el, t, id); }catch(err){}
+});
+function mountBix(el, size){ if (el && !el.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(el, {size, keep:true}); }
+const BACK_ICON = ()=>WS.icon('back', 30, 'currentColor', 3);
+$$('.c-top .exit').forEach(b=>{ if (!b.innerHTML.trim()) b.innerHTML=BACK_ICON(); });
+
+/* ---- Practice door: Look / Listen / Flash for the current skill, and "My path" ---- */
+// Short names a child can read on the path rod (new skills fall back to their own short name).
+const PATH_NAMES = { beads:'Beads', add_direct:'Adding', sub_direct:'Taking away', sf_add:'Small friends +', sf_sub:'Small friends −',
+  bf_add_a:'Big friends +9…+6', bf_add_b:'Big friends +5…+1', bf_sub_a:'Big friends −9…−6', bf_sub_b:'Big friends −5…−1', combined:'Both friends', two_digit:'Two digits', anzan:'In my head' };
+function pathName(n){ return PATH_NAMES[n.id] || n.short || n.title; }
+function lessonTarget(n){ return hasLesson(n) ? n : NODES.slice(0, NODE_IDX[n.id]).reverse().find(x=>x.demos) || n; }
+const DOOR_ART = {
+  visual: ()=>`<span class="door-tiles" aria-hidden="true"><span>7</span><span><i class="plus">+</i>8</span><span><i class="minus">−</i>4</span></span>`,
+  listen: ()=>`<svg class="door-art" width="132" height="114" viewBox="0 0 120 104" aria-hidden="true"><rect class="a-maple" x="10" y="30" width="100" height="66" rx="16"/><circle class="a-wood" cx="44" cy="63" r="20"/><circle class="a-maple" cx="44" cy="63" r="9"/><rect class="a-wood" x="74" y="48" width="24" height="8" rx="4"/><rect class="a-wood" x="74" y="62" width="24" height="8" rx="4"/><rect class="a-wood" x="74" y="76" width="24" height="8" rx="4"/><path class="a-wood-s" d="M30 30 L70 6" stroke-width="5" stroke-linecap="round"/><g class="door-waves"><path class="a-ink-s" d="M92 18 q8 8 0 16" stroke-width="4" fill="none" stroke-linecap="round"/><path class="a-ink-s" d="M102 10 q14 16 0 32" stroke-width="4" fill="none" stroke-linecap="round"/></g></svg>`,
+  flash: ()=>`<svg class="door-art" width="132" height="114" viewBox="0 0 120 104" aria-hidden="true"><rect class="a-maple" x="22" y="14" width="76" height="76" rx="16"/><text class="a-num" x="60" y="72" text-anchor="middle">9</text><g class="door-rays a-ochre-s" stroke-width="5" stroke-linecap="round"><line x1="10" y1="10" x2="18" y2="18"/><line x1="110" y1="10" x2="102" y2="18"/><line x1="4" y1="52" x2="14" y2="52"/><line x1="116" y1="52" x2="106" y2="52"/><line x1="10" y1="94" x2="18" y2="86"/><line x1="110" y1="94" x2="102" y2="86"/></g></svg>`,
+};
+const DOOR_LABEL = { visual:['eye','Look'], listen:['ear','Listen'], flash:['bolt','Flash'] };
+function renderDoor(){
+  const n=NODES[curIdx()];
+  $$('#door .door-block').forEach(b=>{ const m=b.dataset.door, [ic,lab]=DOOR_LABEL[m];
+    if (!b.dataset.drawn){ b.innerHTML=DOOR_ART[m]()+`<span class="door-label">${WS.icon(ic, 36, 'currentColor', 2.4)}${lab}</span>`; b.dataset.drawn='1'; } });
+  const all=$('#doorAll'); if (!all.innerHTML) all.innerHTML=WS.icon('lock', 18, 'currentColor')+'<span>See all skills</span>';
+  renderDoorPath();
+  const bd=$('#bixDoor'); mountBix(bd, 72);
+  bixSay(bd, 'How do you want to play with numbers?', 'door_ask');
+  $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
+}
+function renderDoorPath(){
+  const ci=curIdx(), from=Math.max(0, ci-2), to=Math.min(NODES.length-1, ci+2), out=[];
+  const more=(side)=>`<span class="dp-more dp-${side}" aria-hidden="true">…</span>`;
+  out.push(from>0 ? more('l') : '<span class="dp-more dp-l" aria-hidden="true"></span>');
+  for (let i=from;i<=to;i++){
+    const n=NODES[i], name=esc(pathName(n)), far=Math.abs(i-ci)>1 ? ' far' : '';
+    if (i<ci) out.push(`<div class="dp-node done${far}"><button class="dp-bead" data-node="${n.id}" aria-label="${name}: learned">${WS.bead('jade', 100)}<span class="dp-mark">${WS.icon('check', 28, '#fff', 3.4)}</span></button><span class="dp-name">${name}</span></div>`);
+    else if (i===ci){ const t=lessonTarget(n), fresh=!node(t.id).lesson;
+      out.push(`<div class="dp-node cur"><button class="dp-bead" data-node="${n.id}" aria-label="${name}: you are here"><svg class="ws-bead" width="170" height="104" viewBox="0 0 170 104" aria-hidden="true"><path class="a-indigo a-ring" d="M4 52 Q85 -12 166 52 Q85 116 4 52Z" stroke-width="7"/><ellipse cx="62" cy="30" rx="24" ry="7" fill="#fff" opacity=".25"/></svg><span class="dp-mark">${WS.icon('star', 40, WS.colors.ochre)}</span></button><span class="dp-name">${name}</span>`
+        +`<button class="ws-btn small dp-learn${fresh?' ws-nudge':''}" id="doorLearn">${WS.icon('play', 22, '#fff')}Learn it with Bix</button></div>`); }
+    else out.push(`<div class="dp-node locked${far}"><button class="dp-bead" data-node="${n.id}" aria-label="${name}: not yet">${WS.bead('locked', 100)}<span class="dp-mark">${WS.icon('lock', 24, 'currentColor', 2.4)}</span></button><span class="dp-name">${name}</span></div>`);
+  }
+  out.push(to<NODES.length-1 ? more('r') : '<span class="dp-more dp-r" aria-hidden="true"></span>');
+  const p=$('#doorPath'); p.innerHTML='<div class="dp-row"><div class="dp-rod" aria-hidden="true"></div>'+out.join('')+'</div>';
+  p.querySelectorAll('.dp-node .dp-bead').forEach(b=>b.onclick=()=>{
+    const i=NODE_IDX[b.dataset.node], bd=$('#bixDoor'); Sfx.tap();
+    if (i>ci){ b.classList.remove('ws-shake'); void b.offsetWidth; b.classList.add('ws-shake'); bixSay(bd, 'Locked! Finish the skills before it to open it.', 'locked', 3500); }
+    else if (i<ci){ b.classList.remove('ws-pop'); void b.offsetWidth; b.classList.add('ws-pop'); bixSay(bd, 'You already know this one. Great job!', 'path_done', 3500); }
+    else bixSay(bd, 'This is your skill right now! Tap “Learn it with Bix”.', 'path_here', 3500);
+  });
+  $('#doorLearn').onclick=()=>{ Speaker.unlock(); startLesson(lessonTarget(NODES[curIdx()]), 'door'); };
+}
+window.renderDoor = renderDoor;
+// Whoever opens the door (home calls show('door')), it draws itself fresh.
+new MutationObserver(()=>{ const d=$('#door'); if (d.classList.contains('active')){ if (!d._shown){ d._shown=true; renderDoor(); } } else d._shown=false; })
+  .observe($('#door'), {attributes:true, attributeFilter:['class']});
+$$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
+  Speaker.unlock(); const m=b.dataset.door, n=NODES[curIdx()];
+  if (!n.drill) return startLesson(lessonTarget(n), 'door');                  // nothing to drill yet (bead numbers): learn it
+  if (m==='flash') return startDrill('flash', n);
+  startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
+}));
+$('#exitDoor').addEventListener('click', ()=>{ Fun.BixVoice.stop(); renderHome(); show('home'); });
+$('#doorAll').addEventListener('click', ()=>openGate('skills'));
+
+/* ---- lesson: Bix shows each trick on a wooden soroban, then she tries it ---- */
 function friendsHtml(n){ if(n.family===5) return ['1 & 4','2 & 3'].map(x=>`<span>${x}</span>`).join(''); if(n.family===10) return ['1 & 9','2 & 8','3 & 7','4 & 6','5 & 5'].map(x=>`<span>${x}</span>`).join(''); return ''; }
-function startLesson(n){
-  Speaker.unlock();
-  if (!lessonAb){ lessonAb = new Soroban($('#lessonAbacus'), {rods:5, interactive:true, onChange:(v)=>onLessonBeads(v)}); lessonAb.el.classList.add('big'); }
+function startLesson(n, from){
+  Speaker.unlock(); lessonFrom = from || 'home';
+  if (!lessonAb){ lessonAb = new Soroban($('#lessonAbacus'), {rods:5, interactive:true, onChange:(v)=>onLessonBeads(v)}); lessonAb.el.classList.add('big','ws-soroban'); }
   lessonAb.showLabels=true; lessonAb.reset();
   L = { node:n, phase:'intro', demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
-  $('#lessonTitle').textContent=n.icon+' '+n.title; $('#capFriends').innerHTML=friendsHtml(n);
+  $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
+  const bl=$('#bixLesson'); if (!bl.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(bl, {size:96, bubble:false});
   show('lesson'); renderLesson();
 }
 function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1; }
 function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx:0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
-function cap(kind, text, prob){ $('#capKind').textContent=kind; $('#capText').innerHTML=text; $('#capProb').textContent = prob===undefined ? $('#capProb').textContent : (prob||''); }
+// The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
+function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>'); }
+function cap(kind, text, prob){ $('#capKind').textContent=kind; $('#capText').innerHTML=text; if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? WS.icon('star', 64, WS.colors.ochre) : probHtml(prob||''); } }
+function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); b.className='ws-btn big'+(kind?' '+kind:''); b.innerHTML=(icon?WS.icon(icon, 30, 'currentColor', 3):'')+`<span>${label}</span>`; }
+function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); }
 async function renderLesson(){
   const n=L.node; $('#lessonProg').style.width=(100*lessonDone()/lessonTotal())+'%'; $('#lessonHint').style.display='none';
-  if (L.phase==='intro'){ cap('New skill', n.intro, ''); $('#lessonNext').textContent='Show me ▶'; lessonAb.reset(); return; }
+  $('#lesson').dataset.phase=L.phase;
+  if (L.phase==='intro'){ cap('New skill', n.intro, ''); lessonBtn('Show me', 'play', 'ws-nudge'); lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); return; }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); $('#lessonNext').textContent='Skip ▶'; return;
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonBtn('Skip', null, 'maple'); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
   }
   if (L.phase==='demo'){
     const [t,d]=n.demos[L.demoIdx]; L.steps=C.explain(t,d); L.step=0; lessonAb.value=t;
-    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', `${t} ${d<0?'−':'+'} ${Math.abs(d)}`); if (L.demoIdx===0) Fun.BixVoice.play('lesson_watch'); $('#lessonNext').textContent='Next ▶';
+    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', `${t} ${d<0?'−':'+'} ${Math.abs(d)}`); if (L.demoIdx===0) lessonSay('lesson_watch'); lessonBtn('Next', 'play');
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
+    if (L.phase==='demo' && !L.busy) $('#lessonNext').classList.add('ws-nudge');
     return;
   }
   if (L.phase==='guided'){
     const [t,d]=n.guided[L.guidedIdx]; L.target=t+d; lessonAb.value=t;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `The abacus shows <b>${t}</b>. Now ${d<0?'take away':'add'} <b>${Math.abs(d)}</b>.`, `${t} ${d<0?'−':'+'} ${Math.abs(d)}`);
-    $('#lessonNext').textContent='Skip ▶'; $('#lessonHint').style.display=''; if (L.guidedIdx===0) Fun.BixVoice.play('lesson_turn'); return;
+    lessonBtn('Skip', null, 'maple'); $('#lessonHint').style.display=''; if (L.guidedIdx===0) lessonSay('lesson_turn'); return;
   }
-  if (L.phase==='done'){ cap('Done!', `You learned <b>${n.title}</b>. Now practise it with Look & Listen.`, '🎉'); $('#lessonNext').textContent='Finish ✓'; node(n.id).lesson=true; saveProgress(); Sfx.star(); if (!L.awarded){ L.awarded=true; Fun.confetti(70); Fun.BixVoice.play('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
+  if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check', 'jade ws-nudge'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
 }
+$('#lessonHint').innerHTML=WS.icon('eye', 26, 'currentColor')+'<span>Show me</span>';
 let animToken=0;
 async function playSteps(ab, steps, onStep){
   const my=++animToken; L.busy=true;
@@ -566,21 +681,22 @@ async function playSteps(ab, steps, onStep){
 function onLessonBeads(v){
   if (L.busy) return;
   if (L.phase==='numbers' || L.phase==='guided'){
-    if (v===L.target){ Sfx.ok(); Fun.BixVoice.play('lesson_yes'); cap('Yes! ✓', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+    if (v===L.target){ Sfx.ok(); lessonSay('lesson_yes'); Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
+function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
 function advanceLesson(){
   const n=L.node; animToken++; L.busy=false; lessonAb.clearHighlights();
   if (L.phase==='intro'){ L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
   else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase='done'; }
-  else if (L.phase==='done'){ renderHome(); show('home'); return; }
+  else if (L.phase==='done'){ leaveLesson(); return; }
   renderLesson();
 }
 $('#lessonNext').addEventListener('click', ()=>advanceLesson());
 $('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx; const [t,d]=L.node.guided[gi]; const steps=C.explain(t,d); lessonAb.value=t; const tok=animToken+1; await playSteps(lessonAb, steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=t; cap(`Your turn ${gi+1} of ${L.node.guided.length}`, `Now you: the abacus shows <b>${t}</b>. ${d<0?'Take away':'Add'} <b>${Math.abs(d)}</b>.`); });
-$('#exitLesson').addEventListener('click', ()=>{ animToken++; renderHome(); show('home'); });
+$('#exitLesson').addEventListener('click', ()=>{ Fun.BixVoice.stop(); leaveLesson(); });
 
 /* ---------------- drills ---------------- */
 let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, tick=null, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
@@ -757,16 +873,36 @@ async function showMe(p){
 }
 
 /* ---------------- parent gate ---------------- */
-let gateAnswer=0; $('#grownups').addEventListener('click', openGate);
+let gateAnswer=0, gateNext=null, gateFrom='home'; $('#grownups').addEventListener('click', ()=>openGate());
 // Grown-ups gate: a 3-digit number written in words, typed as digits. Soroban kids can multiply,
 // so a sum is too easy; reading and converting "seven hundred forty-two" is an adult-level task (Apple guideline 1.3).
+// Children who cannot read get a picture and Bix saying "Go get a grown-up!".
 const GATE_ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
 const GATE_TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
 function numberWords(n){ const h=Math.floor(n/100), r=n%100; let s=h?GATE_ONES[h]+' hundred':''; if(r){ s+=(s?' ':'')+(r<20?GATE_ONES[r]:GATE_TENS[Math.floor(r/10)]+(r%10?'-'+GATE_ONES[r%10]:'')); } return s; }
-function openGate(){ gateAnswer=100+Math.floor(Math.random()*900); window.__gateAnswer=gateAnswer;
-  $('#gateQ').innerHTML='<small>Grown-ups: type this number in digits</small>'+numberWords(gateAnswer); $('#gateA').value=''; show('gate'); setTimeout(()=>$('#gateA').focus(),50); }
-$('#gateCancel').addEventListener('click', ()=>show('home'));
-$('#gateOk').addEventListener('click', ()=>{ if(parseInt($('#gateA').value,10)===gateAnswer){ renderParent(); show('parent'); } else { openGate(); } });
+// A grown-up holding a child's hand: the picture says "fetch a grown-up" without words.
+const GATE_ART = `<svg width="190" height="200" viewBox="0 0 190 200"><ellipse class="a-line" cx="95" cy="190" rx="80" ry="8"/>
+  <circle class="a-indigo" cx="62" cy="34" r="22"/><path class="a-indigo" d="M30 84a32 32 0 0 1 64 0v60H30z"/><rect class="a-indigo-dk" x="36" y="140" width="20" height="46" rx="8"/><rect class="a-indigo-dk" x="68" y="140" width="20" height="46" rx="8"/>
+  <path class="a-indigo-s" d="M90 92 Q112 118 128 120" stroke-width="13" fill="none" stroke-linecap="round"/>
+  <circle class="a-ochre" cx="140" cy="94" r="16"/><path class="a-ochre" d="M118 136a22 22 0 0 1 44 0v26h-44z"/><rect class="a-ochre-dk" x="122" y="158" width="14" height="28" rx="6"/><rect class="a-ochre-dk" x="144" y="158" width="14" height="28" rx="6"/></svg>`;
+function openGate(next){
+  const g=$('#gate');
+  if (!g.classList.contains('active')){ gateNext = typeof next==='string' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home'; }
+  gateAnswer=100+Math.floor(Math.random()*900); window.__gateAnswer=gateAnswer;
+  $('#gateQ').innerHTML='<small>Grown-ups: type this number in digits</small><span class="gw">'+numberWords(gateAnswer)+'</span>'; $('#gateA').value='';
+  if (!g.classList.contains('active')){
+    if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
+    show('gate'); const bg=$('#bixGate'); mountBix(bg, 80); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
+  }
+  setTimeout(()=>$('#gateA').focus(),50);
+}
+function leaveGate(){ Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
+$('#gateCancel').addEventListener('click', leaveGate);
+$('#gateBack').addEventListener('click', leaveGate);
+$('#gateOk').addEventListener('click', ()=>{
+  if(parseInt($('#gateA').value,10)===gateAnswer){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
+  else { const c=$('#gate .gate-card'); c.classList.remove('ws-shake'); void c.offsetWidth; c.classList.add('ws-shake'); openGate(); }
+});
 $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
 
 /* ---------------- parent ---------------- */
@@ -794,7 +930,102 @@ async function renderChecklist(){
   const go={ name:'#sName', skill:'#sNode', treats:'#tpList', voice:'#sVoice', backup:'#bkMake' };
   box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ const k=b.dataset.go; if (k==='check'){ Recorder.stop(); return Setup.open('check'); } const el=$(go[k]); el.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(()=>{ el.focus && el.focus(); el.classList.add('flashme'); setTimeout(()=>el.classList.remove('flashme'),1600); }, 400); });
 }
+/* ---- the weekly report for the child who is practising (ParentBrain does the thinking; this only draws) ---- */
+const PB = window.ParentBrain;
+function reportData(){ return { history, days, progress, settings }; }
+// Certificates (stream B saves them when a level test is passed). Read defensively: an array of
+// {nodeId,title,date,accuracy} for this child, wherever it ends up being kept.
+function certificates(){
+  const out=[], seen=new Set(), act=Store.activeId();
+  const add=a=>{ if (!Array.isArray(a)) return; for (const c of a){ if (c && c.nodeId && !seen.has(c.nodeId)){ seen.add(c.nodeId); out.push(c); } } };
+  try{
+    const c=Store.get('certificates'); if (Array.isArray(c)) add(c); else if (c && typeof c==='object') add(c[act]);
+    const f=Store.get('fun', {}); add(f && f.certificates); add(progress && progress.certificates);
+  }catch(e){}
+  return out;
+}
+// Tonight's tip: the same tip all day, and never yesterday's tip again (remembered per child).
+function pickTip(data){
+  const today=todayKey(), mem=Store.get('parentTips', {}) || {}, id=Store.activeId(), m=mem[id] || {};
+  let tip;
+  if (m.day===today && m.id){ tip=PB.tonightsTip(data, {lastTipId:m.prev||undefined}); if (tip.id!==m.id){ mem[id]=Object.assign({}, m, {id:tip.id}); Store.set('parentTips', mem); } }
+  else { tip=PB.tonightsTip(data, {lastTipId:m.id||undefined}); mem[id]={day:today, id:tip.id, prev:m.id||null}; Store.set('parentTips', mem); }
+  return tip;
+}
+function fmtRange(a, b){
+  const A=new Date(a+'T12:00:00'), B=new Date(b+'T12:00:00'), mo=d=>d.toLocaleDateString('en-US',{month:'short'});
+  return A.getMonth()===B.getMonth() ? `${mo(A)} ${A.getDate()} – ${B.getDate()}` : `${mo(A)} ${A.getDate()} – ${mo(B)} ${B.getDate()}`;
+}
+let lastReport=null;
+function renderReport(){
+  if (!PB) return;
+  const data=reportData(), r=PB.weeklyReport(data), name=(settings.name||'').trim();
+  lastReport=r; window.__report=r;
+  $('#repTitle').textContent = name ? `${name}’s week` : 'This week';
+  $('#repDates').textContent = fmtRange(r.weekStart, r.weekEnd);
+  // children switcher (switching reloads the app as that child, then comes straight back here)
+  const act=Store.activeId(), kids=Store.children();
+  $('#repKids').innerHTML = kids.map(c=>`<button data-rk="${c.id}" aria-pressed="${c.id===act}">${esc(childLabel(c))}</button>`).join('')
+    + `<button class="gu-add" id="repAdd" aria-label="Add a child">${WS.icon('plus', 18, 'currentColor', 2.6)}</button>`;
+  $$('#repKids [data-rk]').forEach(b=>b.onclick=()=>{ if (b.dataset.rk===Store.activeId()) return; Recorder.stop(); Store.switchTo(b.dataset.rk); sessionStorage.setItem('abacus.who','1'); sessionStorage.setItem('abacus.reopen','parent'); location.reload(); });
+  $('#repAdd').onclick=()=>$('#kidAdd').click();
+  $('#repShare').innerHTML=WS.icon('share', 20, 'currentColor', 2.4)+'<span>Share report</span>';
+  // days practised: one bead per day, oldest first
+  const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const beads=r.days.map(d=>{ const w=new Date(d.date+'T12:00:00').getDay(); return `<span class="rd-day">${WS.bead(d.practiced?'jade':'pale', 36, {label:`${DOW[w]}, ${d.practiced?'practised':'not practised'}`})}<i aria-hidden="true">${DOW[w][0]}</i></span>`; }).join('');
+  $('#repDays').innerHTML=`<span class="rep-k">Days practised</span><div class="rep-beads">${beads}</div><span class="rep-big" id="repDaysN">${r.daysPracticed} of 7 days${r.minutes?` · ${r.minutes} min`:''}</span>`;
+  // mastered this week (+ certificates)
+  const certs=certificates(), from=r.weekStart, to=r.weekEnd;
+  const certFor=id=>certs.find(c=>c.nodeId===id);
+  const weekCerts=certs.filter(c=>{ const d=String(c.date||'').slice(0,10); return d>=from && d<=to; });
+  const mastered=r.masteredThisWeek.slice(); weekCerts.forEach(c=>{ if (!mastered.some(m=>m.nodeId===c.nodeId)) mastered.push({nodeId:c.nodeId, label:c.title||App.nodeTitle(c.nodeId)}); });
+  let mh='<span class="rep-k">Mastered this week</span>';
+  if (mastered.length){
+    const m=mastered[0], c=certFor(m.nodeId);
+    mh+=`<span class="rep-big" id="repMasteredN">${esc(m.label)}</span>`;
+    mh+= c ? `<span class="rep-s">${WS.icon('star', 18, WS.colors.ochre)} Certificate earned${c.accuracy!=null?` · ${Math.round(c.accuracy<=1?c.accuracy*100:c.accuracy)}% right`:''}</span>` : `<span class="rep-s">A new skill, learned by practising</span>`;
+    if (mastered.length>1) mh+=`<span class="rep-s">and ${mastered.slice(1).map(x=>esc(x.label)).join(', ')}</span>`;
+  } else mh+=`<span class="rep-big quiet" id="repMasteredN">Nothing new yet</span><span class="rep-s">Skills move on at 80% on 2 days. Steady practice gets there.</span>`;
+  $('#repMastered').innerHTML=mh;
+  // working on now: accuracy bar with the 80% mark
+  const cu=r.current, acc=cu.accuracy===null?null:Math.round(cu.accuracy*100);
+  const need = acc===null ? 'Not practised yet. It moves on at 80% right on 2 different days.'
+    : `${acc}% right · needs ${Math.round(cu.needed*100)}% on ${cu.daysNeeded} days to move on` + (cu.problems<cu.problemsNeeded ? ` (${cu.problems} of ${cu.problemsNeeded} problems so far)` : '');
+  $('#repWorking').innerHTML=`<span class="rep-k">Working on now</span><span class="rep-big">${esc(cu.label)}</span>
+    <div class="rep-bar" role="img" aria-label="${acc===null?'no answers yet':acc+'% right'}, 80% needed"><i style="width:${acc||0}%"></i><b style="left:${Math.round(cu.needed*100)}%"></b></div><span class="rep-s" id="repNeed">${need}</span>`;
+  // tonight's tip
+  const tip=pickTip(data); window.__tip=tip;
+  $('#repTip').innerHTML=`<span class="tip-k">Tonight’s 2-minute tip</span><h3 class="tip-t" id="repTipTitle" data-tip="${esc(tip.id)}">${esc(tip.title)}</h3><p class="tip-x">${esc(tip.text)}</p><p class="tip-why">${esc(tip.why||'')}</p>
+    <div class="tip-b"><button class="tip-watch" id="repWatch">${WS.icon('play', 18, 'currentColor')}<span>Watch Bix show it</span></button><button class="tip-more" id="repHow">How the abacus works</button></div>`;
+  $('#repWatch').onclick=()=>{ Speaker.unlock(); Recorder.stop(); startLesson(lessonTarget(NODES[curIdx()]), 'parent'); };
+  $('#repHow').onclick=()=>$('#guTech').scrollIntoView({behavior:'smooth', block:'start'});
+  // missed most
+  const mm=r.missedMost;
+  $('#repMissed').innerHTML='<h3>Missed most</h3>'+(mm.length ? mm.map(m=>`<div class="mm-row"><span>${esc(m.label)}</span><b class="${m.count>=3?'hot':''}">${m.count} time${m.count===1?'':'s'}</b></div>`).join('')
+    : '<p class="rep-s">Nothing missed this week.</p>');
+  // gentle alerts + treats waiting to be handed over
+  const al=PB.stuckAlerts(data).sort((a,b)=>b.severity-a.severity).slice(0,2);
+  const w=(Fun.data.wallet||{}), open=(w.tickets||[]).filter(x=>!x.given);
+  let ah=al.map(a=>`<div class="rep-alert" data-kind="${a.kind}">${WS.icon('sprout', 30, WS.colors.ochre)}<div><b>${esc(a.message)}</b><span>${esc(a.suggestion)}</span></div></div>`).join('');
+  if (open.length) ah+=`<button class="rep-alert as-btn" id="repTickets">${WS.icon('star', 30, WS.colors.ochre)}<div><b>${open.length} treat${open.length===1?'':'s'} to hand over</b><span>${esc(name||'They')} bought ${open.map(t=>esc(t.name)).join(', ')}. Tap to see the tickets.</span></div></button>`;
+  if (!ah) ah=`<div class="rep-alert calm">${WS.icon('check', 30, WS.colors.jade, 3)}<div><b>Nothing to worry about</b><span>No stuck spots this week. Short, happy practice most days is the whole secret.</span></div></div>`;
+  $('#repAlerts').innerHTML=ah;
+  const tk=$('#repTickets'); if (tk) tk.onclick=()=>$('#guTreats').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function toast(msg){ const t=$('#repToast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'), 3200); }
+$('#repShare').addEventListener('click', async()=>{
+  const r=lastReport || PB.weeklyReport(reportData()), text=PB.shareText(r, {childName:settings.name}); window.__shareText=text;
+  const title=(settings.name?settings.name+'’s':'Our')+' abacus week';
+  if (navigator.share){ try{ await navigator.share({title, text}); return; }catch(e){ if (e && e.name==='AbortError') return; } }
+  try{ await navigator.clipboard.writeText(text); toast('Report copied. Paste it into a message.'); }
+  catch(e){ toast(text); }
+});
+// After switching child from the report, come straight back to it.
+setTimeout(()=>{ if (sessionStorage.getItem('abacus.reopen')==='parent'){ sessionStorage.removeItem('abacus.reopen'); renderParent(); show('parent'); } }, 0);
+$('#parentDone').innerHTML=BACK_ICON();
+$('#parent .gu-nav').addEventListener('click', e=>{ const a=e.target.closest('a'); if (!a) return; e.preventDefault(); const t=$(a.getAttribute('href')); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); });
 async function renderParent(){
+  renderReport();
   for (const pp of profiles()) { try{ await Speaker.loadRec(pp.id, true); }catch(e){} }
   const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
   sel.onchange=()=>{ setTimeout(renderChecklist,0); progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };

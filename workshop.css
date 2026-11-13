@@ -143,3 +143,22 @@ body.ws-calm .ws-pulse, body.ws-calm .ws-bob{animation:none}  /* grown-ups "Calm
 .ws-bix.talking .ws-bix-body{animation:ws-talkbob .48s ease-in-out infinite;transform-origin:50% 90%}
 @keyframes ws-talkbob{50%{transform:translateY(-2px) scale(1.01,.99)}}
 @media (prefers-reduced-motion: reduce){ .ws-bix.talking .ws-bix-body{animation:none} }
+
+/* =====================================================================
+   Additions from stream C (door, lessons, games, gate, grown-ups)
+   ===================================================================== */
+:root{
+  --ws-cream:#FFF4DE;       /* grown-up notes: wishes, gentle alerts */
+  --ws-mist:#E1E6EA;        /* quiet grown-up chrome: segment track, back button, empty bars */
+  --ws-bead-off:#D5DCE2;    /* a day not practised (pale bead on white) */
+  --ws-hero-ink:#D8DEF5;    /* body text on the indigo hero card (7.9:1) */
+  --ws-hero-line:#8C99D4;   /* outline buttons and quiet text on the indigo hero card */
+}
+/* "Tap this next" without moving the button: a soft ring breathes around it.
+   (.ws-pulse scales the element itself; use .ws-nudge on buttons so their hit box never moves.) */
+.ws-nudge{position:relative}
+.ws-nudge::after{content:"";position:absolute;inset:-7px;border-radius:inherit;border:4px solid var(--c, var(--ws-ochre));opacity:0;pointer-events:none;
+  animation:ws-nudge 2.4s ease-in-out infinite}
+@keyframes ws-nudge{0%,100%{opacity:0;transform:scale(.97)}50%{opacity:.45;transform:scale(1.02)}}
+@media (prefers-reduced-motion: reduce){ .ws-nudge::after{animation:none} }
+body.ws-calm .ws-nudge::after{animation:none}

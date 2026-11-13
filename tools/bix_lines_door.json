@@ -1,0 +1,22 @@
+{
+"_about": "Extra lines for the Practice door, lessons, games and the grown-ups gate (stream C). Built by tools/make_bix_extra.py into audio/bix-extra-<voice>.js. Same rules as bix_lines.json: no names, short and kind.",
+"door_ask": "How do you want to play with numbers?",
+"path_here": "This is your skill right now! Tap Learn it with Bix.",
+"path_done": "You already know this one. Great job!",
+"gate_grownup": "This part is for a grown up. Go get a grown up!",
+"reader_look": "Look closely at the beads!",
+"reader_ask": "What number was it?",
+"build_go": "Make this number on the abacus!",
+"learn_beads": "The top bead is worth five. Each bottom bead is worth one. A bead counts when it touches the bar.",
+"learn_add_direct": "When there are enough beads, just push them up to the bar. No tricks yet!",
+"learn_sub_direct": "If the beads are already at the bar, just push them away.",
+"learn_sf_add": "Not enough little beads? Use the five bead, and take away its small friend. Small friends make five.",
+"learn_sf_sub": "Need to take away, but the little beads are not there? Take away the five bead, and add back its small friend.",
+"learn_bf_add_a": "No room on the rod? Add ten on the next rod, and take away the big friend. Big friends make ten.",
+"learn_bf_add_b": "Same trick with smaller numbers. Add ten, and take away the big friend.",
+"learn_bf_sub_a": "Not enough beads to take away? Take ten from the next rod, and add back the big friend.",
+"learn_bf_sub_b": "Same trick with smaller numbers. Take ten, and add back the big friend.",
+"learn_combined": "Sometimes the big friend needs a small friend inside it. Two tricks, one move!",
+"learn_two_digit": "Work left to right. Tens rod first, then the ones. Every rod uses the same friends.",
+"learn_anzan": "Picture the beads in your head. Move them in your mind, and say the answer."
+}

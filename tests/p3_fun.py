@@ -56,7 +56,7 @@ async def main():
         score = await pg.text_content('#gameScore')
         t = await collect(pg); await pg.wait_for_selector('.gresult')
         await pg.screenshot(path='/tmp/p3_pop_result.png')
-        check('Friend Pop plays, scores, gives sticker', popped>0 and score!='⭐ 0', f"{score} | {await pg.text_content('.gr-big')} | {t}")
+        check('Friend Pop plays, scores, gives sticker', popped>0 and int(''.join(ch for ch in score if ch.isdigit()) or 0)>0, f"{score} | {await pg.text_content('.gr-big')} | {t}")
         await pg.click('.gresult [data-a=done]'); await pg.wait_for_selector('#play.active'); await pg.screenshot(path='/tmp/p3_play.png')
         await pg.click('#exitPlay'); await pg.wait_for_timeout(300)
 
@@ -101,7 +101,7 @@ async def main():
             await pg.click('#rdPad [data-k=go]'); right += (i!=4)
             await pg.wait_for_function("!document.querySelector('#rdCover').classList.contains('on')")
         t = await collect(pg); await pg.wait_for_selector('.gresult')
-        check('Bead Detective: 9/10, rods grow', (await pg.text_content('.gr-big'))=='9 / 10', f"{await pg.text_content('.gr-big')} | {await pg.text_content('.gr-sub')}")
+        check('Bead Detective: 9/10, rods grow', (await pg.text_content('.gr-big'))=='9 green beads!' and await pg.locator('.gr-dots .gdot.ok').count()==9 and await pg.locator('.gr-dots .gdot.miss').count()==1, f"{await pg.text_content('.gr-big')} | {await pg.text_content('.gr-sub')}")
         await pg.click('.gresult [data-a=done]'); await pg.wait_for_selector('#play.active')
 
         # Bead Builder: set beads by tapping
@@ -117,7 +117,7 @@ async def main():
             if k==2: await pg.screenshot(path='/tmp/p3_build.png')
             await pg.wait_for_timeout(750)
         t = await collect(pg); await pg.wait_for_selector('.gresult')
-        check('Bead Builder: 8 numbers set', 'seconds' in await pg.text_content('.gr-big'), await pg.text_content('.gr-big'))
+        check('Bead Builder: 8 numbers set', '8 numbers made' in await pg.text_content('.gr-big') and 'seconds' in await pg.text_content('.gr-sub'), await pg.text_content('.gr-big'))
         await pg.click('.gresult [data-a=done]')
         data=json.loads(await pg.evaluate("window.__legacy('fun')"))
         w=data.get('wallet',{})
