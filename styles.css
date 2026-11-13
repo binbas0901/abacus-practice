@@ -522,3 +522,16 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 .flash-dots i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.22)}
 .flash-dots i.on{background:var(--sun)}
 .flash-stage .replay{color:#fff;background:rgba(255,255,255,.16)}
+
+/* ---- children on one device ---- */
+.who{display:none;flex-direction:column;align-items:center;justify-content:center;gap:34px}
+.who.active{display:flex}
+.who-title{font-family:var(--display);font-weight:800;font-size:44px;color:var(--ink);margin:0}
+.who-list{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;max-width:960px}
+.who-card{width:200px;height:200px;border:0;border-radius:30px;background:#fff;box-shadow:0 7px 0 #C9D3D9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:var(--display);font-weight:700;font-size:28px;color:var(--ink);cursor:pointer}
+.who-card:active{transform:translateY(4px);box-shadow:0 3px 0 #C9D3D9}
+.who-bead{width:96px;height:60px;background:#E2452F;clip-path:path('M2 30 Q48 -6 94 30 Q48 66 2 30Z')}
+.who-card:nth-child(2) .who-bead{background:#2A3A86}.who-card:nth-child(3) .who-bead{background:#2F9E7E}.who-card:nth-child(4) .who-bead{background:#E8A93A}
+.kids .kidrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E1E6EA}
+.kids .kidname{flex:1;font-weight:700}.kids .kidname em{font-weight:400;color:#56627A;font-style:normal}
+.switchkid{margin-right:8px}

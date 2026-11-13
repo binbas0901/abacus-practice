@@ -13,7 +13,7 @@ async def main():
         await pg.goto('http://localhost:8765/index.html')
         # seed: 12 correct yesterday on bf_add_a, lesson done
         await pg.evaluate("""(()=>{const pr={current:'bf_add_a',nodes:{}}; ['beads','add_direct','sub_direct','sf_add','sf_sub'].forEach(id=>pr.nodes[id]={lesson:true,mastered:'parent',hist:[]});
-          pr.nodes.bf_add_a={lesson:true,mastered:null,hist:Array.from({length:12},()=>({ok:true,day:'2026-11-11'}))}; localStorage.setItem('abacus.progress',JSON.stringify(pr)); localStorage.removeItem('abacus.fun');})()""")
+          pr.nodes.bf_add_a={lesson:true,mastered:null,hist:Array.from({length:12},()=>({ok:true,day:'2026-11-11'}))}; localStorage.setItem('abacus.progress',JSON.stringify(pr)); Store.remove('fun');})()""")
         await pg.reload(); print('today:', await pg.text_content('#todayTitle'))
         await pg.click('#todayGo'); await pg.wait_for_timeout(300)
         for i in range(10):

@@ -119,7 +119,7 @@ async def main():
         t = await collect(pg); await pg.wait_for_selector('.gresult')
         check('Bead Builder: 8 numbers set', 'seconds' in await pg.text_content('.gr-big'), await pg.text_content('.gr-big'))
         await pg.click('.gresult [data-a=done]')
-        data=json.loads(await pg.evaluate("localStorage.getItem('abacus.fun')"))
+        data=json.loads(await pg.evaluate("window.__legacy('fun')"))
         w=data.get('wallet',{})
         check('beads earned along the way', w.get('total',0)>=10, f"{w.get('beads')} beads (lesson 1, games 1-2 each, drill +gold 2, today +3)")
         check('stickers + bests saved', len(data['stickers'])>=6 and 'reader' in data['best'], f"{sum(data['stickers'].values())} stickers, best={data['best']}")

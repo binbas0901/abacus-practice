@@ -29,7 +29,7 @@ async def main():
         await pg.click('#pad [data-k="1"]'); await pg.click('#pad [data-k="2"]'); await shot('drill')
         await pg.click('#exitDrill'); await pg.wait_for_timeout(200)
         await pg.click('.tile[data-mode=listen]'); await pg.wait_for_timeout(500); await shot('listen'); await pg.click('#exitDrill')
-        await pg.evaluate("(()=>{const s=JSON.parse(localStorage.getItem('abacus.settings'));s.flashSec=3;localStorage.setItem('abacus.settings',JSON.stringify(s));})()")
+        await pg.evaluate("(()=>{const s=JSON.parse(window.__legacy('settings'));s.flashSec=3;localStorage.setItem('abacus.settings',JSON.stringify(s));})()")
         await pg.reload(); await pg.wait_for_timeout(1500)
         await pg.click('.tile[data-mode=flash]'); await pg.wait_for_timeout(1000); await shot('flash'); await pg.click('#exitDrill')
         # summary

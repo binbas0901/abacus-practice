@@ -14,7 +14,7 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=3.10">
+<link rel="stylesheet" href="styles.css?v=3.11">
 </head>
 <body>
 <div id="app">
@@ -22,7 +22,7 @@
 <section id="home" class="screen active">
   <div class="hdr">
     <div id="bixHome"></div>
-    <div class="hright"><button class="jar" id="jar"></button><div class="garden-box"><div class="garden" id="garden"></div><div class="glabel" id="gardenLabel"></div></div></div>
+    <div class="hright"><button class="btn small ghost switchkid" id="switchKid" style="display:none">Switch child</button><button class="jar" id="jar"></button><div class="garden-box"><div class="garden" id="garden"></div><div class="glabel" id="gardenLabel"></div></div></div>
   </div>
   <div class="today">
     <div class="tleft"><div class="big" id="todayTitle">Today's practice</div><div class="steps" id="todaySteps"></div><div class="meta" id="greetSub"></div></div>
@@ -37,9 +37,13 @@
     <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
     <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
   </div>
-  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.10</div><button id="grownups">⚙️ Grown-ups</button></div>
+  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.11</div><button id="grownups">⚙️ Grown-ups</button></div>
 </section>
 
+<section id="who" class="screen who">
+  <h1 class="who-title">Who’s practising?</h1>
+  <div class="who-list" id="whoList"></div>
+</section>
 <section id="setup" class="screen">
   <div class="su-body">
     <div id="bixSetup"></div>
@@ -188,6 +192,10 @@
   <div class="field"><label>Sound effects</label><button class="switch" id="sSfx"></button></div>
   <div class="field"><label>Spoken feedback ("Yes!" / "Not quite")</label><button class="switch" id="sSpeakFb"></button></div>
 
+  <h3>Children</h3>
+  <p class="hint">Each child on this device has their own progress, stickers, garden, beads and treats. Recorded voices are shared.</p>
+  <div id="kidsList" class="kids"></div>
+  <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="kidAdd">+ Add a child</button></div>
   <h3>Bix</h3>
   <div class="field"><label>Bix talks out loud<span class="hint">Greetings, jokes, cheers and tips. Bix stays quiet while numbers are being read in Listen mode.</span></label><button class="switch" id="sBixTalks"></button></div>
   <div class="field"><label>Bix's voice</label><div><select id="sBixVoice"></select> <button class="btn small ghost" id="sBixTest">▶︎ test</button></div></div>
@@ -235,19 +243,20 @@
 
   <h3>Backup</h3>
   <div class="note">Everything (voices, progress, settings) lives on this device. It survives closing the app, but is lost if the app is deleted from the home screen or Safari's website data is cleared. Save a backup file to Files → iCloud Drive now and then; you can restore it here or on another device.</div>
-  <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"><button class="btn small ghost" id="resetBtn">Start over for a new child</button></div>
+  <div class="row" style="justify-content:flex-start;margin:10px 0"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"></div>
   <div class="note" id="bkInfo"></div>
 </section>
 
 </div>
-<script src="engine.js?v=3.10"></script>
-<script src="soroban.js?v=3.10"></script>
-<script src="curriculum.js?v=3.10"></script>
-<script src="audio/bix-lines.js?v=3.10"></script>
-<script src="fun.js?v=3.10"></script>
-<script src="games.js?v=3.10"></script>
-<script src="treats.js?v=3.10"></script>
-<script src="onboarding.js?v=3.10"></script>
-<script src="app.js?v=3.10"></script>
+<script src="store.js?v=3.11"></script>
+<script src="engine.js?v=3.11"></script>
+<script src="soroban.js?v=3.11"></script>
+<script src="curriculum.js?v=3.11"></script>
+<script src="audio/bix-lines.js?v=3.11"></script>
+<script src="fun.js?v=3.11"></script>
+<script src="games.js?v=3.11"></script>
+<script src="treats.js?v=3.11"></script>
+<script src="onboarding.js?v=3.11"></script>
+<script src="app.js?v=3.11"></script>
 </body>
 </html>

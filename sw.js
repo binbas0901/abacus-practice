@@ -1,5 +1,5 @@
-const CACHE = 'abacus-v3-10';
-const FILES = ['./', './index.html', './styles.css?v=3.10', './fonts/baloo-2-latin-500-normal.woff2', './fonts/baloo-2-latin-700-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/andika-latin-400-normal.woff2', './fonts/andika-latin-700-normal.woff2', './audio/bix-lines.js?v=3.10', './audio/bix-sweet.js', './fun.js?v=3.10', './games.js?v=3.10', './onboarding.js?v=3.10', './treats.js?v=3.10', './app.js?v=3.10', './engine.js?v=3.10', './soroban.js?v=3.10', './curriculum.js?v=3.10', './manifest.json', './icon.png', './audio/voice-ljspeech.js'];
+const CACHE = 'abacus-v3-11';
+const FILES = ['./', './index.html', './styles.css?v=3.11', './fonts/baloo-2-latin-500-normal.woff2', './fonts/baloo-2-latin-700-normal.woff2', './fonts/baloo-2-latin-800-normal.woff2', './fonts/andika-latin-400-normal.woff2', './fonts/andika-latin-700-normal.woff2', './audio/bix-lines.js?v=3.11', './audio/bix-sweet.js', './fun.js?v=3.11', './games.js?v=3.11', './onboarding.js?v=3.11', './treats.js?v=3.11', './app.js?v=3.11', './store.js?v=3.11', './engine.js?v=3.11', './soroban.js?v=3.11', './curriculum.js?v=3.11', './manifest.json', './icon.png', './audio/voice-ljspeech.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

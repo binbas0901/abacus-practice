@@ -6,7 +6,7 @@ async def main():
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('http://localhost:8765/index.html')
         for voice in ['device','ljspeech']:
-            await pg.evaluate("(v)=>{const s=JSON.parse(localStorage.getItem('abacus.settings')||'{}');s.gap=1;s.voice=v;s.settingsVersion=5;localStorage.setItem('abacus.settings',JSON.stringify(s));}", voice); await pg.reload(); await pg.wait_for_timeout(300)
+            await pg.evaluate("(v)=>{const s=JSON.parse(window.__legacy('settings')||'{}');s.gap=1;s.voice=v;s.settingsVersion=5;localStorage.setItem('abacus.settings',JSON.stringify(s));}", voice); await pg.reload(); await pg.wait_for_timeout(300)
             await pg.click('.tile[data-mode=listen]'); await pg.wait_for_timeout(300)
             print(voice, 'msg:', await pg.text_content('#listenMsg'))
             await pg.click('#listenGo'); t0=time.time()

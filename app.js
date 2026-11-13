@@ -4,6 +4,7 @@ const E = window.SorobanEngine, C = window.Curriculum;
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]));
 
 /* ---------------- storage ---------------- */
@@ -12,11 +13,12 @@ const DEFAULTS = {
   gap:2, gapMin:0.5, gapMax:6, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
   flashSec:1.0, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:5,
 };
-function load(k, d){ try{ const v = localStorage.getItem('abacus.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
-function save(k, v){ try{ localStorage.setItem('abacus.'+k, JSON.stringify(v)); }catch(e){} }
-let settings = Object.assign({}, DEFAULTS, load('settings', {}));
+// All saving goes through store.js: family-wide settings are shared, progress and treats are per child.
+function load(k, d){ return Store.get(k, d); }
+function save(k, v){ Store.set(k, v); }
+let settings = Store.loadSettings(DEFAULTS);
 if ((settings.settingsVersion||1) < 5){ settings = Object.assign({}, DEFAULTS, {voice:settings.voice||'device', gap:settings.gap||2, name:settings.name||''}); }
-function saveSettings(){ save('settings', settings); }
+function saveSettings(){ Store.saveSettings(settings); }
 let history = load('history', []);
 let days = load('days', {});
 // progress: {current:nodeId, nodes:{id:{lesson:bool, mastered:'auto'|'parent'|null, hist:[{ok,day}]}}}
@@ -311,7 +313,8 @@ const Backup = {
         voices.clips[p.id][w]=b64(bytes);
       }
     }
-    const data={app:'abacus-practice', format:2, savedAt:new Date().toISOString(), settings, progress, history, days, fun:Fun.data, voices};
+    saveSettings(); saveProgress(); save('history',history); save('days',days);
+    const data={app:'abacus-practice', format:3, savedAt:new Date().toISOString(), settings, children:Store.exportChildren(), active:Store.activeId(), voices};
     const name=`abacus-backup-${todayKey()}.json`;
     this.file=new File([JSON.stringify(data)], name, {type:'application/json'});
     return this.file;
@@ -332,6 +335,13 @@ const Backup = {
         for (const [w,s] of Object.entries((d.voices.clips||{})[p.id]||{})){ await ClipStore.put(p.id, w, {buf:unb64(s), type:'audio/wav'}); n++; }
         Speaker.recLoaded[p.id]=false;
       }
+    }
+    if (withProgress && d.format>=3 && Array.isArray(d.children)){
+      const keep=profiles(); Store.importChildren(d.children, d.active);
+      settings=Object.assign({}, Store.loadSettings(DEFAULTS), d.settings||{}, {profiles:keep});
+      progress=Store.get('progress', {current:'beads', nodes:{}}); history=Store.get('history', []); days=Store.get('days', {}); Fun.replace(Store.get('fun', {}));
+      saveSettings();
+      return { voices:(d.voices&&d.voices.profiles||[]).length, clips:n };
     }
     if (withProgress){
       const keepProfiles=profiles(); settings=Object.assign({}, DEFAULTS, d.settings||{}, {profiles:keepProfiles});
@@ -366,6 +376,7 @@ document.addEventListener('click', e=>{
   setTimeout(()=>{ if (!onButton && !greeted && $('#home').classList.contains('active')) renderHome(); }, 120);
 }, true);
 function renderHome(){
+  $('#switchKid').style.display = Store.children().length>1 ? '' : 'none';
   const cur = NODES[curIdx()];
   $('#greetSub').textContent = `Skill: ${cur.icon} ${cur.title}`;
   // Bix
@@ -788,7 +799,7 @@ async function renderParent(){
   const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
   sel.onchange=()=>{ setTimeout(renderChecklist,0); progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
   $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); renderChecklist(); };
-  renderChecklist();
+  renderChecklist(); renderChildren();
   const tb=$('#nodeTable tbody'); tb.innerHTML='';
   NODES.forEach((n,i)=>{ const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
     const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned ✓</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':st.mastered==='placed'?'<span class="pill good">learned (level check)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
@@ -822,7 +833,7 @@ async function renderParent(){
   $('#bkMake').onclick=async()=>{ const b=$('#bkMake'); b.disabled=true; b.textContent='Preparing…'; try{ const f=await Backup.build(); $('#bkSave').style.display=''; $('#bkInfo').textContent=`Ready: ${f.name} (${(f.size/1048576).toFixed(1)} MB, ${profiles().length} voice${profiles().length===1?'':'s'}, progress and settings). Tap "Save file", then choose "Save to Files".`; }catch(e){ $('#bkInfo').textContent='Could not prepare backup: '+(e&&e.message||e); } b.disabled=false; b.textContent='1. Prepare backup'; };
   $('#bkSave').onclick=async()=>{ const r=await Backup.save(); if (r==='shared'||r==='downloaded'){ settings.lastBackup=new Date().toISOString(); saveSettings(); renderChecklist(); } $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
   $('#bkOpen').onclick=()=>$('#bkFile').click();
-  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=confirm('Restore the child’s progress and settings from this backup too?\n\nOK = voices + progress + settings\nCancel = voices only'); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
+  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=confirm('Restore the children’s progress and settings from this backup too?\n\nOK = voices + progress + settings\nCancel = voices only'); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#diagTts').onclick=async()=>{ Speaker.unlock(); const r=await Speaker.sayDevice('seven, plus three'); Diag.add('device test: '+r); $('#diagLog').textContent=Diag.lines.join('\n'); };
@@ -834,7 +845,22 @@ async function renderParent(){
     tr.innerHTML=`<td>${ws}</td><td>${h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):h.mode==='flash'?'Flash':'Look'}</td><td>${nn.short||''}</td><td>${h.correct}/${h.count}</td><td>${Math.floor(h.secs/60)}:${String(h.secs%60).padStart(2,'0')}</td><td>${missed||'—'}</td>`; st.appendChild(tr); });
 }
 $('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
-$('#resetBtn').addEventListener('click', ()=>{ if(confirm('Start over for a new child?\n\nThis erases progress, stickers, beads, the garden and settings on this device, then runs the first-time setup. Recorded voices are kept.')){ const keep=profiles(); try{ ['history','days','progress','fun'].forEach(k=>localStorage.removeItem('abacus.'+k)); localStorage.setItem('abacus.settings', JSON.stringify({profiles:keep, settingsVersion:5})); }catch(e){} location.reload(); } });
+/* ---------------- children on this device ---------------- */
+function childLabel(c){ return c.name || 'New child'; }
+function renderChildren(){
+  const box=$('#kidsList'); if(!box) return; const act=Store.activeId();
+  box.innerHTML=Store.children().map(c=>`<div class="kidrow"><span class="kidname">${esc(childLabel(c))}${c.id===act?' <em>(practising now)</em>':''}</span>${c.id===act?'':`<button class="btn small" data-kidgo="${c.id}">Switch to</button>`}<button class="btn small ghost" data-kidrm="${c.id}">Remove</button></div>`).join('');
+  box.querySelectorAll('[data-kidgo]').forEach(b=>b.onclick=()=>{ Store.switchTo(b.dataset.kidgo); location.reload(); });
+  box.querySelectorAll('[data-kidrm]').forEach(b=>b.onclick=()=>{ const c=Store.children().find(x=>x.id===b.dataset.kidrm); if(!confirm(`Remove ${childLabel(c)} from this device?\n\nThis erases their progress, stickers, beads, garden and treats. Recorded voices are kept.`)) return; Store.removeChild(c.id); location.reload(); });
+}
+$('#kidAdd').addEventListener('click', ()=>{ const id=Store.addChild(); Store.switchTo(id); location.reload(); });
+// "Who's practising?" when more than one child uses this device.
+function showWho(){
+  $('#whoList').innerHTML=Store.children().map(c=>`<button class="who-card" data-who="${c.id}"><span class="who-bead"></span><span>${esc(childLabel(c))}</span></button>`).join('');
+  $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
+  show('who');
+}
+$('#switchKid').addEventListener('click', ()=>{ sessionStorage.removeItem('abacus.who'); showWho(); });
 
 /* ---------------- bridge for fun.js and games.js ---------------- */
 window.App = {
@@ -864,7 +890,9 @@ window.App = {
 window.__diag = Diag;
 window.__drill = ()=>({ idx, reviewing, mode, terms: problems[idx]&&problems[idx].terms, answer: problems[idx]&&problems[idx].answer, strip: [...document.querySelectorAll('#strip .sq')].map(e=>e.className.replace('sq','').trim()) });
 Setup.bind();
-if (firstRun){ show('setup'); Setup.open(); } else renderHome();
+if (firstRun){ show('setup'); Setup.open(); }
+else if (Store.children().length>1 && !sessionStorage.getItem('abacus.who')) showWho();
+else { show('home'); renderHome(); }
 setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 // iPad Safari only allows sound to start on a finger lift / click, so try on every tap until it's on.

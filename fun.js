@@ -7,9 +7,9 @@
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
   /* ---------------- data ---------------- */
-  const KEY = 'abacus.fun';
-  const data = (() => { try { return Object.assign({ stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { return { stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }; } })();
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+  // Stickers, garden, beads and treat tickets belong to the child who is practising (see store.js).
+  const data = Object.assign({ stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, Store.get('fun', {}));
+  function save() { Store.set('fun', data); }
   function replace(d) { Object.keys(data).forEach(k => delete data[k]); Object.assign(data, { stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, d || {}); save(); }
 
   /* ---------------- Bix, the bead mascot (original character) ---------------- */

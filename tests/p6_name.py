@@ -12,7 +12,7 @@ async def main():
         await pg.screenshot(path='/tmp/nm_home.png')
         await pg.click('#bixHome .bix'); await pg.wait_for_selector('#nameAsk.active'); await pg.wait_for_timeout(300); await pg.screenshot(path='/tmp/nm_ask.png')
         await pg.fill('#nameAskIn','Mia'); await pg.click('#nameAskOk'); await pg.wait_for_timeout(500)
-        st=json.loads(await pg.evaluate("localStorage.getItem('abacus.settings')")); pr=json.loads(await pg.evaluate("localStorage.getItem('abacus.progress')"))
+        st=json.loads(await pg.evaluate("window.__legacy('settings')")); pr=json.loads(await pg.evaluate("window.__legacy('progress')"))
         check('name saved, progress untouched, Bix greets her', st.get('name')=='Mia' and pr['current']=='bf_add_a' and 'Mia' in await pg.text_content('#bixHome .bubble'), f"{st.get('name')} | {pr['current']} | {await pg.text_content('#bixHome .bubble')}")
         await pg.click('#bixHome .bix'); await pg.wait_for_timeout(600)
         check('once named, tapping Bix no longer opens the name box', await pg.locator('#nameAsk.active').count()==0)

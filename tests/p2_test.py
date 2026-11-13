@@ -47,7 +47,7 @@ async def main():
         await pg.wait_for_selector('#summary.active', timeout=8000); await _collect_all(pg)
         await pg.click('#homeBtn'); await pg.wait_for_timeout(300); await pg.screenshot(path='/tmp/p2_home2.png')
         # flash
-        await pg.evaluate("(()=>{const s=JSON.parse(localStorage.getItem('abacus.settings')||'{}');s.flashSec=0.3;s.settingsVersion=5;localStorage.setItem('abacus.settings',JSON.stringify(s));})()"); await pg.reload(); await pg.wait_for_timeout(300)
+        await pg.evaluate("(()=>{const s=JSON.parse(window.__legacy('settings')||'{}');s.flashSec=0.3;s.settingsVersion=5;localStorage.setItem('abacus.settings',JSON.stringify(s));})()"); await pg.reload(); await pg.wait_for_timeout(300)
         await pg.click('.tile[data-mode=flash]'); await pg.wait_for_timeout(900); await pg.screenshot(path='/tmp/p2_flash.png')
         await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=10000); print('flash ok')
         await pg.click('#exitDrill')

@@ -21,7 +21,7 @@ async def main():
         ans = await pg.evaluate("+document.querySelector('.pq-f').textContent - +document.querySelector('.pq-a').textContent")
         if await pg.locator(f'.bub[data-v="{ans}"]').count(): await pg.locator(f'.bub[data-v="{ans}"]').first.dispatch_event('pointerdown')
         await collect_all(pg); await pg.wait_for_timeout(500)
-        w=json.loads(await pg.evaluate("localStorage.getItem('abacus.fun')"))['wallet']
+        w=json.loads(await pg.evaluate("window.__legacy('fun')"))['wallet']
         check('finishing a game earns beads (+1, +1 more for a gold best)', w['beads'] in (1,2), w)
         await pg.click('.gresult [data-a=done]'); await pg.click('#exitPlay'); await pg.wait_for_timeout(300)
         # shop
@@ -43,7 +43,7 @@ async def main():
         await pg.click('.tcard:has-text("bedtime story") [data-get]'); await pg.wait_for_selector('#shopAsk.active'); await pg.screenshot(path='/tmp/p3_ask.png')
         await pg.click('#askYes'); await pg.wait_for_timeout(600)
         await pg.screenshot(path='/tmp/p3_shop_bought.png')
-        w=json.loads(await pg.evaluate("localStorage.getItem('abacus.fun')"))['wallet']
+        w=json.loads(await pg.evaluate("window.__legacy('fun')"))['wallet']
         check('buy lollipop: beads spent, ticket made', w['tickets'][-1]['name']=='Extra bedtime story' and not w['tickets'][-1]['given'] and w['beads']==int(bead_txt)-5, f"beads={w['beads']} tickets={[t['name'] for t in w['tickets']]} | shop shows: {await pg.text_content('#shopTickets')}")
         await pg.click('#exitShop'); await gate(pg)
         check('ticket shows in Grown-ups', 'Extra bedtime story' in await pg.text_content('#tpTickets'), (await pg.text_content('#tpTickets'))[:60])
@@ -55,7 +55,7 @@ async def main():
         await pg.fill(f'{last} input[data-f=emoji]','🛝'); await pg.dispatch_event(f'{last} input[data-f=emoji]','change')
         await pg.fill(f'{last} input[data-f=name]','Library visit'); await pg.dispatch_event(f'{last} input[data-f=name]','change')
         await pg.fill(f'{last} input[data-f=price]','15'); await pg.dispatch_event(f'{last} input[data-f=price]','change')
-        st=json.loads(await pg.evaluate("localStorage.getItem('abacus.settings')"))
+        st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         check('grown-up edits price + adds non-food treat', st['treats'][0]['price']==2 and st['treats'][-1]['name']=='Library visit', [(t['emoji'],t['name'],t['price']) for t in st['treats']])
         await pg.click('#parentDone'); await pg.click('#jar'); await pg.wait_for_selector('#shop.active')
         check('shop reflects edits', 'Library visit' in await pg.text_content('#shopCards'))

@@ -2,7 +2,7 @@
 # Run every browser test against a local copy of the app. Usage: tests/run.sh [test names...]
 cd "$(dirname "$0")/.." || exit 1
 python3 -c "import urllib.request;urllib.request.urlopen('http://localhost:8765/index.html')" 2>/dev/null || { nohup python3 -m http.server 8765 >/dev/null 2>&1 & sleep 1; }
-SUITES="${*:-p2_test p2_master p2_listen p2_myvoice p2_overlap p2_family p3_fun p3_treats p4_fix p5_setup p6_name p7_bix p8_ipad p9_boy p10_flash}"
+SUITES="${*:-p2_test p2_master p2_listen p2_myvoice p2_overlap p2_family p3_fun p3_treats p4_fix p5_setup p6_name p7_bix p8_ipad p9_boy p10_flash p11_kids}"
 fail=0
 for t in $SUITES; do
   out=$(timeout 400 python3 "tests/$t.py" 2>&1); code=$?

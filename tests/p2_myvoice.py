@@ -19,7 +19,7 @@ async def main():
           const blob=new Blob([dv],{type:'audio/wav'});
           const db=await new Promise(r=>{const q=indexedDB.open('abacus-voice',1); q.onupgradeneeded=()=>q.result.createObjectStore('clips'); q.onsuccess=()=>r(q.result);});
           await new Promise(r=>{const t=db.transaction('clips','readwrite'); words.forEach(w=>t.objectStore('clips').put(blob,w)); t.oncomplete=r;});
-          const st=JSON.parse(localStorage.getItem('abacus.settings')||'{}'); st.voice='mine'; st.gap=1; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st));
+          const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice='mine'; st.gap=1; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st));
         })()"""); await pg.reload(); await pg.wait_for_timeout(500)
         await pg.click('.tile[data-mode=listen]'); await pg.click('#listenGo')
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000)
@@ -28,7 +28,7 @@ async def main():
         await pg.click('#exitDrill')
 
         # B) Fresh recording of all 33 words via the recorder UI, then auto-switch + playback
-        await pg.evaluate("(async()=>{ const db=await new Promise(r=>{const q=indexedDB.open('abacus-voice',1); q.onsuccess=()=>r(q.result);}); await new Promise(r=>{const t=db.transaction('clips','readwrite'); t.objectStore('clips').clear(); t.oncomplete=r;}); const st=JSON.parse(localStorage.getItem('abacus.settings')); st.voice='device'; localStorage.setItem('abacus.settings',JSON.stringify(st)); })()")
+        await pg.evaluate("(async()=>{ const db=await new Promise(r=>{const q=indexedDB.open('abacus-voice',1); q.onsuccess=()=>r(q.result);}); await new Promise(r=>{const t=db.transaction('clips','readwrite'); t.objectStore('clips').clear(); t.oncomplete=r;}); const st=JSON.parse(window.__legacy('settings')); st.voice='device'; localStorage.setItem('abacus.settings',JSON.stringify(st)); })()")
         await pg.reload(); await pg.wait_for_timeout(300); await gate(pg)
         await pg.click('#recStart'); await pg.wait_for_timeout(800)
         box = await (await pg.query_selector('#recBtn')).bounding_box()
