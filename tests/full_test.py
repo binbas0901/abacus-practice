@@ -27,7 +27,7 @@ async def main():
         await pg.click('#exitDrill')
         # 4 recorder
         await pg.hover('#grownups'); await pg.mouse.down(); await pg.wait_for_timeout(1500); await pg.mouse.up()
-        await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk')
+        await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk')
         await pg.wait_for_selector('#parent.active')
         await pg.click('#recStart'); await pg.wait_for_timeout(800)
         for i in range(3):

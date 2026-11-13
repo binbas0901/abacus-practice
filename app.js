@@ -589,7 +589,7 @@ function bixSay(el, text, id, ms=0){
 window.BixSay = bixSay;
 // Tap Bix's bubble to hear the line again (children who cannot read yet).
 document.addEventListener('click', e=>{
-  const b=e.target.closest('.c-topbix .bubble, .lesson-bix .bubble, .gate-bix .bubble'); if (!b) return;
+  const b=e.target.closest('.c-topbix .bubble, .lesson-bix .bubble, .gate-bix .bubble, .gmascot .bubble'); if (!b) return;
   const el=b.closest('[data-line]'); if (!el) return; try{ const [t,id]=JSON.parse(el.dataset.line); Speaker.unlock(); bixSay(el, t, id); }catch(err){}
 });
 function mountBix(el, size){ if (el && !el.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(el, {size, keep:true}); }
@@ -673,7 +673,7 @@ function startLesson(n, from){
   const rods=lessonRods(n);
   if (!lessonAb || lessonAb.rodsMade!==rods){ if (lessonAb) lessonAb.destroy(); lessonAb = DemoAbacus($('#lessonAbacus'), {rods, readout:true, onBead:()=>Sfx.tap(), onChange:(v)=>onLessonBeads(v)}); lessonAb.rodsMade=rods; }
   lessonAb.reset();
-  L = { node:n, phase:'intro', demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
+  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   const bl=$('#bixLesson'); if (!bl.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(bl, {size:96, bubble:false});
   show('lesson'); renderLesson();
@@ -692,7 +692,30 @@ function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson
 function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx:0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
 // The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
 function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>').replace(/×/g,'<i class="times">×</i>'); }
-function cap(kind, text, prob){ $('#capKind').textContent=kind; $('#capText').innerHTML=text; if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? WS.icon('star', 64, WS.colors.ochre) : probHtml(prob||''); } }
+function cap(kind, text, prob){ $('#capKind').textContent=kind; const t=$('#capText'); t.classList.remove('tight'); t.innerHTML=text; if (capLines()>3) t.classList.add('tight'); if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? WS.icon('star', 64, WS.colors.ochre) : probHtml(prob||''); } }
+// Bix's lesson bubble holds at most 3 lines: long explanations are split into extra pages (measured, so it fits every iPad size).
+function capLines(){ const t=$('#capText'); if (!t || !t.offsetParent || !t.textContent.trim()) return 0; const lh=parseFloat(getComputedStyle(t).lineHeight)||30; return Math.round(t.getBoundingClientRect().height/lh); }
+function fitPages(pieces, wrap){
+  const t=$('#capText'), keep=t.innerHTML, out=[]; let cur='';
+  const fits=h=>{ t.innerHTML=wrap(h); return capLines()<=3; };
+  const split=p=>{ const parts=p.split(/(?<=[;:,])\s+/); return parts.length>1 ? parts : [p]; };
+  const queue=pieces.slice();
+  while (queue.length){
+    const p=queue.shift(), next=cur ? cur+' '+p : p;
+    if (fits(next)){ cur=next; continue; }
+    if (cur){ out.push(cur); cur=''; queue.unshift(p); continue; }
+    const sub=split(p); if (sub.length>1){ queue.unshift(...sub); continue; }
+    out.push(p);   // one long clause: cap() makes the text a little smaller
+  }
+  if (cur) out.push(cur); t.innerHTML=keep; return out.map(wrap);
+}
+const sentences=txt=>String(txt||'').split(/(?<=[.!?])\s+/).filter(Boolean);
+// The intro pages: what the skill is (a few sentences per page), then each step of the method on its own page.
+function lessonPages(n){
+  const pages=fitPages(sentences(n.intro).map(esc), h=>h).map(html=>({kind:'New skill', html}));
+  if (Array.isArray(n.method)) n.method.forEach((m,i)=>fitPages(sentences(m).map(esc), h=>`<ol class="method" start="${i+1}"><li>${h}</li></ol>`).forEach(html=>pages.push({kind:`How to: step ${i+1} of ${n.method.length}`, html})));
+  return pages;
+}
 function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); b.className='ws-btn big'+(kind?' '+kind:''); b.innerHTML=(icon?WS.icon(icon, 30, 'currentColor', 3):'')+`<span>${label}</span>`; }
 function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); }
 // Lesson progress as a row of beads (one per demo / try): done jade, the one you are on indigo, the rest pale.
@@ -704,7 +727,14 @@ function renderLessonSteps(){
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
   $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided'));
-  if (L.phase==='intro'){ cap('New skill', esc(n.intro)+(Array.isArray(n.method) ? '<ol class="method">'+n.method.map(m=>`<li>${esc(m)}</li>`).join('')+'</ol>' : ''), ''); lessonBtn('Show me', 'play', 'ws-nudge'); lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); return; }
+  if (L.phase==='intro'){
+    $('#capProb').innerHTML=''; $('#capProb').dataset.p='';
+    if (!L.pages) L.pages=lessonPages(n);
+    const pg=L.pages[Math.min(L.page, L.pages.length-1)], last=L.page>=L.pages.length-1;
+    cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null, last?'ws-nudge':'');
+    if (L.page===0){ lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); }
+    return;
+  }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
     cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonBtn('Skip', null, 'maple'); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
@@ -739,7 +769,7 @@ function onLessonBeads(v){
 function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
 function advanceLesson(){
   const n=L.node; animToken++; L.busy=false; lessonAb.clearHighlights();
-  if (L.phase==='intro'){ L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
+  if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; } L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
   else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase='done'; }
@@ -747,6 +777,8 @@ function advanceLesson(){
   renderLesson();
 }
 $('#lessonNext').addEventListener('click', ()=>advanceLesson());
+// Other screens and the tests can open any skill's lesson.
+window.Lessons = { start: (n, from)=>startLesson(typeof n==='string' ? C.BY_ID[n] : n, from) };
 // What to do on a "your turn" step, in words (multiplication starts from 0 and ends on the product).
 function guidedText(ls, pair, lead){
   const [x,y]=pair;
@@ -1230,34 +1262,60 @@ window.LevelTest = { start: startLevelTest, certificates, show: c=>showCertifica
 
 /* ---------------- parent gate ---------------- */
 let gateAnswer=0, gateNext=null, gateFrom='home'; $('#grownups').addEventListener('click', ()=>openGate());
-// Grown-ups gate: a 3-digit number written in words, typed as digits. Soroban kids can multiply,
-// so a sum is too easy; reading and converting "seven hundred forty-two" is an adult-level task (Apple guideline 1.3).
-// Children who cannot read get a picture and Bix saying "Go get a grown-up!".
-const GATE_ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
-const GATE_TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
-function numberWords(n){ const h=Math.floor(n/100), r=n%100; let s=h?GATE_ONES[h]+' hundred':''; if(r){ s+=(s?' ':'')+(r<20?GATE_ONES[r]:GATE_TENS[Math.floor(r/10)]+(r%10?'-'+GATE_ONES[r%10]:'')); } return s; }
+// Grown-ups gate (Apple Kids Category parental gate). Two steps, both beyond this app's children:
+//  1. press and hold a button for 3 seconds (the bar fills; letting go early starts again), then
+//  2. a written instruction: "Type the fourth, first and second digits of 5 2 8 9 3". Our oldest children read big
+//     numbers and add 4-digit sums, so a number in words or a sum is not enough; following an ordinal, re-ordering
+//     instruction is an adult reading task that takes a grown-up about 5 seconds.
+// Children who cannot read get a picture and Bix saying "Go get a grown-up!". window.__gateAnswer / __gateHold are test hooks.
+const GATE_ORD=['first','second','third','fourth','fifth'], GATE_HOLD_MS=3000;
 // A grown-up holding a child's hand: the picture says "fetch a grown-up" without words.
 const GATE_ART = `<svg width="190" height="200" viewBox="0 0 190 200"><ellipse class="a-line" cx="95" cy="190" rx="80" ry="8"/>
   <circle class="a-indigo" cx="62" cy="34" r="22"/><path class="a-indigo" d="M30 84a32 32 0 0 1 64 0v60H30z"/><rect class="a-indigo-dk" x="36" y="140" width="20" height="46" rx="8"/><rect class="a-indigo-dk" x="68" y="140" width="20" height="46" rx="8"/>
   <path class="a-indigo-s" d="M90 92 Q112 118 128 120" stroke-width="13" fill="none" stroke-linecap="round"/>
   <circle class="a-ochre" cx="140" cy="94" r="16"/><path class="a-ochre" d="M118 136a22 22 0 0 1 44 0v26h-44z"/><rect class="a-ochre-dk" x="122" y="158" width="14" height="28" rx="6"/><rect class="a-ochre-dk" x="144" y="158" width="14" height="28" rx="6"/></svg>`;
+// A new question: 5 digits (1-9, so no leading-zero answers) and 3 different positions in a random order.
+function gateQuestion(){
+  const digits=Array.from({length:5}, ()=>1+Math.floor(Math.random()*9));
+  const pos=[0,1,2,3,4].sort(()=>Math.random()-0.5).slice(0,3);
+  gateAnswer=+pos.map(i=>digits[i]).join(''); window.__gateAnswer=gateAnswer;
+  const ord=pos.map(i=>'<b>'+GATE_ORD[i]+'</b>');
+  $('#gateQ').innerHTML='<small>Type these digits, in this order</small><span class="gw">The '+ord[0]+', '+ord[1]+' and '+ord[2]+' digits of</span>'
+    +'<span class="gnum" aria-label="'+digits.join(' ')+'">'+digits.map(d=>'<i>'+d+'</i>').join('')+'</span>';
+  $('#gateA').value='';
+}
+// Step 1 -> 2: show the question (after a full hold; tests may call window.__gateHold()).
+function gateReveal(){ const c=$('#gateCard'); if (c.dataset.step==='ask') return; c.dataset.step='ask'; c.setAttribute('aria-labelledby','gateQ'); $('#gateMsg').textContent=''; gateQuestion(); setTimeout(()=>$('#gateA').focus(),50); }
+window.__gateHold=gateReveal;
+const GateHold={ t0:0, raf:0,
+  start(){ if (this.t0 || $('#gateCard').dataset.step!=='hold') return; this.t0=performance.now(); $('#gateHold').classList.add('holding'); $('#gateMsg').textContent=''; $('#gateHoldL').textContent='Keep holding…'; this.tick(); },
+  tick(){ const p=Math.min(1,(performance.now()-this.t0)/GATE_HOLD_MS); $('#gateHold').style.setProperty('--p', p.toFixed(3));
+    if (p>=1){ this.reset(); Sfx.tap(); gateReveal(); return; } this.raf=requestAnimationFrame(()=>this.tick()); },
+  stop(){ if (!this.t0) return; const early=performance.now()-this.t0 < GATE_HOLD_MS; this.reset(); if (early) $('#gateMsg').textContent='Keep holding until the bar is full.'; },
+  reset(){ cancelAnimationFrame(this.raf); this.t0=0; const b=$('#gateHold'); b.classList.remove('holding'); b.style.setProperty('--p', 0); $('#gateHoldL').textContent='Hold'; },
+};
+(()=>{ const b=$('#gateHold'); b.querySelector('.gh-ic').innerHTML=WS.icon('lock', 28, 'currentColor', 2.6);
+  b.addEventListener('pointerdown', e=>{ e.preventDefault(); try{ b.setPointerCapture(e.pointerId); }catch(err){} GateHold.start(); });
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev, ()=>GateHold.stop()));
+  b.addEventListener('contextmenu', e=>e.preventDefault());
+  b.addEventListener('keydown', e=>{ if ((e.key===' '||e.key==='Enter') && !e.repeat){ e.preventDefault(); GateHold.start(); } });
+  b.addEventListener('keyup', e=>{ if (e.key===' '||e.key==='Enter') GateHold.stop(); });
+})();
 function openGate(next){
   const g=$('#gate');
-  if (!g.classList.contains('active')){ gateNext = typeof next==='string' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home'; }
-  gateAnswer=100+Math.floor(Math.random()*900); window.__gateAnswer=gateAnswer;
-  $('#gateQ').innerHTML='<small>Grown-ups: type this number in digits</small><span class="gw">'+numberWords(gateAnswer)+'</span>'; $('#gateA').value='';
-  if (!g.classList.contains('active')) $('#gateMsg').textContent='';
-  if (!g.classList.contains('active')){
-    if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
-    show('gate'); const bg=$('#bixGate'); mountBix(bg, 80); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
-  }
-  setTimeout(()=>$('#gateA').focus(),50);
+  if (g.classList.contains('active')) return;
+  gateNext = typeof next==='string' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home';
+  GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
+  gateAnswer=-1; window.__gateAnswer=null;
+  if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
+  show('gate'); const bg=$('#bixGate'); mountBix(bg, 80); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
 }
-function leaveGate(){ Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
+function leaveGate(){ GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
 $('#gateOk').addEventListener('click', ()=>{
-  if(parseInt($('#gateA').value,10)===gateAnswer){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
-  else { const c=$('#gate .gate-card'); c.classList.remove('ws-shake'); void c.offsetWidth; c.classList.add('ws-shake'); openGate(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; }
+  if ($('#gateCard').dataset.step!=='ask') return;
+  if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
+  else { const c=$('#gateCard'); c.classList.remove('ws-shake'); void c.offsetWidth; c.classList.add('ws-shake'); gateQuestion(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; setTimeout(()=>$('#gateA').focus(),50); }
 });
 $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
 
@@ -1437,7 +1495,7 @@ async function renderParent(){
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#soundTest').onclick=async()=>{ Speaker.unlock(); Sfx.star(); await sleep(450); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); Diag.add('sound test ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); };
-  $('#guVer').textContent='Bix Abacus '+(($('#ver')&&$('#ver').textContent)||'');
+  $('#guVer').textContent='Bix Abacus v'+appVersion();
   $('#diagTts').onclick=async()=>{ Speaker.unlock(); const r=await Speaker.sayDevice('seven, plus three'); Diag.add('device test: '+r); $('#diagLog').textContent=Diag.lines.join('\n'); };
   $('#diagBeep').onclick=()=>{ Speaker.unlock(); Sfx.star(); Diag.add('beep ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); $('#diagLog').textContent=Diag.lines.join('\n'); };
   const st=$('#sessions tbody'); st.innerHTML='';
@@ -1449,6 +1507,8 @@ async function renderParent(){
 $('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
 // Grown-up icons in static markup (data-ic), drawn from the kit.
 $$('#parent .gu-ic[data-ic]').forEach(el=>{ el.innerHTML=WS.icon(el.dataset.ic, 20, 'currentColor', 2.6); });
+// The version lives only here in grown-ups (the child's home shows none): read from app.js's own ?v= cache tag.
+function appVersion(){ const sc=document.querySelector('script[src*="app.js"]'); const m=sc && /[?&]v=([\w.]+)/.exec(sc.getAttribute('src')); return m ? m[1] : ''; }
 // Sound diagnostics are for support only: five quick taps on the version line show them.
 (()=>{ let taps=[]; $('#guVer').addEventListener('click', ()=>{ const now=Date.now(); taps=taps.filter(t=>now-t<1500).concat(now);
   if (taps.length>=5){ taps=[]; const d=$('#guDiag'); d.hidden=!d.hidden; if (!d.hidden){ $('#diagLog').textContent=Diag.lines.join('\n'); d.scrollIntoView({behavior:'smooth', block:'center'}); } } }); })();

@@ -112,7 +112,7 @@
 </section>
 
 <section id="play" class="screen ws-screen ws-play">
-  <header class="c-top"><button class="ws-iconbtn exit" id="exitPlay" aria-label="Back home"></button><h1 class="ws-h1">Play</h1><div class="c-topbix" id="bixPlay"></div></header>
+  <header class="c-top"><button class="ws-iconbtn exit" id="exitPlay" aria-label="Back home"></button><span class="play-ic" id="playIc" aria-hidden="true"></span><h1 class="ws-h1">Play</h1><div class="c-topbix" id="bixPlay"></div></header>
   <div class="play-body"><div class="gcards" id="playCards"></div></div>
 </section>
 
@@ -252,11 +252,17 @@
   <header class="c-top"><button class="ws-iconbtn exit" id="gateBack" aria-label="Back"></button></header>
   <div class="gate-body">
     <div class="gate-kid"><div class="gate-bix" id="bixGate"></div><div class="gate-art" id="gateArt" aria-hidden="true"></div></div>
-    <div class="gate-card" role="group" aria-labelledby="gateQ">
-      <div class="q" id="gateQ"></div>
-      <input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="?" aria-label="The number in digits">
+    <div class="gate-card" id="gateCard" data-step="hold" role="group" aria-labelledby="gateHoldT">
+      <div class="gate-hold">
+        <div class="q"><small>For grown-ups</small><span id="gateHoldT">Press and hold for 3 seconds</span></div>
+        <button class="gate-holdbtn" id="gateHold" type="button" aria-describedby="gateHoldT"><i class="gh-fill" aria-hidden="true"></i><span class="gh-label"><span class="gh-ic" aria-hidden="true"></span><span id="gateHoldL">Hold</span></span></button>
+      </div>
+      <div class="gate-ask">
+        <div class="q" id="gateQ"></div>
+        <input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="?" aria-label="Your answer">
+        <button class="ws-btn indigo gate-open" id="gateOk">Open</button>
+      </div>
       <div class="gate-msg" id="gateMsg" role="status" aria-live="polite"></div>
-      <button class="ws-btn indigo gate-open" id="gateOk">Open</button>
     </div>
   </div>
 </section>

@@ -16,7 +16,10 @@ async def main():
         # Today = lesson for bf_add_a (lesson not done)
         print('today:', await pg.text_content('#todayTitle'))
         await pg.click('#todayGo'); await pg.wait_for_timeout(400); await pg.screenshot(path='/tmp/p2_lesson_intro.png')
-        await pg.click('#lessonNext'); await pg.wait_for_timeout(2500); await pg.screenshot(path='/tmp/p2_lesson_demo.png')
+        for _ in range(6):   # the intro may span a few pages (Bix's bubble holds at most 3 lines)
+            await pg.click('#lessonNext'); await pg.wait_for_timeout(300)
+            if (await pg.text_content('#capKind')).startswith('Watch'): break
+        await pg.wait_for_timeout(2200); await pg.screenshot(path='/tmp/p2_lesson_demo.png')
         # skip through demos
         for i in range(4): await pg.click('#lessonNext'); await pg.wait_for_timeout(300)
         print('phase caption:', await pg.text_content('#capKind'))
@@ -53,7 +56,7 @@ async def main():
         await pg.click('#exitDrill')
         # parent
         await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
-        await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(300)
+        await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(300)
         await pg.screenshot(path='/tmp/p2_parent.png')
         print('errors:', errs); await b.close()
 asyncio.run(main())

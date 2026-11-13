@@ -13,8 +13,8 @@
 .gu-title .ws-h1{font-size:32px;font-weight:600;color:var(--ws-ink);line-height:1.1}
 .gu-sub{font-size:16px;color:var(--ws-ink-2)}
 .gu-kids.ws-seg{margin-left:auto;background:var(--ws-mist);flex-wrap:wrap}
-.gu-kids.ws-seg button{min-height:38px;padding:8px 18px;font-size:17px}
-.gu-kids.ws-seg button.gu-add{padding:8px 12px;display:flex;align-items:center}
+.gu-kids.ws-seg button{min-height:44px;padding:8px 18px;font-size:17px}   /* grown-up targets >= 44px */
+.gu-kids.ws-seg button.gu-add{min-width:44px;padding:8px 13px;display:flex;align-items:center;justify-content:center}
 .gu-share{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 20px;border:0;border-radius:var(--ws-r-pill);background:var(--ws-indigo);color:var(--ws-white);
   font-family:var(--ws-display);font-weight:600;font-size:18px;cursor:pointer;transition:transform .08s ease}
 .gu-share:active{transform:translateY(2px)}
@@ -87,9 +87,11 @@
 .ws-grownup select:focus,.ws-grownup .txt:focus,.ws-grownup input[type=text]:focus{outline:none;border-color:var(--ws-indigo)}
 .ws-grownup input[type=range]{width:200px;accent-color:var(--ws-indigo)}
 .ws-grownup .val{min-width:56px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
-.ws-grownup .switch{border:0;cursor:pointer;width:56px;height:32px;border-radius:16px;background:var(--ws-mist)}
+/* toggles: the track looks 56×32, the target is 68×44 (a transparent edge around the track) */
+.ws-grownup .switch{border:6px solid transparent;background-clip:padding-box;cursor:pointer;width:68px;height:44px;border-radius:22px;background-color:var(--ws-mist);box-sizing:border-box;padding:0}
 .ws-grownup .switch::after{top:4px;left:4px;width:24px;height:24px}
-.ws-grownup .switch.on{background:var(--ws-jade)} .ws-grownup .switch.on::after{left:28px}
+.ws-grownup .switch.on{background-color:var(--ws-jade)} .ws-grownup .switch.on::after{left:28px}
+.ws-grownup .switch:focus-visible{outline:3px solid var(--ws-ochre);outline-offset:0}
 .ws-grownup .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-start}
 .ws-grownup .gu-row{margin:12px 0 6px}
 .ws-grownup .gu-adj{flex-wrap:nowrap}

@@ -14,7 +14,7 @@ LEGACY = r"""(()=>{ if (localStorage.getItem('abacus.children')) return;
 })()"""
 async def gate(pg):
     await pg.click('#grownups'); await pg.wait_for_timeout(300)
-    await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_timeout(500)
+    await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_timeout(500)
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])

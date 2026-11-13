@@ -25,7 +25,13 @@
   const POPS = 12;   // friends per Friend Pop round (no clock: the round ends when they are all found)
   const WSI = (n, sz, c, w) => root.WS ? root.WS.icon(n, sz, c, w) : '';
   // Bix says a line (main or extra voice pack; app.js provides BixSay), else just the bubble.
-  function bixLine(text, id, ms) { if (root.BixSay) root.BixSay(bix(), text, id, ms); else root.Fun.Mascot.say(bix(), text, ms, id); }
+  // quiet: show the caption without speaking (the bubble's speaker mark says it on tap).
+  function bixLine(text, id, ms, quiet) {
+    const el = bix();
+    if (quiet) { root.Fun.Mascot.say(el, text, ms, null, id); if (el) el.dataset.line = JSON.stringify([text, id || '']); }
+    else if (root.BixSay) root.BixSay(el, text, id, ms); else root.Fun.Mascot.say(el, text, ms, id);
+    const b = el && el.querySelector('.bubble'); if (b && id) b.classList.add('has-voice');   // extra-pack lines have a voice too
+  }
   // A row of little beads for "how far through the round": done ones jade (or walnut when missed), the current one indigo.
   function beadDots(n, done, marks) {
     return Array.from({ length: n }, (_, i) => `<i class="gdot${i < done ? (marks && marks[i] === false ? ' miss' : ' ok') : i === done ? ' cur' : ''}"></i>`).join('');
@@ -74,23 +80,21 @@
     return api;
   }
 
-  /* ---------- number pad: the practice keypad look ----------
-     3×3 grid 7-8-9 / 4-5-6 / 1-2-3, bottom row ⌫ then a wide 0; the red Check button sits outside the grid.
+  /* ---------- number pad: the ONE kit keypad (WS.keypad, kit.js) + a red Check button outside the grid ----------
      Keys and Check stay dimmed until the question is asked. */
   function pad(el, ansEl, maxLen = 3) {
-    el.innerHTML = `<div class="g-keys">${[7, 8, 9, 4, 5, 6, 1, 2, 3].map(k => `<button data-k="${k}">${k}</button>`).join('')}`
-      + `<button data-k="del" class="del" aria-label="Delete">${WSI('back', 30, 'currentColor', 2.8)}</button><button data-k="0" class="zero">0</button></div>`
-      + `<button class="ws-btn g-check" data-k="go" disabled>${WSI('check', 30, 'currentColor', 3)}Check</button>`;
+    el.innerHTML = '';
     let val = '', waiting = null;
-    const go = el.querySelector('[data-k=go]');
+    const kp = root.WS.keypad(el, {
+      onKey(d) { if (!waiting) return; App().Sfx.tap(); if (val.length < maxLen) set(val + d); },
+      onBackspace() { if (!waiting) return; App().Sfx.tap(); set(val.slice(0, -1)); },
+    });
+    const go = document.createElement('button');
+    go.type = 'button'; go.className = 'ws-btn g-check'; go.dataset.k = 'go'; go.disabled = true;
+    go.innerHTML = `${WSI('check', 30, 'currentColor', 3)}Check`; el.appendChild(go);
     const set = v => { val = v; ansEl.textContent = v || '?'; ansEl.classList.toggle('empty', !v); go.disabled = !waiting || v === ''; };
-    const idle = on => el.classList.toggle('idle', on);
-    el.onclick = e => {
-      const b = e.target.closest('button'); if (!b || !waiting) return; const k = b.dataset.k; App().Sfx.tap();
-      if (k === 'del') set(val.slice(0, -1));
-      else if (k === 'go') { if (val !== '') { const w = waiting; waiting = null; idle(true); go.disabled = true; w(parseInt(val, 10)); } }
-      else if (val.length < maxLen) set(val + k);
-    };
+    const idle = on => { el.classList.toggle('idle', on); kp.setEnabled(!on); };
+    go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; idle(true); go.disabled = true; w(parseInt(val, 10)); };
     idle(true); set('');
     return {
       ask() { return new Promise(r => { waiting = r; idle(false); set(''); }); },
@@ -101,11 +105,12 @@
   /* ---------- results card ---------- */
   function results(r, block) {
     return new Promise(res => {
-      const st = $('#gameStage'); const div = document.createElement('div'); div.className = 'gresult ws-pop';
+      const scrim = document.createElement('div'); scrim.className = 'gscrim';
+      const div = document.createElement('div'); div.className = 'gresult ws-pop';
       div.setAttribute('role', 'dialog'); div.setAttribute('aria-label', r.big);
       div.innerHTML = `<div class="gr-icon g-${block}">${r.icon}</div><div class="gr-big">${r.big}</div>${r.dots ? `<div class="gr-dots" aria-hidden="true">${r.dots}</div>` : ''}<div class="gr-sub">${r.sub}</div>${r.best ? `<div class="gr-best">${WSI('star', 26, '#E8A93A')}${r.bestLine || 'New personal best!'}</div>` : r.bestText ? `<div class="gr-sub2">${r.bestText}</div>` : ''}
         <div class="row"><button class="ws-btn jade ws-nudge" data-a="again">${WSI('retry', 28, 'currentColor', 2.8)}Play again</button><button class="ws-btn maple" data-a="done">${WSI('check', 28, 'currentColor', 3)}Done</button></div>`;
-      st.appendChild(div);
+      scrim.appendChild(div); $('#game').appendChild(scrim);
       div.onclick = e => { const b = e.target.closest('button'); if (b) res(b.dataset.a); };
     });
   }
@@ -118,7 +123,21 @@
     const st = $('#gameStage'), fam = family(), N = App().gamePops || POPS;
     st.innerHTML = `<div class="pop-head"><div class="pop-q" id="popQ"></div><div class="pop-hint" id="popHint"></div></div><div class="pop-field" id="popField"></div>`;
     const field = $('#popField');
-    let score = 0, wrong = 0, target = null, bubbles = [], spawnIn = 0.2, ended = false, last = performance.now();
+    let score = 0, wrong = 0, target = null, bubbles = [], spawnIn = 0.2, ended = false, last = performance.now(), back = 0;
+    const GO = 'Find the friend and pop it!';
+    // Bubbles rise in lanes, so they never overlap: one speed per round, a new bubble enters a lane only once the
+    // last one in it has risen clear, and the sway stays inside the lane. They appear and fade INSIDE the frame.
+    const PAD = 10, SWAY = 8, GAP = 10, SPEED = 70;
+    let lanes = [], size = 100, W = 0, H = 0;
+    function layout() {
+      W = field.clientWidth; H = field.clientHeight; if (!W) return false;
+      const probe = document.createElement('button'); probe.className = 'bub'; probe.style.visibility = 'hidden'; field.appendChild(probe);
+      size = probe.offsetWidth || 100; probe.remove();
+      const lw = size + 2 * SWAY + GAP, n = Math.max(2, Math.floor((W - 2 * PAD) / lw)), spare = (W - 2 * PAD - n * lw) / 2;
+      lanes = Array.from({ length: n }, (_, i) => ({ x: PAD + spare + i * lw + SWAY + GAP / 2, last: null }));
+      return true;
+    }
+    const top = () => PAD, bottom = () => H - size - PAD;
     function newTarget() {
       const F = fam === 'mix' ? (Math.random() < 0.5 ? 5 : 10) : fam;
       let a; do { a = rnd(1, F - 1); } while (target && target.a === a && F > 2);
@@ -126,45 +145,57 @@
       $('#popQ').innerHTML = `<span class="pq-a">${a}</span><span class="pq-op">+</span><span class="pq-q">?</span><span class="pq-op">=</span><span class="pq-f">${F}</span>`;
       $('#popHint').textContent = F === 10 ? `Find ${a}'s big friend (makes 10)` : `Find ${a}'s small friend (makes 5)`;
     }
-    function spawn() {
-      const W = field.clientWidth, H = field.clientHeight; if (!W) return;
+    function freeLanes(y) { return lanes.filter(l => !l.last || l.last.gone || l.last.y <= y - size - GAP); }
+    function spawn(y) {
+      if (!W && !layout()) return false;
+      if (y === undefined) y = bottom();
+      const free = freeLanes(y); if (!free.length) return false;
+      const lane = free[Math.floor(Math.random() * free.length)];
       const onScreen = bubbles.some(b => !b.gone && b.v === target.ans);
       // Always one answer on screen; after that mostly other numbers, so she has to look for it.
       let v; if (!onScreen || Math.random() < 0.18) v = target.ans; else { do { v = rnd(1, target.F - 1); } while (v === target.ans && target.F > 2); }
-      const el = document.createElement('button'); el.className = 'bub'; el.textContent = v; el.dataset.v = v;
-      const b = { el, v, x: rnd(10, Math.max(10, W - 110)), y: H + 10, sp: 60 + Math.random() * 40, ph: Math.random() * 6, gone: false };
+      const el = document.createElement('button'); el.className = 'bub in'; el.textContent = v; el.dataset.v = v;
+      el.addEventListener('animationend', () => el.classList.remove('in'), { once: true });
+      const b = { el, v, lane, y, ph: Math.random() * 6, gone: false };
       el.addEventListener('pointerdown', e => { e.preventDefault(); tap(b); });
-      field.appendChild(el); bubbles.push(b);
+      place(b); field.appendChild(el); bubbles.push(b); lane.last = b;
+      return true;
     }
+    // The CSS translate property (not transform) places it, so the pop / wobble / fade-in scale and rotate in place.
+    function place(b) { b.el.style.translate = `${(b.lane.x + Math.sin(b.ph) * SWAY).toFixed(1)}px ${b.y.toFixed(1)}px`; }
+    function leave(b) { b.gone = true; b.el.classList.add('out'); setTimeout(() => b.el.remove(), 320); }
     function tap(b) {
       if (ended || b.gone) return;
       if (b.v === target.ans) {
         b.gone = true; b.el.classList.add('popped'); setTimeout(() => b.el.remove(), 320);
         App().Sfx.pop(); score++; setScore(beadDots(N, score));
         if (score >= N) { ended = true; return; }
-        if (score % 4 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); const c = pick([['Great popping!', 'pop_cheer'], [`${score} friends!`, null], ['Friend finder!', null]]); root.Fun.Mascot.say(bix(), c[0], 1800, c[1]); }
+        if (score % 4 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); const c = pick([['Great popping!', 'pop_cheer'], [`${score} friends!`, null], ['Friend finder!', null]]); bixLine(c[0], c[1], 0); clearTimeout(back); back = setTimeout(() => { if (!ended && tok === token) bixLine(GO, 'pop_go', 0, true); }, 2200); }
         newTarget();
       } else { wrong++; b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore(beadDots(N, 0));
-    requestAnimationFrame(() => { const H = field.clientHeight; for (let k = 0; k < 4; k++) { spawn(); const b = bubbles[bubbles.length - 1]; if (b) b.y = H * (0.25 + 0.18 * k); } });
-    root.Fun.Mascot.say(bix(), 'Pop the friend!', 2000, 'pop_go');
+    requestAnimationFrame(() => { if (!layout()) return; for (let k = 0; k < 4; k++) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });
+    bixLine(GO, 'pop_go', 0);
     return new Promise(res => {
       function frame(now) {
         if (tok !== token) return res(null);
         const dt = Math.min(0.05, (now - last) / 1000); last = now;
         if (ended) { setTimeout(() => { field.querySelectorAll('.bub').forEach(e => e.remove()); $('#popQ').innerHTML = ''; $('#popHint').textContent = ''; res(tok === token ? { score, wrong, of: N } : null); }, 450); return; }
-        spawnIn -= dt; if (spawnIn <= 0) { spawn(); spawnIn = 0.75 + Math.random() * 0.45; }
+        if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H)) layout_keep();
+        spawnIn -= dt;
+        if (spawnIn <= 0) { const need = !bubbles.some(b => !b.gone && b.v === target.ans); spawnIn = spawn() ? 0.75 + Math.random() * 0.45 : (need ? 0.05 : 0.3); }
         for (const b of bubbles) {
-          if (b.gone) continue; b.y -= b.sp * dt; b.ph += dt * 2.2;
-          b.el.style.transform = `translate(${b.x + Math.sin(b.ph) * 12}px, ${b.y}px)`;
-          if (b.y < -120) { b.gone = true; b.el.remove(); }
+          if (b.gone) continue; b.y -= SPEED * dt; b.ph += dt * 2.2; place(b);
+          if (b.y <= top()) leave(b);
         }
         bubbles = bubbles.filter(b => !b.gone);
         requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
     });
+    // The window changed size (rotation): new lanes; bubbles already rising keep their lane until they leave.
+    function layout_keep() { const old = lanes; layout(); bubbles.forEach(b => { const i = old.indexOf(b.lane); if (i < 0 || i >= lanes.length) leave(b); else { const L = lanes[i]; b.lane = L; if (!L.last || L.last.y < b.y) L.last = b; } }); }
   }
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
@@ -176,7 +207,7 @@
     const a = App(), st = $('#gameStage');
     const maxR = a.nodeIndex() >= a.idx('bf_add_a') ? 3 : 2; const N = 10;
     let rods = 1, show = 2.0, streak = 0, misses = 0, score = 0; const marks = [];
-    st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-msg" id="rdMsg" aria-live="polite"></div><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${WSI('eye', 72, '#F4E3C3', 2.4)}<b>?</b></span></div></div></div>
+    st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${WSI('eye', 72, '#F4E3C3', 2.4)}<b>?</b></span></div></div></div>
       <div class="rd-right"><div class="feedback" id="rdFb" aria-live="polite"></div><div class="answer empty" id="rdAns">?</div><div class="pad g-pad" id="rdPad"></div></div></div>`;
     const P = pad($('#rdPad'), $('#rdAns'));
     let ab = null, abRods = 0;
@@ -186,15 +217,16 @@
       if (abRods !== rods) { if (ab) ab.destroy(); ab = demoAbacus($('#rdAb'), { rods, readOnly: true }); abRods = rods; $('#rdAb').dataset.rods = rods; }
       const v = rods === 1 ? rnd(1, 9) : rnd(Math.pow(10, rods - 1), Math.pow(10, rods) - 1);
       ab.value = v;
-      $('#rdCover').classList.remove('on'); $('#rdMsg').textContent = 'Look!'; if (i === 0) bixLine('Look closely at the beads!', 'reader_look', 2200);
+      // Bix's bubble is the one instruction (spoken on the first number; afterwards a quiet caption, tap to hear it).
+      $('#rdCover').classList.remove('on'); bixLine('Look closely at the beads!', 'reader_look', 0, i > 0);
       await sleep(show * 1000); if (tok !== token) return null;
-      $('#rdCover').classList.add('on'); $('#rdMsg').textContent = 'What number was it?'; if (i === 0) bixLine('What number was it?', 'reader_ask', 2200);
+      $('#rdCover').classList.add('on'); bixLine('What number was it?', 'reader_ask', 0, i > 0);
       const ans = await P.ask(); if (tok !== token) return null;
       $('#rdCover').classList.remove('on');
       if (ans === v) {
         score++; streak++; misses = 0; show = Math.max(0.6, show * 0.85); marks[i] = true; setScore(beadDots(N, i + 1, marks));
         $('#rdFb').textContent = 'Yes!'; $('#rdFb').className = 'feedback ok'; a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
-        if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; $('#rdMsg').textContent = 'Super detective! One more rod!'; root.Fun.Mascot.say(bix(), 'More beads now!', 2000, 'reader_more'); await sleep(1500); }
+        if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; bixLine('Super detective! More beads now!', 'reader_more', 0); await sleep(1500); }
         else await sleep(900);
       } else {
         streak = 0; misses++; show = Math.min(3.5, show * 1.25); marks[i] = false; setScore(beadDots(N, i + 1, marks));
@@ -219,7 +251,7 @@
     $('#bdClear').onclick = () => { ab.reset(); a.Sfx.tap(); };
     $('#bdSay').onclick = () => { if (want !== null) a.say(want); };
     await a.voiceReady();
-    bixLine('Make this number on the abacus!', 'build_go', 2400);
+    bixLine('Make this number on the abacus!', 'build_go', 0);
     let lastV = -1;
     for (let k = 0; k < N; k++) {
       if (tok !== token) return null;
@@ -231,7 +263,7 @@
       if (tok !== token) return null;
       ab.setReadOnly(true); setScore(beadDots(N, k + 1));
       a.Sfx.pop(); a.Sfx.ok(); root.Fun.Mascot.react(bix(), k === N - 1 ? 'cheer' : 'happy');
-      if (k === Math.floor(N / 2) - 1) root.Fun.Mascot.say(bix(), 'Halfway there!', 1500, 'build_half');
+      if (k === Math.floor(N / 2) - 1) { bixLine('You’re halfway there!', 'build_half', 0); setTimeout(() => { if (tok === token && !document.querySelector('#game .gscrim')) bixLine('Make this number on the abacus!', 'build_go', 0, true); }, 2400); }
       await sleep(650);
     }
     return { n: N, rods };
@@ -239,7 +271,7 @@
 
   /* ---------- runner ---------- */
   async function open(id) {
-    const a = App(); const my = ++token; a.Sfx.tap(); a.unlock();
+    const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim();
     const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.art}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
     root.Fun.Mascot.mount(bix(), { size: 76 });
     a.show('game');
@@ -247,7 +279,7 @@
     if (!r || my !== token) return;
     const best = root.Fun.data.best; let isBest = false, card;
     if (id === 'pop') {
-      best.popTotal = (best.popTotal || 0) + r.score; isBest = r.wrong === 0;
+      best.popTotal = popTotal(best) + r.score; isBest = r.wrong === 0;
       card = { icon: GAMES.pop.art, big: `${r.score} friends found!`, sub: isBest ? 'Every pop was a friend.' : 'popped in one round', best: isBest, bestLine: 'Perfect popping!', bestText: `${best.popTotal} friends popped so far` };
     } else if (id === 'reader') {
       isBest = r.score > (best.reader || 0); if (isBest) best.reader = r.score;
@@ -257,18 +289,23 @@
       card = { icon: GAMES.build.art, big: `${r.n} numbers made!`, sub: 'all on the abacus', best: false, bestText: `${best.buildTotal} numbers built so far` };
     }
     root.Fun.save();
-    root.Fun.Mascot.react(bix(), 'cheer', 2000); const newBest = isBest && id === 'reader'; root.Fun.Mascot.say(bix(), newBest ? 'A new best! Wow!' : 'Great playing!', 3000, newBest ? 'game_best' : 'game_good');
+    root.Fun.Mascot.react(bix(), 'cheer', 2000); const newBest = isBest && id === 'reader'; bixLine(newBest ? 'A new best! Wow!' : 'Great playing!', newBest ? 'game_best' : 'game_good', 0);
     if (isBest) root.Fun.confetti(60);
     a.activityDone('game', { gold: isBest, game: id });
     const choice = await results(card, g.block);
     if (my !== token) return;
-    if (choice === 'again') open(id); else { token++; a.goPlay(); }
+    if (choice === 'again') open(id); else { token++; clearScrim(); a.goPlay(); }
   }
-  function stop() { token++; }
+  function stop() { token++; clearScrim(); }
+  function clearScrim() { document.querySelectorAll('#game .gscrim').forEach(e => e.remove()); }
+  // Friends popped so far. Older versions kept only a best round in best.pop (a timed score): a child who played
+  // then has played Friend Pop, so it counts towards the total and her card never says "New!" again.
+  function popTotal(best) { return best.popTotal || best.pop || 0; }
   function renderHub() {
     const best = root.Fun.data.best; const box = $('#playCards'); box.innerHTML = '';
+    const ic = $('#playIc'); if (ic && !ic.innerHTML) ic.innerHTML = WSI('game', 34, 'currentColor', 2.6);
     for (const [id, g] of Object.entries(GAMES)) {
-      const chip = id === 'pop' ? (best.popTotal ? `${best.popTotal} friends popped` : '')
+      const chip = id === 'pop' ? (popTotal(best) ? `${popTotal(best)} friends popped` : '')
         : id === 'reader' ? (best.reader ? `Best: ${best.reader} green beads` : '')
         : (best.buildTotal ? `${best.buildTotal} numbers built` : '');
       const el = document.createElement('button'); el.className = `gcard ws-block tall ${g.block}`; el.dataset.game = id; el.setAttribute('aria-label', `${g.name}: ${g.desc}`);
