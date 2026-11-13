@@ -51,7 +51,7 @@ async def main():
         check('Look drill: Bix says "You can do it!" (and sometimes cheers)', pl and pl[0]=='drill_look', pl)
         await pg.click('#exitDrill'); await pg.wait_for_timeout(300)
         # 5. grown-ups: turn Bix off
-        await pg.click('#grownups'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)
+        await pg.click('#grownups'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)
         await pg.click('#sBixTest'); await pg.wait_for_timeout(800); pl=await plays(pg); check('Grown-ups test button plays Bix', len(pl)==1)
         await pg.click('#sBixTalks'); await pg.click('#parentDone'); await pg.wait_for_timeout(400)
         await pg.click('#bixHome .bix'); await pg.wait_for_timeout(800)

@@ -6,6 +6,7 @@
   padding:24px 40px 34px;box-sizing:border-box;gap:24px;overflow:hidden}
 .c-top{display:flex;align-items:center;gap:20px;min-height:72px;flex:none}
 .c-top .exit{color:var(--ws-maple);flex:none}
+.c-top .exit.ws-iconbtn{width:64px;height:64px}   /* child targets >= 60px (door, play, game, lesson, gate) */
 .c-top .ws-h1{white-space:nowrap}
 .c-topbix.bixwrap{margin-left:auto;flex-direction:row-reverse;gap:10px;min-width:0}
 /* Bix's bubble in the header: white, with the "Bix says this out loud" mark; tap it to hear it again */
@@ -70,11 +71,13 @@
 .lesson-ab{flex:1 1 auto;min-width:0;max-width:760px;line-height:0}
 .lesson-ab .abx{display:flex}
 .lesson-ab .abx-svg{width:100%;height:auto;max-height:calc(100vh - 250px)}
-.ws-lesson .lesson-side{width:auto;flex:0 0 410px;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:18px 14px;align-items:start}
-.lesson-bix{--bix:96px;padding-top:8px}
+.ws-lesson .lesson-side{width:auto;flex:0 0 470px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+/* Bix stands above his bubble, so the bubble gets the whole column: every explanation fits in 3 lines */
+.lesson-bix{--bix:88px;padding-left:22px}
 .ws-lesson .caption{position:relative;background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:18px 22px 20px;
-  font-family:var(--ws-display);font-weight:500;font-size:23px;line-height:1.35;color:var(--ws-ink);min-height:190px}
-.ws-lesson .caption::before{content:"";position:absolute;left:-14px;top:38px;border:14px solid transparent;border-right-color:var(--ws-white);border-left:0}
+  font-family:var(--ws-display);font-weight:500;font-size:23px;line-height:1.35;color:var(--ws-ink);min-height:250px;box-sizing:border-box}
+.ws-lesson .caption::before{content:"";position:absolute;left:52px;top:-14px;border:14px solid transparent;border-bottom-color:var(--ws-white);border-top:0}
+.ws-lesson .caption .ctext.tight{font-size:.88em}
 .ws-lesson .caption .k{display:inline-flex;align-items:center;background:var(--ws-indigo);color:var(--ws-white);border-radius:var(--ws-r-pill);padding:3px 14px;
   font-family:var(--ws-display);font-weight:600;font-size:17px;margin:0 0 6px}
 .ws-lesson[data-phase=done] .caption .k{background:var(--ws-jade-dk)}
@@ -89,6 +92,9 @@
 #lessonNext{min-width:220px}
 
 /* ======================= Games ======================= */
+/* the Play hub wears the Play colour (jade), like its home block and Today step; each game keeps its own colour */
+.ws-play .c-top .ws-h1{color:var(--ws-jade-dk)}
+.ws-play .play-ic{display:flex;width:64px;height:56px;border-radius:16px;align-items:center;justify-content:center;background:var(--ws-jade);box-shadow:0 4px 0 var(--ws-jade-dk);color:var(--ws-white);flex:none}
 .ws-play .play-body{flex:1;display:flex;align-items:center;justify-content:center;padding:0;gap:0;min-height:0}
 .ws-play .gcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;width:100%;height:100%;max-height:470px}
 .ws-play .gcard.jade{--c:var(--ws-jade);--d:var(--ws-jade-dk)} .ws-play .gcard.indigo{--c:var(--ws-indigo);--d:var(--ws-indigo-dk)} .ws-play .gcard.red{--c:var(--ws-red);--d:var(--ws-red-dk)}
@@ -116,8 +122,11 @@
           mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 104' preserveAspectRatio='none'%3E%3Cpath d='M4 52 Q85 -12 166 52 Q85 116 4 52Z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
 .gdot.ok{background:var(--ws-jade)} .gdot.miss{background:var(--ws-walnut)} .gdot.cur{background:var(--ws-indigo)}
 .ws-game .game-stage{flex:1;min-height:0}
-.ws-game .gmascot{left:28px;bottom:22px;--bix:76px}
-.ws-game .gmascot .bubble{font-family:var(--ws-display);font-weight:600;font-size:18px;box-shadow:0 3px 0 var(--ws-line);max-width:220px}
+/* Bix and his kit bubble: a row under the board with its own reserved height, so nothing jumps when he talks */
+.ws-game .gmascot.bixwrap{position:relative;left:auto;bottom:auto;z-index:7;flex:none;--bix:72px;min-height:80px;gap:14px;align-self:flex-start;max-width:100%}
+.ws-game .gmascot .bubble.ws-bubble{min-width:320px;max-width:min(640px, calc(100vw - 220px));padding:12px 20px;font-size:22px;line-height:1.25;cursor:pointer}
+.ws-game .gmascot .bubble .ws-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ws-game > .c-top{position:relative;z-index:7}
 
 /* Friend Pop */
 .ws-game .pop-q{gap:14px;font-family:var(--ws-display);font-weight:700;font-size:62px;line-height:1.1}
@@ -128,35 +137,37 @@
 .ws-game .pop-field{margin:12px 0 0;border-radius:var(--ws-r-lg);background:var(--ws-maple);border:12px solid var(--ws-wood);box-shadow:0 7px 0 var(--ws-wood-dk)}
 .ws-game .bub{background:var(--ws-white);color:var(--ws-ink);border:0;box-shadow:inset 0 0 0 5px var(--ws-red),0 4px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:46px}
 .ws-game .bub::after{content:"";position:absolute;left:22%;top:16%;width:26%;height:16%;border-radius:50%;background:var(--ws-red);opacity:.16;pointer-events:none}
+.ws-game .pop-field{position:relative;overflow:hidden}
+/* bubbles appear and fade inside the frame (never clipped by its edge) */
+.ws-game .bub.in{animation:bub-in .3s ease-out both}
+.ws-game .bub.out{opacity:0;pointer-events:none;transition:opacity .3s ease}
+@keyframes bub-in{from{opacity:0;scale:.6}to{opacity:1;scale:1}}
+@media (prefers-reduced-motion: reduce){ .ws-game .bub.in{animation:none} .ws-game .bub.out{transition:none} }
+body.ws-calm .ws-game .bub.in{animation:none}
 
 /* Bead Detective */
 .ws-game .rd-wrap,.ws-game .bd-wrap{gap:44px;padding:0 0 10px}
 .ws-game .rd-left{min-width:360px}
 .ws-game .rd-msg{font-family:var(--ws-display);font-weight:600;font-size:30px;color:var(--ws-indigo);text-align:center}
 .ws-game .rd-ab{position:relative;line-height:0}
-.ws-game .rd-ab .abx-svg{width:auto;height:min(440px, calc(100vh - 330px));max-width:44vw}
+.ws-game .rd-ab .abx-svg{width:auto;height:min(440px, calc(100vh - 360px));max-width:44vw}
 /* the cover fades over the beads (solid indigo, no stripes, no wipe) */
 .ws-game .rd-cover{inset:-4px -4px 2px;box-shadow:0 8px 0 var(--ws-indigo-dk);border-radius:20px;background:var(--ws-indigo);font-size:0;
   transform:none;opacity:0;pointer-events:none;transition:opacity .22s ease}
 .ws-game .rd-cover.on{transform:none;opacity:1}
-.ws-game .rd-cover span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ws-game .rd-cover span{display:flex;flex-direction:column;align-items:center;gap:2px;opacity:0;transition:none}
+/* the eye and "?" show only once the cover is fully on, and vanish at once when it lifts (no ghost over the beads) */
+.ws-game .rd-cover.on span{opacity:1;transition:opacity .12s ease .22s}
 .ws-game .rd-cover b{font-family:var(--ws-display);font-weight:700;font-size:64px;line-height:1;color:var(--ws-maple)}
 .ws-game .rd-right{width:330px;gap:14px}
-.ws-game .answer{background:var(--ws-white);border:0;box-shadow:0 3px 0 var(--ws-line);border-radius:var(--ws-r-md);height:92px;font-family:var(--ws-display);font-weight:700;font-size:58px;color:var(--ws-indigo)}
+.ws-game .answer{background:var(--ws-white);border:0;box-shadow:0 3px 0 var(--ws-line);border-radius:var(--ws-r-md);height:84px;font-family:var(--ws-display);font-weight:700;font-size:58px;color:var(--ws-indigo)}
 .ws-game .answer.empty{color:var(--ws-line)}
 .ws-game .feedback{font-family:var(--ws-display);font-weight:700;font-size:26px} .ws-game .feedback.ok{color:var(--ws-jade-dk)} .ws-game .feedback.bad{color:var(--ws-red-dk)}
 /* keypad: the practice keypad spec (3×3, ⌫ + wide 0, red Check outside the grid) */
-.ws-game .pad.g-pad{display:flex;flex-direction:column;align-items:center;gap:20px;width:auto}
-.ws-game .g-keys{display:grid;grid-template-columns:repeat(3,96px);gap:12px;transition:opacity .2s ease}
-.ws-game .g-keys button{height:72px;padding:0;border:0;border-radius:var(--ws-r-sm);background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);color:var(--ws-ink);
-  font-family:var(--ws-display);font-weight:700;font-size:38px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:transform .08s ease, box-shadow .08s ease;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
-.ws-game .g-keys button:active{transform:translateY(var(--ws-press));box-shadow:0 0 0 var(--ws-maple-dk)}
-.ws-game .g-keys .zero{grid-column:span 2}
-.ws-game .g-keys .del{background:var(--ws-bead-off);box-shadow:0 5px 0 var(--ws-line);color:var(--ws-ink-2)}
+.ws-game .pad.g-pad{display:flex;flex-direction:column;align-items:center;gap:18px;width:auto;--ws-key-w:96px;--ws-key-h:66px;--ws-key-gap:12px;--ws-key-font:38px}
 .ws-game .pad .g-check{min-width:220px;height:auto;min-height:72px;padding:0 40px;border-radius:var(--ws-r-pill);background:var(--c);color:var(--t);box-shadow:0 7px 0 var(--d);font-size:30px}
 .ws-game .pad .g-check:active{box-shadow:0 2px 0 var(--d)}
-.ws-game .g-pad.idle .g-keys{opacity:.45;pointer-events:none}
+
 
 /* Bead Builder */
 .ws-game .bd-q{gap:14px;min-width:260px}
@@ -165,10 +176,14 @@
 .ws-game .bd-num:empty{visibility:hidden}
 .ws-game .bd-num.pop{animation:ws-pop .38s var(--ws-ease) both}
 .ws-game .bd-tools{display:flex;gap:12px;margin-top:8px}
+.ws-game .bd-tools .ws-btn.small{min-height:64px;padding:0 22px}
 .ws-game .bd-ab{line-height:0}
-.ws-game .bd-ab .abx-svg{width:auto;height:min(560px, calc(100vh - 220px));max-width:calc(100vw - 420px)}
+.ws-game .bd-ab .abx-svg{width:auto;height:min(560px, calc(100vh - 268px));max-width:calc(100vw - 420px)}
 
-/* results card */
+/* results card, on a scrim: the board, keys and feedback underneath never show through */
+.ws-game .gscrim{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:110px 40px 120px;box-sizing:border-box;
+  background:color-mix(in srgb, var(--ws-ground) 94%, transparent);animation:ws-dialog-in .2s ease both}
+.ws-game .gscrim .gresult{position:relative;inset:auto;margin:0}
 .ws-game .gresult{background:var(--ws-white);border-radius:var(--ws-r-lg);box-shadow:0 8px 0 var(--ws-line);padding:28px 36px 32px;gap:10px;width:min(560px,90%)}
 .ws-game .gr-icon{line-height:0;border-radius:var(--ws-r-md);padding:10px 18px;background:var(--c,var(--ws-indigo))}
 .ws-game .gr-icon.g-red{--c:var(--ws-red)} .ws-game .gr-icon.g-ochre{--c:var(--ws-ochre)} .ws-game .gr-icon.g-indigo{--c:var(--ws-indigo)}
@@ -206,7 +221,10 @@
   .dp-node.far{display:none}
   .dp-name{font-size:18px;max-width:150px}
   .ws-lesson .lesson-body{flex-direction:column;gap:22px}
-  .ws-lesson .lesson-side{flex:none;width:100%;max-width:640px}
+  .ws-lesson .lesson-side{flex:none;width:100%;max-width:680px;grid-template-columns:auto minmax(0,1fr);gap:14px}
+  .lesson-bix{padding:8px 0 0}
+  .ws-lesson .caption{min-height:210px}
+  .ws-lesson .caption::before{left:-14px;top:38px;border:14px solid transparent;border-right-color:var(--ws-white);border-left:0}
   .ws-play .gcards{grid-template-columns:1fr;max-height:none;gap:22px}
   .ws-play .gcard.ws-block{display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr auto auto 1fr;justify-items:start;text-align:left;padding:18px 32px;gap:6px 28px}
   .ws-play .gcard .gc-icon{grid-row:1 / -1;align-self:center}
@@ -229,7 +247,7 @@
 }
 @media (prefers-reduced-motion: reduce){ .ws-door.intro .door-block,.ws-game .bd-num.pop{animation:none} .ls-dot,.ws-game .rd-cover{transition:none} }
 .times{color:var(--ws-indigo);font-style:normal}
-.ws-lesson .caption ol.method{margin:10px 0 0;padding-left:24px;font-size:19px;line-height:1.35}
+.ws-lesson .caption ol.method{margin:4px 0 0;padding-left:30px}
 .ws-lesson .caption ol.method li{margin:4px 0}
 
 /* ---------- the practice soroban (AbacusInput) used as a lesson / game abacus (DemoAbacus in games.js) ---------- */
@@ -243,7 +261,25 @@
 .ab-demo .abx-readout[hidden]{display:none}
 .ab-demo .abx-readout b{font-family:var(--ws-display);font-weight:700;font-size:30px;color:var(--ws-indigo);font-variant-numeric:tabular-nums}
 
-/* ---------- gate: one way back, and a kind word when the number was wrong ---------- */
+/* ---------- gate: hold for 3 seconds, then a written instruction; one way back; a kind word when it was wrong ---------- */
+.gate-card{min-height:450px;justify-content:center}
+.gate-card .gate-hold .q span{font-size:30px;white-space:nowrap}
+.gate-card .gate-hold,.gate-card .gate-ask{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%}
+.gate-card[data-step=hold] .gate-ask,.gate-card[data-step=ask] .gate-hold{display:none}
+.gate-card .q span{display:block}
+.gate-card .q .gw{font-size:26px;line-height:1.3}
+.gate-card .q .gw b{color:var(--ws-indigo);font-weight:700}
+.gate-card .q .gnum{display:flex;justify-content:center;gap:10px;margin-top:14px}
+.gate-card .q .gnum i{font-style:normal;width:52px;height:62px;display:flex;align-items:center;justify-content:center;border-radius:var(--ws-r-sm);
+  background:var(--ws-maple);box-shadow:0 4px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:38px;color:var(--ws-ink)}
+.gate-holdbtn{--p:0;position:relative;overflow:hidden;width:300px;height:76px;border:0;border-radius:var(--ws-r-pill);padding:0;cursor:pointer;
+  background:var(--ws-indigo);color:var(--ws-white);box-shadow:0 5px 0 var(--ws-indigo-dk);font-family:var(--ws-display);font-weight:600;font-size:24px;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.gate-holdbtn .gh-fill{position:absolute;left:0;right:0;bottom:0;height:12px;background:var(--ws-ochre);transform-origin:left center;transform:scaleX(var(--p))}
+.gate-holdbtn .gh-label{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;height:100%}
+.gate-holdbtn .gh-ic{line-height:0}
+.gate-holdbtn.holding{transform:translateY(3px);box-shadow:0 2px 0 var(--ws-indigo-dk)}
+.gate-holdbtn:focus-visible{outline:3px solid var(--ws-ochre);outline-offset:3px}
 .gate-card .gate-msg{min-height:24px;font-family:var(--ws-body);font-size:18px;color:var(--ws-red-dk);margin:-6px 0 -4px}
 .gate-card .gate-open{min-width:220px}
 @media (orientation:portrait){ .ls-dot{width:24px;height:15px} .ws-lesson .lesson-steps{gap:5px} }

@@ -33,7 +33,7 @@ async def main():
 
         # Step 1: lesson
         await pg.click('#todayGo'); await pg.wait_for_selector('#lesson.active')
-        for _ in range(15):
+        for _ in range(25):   # intro pages + demos + tries
             if (await pg.text_content('#capKind'))=='Done!': break
             await pg.click('#lessonNext'); await pg.wait_for_timeout(150)
         await pg.screenshot(path='/tmp/p3_lesson_done.png')

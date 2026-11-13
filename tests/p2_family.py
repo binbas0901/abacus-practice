@@ -12,7 +12,7 @@ LEGACY = """(async()=>{
 })()"""
 async def gate(pg):
     await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
-    await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)
+    await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)
 async def readers(pg, n):
     await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo'); out=[]
     for k in range(n):

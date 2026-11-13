@@ -17,7 +17,7 @@ async def main():
         await pg.click('#bixHome .bix'); await pg.wait_for_timeout(600)
         check('once named, tapping Bix no longer opens the name box', await pg.locator('#nameAsk.active').count()==0)
         # checklist
-        await pg.click('#grownups'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(800)
+        await pg.click('#grownups'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(800)
         rows = await pg.eval_on_selector_all('#setupList .ck','els=>els.map(e=>[e.className.replace("ck ",""), e.querySelector("b").textContent, e.querySelector(".ck-t span").textContent])')
         for r in rows: print('     ', r[0].ljust(4), r[1].ljust(16), r[2][:90])
         await pg.screenshot(path='/tmp/nm_check.png')
