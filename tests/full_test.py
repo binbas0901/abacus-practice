@@ -5,7 +5,7 @@ async def main():
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'])
         ctx = await b.new_context(viewport={'width':1180,'height':820}); await ctx.grant_permissions(['microphone'])
         pg = await ctx.new_page(); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console: '+m.text) if m.type in('error','warning') and 'favicon' not in m.text else None)
-        await pg.goto('http://localhost:8765/index.html')
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         # 1 visual regression
         await pg.click('[data-mode=visual]'); await pg.wait_for_timeout(200)
         for i in range(10):

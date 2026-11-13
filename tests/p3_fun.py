@@ -23,7 +23,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/index.html'); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(600)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(600)
         steps = await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.textContent)')
         check('home: Bix, greeting, garden, 3 steps, 6 tiles', await pg.locator('#bixHome .bix').count()==1 and len(steps)==3 and await pg.locator('.tile').count()==6 and await pg.locator('#garden .plot').count()>0, f"{await pg.text_content('#bixHome .bubble')} | {steps} | {await pg.text_content('#gardenLabel')}")
         await pg.screenshot(path='/tmp/p3_home.png')

@@ -6,7 +6,7 @@ async def main():
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
         ctx = await b.new_context(viewport={'width':1180,'height':820}, accept_downloads=True); pg = await ctx.new_page(); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read())
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(1000)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(1000)
         bub = await pg.text_content('#bixHome .bubble')
         check('existing device without a name: Bix asks for it', "don't know your name" in bub, bub)
         await pg.screenshot(path='/tmp/nm_home.png')

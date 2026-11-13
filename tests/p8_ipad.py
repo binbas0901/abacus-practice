@@ -32,7 +32,7 @@ async def main():
             await pg.add_init_script(HOOK); return ctx, pg
         LINES=None
         # 1. brand-new device, slow tablet
-        ctx,pg = await newpage(); await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(800)
+        ctx,pg = await newpage(); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800)
         LINES = await pg.evaluate("window.BIX_LINES")
         await pg.touchscreen.tap(600, 760); await pg.wait_for_timeout(14000); r=await take(pg); allrecs+=r
         ids=[x['id'] for x in r]
@@ -45,7 +45,7 @@ async def main():
         check('setup talk-through + home hello, no overlaps', 'intro_meet' in ids and 'intro_done' in ids and not overlaps(r), ids)
         await ctx.close()
         # 2. returning child
-        ctx,pg = await newpage(True); await pg.goto('http://localhost:8765/index.html')
+        ctx,pg = await newpage(True); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(1500)
         check('returning: silent until she taps', len(await take(pg))==0)
         await pg.touchscreen.tap(600, 790); await pg.wait_for_timeout(5500); r=await take(pg); allrecs+=r

@@ -10,7 +10,7 @@ async def main():
         errs=[]
         # 1. first-time setup: Bix introduces himself on first tap, then asks the name
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(HOOK)
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(2500)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(2500)
         await pg.mouse.click(600, 700); await pg.wait_for_timeout(700)
         talking = await pg.locator('#bixSetup .bix.talking').count()
         await pg.screenshot(path='/tmp/bx_setup_talk.png')
@@ -24,7 +24,7 @@ async def main():
         await ctx.close()
         # 2. existing device: greeting on first tap on an empty spot (not on a button)
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); await pg.add_init_script(HOOK)
-        await pg.goto('http://localhost:8765/index.html'); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(2500)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(2500)
         check('existing device: no sound before any tap', len(await plays(pg))==0)
         await pg.mouse.click(600, 790); await pg.wait_for_timeout(1200); pl=await plays(pg)
         check('first tap on an empty spot -> greeting', len(pl)==1 and pl[0]['id'].startswith('hello_'), [x['id'] for x in pl])

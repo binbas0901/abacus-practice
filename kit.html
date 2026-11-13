@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workshop kit</title><link rel="stylesheet" href="workshop.css"><script src="kit.js"></script>
+<style>body{margin:0;padding:32px 40px;background:var(--ws-ground);font-family:var(--ws-body);color:var(--ws-ink)} section{margin:0 0 34px} .row{display:flex;flex-wrap:wrap;gap:22px;align-items:center} h2{font-family:var(--ws-display);font-weight:600;font-size:22px;color:var(--ws-wood-dk);margin:0 0 14px} .sw{width:118px} .sw i{display:block;height:56px;border-radius:14px} .sw span{font-size:14px}</style></head>
+<body>
+<h1 class="ws-h1" style="margin-bottom:24px">Workshop kit</h1>
+<section><h2>Bix</h2><div class="row" id="bixes"></div></section>
+<section><h2>Beads</h2><div class="row" id="beads"></div></section>
+<section><h2>Buttons</h2><div class="row"><button class="ws-btn big">START</button><button class="ws-btn">Check</button><button class="ws-btn indigo">Show me</button><button class="ws-btn jade">Next</button><button class="ws-btn ochre">I wish for…</button><button class="ws-btn maple">I’m done</button><button class="ws-btn small">Small</button><button class="ws-btn ghost">Type it instead</button><button class="ws-iconbtn" aria-label="Back" id="ib"></button></div></section>
+<section><h2>Blocks</h2><div class="row" style="display:grid;grid-template-columns:repeat(3,1fr)"><button class="ws-block" id="b1">Practice</button><button class="ws-block jade" id="b2">Play</button><button class="ws-block ochre" id="b3">My Room</button></div></section>
+<section><h2>Tiles, bubble, chips</h2><div class="row"><div id="tiles" style="display:flex;flex-direction:column;gap:12px"></div><div id="bub"></div><span class="ws-chip">beads show <b style="font-size:30px;color:var(--ws-indigo)">12</b></span><span class="ws-badge">2 new</span></div></section>
+<section><h2>Frame</h2><div class="ws-frame" style="width:520px"><div class="ws-inner" style="height:120px;display:flex;align-items:center;padding:0 24px"><div class="ws-rod" style="flex:1"></div></div></div></section>
+<section><h2>Icons</h2><div class="row" id="icons"></div></section>
+<script>
+const $=s=>document.querySelector(s);
+$('#bixes').innerHTML=['happy','cheer','think','concerned','wow','sleepy'].map(m=>`<div style="text-align:center">${WS.bix(m,110)}<div>${m}</div></div>`).join('')+`<div style="text-align:center"><span id="talk">${WS.bix('happy',110)}</span><div>talking</div></div>`;
+document.querySelector('#talk .ws-bix').classList.add('talking');
+$('#beads').innerHTML=['red','indigo','ochre','jade','walnut','locked','pale'].map(c=>WS.bead(c,90)).join('')+WS.bead('white',90,{ring:'indigo'});
+$('#ib').innerHTML=WS.icon('back',28,'#F4E3C3',3);
+$('#b1').innerHTML=WS.icon('abacus',54,'#F4E3C3')+'Practice'; $('#b2').innerHTML=WS.icon('game',52,'#fff',2)+'Play'; $('#b3').innerHTML=WS.icon('home',52,'#3D2412',2)+'My Room';
+$('#tiles').innerHTML=WS.tile(7,true)+WS.tile(8)+WS.tile(-4);
+$('#bub').innerHTML=WS.bubble('Your beads show 12. Tap Check!');
+$('#icons').innerHTML=WS.ICONS.map(n=>`<div style="text-align:center;width:64px">${WS.icon(n,30,'#1E2433')}<div style="font-size:12px">${n}</div></div>`).join('');
+</script></body></html>

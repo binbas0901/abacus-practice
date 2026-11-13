@@ -10,7 +10,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/index.html')
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         # seed: 12 correct yesterday on bf_add_a, lesson done
         await pg.evaluate("""(()=>{const pr={current:'bf_add_a',nodes:{}}; ['beads','add_direct','sub_direct','sf_add','sf_sub'].forEach(id=>pr.nodes[id]={lesson:true,mastered:'parent',hist:[]});
           pr.nodes.bf_add_a={lesson:true,mastered:null,hist:Array.from({length:12},()=>({ok:true,day:'2026-11-11'}))}; localStorage.setItem('abacus.progress',JSON.stringify(pr)); Store.remove('fun');})()""")

@@ -27,7 +27,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/index.html'); await pg.evaluate(SEED+"(0.5)")
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate(SEED+"(0.5)")
         for voice,gap,rate in [('mine',0.5,1.0),('mine',0.5,1.4),('mine',3,1.0),('ljspeech',0.5,1.0)]:
             worst,n,log = await run(pg,voice,gap,rate)
             print(f"{voice:9} gap={gap} rate={rate}: {n} sound pairs, smallest gap between sounds = {worst*1000:.0f} ms -> {'PASS (no overlap)' if worst>=-0.001 else 'FAIL overlap'}"); print('   ', log)

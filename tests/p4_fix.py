@@ -57,7 +57,7 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(1200)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(1200)
         await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({settingsVersion:5, sfx:false, speakFeedback:false, gap:0.5, voice:'ljspeech', flashSec:0.3, answerPause:0}))"); await pg.reload(); await pg.wait_for_timeout(800)
         for m in ['visual','listen','flash']: await run(pg, m)
         print('errors:', errs); await b.close()

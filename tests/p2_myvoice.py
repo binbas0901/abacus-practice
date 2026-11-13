@@ -8,7 +8,7 @@ async def main():
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'])
         ctx = await b.new_context(viewport={'width':1180,'height':820}); await ctx.grant_permissions(['microphone'])
         pg = await ctx.new_page(); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(300)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(300)
 
         # A) Old-format recordings (Blob in IndexedDB, as the previous version saved them) must load
         await pg.evaluate("""(async()=>{

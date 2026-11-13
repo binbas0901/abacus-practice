@@ -4,7 +4,7 @@ def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+
 async def fresh(b):
     ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page()
     pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
-    await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(800); return ctx, pg
+    await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800); return ctx, pg
 async def name(pg, n):
     await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', n); await pg.click('#suNameGo'); await pg.wait_for_selector('#suLevel.on')
 async def gate(pg):
@@ -74,7 +74,7 @@ async def main():
 
         # 6. existing device (already has progress) never sees setup
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read())
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(900)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(900)
         check('existing device goes straight home', await pg.locator('#home.active').count()==1 and await pg.locator('#setup.active').count()==0)
         await ctx.close()
         print('errors:', errs); await b.close()

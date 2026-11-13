@@ -27,7 +27,7 @@ async def main():
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'])
         ctx = await b.new_context(viewport={'width':1180,'height':820}, accept_downloads=True); await ctx.grant_permissions(['microphone'])
         pg = await ctx.new_page(); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
-        await pg.goto('http://localhost:8765/index.html'); await pg.evaluate(LEGACY); await pg.reload(); await pg.wait_for_timeout(1500)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate(LEGACY); await pg.reload(); await pg.wait_for_timeout(1500)
 
         st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         check('1. existing recordings moved into a person', st.get('profiles')==[{'id':'p1','name':'My voice'}] and st.get('voice')=='rec:p1', str(st.get('profiles'))+' voice='+str(st.get('voice')))

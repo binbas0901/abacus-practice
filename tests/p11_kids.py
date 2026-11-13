@@ -20,7 +20,7 @@ async def main():
         b=await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
         ctx=await b.new_context(viewport={'width':1180,'height':820}); pg=await ctx.new_page(); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.add_init_script(LEGACY)
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(1500)
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(1500)
         kids=await pg.evaluate("Store.children()"); act=await pg.evaluate("Store.activeId()")
         check('old data becomes child 1 named Mia', len(kids)==1 and kids[0]['name']=='Mia', kids)
         pr=await pg.evaluate("Store.get('progress')"); fun=await pg.evaluate("Store.get('fun')"); s=await pg.evaluate("App.settings")
@@ -46,7 +46,7 @@ async def main():
         check('Arjun gets starter treats, not Mia\'s', s2.get('treats') is None or all(t['name']!='Chick-fil-A' for t in s2.get('treats') or []))
         check('family voices still shared', (s2.get('profiles') or [{}])[0].get('name')=='Dad')
         # next launch: who's practising?
-        pg2=await ctx.new_page(); pg2.on('pageerror', lambda e: errs.append(str(e))); await pg2.goto('http://localhost:8765/index.html'); await pg2.wait_for_timeout(1500)
+        pg2=await ctx.new_page(); pg2.on('pageerror', lambda e: errs.append(str(e))); await pg2.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg2.wait_for_timeout(1500)
         cards=await pg2.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.textContent.trim())')
         check("next launch asks who's practising", await pg2.is_visible('#who') and cards==['Mia','Arjun'], cards)
         await pg2.screenshot(path='/tmp/kids_who.png')
