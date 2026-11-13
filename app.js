@@ -480,7 +480,7 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')) renderHome();
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ Games.renderHub(); const bp=$('#bixPlay'); if (!bp.querySelector('.bix')) Fun.Mascot.mount(bp,{size:84}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
+function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); if (!bp.querySelector('.bix')) Fun.Mascot.mount(bp,{size:84}); ToyRoom.bix(bp); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
@@ -504,26 +504,53 @@ $('#doorPractice').addEventListener('click', openPractice);
 $('#doorPlay').addEventListener('click', ()=>{ Speaker.unlock(); goPlay(); });
 $('#doorRoom').addEventListener('click', ()=>{ Speaker.unlock(); goRoom(); });
 
-/* ---------------- My Room: sticker book, flower pot, treat jar ---------------- */
-const BOOK_SVG = `<svg viewBox="0 0 240 210" width="240" height="210" aria-hidden="true"><rect x="22" y="20" width="200" height="186" rx="14" fill="#1C2763"/><rect x="30" y="14" width="200" height="186" rx="14" fill="#2A3A86"/><rect x="30" y="14" width="26" height="186" rx="10" fill="#1C2763"/><circle cx="140" cy="86" r="40" fill="#E8A93A"/><path d="M140 60 l8 16 18 3 -13 12 3 18 -16 -9 -16 9 3 -18 -13 -12 18 -3z" fill="#FFFFFF"/><circle cx="98" cy="160" r="16" fill="#2F9E7E"/><circle cx="140" cy="164" r="13" fill="#E2452F"/><circle cx="180" cy="158" r="17" fill="#F4E3C3"/></svg>`;
-$('#roomBookArt').innerHTML = BOOK_SVG;
-$('#exitRoom').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
-$('#exitAlbum').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
-$('#exitShop').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
-$('#roomWishIc').innerHTML = WS.icon('jar', 28, '#3D2412', 2.4);
+/* ---------------- My Room: sticker book, flower pot, treat jar (Toy Table look) ---------------- */
+// The moon in the window of these screens: she fills as today's steps get done and is proud when they all are.
+function toySky(sel){
+  const el=$(sel); if (!el) return; const st=todaySteps(), done=st.filter(x=>x.done).length, full=st.length>0 && done===st.length;
+  el.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', 0.4 + 0.6*done/Math.max(1, st.length));
+}
+ToyRoom.sky = toySky;
+// The sticker book lies open on the table; the first stickers she has earned are stuck on its pages (n = how many she has).
+function bookSVG(n){
+  const LAC=['red','mustard','teal','indigo','plum'], spots=[[52,84],[88,80],[124,84],[52,132],[88,128],[124,132],[178,84],[214,80],[250,84],[178,132],[214,128],[250,132]];
+  let st='';
+  spots.forEach((p,i)=>{ const [x,y]=p;
+    if (i<n) st += `<g transform="translate(${x} ${y}) rotate(${(i*47)%25-12})"><circle cx="1.5" cy="2" r="15" fill="#3A1E06" opacity=".18"/><circle r="15" fill="#FFFDF6"/><circle r="11.5" fill="url(#toy-lac-${LAC[i%5]})"/><path d="M0,-6.6 l1.9,4 4.4,.6 -3.2,3 .8,4.4 L0,3.3 -3.9,5.4 -3.1,1 -6.3,-2 -1.9,-2.6Z" fill="#fff" opacity=".92"/><ellipse cx="-4.5" cy="-6.5" rx="4" ry="1.5" transform="rotate(-35 -4.5 -6.5)" fill="#fff" opacity=".7"/></g>`;
+    else st += `<circle cx="${x}" cy="${y}" r="13.5" fill="#F6EEDC" stroke="#D2C4A6" stroke-width="2" stroke-dasharray="5 5"/>`; });
+  const page = (d,d2,d3)=>`<path d="${d3}" fill="#CFC2A6"/><path d="${d2}" fill="#EDE4D0"/><path d="${d}" fill="#FFFDF6"/>`;
+  return `<svg viewBox="0 0 300 214" width="300" height="214" aria-hidden="true">`
+    + `<ellipse cx="166" cy="198" rx="150" ry="14" fill="url(#toy-g-shadow)" opacity=".5"/><ellipse cx="154" cy="196" rx="138" ry="11" fill="url(#toy-g-shadow)" opacity=".95"/>`
+    + `<rect x="6" y="36" width="288" height="164" rx="14" fill="#1B2557"/><rect x="6" y="28" width="288" height="164" rx="14" fill="url(#toy-lac-indigo)"/><rect x="10" y="32" width="280" height="156" rx="11" fill="none" stroke="#96A5EA" stroke-width="2" opacity=".5"/>`
+    + page('M150,46 C118,32 58,32 20,40 V174 C58,166 118,166 150,180Z','M150,50 C118,36 58,36 18,44 V178 C58,170 118,170 150,184Z','M150,54 C118,40 58,40 16,48 V182 C58,174 118,174 150,188Z')
+    + page('M150,46 C182,32 242,32 280,40 V174 C242,166 182,166 150,180Z','M150,50 C182,36 242,36 282,44 V178 C242,170 182,170 150,184Z','M150,54 C182,40 242,40 284,48 V182 C242,174 182,174 150,188Z')
+    + `<path d="M150,46 C140,42 130,39 120,37.5 V168 C130,170 140,174 150,180Z" fill="#3A1E06" opacity=".07"/><path d="M150,46 C157,43 164,41 170,39.5 V170.5 C164,172 157,175 150,180Z" fill="#3A1E06" opacity=".12"/><path d="M150,46 V180" stroke="#B9AA90" stroke-width="2"/>`
+    + `<g stroke="#D9CEB8" stroke-width="4" stroke-linecap="round"><path d="M40,56 H96"/><path d="M168,56 H224"/></g>${st}`
+    + `<path d="M160,40 V200 l7,-8 7,8 V38Z" fill="url(#toy-lac-red)"/><path d="M160,40 V200 l3,-3.5 V39.5Z" fill="#fff" opacity=".3"/></svg>`;
+}
+// On the wall shelf: the rainbow, a few standing books and the bead bowl.
+const SHELF_BOOKS = `<svg class="tr-books" width="96" height="84" viewBox="0 0 96 84" aria-hidden="true">${[['red',4,18,16,66,0],['mustard',22,8,18,76,0],['teal',42,24,15,60,0],['plum',60,14,17,70,9]].map(b=>`<g transform="rotate(${b[5]} ${b[1]+b[3]} 84)"><rect x="${b[1]}" y="${b[2]}" width="${b[3]}" height="${b[4]}" rx="3" fill="url(#toy-lac-${b[0]})"/><rect x="${b[1]+b[3]-4}" y="${b[2]}" width="4" height="${b[4]}" rx="2" fill="#1A0606" opacity=".22"/><rect x="${b[1]+3}" y="${b[2]+8}" width="${b[3]-8}" height="5" rx="2" fill="#FFFDF6" opacity=".85"/><rect x="${b[1]+2}" y="${b[2]+2}" width="3" height="${b[4]-4}" rx="1.5" fill="#fff" opacity=".35"/></g>`).join('')}</svg>`;
+$('#roomShelfArt').innerHTML = TOY.prop('rainbow', 124) + SHELF_BOOKS + TOY.prop('bowl', 116);
+$('#exitRoom').innerHTML = TOY.icon('back', 30, 'currentColor');
+$('#exitAlbum').innerHTML = TOY.icon('back', 30, 'currentColor');
+$('#exitShop').innerHTML = TOY.icon('back', 30, 'currentColor');
+$('#exitPlay').innerHTML = TOY.icon('back', 30, 'currentColor');
+$('#exitGame').innerHTML = TOY.icon('back', 30, 'currentColor');
+$('#roomWishIc').innerHTML = TOY.icon('star', 30, '#4A2C06');
 function renderRoom(){
+  toySky('#roomSky'); $('#roomBookArt').innerHTML = bookSVG(Fun.count());
   const unseen = Fun.count() - (Fun.data.albumSeen||0), bd=$('#albumBadge');
   bd.textContent = unseen>0 ? `${unseen} new` : ''; bd.classList.toggle('on', unseen>0);
   $('#roomStickers').setAttribute('aria-label', `Sticker book: ${Fun.count()} stickers` + (unseen>0 ? `, ${unseen} new` : ''));
   const n = Fun.renderGarden($('#garden'), $('#gardenLabel'), days);
   $('#roomGarden').setAttribute('aria-label', `My garden: ${$('#gardenLabel').textContent}`);
   Treats.renderJar();
-  $('#roomWish').classList.toggle('ws-pulse', !Treats.goal());   // nudge only to pick a goal, never to spend
+  $('#roomWish').classList.toggle('tr-nudge', !Treats.goal());   // nudge only to pick a goal, never to spend
   return n;
 }
 function goRoom(){
   renderRoom(); show('room');
-  const br=$('#bixRoom'); if (!br.querySelector('.bix')) Fun.Mascot.mount(br, {size:110, keep:true});
+  const br=$('#bixRoom'); if (!br.querySelector('.bix')) Fun.Mascot.mount(br, {size:110, keep:true}); ToyRoom.bix(br);
   const [text, vid] = Treats.jarLine(); Fun.Mascot.say(br, text, 0, vid);
 }
 $('#exitRoom').addEventListener('click', ()=>{ renderHome(); show('home'); });
