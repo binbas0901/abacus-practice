@@ -236,7 +236,7 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 .problem{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--paper);border-radius:32px;margin:6px 0 4px;box-shadow:0 6px 0 var(--line)}
 .problem .term{font-family:var(--display);font-weight:800;font-size:clamp(56px,13vh,124px);line-height:1;font-variant-numeric:tabular-nums;width:3.6ch;text-align:right}
 .problem .term.neg{color:var(--tomato)}
-.flash-stage{flex:1;display:flex;align-items:center;justify-content:center;background:var(--ink);border-radius:32px;margin:6px 0 4px}
+.flash-stage{flex:1;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;padding:14px;background:var(--ink);border-radius:32px;margin:6px 0 4px}
 .flash-num{font-family:var(--display);font-weight:800;font-size:clamp(100px,26vh,200px);color:#fff;font-variant-numeric:tabular-nums}
 .flash-num.neg{color:#FF8A7E}
 .entry{width:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
@@ -512,3 +512,12 @@ textarea{width:100%;height:110px;font:12px ui-monospace,monospace;border-radius:
 @keyframes mouthB{0%{opacity:0}50%{opacity:1}}
 .bix.talking .b-body{animation:bixtalk .48s ease-in-out infinite}
 @keyframes bixtalk{50%{transform:translateY(-2px) scale(1.01,.99)}}
+
+.flash-num b{font-weight:800;opacity:.75;margin-right:.12em}
+.flash-num.hint{font-size:clamp(40px,9vh,72px);opacity:.35;letter-spacing:.1em}
+.flash-num.ask{color:var(--sun)}
+.flash-msg{color:#fff;font-family:var(--body);font-size:clamp(17px,2.6vh,22px);text-align:center;line-height:1.35;min-height:1.4em}
+.flash-dots{display:flex;gap:8px;min-height:14px}
+.flash-dots i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.22)}
+.flash-dots i.on{background:var(--sun)}
+.flash-stage .replay{color:#fff;background:rgba(255,255,255,.16)}

@@ -602,7 +602,7 @@ function presentProblem(){
   const p=problems[idx]; setEntry(''); $('#feedback').textContent=''; $('#feedback').className='feedback'; $('#reveal').textContent=''; $('#showMeBtn').style.display=reviewing?'':'none'; renderStrip();
   if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=''; p.terms.forEach(t=>{ const d=document.createElement('div'); d.className='term'+(t<0?' neg':''); d.textContent=t<0?'−'+Math.abs(t):t; area.appendChild(d); }); locked=false; }
   else if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
-  else flash(p);
+  else armFlash(p);
 }
 let dictateToken=0, listenArmed=false;
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
@@ -652,11 +652,23 @@ async function dictate(p){
 $('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; dictate(p); });
 function setupGapSlider(){ const s=$('#gapSlider'); s.min=settings.gapMin; s.max=settings.gapMax; s.value=settings.gap; s.style.direction='rtl'; $('#gapVal').textContent=settings.gap+'s'; s.oninput=()=>{ settings.gap=parseFloat(s.value); $('#gapVal').textContent=settings.gap+'s'; saveSettings(); }; }
 function setupFlashSlider(){ const s=$('#flashSlider'); s.value=settings.flashSec; s.style.direction='rtl'; $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; s.oninput=()=>{ settings.flashSec=parseFloat(s.value); $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; saveSettings(); }; }
-async function flash(p){
-  const my=++dictateToken; locked=true; const el=$('#flashNum'); el.textContent=''; await sleep(600);
-  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.textContent=(t<0?'−':'')+Math.abs(t); await sleep(settings.flashSec*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
-  if(my!==dictateToken) return; el.textContent='?'; locked=false;
+// Flash: she taps Ready (after clearing her abacus), numbers pop up one at a time with their + / − sign, then she types the total.
+function flashDots(n, on){ $('#flashDots').innerHTML = Array.from({length:n},(_,i)=>`<i class="${i<on?'on':''}"></i>`).join(''); }
+function flashSign(t, i){ return (i===0 ? (t<0?'<b>−</b>':'') : `<b>${t<0?'−':'+'}</b>`) + Math.abs(t); }
+function armFlash(p){
+  ++dictateToken; locked=true; const el=$('#flashNum'); el.className='flash-num hint'; el.textContent='+ − +';
+  flashDots(p.terms.length, 0); $('#flashAgain').style.display='none';
+  $('#flashMsg').innerHTML = idx===0 && !reviewing ? 'Clear your abacus.<br>Numbers will pop up one at a time — add them all up!' : 'Clear your abacus, then tap Ready.';
+  const b=$('#flashGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; Speaker.unlock(); flash(p); };
 }
+async function flash(p){
+  const my=++dictateToken; locked=true; const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
+  $('#flashMsg').textContent='Watch…'; $('#flashGo').style.display='none'; $('#flashAgain').style.display='none'; flashDots(p.terms.length, 0); await sleep(600);
+  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.innerHTML=flashSign(t,i); flashDots(p.terms.length, i+1); await sleep(settings.flashSec*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
+  if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='= ?';
+  $('#flashMsg').textContent='What did you get? Tap it in on the keypad.'; $('#flashAgain').style.display=''; locked=false;
+}
+$('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
 $('#pad').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b||locked) return; const k=b.dataset.k; Sfx.tap(); if(k==='del') setEntry(entry.slice(0,-1)); else if(k==='go') submit(); else if(entry.length<4) setEntry(entry+k); });
 document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked) return; if(/^[0-9]$/.test(e.key)&&entry.length<4) setEntry(entry+e.key); else if(e.key==='Backspace') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 async function submit(){
