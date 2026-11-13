@@ -1,0 +1,303 @@
+/* toy-grown.css — the grown-ups area in the Toy Table look (design/BRIEF2.md).
+   A printed school report on the maple table: the weekly report sits on a clipboard, the settings are loose
+   paper sheets under it. Calm and typographic: Fredoka headings, Andika body, walnut ink rules, indigo and teal
+   accents, beads on brass rods wherever a real number is shown. Tokens come from toy.css only. No filters.
+   Grown-up touch targets are 44px or more. */
+
+#parent.gu{display:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+  color:var(--toy-ink);font-family:var(--toy-body);font-size:17px;line-height:1.45;scroll-behavior:smooth;background:var(--toy-maple-dk);
+  --gu-rule:rgba(122,74,36,.22);--gu-rule-2:rgba(122,74,36,.4);--gu-soft:var(--toy-ink-soft);
+  --gu-brass:linear-gradient(#FFF1B8,#E2B54A 35%,#9C7420 72%,#C99A38)}
+#parent.gu.active{display:block}
+
+/* the table: it scrolls with the sheets lying on it (window light from the top-left, darker towards the edges) */
+.gu-wrap{position:relative;min-height:100%;box-sizing:border-box;padding:20px max(36px,calc((100% - 1100px)/2)) 40px;
+  background:
+    linear-gradient(90deg,rgba(58,28,8,.2),rgba(58,28,8,0) 9%,rgba(58,28,8,0) 90%,rgba(58,28,8,.26)),
+    radial-gradient(90% 520px at 22% 0,rgba(255,246,216,.42),rgba(255,246,216,0) 70%),
+    repeating-linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) calc(var(--toy-plank) - 4px),rgba(122,74,30,.3) calc(var(--toy-plank) - 4px),rgba(122,74,30,.3) calc(var(--toy-plank) - 2px),rgba(255,233,194,.4) calc(var(--toy-plank) - 2px),rgba(255,233,194,.4) calc(var(--toy-plank) - .5px),rgba(0,0,0,0) calc(var(--toy-plank) - .5px),rgba(0,0,0,0) var(--toy-plank)),
+    var(--toy-grain) 0 0/512px 256px,
+    linear-gradient(var(--toy-maple),#DBA96C 30%,var(--toy-maple-dk))}
+
+/* ---------- top of the table: back, whose report, share ---------- */
+.gu-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;min-height:70px}
+.gu-head .gu-back{flex:none}
+.gu-where{font:600 26px/1 var(--toy-display);color:var(--toy-ink);text-shadow:0 1.5px 0 rgba(255,240,208,.75);margin-right:auto}
+/* the child switcher: name tags resting in a routed groove */
+.gu-kids{display:flex;flex-wrap:wrap;gap:6px;padding:6px;border-radius:32px;background:rgba(122,74,36,.2);
+  box-shadow:inset 2px 3px 5px rgba(58,30,6,.34),0 1.5px 0 rgba(255,238,204,.6)}
+.gu-kids button{display:inline-flex;align-items:center;gap:9px;min-width:48px;min-height:48px;padding:0 18px 0 8px;border-radius:24px;
+  font:600 19px/1 var(--toy-display);color:var(--toy-ink);cursor:pointer}
+.gu-kids button[aria-pressed="true"]{background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 3px 0 var(--toy-wood-edge),3px 7px 8px rgba(var(--toy-shade),.34)}
+.gu-kids button.gu-add{justify-content:center;padding:0;color:var(--toy-walnut)}
+.gu-kids button:not([aria-pressed="true"]):active{background:rgba(122,74,36,.18)}
+.gu-kbead{display:inline-flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;border-radius:50%;color:#fff;
+  font:700 18px/1 var(--toy-display);box-shadow:1px 2px 2px rgba(var(--toy-shade),.4)}
+.gu-kbead::before{content:attr(data-i)}
+.gu-kbead.toy-lac--mustard{color:var(--toy-on-mustard)}
+.gu-kids button:not([aria-pressed="true"]) .gu-kbead{opacity:.85}
+/* share: the one lacquered block up here */
+.gu-share{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 22px 2px;border-radius:16px;cursor:pointer;
+  font:600 19px/1 var(--toy-display);color:#fff;background:linear-gradient(#4A5DB6,#303F8C);
+  box-shadow:inset 0 3px 0 #7E8FDC,0 5px 0 #232F6B,4px 11px 10px rgba(var(--toy-shade),.4);transition:transform .09s ease-out,box-shadow .09s ease-out}
+.gu-share:active{transform:translateY(4px);box-shadow:inset 0 3px 0 #7E8FDC,0 1px 0 #232F6B,1px 3px 4px rgba(var(--toy-shade),.4)}
+.gu-share:focus-visible,.gu-kids button:focus-visible,#parent.gu .btn:focus-visible,.gu-nav a:focus-visible,.tip-watch:focus-visible,.tip-more:focus-visible,.rep-alert.as-btn:focus-visible{outline:3px solid var(--toy-ink);outline-offset:3px}
+.gu-toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:50;max-width:min(640px,90vw);white-space:pre-line;
+  background:#4A2C10;color:var(--toy-paper);border-radius:14px;padding:13px 22px;font-size:17px;box-shadow:4px 10px 14px rgba(var(--toy-shade),.4);transition:opacity .2s ease,transform .2s ease}
+.gu-toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto;-webkit-user-select:text;user-select:text}
+
+/* ---------- this week's report: one printed sheet on a clipboard ---------- */
+.rep-board.toy-clipboard{display:block;margin-top:26px;padding:40px 16px 16px;border-radius:16px}
+.rep.toy-paper{padding:34px 44px 38px;border-radius:5px}
+.rep-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:14px;border-bottom:2.5px solid var(--toy-ink);position:relative}
+.rep-head::after{content:"";position:absolute;left:0;right:0;bottom:-7px;border-bottom:1px solid var(--toy-ink);opacity:.55}
+.gu-title{display:flex;flex-direction:column;min-width:0}
+.rep-title{margin:0;font:700 clamp(34px,3.6vw,44px)/1.08 var(--toy-display);color:var(--toy-ink)}
+.gu-sub{margin-top:4px;font-size:17px;color:var(--gu-soft)}
+.rep-mark{flex:none;padding-bottom:4px;font:500 17px/1.2 var(--toy-display);color:var(--gu-soft)}
+
+.rep-cards{display:grid;grid-template-columns:1.12fr 1fr 1fr;margin-top:30px}
+.rep-card{display:flex;flex-direction:column;gap:6px;min-width:0;padding:2px 30px 4px;border-left:1px solid var(--gu-rule)}
+.rep-card:first-child{padding-left:0;border-left:0}
+.rep-card:last-child{padding-right:0}
+.rep-k{font-size:15.5px;color:var(--gu-soft)}
+.rep-big{font:600 25px/1.18 var(--toy-display);color:var(--toy-ink)}
+.rep-big.quiet{color:var(--gu-soft);font-weight:500}
+.rep-s{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:16px;line-height:1.4;color:var(--gu-soft)}
+.rep-cert{color:var(--toy-ink)}
+/* seven beads on a brass rod between two posts: teal = practised, bare wood = not */
+.rep-beads{position:relative;display:flex;justify-content:space-between;align-self:flex-start;width:min(100%,340px);box-sizing:border-box;margin-top:auto;padding:10px 22px 0}
+.rd-post{position:absolute;z-index:1;top:2px;width:13px;height:60px;border-radius:6px;background:linear-gradient(90deg,#F6DAAC,#E6BC82 45%,#B98448);box-shadow:inset 0 2px 0 rgba(255,246,224,.8),2px 5px 5px rgba(var(--toy-shade),.34)}
+.rd-post:first-child{left:0}.rd-post:last-child{right:0}
+.rep-beads::before{content:"";position:absolute;left:6px;right:6px;top:29px;height:8px;border-radius:4px;background:var(--gu-brass);box-shadow:2px 4px 4px rgba(var(--toy-shade),.28)}
+.rd-day{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:0}
+.rd-day i{font:400 13px/1.2 var(--toy-body);color:var(--gu-soft)}
+.rd-day.on i{color:var(--toy-ink);font-weight:700}
+/* working on now: a bead slides along the rod to the accuracy; a small flag marks what is needed */
+.rep-bar{position:relative;height:44px;margin:26px 16px 4px}
+.rep-bar::before{content:"";position:absolute;left:-16px;right:-16px;top:18px;height:8px;border-radius:4px;background:var(--gu-brass);box-shadow:2px 4px 4px rgba(var(--toy-shade),.28)}
+.rep-bar i{position:absolute;left:0;top:0;height:100%;transition:width .5s ease}
+.rep-bar i::after{content:"";position:absolute;right:-14px;top:1px;width:28px;height:42px;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%,#FFE9A6 0,#F2B632 42%,#C98A16 82%,#9E690D 100%);box-shadow:2px 4px 5px rgba(var(--toy-shade),.42)}
+.rep-bar.there i::after{background:radial-gradient(circle at 32% 26%,#95EDDC 0,#1FA595 42%,#137A70 82%,#0C5A54 100%)}
+.rep-bar.none i::after{background:radial-gradient(circle at 32% 26%,#FFF3DC 0,#EFD2A4 42%,#D2A670 82%,#B08448 100%)}
+.rep-bar b{position:absolute;top:2px;height:40px;width:2.5px;margin-left:-1px;border-radius:2px;background:var(--toy-walnut)}
+.rep-bar b u{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);padding-bottom:2px;text-decoration:none;font:600 14px/1 var(--toy-display);color:var(--toy-walnut);white-space:nowrap}
+
+.rep-row{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:36px;margin-top:30px;padding-top:30px;border-top:1px solid var(--gu-rule)}
+/* tonight's tip: a callout printed on the sheet, signed by the moon */
+.rep-tip{display:flex;flex-direction:column;gap:12px;min-width:0;padding:22px 28px 26px;border-radius:12px;border-left:6px solid var(--toy-indigo);
+  background:linear-gradient(#FBF4E2,#F6ECD6);box-shadow:inset 0 0 0 1px rgba(122,74,36,.12)}
+.tip-head{display:flex;align-items:center;gap:14px}
+.tip-moon{flex:none;margin:-10px 0 -6px -8px;line-height:0}
+.tip-k{display:block;font:600 17px/1.2 var(--toy-display);color:var(--toy-indigo)}
+.tip-t{margin:4px 0 0;font:600 28px/1.18 var(--toy-display);color:var(--toy-ink)}
+.tip-x{margin:0;font-size:19px;line-height:1.5;color:var(--toy-ink)}
+.tip-why{margin:0;font-size:16.5px;line-height:1.45;color:var(--gu-soft)}
+.tip-b{display:flex;gap:14px;flex-wrap:wrap;margin-top:auto;padding:10px 0 5px}
+.tip-watch,.tip-more{display:inline-flex;align-items:center;gap:8px;min-height:50px;padding:0 20px 2px;border-radius:14px;font:600 18px/1 var(--toy-display);cursor:pointer;transition:transform .09s ease-out,box-shadow .09s ease-out}
+.tip-watch{color:#fff;background:linear-gradient(#4A5DB6,#303F8C);box-shadow:inset 0 3px 0 #7E8FDC,0 4px 0 #232F6B,3px 9px 8px rgba(var(--toy-shade),.36)}
+.tip-more{color:var(--toy-ink);background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 4px 0 var(--toy-wood-deep),3px 9px 8px rgba(var(--toy-shade),.32)}
+.tip-watch:active{transform:translateY(3px);box-shadow:inset 0 3px 0 #7E8FDC,0 1px 0 #232F6B,1px 3px 3px rgba(var(--toy-shade),.36)}
+.tip-more:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 1px 0 var(--toy-wood-deep),1px 3px 3px rgba(var(--toy-shade),.32)}
+
+.rep-side{display:flex;flex-direction:column;gap:24px;min-width:0}
+.rep-missed{display:flex;flex-direction:column}
+.rep-missed h3{margin:0 0 6px;font:600 21px/1.2 var(--toy-display);color:var(--toy-ink)}
+.mm-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:14px;min-height:46px;padding:4px 0;border-bottom:1px solid var(--gu-rule);font-size:17px}
+.mm-row:last-child{border-bottom:0}
+.mm-row b{min-width:62px;text-align:right;font:600 17px/1.2 var(--toy-display);color:var(--toy-ink)}
+/* small beads threaded on a short brass rod (one per miss) */
+.gu-rodbeads{display:inline-flex;align-items:center;padding:0 7px;line-height:0;background:var(--gu-brass) 0 46%/100% 4px no-repeat;border-radius:2px}
+.gu-rodbeads .toy-bead{margin:0 -1.5px}
+.rep-alerts{display:flex;flex-direction:column;gap:12px}
+.rep-alert{display:flex;align-items:flex-start;gap:14px;width:100%;box-sizing:border-box;padding:15px 18px;border-radius:12px;text-align:left;font:inherit;color:var(--toy-ink);
+  background:linear-gradient(#FBF4E2,#F6ECD6);box-shadow:inset 0 0 0 1px rgba(122,74,36,.12)}
+.ra-ic{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;min-height:30px;line-height:0}
+.ra-ok{width:32px;height:32px;min-height:0;border-radius:50%;background:radial-gradient(circle at 32% 26%,#95EDDC 0,#1FA595 42%,#137A70 82%,#0C5A54 100%);box-shadow:1px 2px 3px rgba(var(--toy-shade),.4)}
+.rep-alert div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rep-alert b{font:600 18px/1.3 var(--toy-display);color:var(--toy-ink)}
+.rep-alert div span{font-size:16px;line-height:1.42;color:var(--gu-soft)}
+.rep-alert.as-btn{cursor:pointer;background:linear-gradient(var(--toy-paper),#FBF4E2);box-shadow:inset 0 0 0 1px rgba(122,74,36,.14),0 3px 0 #D9CEB8,3px 8px 9px rgba(var(--toy-shade),.24);transition:transform .09s ease-out,box-shadow .09s ease-out}
+.rep-alert.as-btn:active{transform:translateY(2px);box-shadow:inset 0 0 0 1px rgba(122,74,36,.14),0 1px 0 #D9CEB8,1px 3px 4px rgba(var(--toy-shade),.24)}
+
+/* ---------- settings: a wooden index rail, then loose sheets ---------- */
+.gu-nav{position:sticky;top:0;z-index:5;display:flex;gap:4px;margin:34px 0 22px;padding:7px 8px 8px;border-radius:18px;overflow-x:auto;scrollbar-width:none;
+  background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 5px 0 var(--toy-wood-deep),5px 13px 14px rgba(var(--toy-shade),.38)}
+.gu-nav::-webkit-scrollbar{display:none}
+.gu-nav a{flex:1 0 auto;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:46px;padding:0 15px;border-radius:12px;white-space:nowrap;
+  color:var(--toy-ink);text-decoration:none;font:600 17.5px/1 var(--toy-display)}
+.gu-nav a + a{box-shadow:-3px 0 0 -2px rgba(122,74,36,.3)}
+.gu-nav a:active{background:rgba(122,74,36,.16)}
+.gu-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px;align-items:start}
+.gu-panel.toy-paper{min-width:0;padding:26px 32px 28px;border-radius:5px;scroll-margin-top:84px}
+.gu-panel.wide{grid-column:1 / -1}
+.gu-panel h2{margin:0 0 10px;padding-bottom:10px;border-bottom:2px solid var(--toy-ink);font:600 26px/1.15 var(--toy-display);color:var(--toy-ink)}
+.gu-panel h3{margin:26px 0 4px;font:600 20px/1.2 var(--toy-display);color:var(--toy-indigo);scroll-margin-top:84px}
+#parent.gu .note,#parent.gu .hint{font-size:15.5px;line-height:1.45;color:var(--gu-soft)}
+#parent.gu p.hint{margin:4px 0 8px}
+#parent.gu .gu-panel > .note{margin:6px 0}
+#parent.gu .field{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:52px;padding:10px 0;border-bottom:1px solid var(--gu-rule)}
+#parent.gu .field:last-child{border-bottom:0}
+#parent.gu .field.gu-top{align-items:flex-start}
+#parent.gu .field label{font-weight:700;font-size:17px;color:var(--toy-ink)}
+#parent.gu .field .hint{display:block;max-width:520px;font-weight:400;font-size:15px}
+#parent.gu .field > div{display:flex;align-items:center;gap:10px;flex:none}
+/* text fields and selects: ruled boxes printed on the sheet */
+#parent.gu select,#parent.gu .txt,#parent.gu input[type=text],#parent.gu input[type=number]{font:400 17px/1.2 var(--toy-body);min-width:110px;min-height:46px;padding:6px 12px;box-sizing:border-box;
+  border:2px solid var(--gu-rule-2);border-radius:10px;background:#fff;color:var(--toy-ink);box-shadow:inset 1px 2px 3px rgba(var(--toy-shade),.12);-webkit-user-select:text;user-select:text}
+#parent.gu select{-webkit-appearance:none;appearance:none;max-width:100%;padding-right:38px;text-overflow:ellipsis;
+  background:#fff url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 9.5l6 6 6-6' fill='none' stroke='%237A4A24' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") right 10px center/20px no-repeat}
+#parent.gu select:focus,#parent.gu .txt:focus,#parent.gu input[type=text]:focus,#parent.gu input[type=number]:focus,#parent.gu textarea:focus{outline:none;border-color:var(--toy-indigo)}
+#parent.gu #sNode{width:min(400px,46vw)}
+#parent.gu #sName{width:min(280px,40vw)}
+
+/* sliders: a lacquered bead on a brass rod, big enough to grab, with the value on a chip beside it */
+#parent.gu input[type=range],#speedPop input[type=range]{-webkit-appearance:none;appearance:none;flex:1 1 auto;width:300px;min-width:0;height:52px;margin:0;padding:0;background:none;cursor:pointer;touch-action:pan-y}
+#parent.gu input[type=range]::-webkit-slider-runnable-track,#speedPop input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:var(--gu-brass,linear-gradient(#FFF1B8,#E2B54A 35%,#9C7420 72%,#C99A38));box-shadow:2px 4px 4px rgba(var(--toy-shade),.3)}
+#parent.gu input[type=range]::-moz-range-track,#speedPop input[type=range]::-moz-range-track{height:10px;border-radius:5px;background:linear-gradient(#FFF1B8,#E2B54A 35%,#9C7420 72%,#C99A38);box-shadow:2px 4px 4px rgba(var(--toy-shade),.3)}
+#parent.gu input[type=range]::-webkit-slider-thumb,#speedPop input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:34px;height:48px;margin-top:-19px;border:0;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%,#96A5EA 0,#3F52A8 42%,#28357A 82%,#1B2557 100%);box-shadow:3px 5px 6px rgba(var(--toy-shade),.45),inset 0 0 0 1.5px rgba(27,37,87,.5)}
+#parent.gu input[type=range]::-moz-range-thumb,#speedPop input[type=range]::-moz-range-thumb{width:34px;height:48px;border:0;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%,#96A5EA 0,#3F52A8 42%,#28357A 82%,#1B2557 100%);box-shadow:3px 5px 6px rgba(var(--toy-shade),.45)}
+#parent.gu input[type=range]:focus-visible,#speedPop input[type=range]:focus-visible{outline:3px solid var(--toy-ink);outline-offset:2px;border-radius:12px}
+#parent.gu .val{display:inline-block;min-width:74px;padding:9px 10px 8px;box-sizing:border-box;border-radius:10px;text-align:center;font:600 20px/1.1 var(--toy-display);font-variant-numeric:tabular-nums;color:var(--toy-ink);
+  background:linear-gradient(#FBF4E2,#F3E8CF);box-shadow:inset 0 0 0 1px rgba(122,74,36,.18)}
+#speedPop .pr-speedval{min-width:56px;font:600 22px/1 var(--toy-display)}
+#parent.gu .field.gu-slide > div{flex:0 1 auto;gap:16px}
+/* in the half-width sheets the slider gets its own full line under the label */
+@media (orientation:landscape){
+  #parent.gu .gu-panel:not(.wide) .field.gu-slide{flex-direction:column;align-items:stretch;gap:0;padding:12px 0 8px}
+  #parent.gu .gu-panel:not(.wide) .field.gu-slide > div{flex:none}
+}
+/* toggles: a bead in a groove. The groove looks 54x30; the target is 68x44 */
+#parent.gu .switch{position:relative;flex:none;width:68px;height:44px;padding:0;box-sizing:border-box;border:7px solid transparent;border-radius:22px;background-clip:padding-box;
+  background-color:#D9C8A6;box-shadow:inset 0 3px 4px rgba(var(--toy-shade),.4);cursor:pointer;transition:background-color .18s ease}
+#parent.gu .switch::after{content:"";position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%,#FFF3DC 0,#EFD2A4 45%,#D2A670 85%,#B08448 100%);box-shadow:1px 2px 3px rgba(var(--toy-shade),.5);transition:left .18s ease}
+#parent.gu .switch.on{background-color:var(--toy-teal-dk)}
+#parent.gu .switch.on::after{left:26px;background:radial-gradient(circle at 32% 26%,#fff 0,#FBF4E4 50%,#E2D6BF 100%)}
+#parent.gu .switch:focus-visible{outline:3px solid var(--toy-ink);outline-offset:-3px}
+#parent.gu .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-start}
+#parent.gu .gu-row{margin:14px 0 8px}
+#parent.gu .gu-adj{flex-wrap:nowrap;gap:10px}
+#parent.gu .gu-adj .val{min-width:64px;font-size:24px}
+#parent.gu .gu-tickets{flex:1;max-width:62%;flex-direction:column;align-items:flex-start;gap:8px}
+
+/* buttons on the sheets: small wooden blocks; the main one is indigo lacquer */
+#parent.gu .btn{--c1:#4A5DB6;--c2:#303F8C;--edge:#232F6B;--lip:#7E8FDC;--t:#fff;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:48px;min-height:46px;padding:0 17px 2px;margin-bottom:4px;
+  border:0;border-radius:12px;background:linear-gradient(var(--c1),var(--c2));color:var(--t);font:600 17px/1.1 var(--toy-display);cursor:pointer;
+  box-shadow:inset 0 2.5px 0 var(--lip),0 4px 0 var(--edge),3px 8px 7px rgba(var(--toy-shade),.3);transition:transform .08s ease-out,box-shadow .08s ease-out}
+#parent.gu .btn.ghost{--edge:var(--toy-wood-deep);--lip:rgba(255,246,224,.85);--t:var(--toy-ink);background:var(--toy-grain) 0 0/512px 256px,linear-gradient(var(--toy-wood-lt),var(--toy-wood))}
+#parent.gu .btn.coral{--c1:#EA4C3A;--c2:#C92F27;--edge:#93201F;--lip:#FF8D78}
+#parent.gu .btn:active{transform:translateY(3px);box-shadow:inset 0 2.5px 0 var(--lip),0 1px 0 var(--edge),1px 3px 3px rgba(var(--toy-shade),.3)}
+#parent.gu .btn:disabled,#parent.gu .btn[disabled]{opacity:.45;pointer-events:none}
+#parent.gu .btn.gu-sq{width:50px;padding:0 0 2px}
+#parent.gu .gu-ic{display:inline-flex;line-height:0}
+#parent.gu .gu-flip svg{transform:scaleX(-1)}
+
+/* tables: ruled like a ledger */
+.gu-tablewrap{overflow-x:auto;margin:12px 0}
+#parent.gu table{width:100%;border-collapse:collapse;font-size:16px}
+#parent.gu th{padding:8px 10px;text-align:left;vertical-align:bottom;font:400 15px/1.3 var(--toy-body);color:var(--gu-soft);border-bottom:1.5px solid var(--gu-rule-2)}
+#parent.gu td{padding:7px 10px;vertical-align:middle;border-bottom:1px solid var(--gu-rule)}
+#parent.gu tr:last-child td{border-bottom:0}
+#parent.gu .nodetable tr.lvl-row th{padding:20px 10px 6px;text-align:left;font:600 18px/1.2 var(--toy-display);color:var(--toy-indigo);border-bottom:1.5px solid var(--gu-rule-2)}
+#parent.gu .nodetable td:first-child{font-weight:700}
+#parent.gu .nodetable td:nth-child(3),#parent.gu #sessions td:first-child,#parent.gu #sessions td:nth-child(4),#parent.gu #sessions td:nth-child(5){white-space:nowrap}
+#parent.gu .nodetable td:last-child{white-space:nowrap;text-align:right}
+#parent.gu .nodetable th:last-child{text-align:right}
+#parent.gu .pill{display:inline-flex;align-items:center;gap:6px;margin:2px 8px 2px 0;padding:3px 10px;border-radius:999px;font-size:14.5px;line-height:1.3;color:var(--gu-soft);background:none;box-shadow:inset 0 0 0 1px var(--gu-rule-2);white-space:nowrap}
+#parent.gu .pill.good{color:var(--toy-teal-deep);box-shadow:none;padding-left:0;font-weight:700}
+#parent.gu .pill.good::before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 32% 26%,#95EDDC 0,#1FA595 45%,#137A70 100%)}
+#parent.gu .pill.bad{color:var(--toy-ink);background:#FBF4E2}
+/* accuracy in the skills table: a little bead on a little rod */
+#parent.gu .nodetable .mini{position:relative;display:inline-block;width:76px;height:16px;margin-right:12px;vertical-align:middle;background:var(--gu-brass) 0 50%/100% 4px no-repeat}
+#parent.gu .nodetable .mini{overflow:visible;border-radius:0;background-color:transparent}
+#parent.gu .nodetable .mini i{display:block;position:absolute;left:0;top:0;height:100%;min-width:6px;background:none}
+#parent.gu .nodetable .mini i::after{content:"";position:absolute;right:-6px;top:0;width:12px;height:16px;border-radius:50%;background:radial-gradient(circle at 32% 26%,#96A5EA 0,#3F52A8 45%,#28357A 100%);box-shadow:1px 2px 2px rgba(var(--toy-shade),.4)}
+#parent.gu .gu-tick{display:inline-flex;color:var(--toy-teal-dk);line-height:0}
+#parent.gu .tp-bead{display:inline-flex;vertical-align:middle;line-height:0;margin-left:4px}
+#parent.gu .tptable td:last-child{text-align:right}
+#parent.gu .tptable input[data-f=name]{width:100%}
+
+/* set-up checklist: ruled rows with a status bead */
+#parent.gu .checkl{display:flex;flex-direction:column;gap:0;margin-top:0}
+#parent.gu .ck{display:flex;align-items:center;gap:16px;padding:12px 0;border:0;border-radius:0;background:none;border-bottom:1px solid var(--gu-rule)}
+#parent.gu .ck:last-child{border-bottom:0;padding-bottom:2px}
+#parent.gu .ck-i{flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;font:700 18px/1 var(--toy-display);box-shadow:1px 2px 3px rgba(var(--toy-shade),.4)}
+#parent.gu .ck-i svg{display:block}
+#parent.gu .ck.ok .ck-i{color:#fff;background:radial-gradient(circle at 32% 26%,#95EDDC 0,#1FA595 42%,#137A70 82%,#0C5A54 100%)}
+#parent.gu .ck.warn .ck-i{color:var(--toy-on-mustard);background:radial-gradient(circle at 32% 26%,#FFE9A6 0,#F2B632 42%,#C98A16 82%,#9E690D 100%)}
+#parent.gu .ck.todo .ck-i{background:radial-gradient(circle at 32% 26%,#FFF3DC 0,#EFD2A4 42%,#D2A670 82%,#B08448 100%)}
+#parent.gu .ck-t{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+#parent.gu .ck-t b{font-size:17px}
+#parent.gu .ck-t span{font-size:15.5px;line-height:1.4;color:var(--gu-soft)}
+#parent.gu .ck-b{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;flex:none;max-width:46%}
+
+/* children */
+#parent.gu .kids .kidrow{display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 0;border-bottom:1px solid var(--gu-rule)}
+#parent.gu .kids .kidname{flex:1;min-width:0;font:600 20px/1.2 var(--toy-display)}
+#parent.gu .kids .kidname em{display:block;font:400 15px/1.3 var(--toy-body);color:var(--gu-soft);font-style:normal}
+#parent.gu .kids .gu-kbead{width:38px;height:38px;font-size:20px}
+/* treat tickets */
+#parent.gu .ticket{display:inline-flex;align-items:center;gap:10px;margin:0;padding:5px 6px 5px 16px;border:2px dashed rgba(122,74,36,.45);border-radius:14px;background:linear-gradient(#FBF4E2,#F6ECD6);font:600 18px/1.2 var(--toy-display);color:var(--toy-ink)}
+#parent.gu .ticket .note{font-family:var(--toy-body);font-weight:400}
+/* voices: the recorder sits on a felt mat */
+#parent.gu .recpanel{margin:16px 0 14px;padding:20px 24px;border:0;border-radius:20px;background:var(--toy-felt-grain),linear-gradient(135deg,var(--toy-felt),var(--toy-felt-dk));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 3px 0 var(--toy-felt-edge),4px 9px 11px rgba(var(--toy-shade),.26)}
+#parent.gu .recrow{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+#parent.gu .gu-reclabel{font-weight:700;color:var(--toy-ink)}
+#parent.gu .gu-recname{width:150px}
+#parent.gu .recword{min-width:160px;text-align:center}
+#parent.gu .recword #recWord{font:700 42px/1.1 var(--toy-display);color:var(--toy-ink)}
+#parent.gu #recBtn{--c1:#EA4C3A;--c2:#C92F27;--edge:#93201F;--lip:#FF8D78;min-width:250px;min-height:58px;border-radius:29px;font-size:19px}
+#parent.gu #recBtn.on{--c1:#C92F27;--c2:#A82220}
+#parent.gu .gu-recdot{flex:none;width:14px;height:14px;border-radius:50%;background:#fff}
+#parent.gu textarea{width:100%;height:140px;margin-top:8px;padding:8px;box-sizing:border-box;border:2px solid var(--gu-rule-2);border-radius:10px;background:#fff;color:var(--toy-ink);font:12px ui-monospace,monospace}
+#parent.gu .checklist{margin:8px 0 0;padding-left:22px}
+#parent.gu .checklist li{margin:7px 0;font-size:16.5px;line-height:1.45;color:var(--toy-ink)}
+#parent.gu .checklist li::marker{color:var(--toy-teal-dk)}
+#parent.gu .flashme{animation:gu-flash 1.6s ease}
+@keyframes gu-flash{0%,100%{outline:4px solid rgba(242,182,50,0);outline-offset:3px}20%,60%{outline:4px solid var(--toy-mustard);outline-offset:3px}}
+#parent.gu .gu-diag{margin-top:14px;padding-top:6px;border-top:1px solid var(--gu-rule)}
+#parent.gu .gu-diag[hidden]{display:none}
+#parent.gu .gu-diag h3{margin-top:10px}
+
+/* the stamp at the bottom of the table: Bix signs, the version sits beside him (five quick taps open diagnostics) */
+.gu-foot{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:30px}
+.gu-sign{line-height:0}
+.gu-ver{border:0;background:transparent;min-width:44px;min-height:44px;padding:0 14px;font:700 15px/1 var(--toy-body);color:var(--toy-ink);cursor:default;-webkit-tap-highlight-color:transparent}
+
+/* ---------- other iPad sizes ---------- */
+@media (orientation:portrait){
+  .gu-wrap{padding:18px 26px 36px}
+  .rep.toy-paper{padding:28px 30px 32px}
+  .rep-cards{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:26px}
+  .rep-cards .rep-card:first-child{grid-column:1 / -1;flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:26px;padding-bottom:24px;border-bottom:1px solid var(--gu-rule)}
+  .rep-cards .rep-card:first-child .rep-k{flex-basis:100%}
+  .rep-cards .rep-card:first-child .rep-beads{margin:0 0 0 auto;width:340px}
+  .rep-cards .rep-card:nth-child(2){padding-left:0;border-left:0}
+  .rep-row{grid-template-columns:1fr;gap:28px}
+  .gu-panels{grid-template-columns:1fr}
+  .gu-nav a{padding:0 11px;font-size:16.5px}
+  #parent.gu .nodetable th:nth-child(4),#parent.gu .nodetable td:nth-child(4){display:none}
+  #parent.gu .ck-b{max-width:38%}
+  #parent.gu .nodetable .mini{width:52px}
+  #parent.gu input[type=range]{width:260px}
+  #parent.gu .gu-tickets{max-width:70%}
+}
+@media (min-width:1300px){
+  .gu-wrap{padding-left:max(36px,calc((100% - 1240px)/2));padding-right:max(36px,calc((100% - 1240px)/2))}
+  .rep.toy-paper{padding:40px 54px 44px}
+  .rep-row{gap:52px}
+  #parent.gu input[type=range]{width:360px}
+}
+@media (prefers-reduced-motion:reduce){
+  #parent.gu{scroll-behavior:auto}
+  .rep-bar i,.gu-toast,.gu-share,.tip-watch,.tip-more,.rep-alert.as-btn,#parent.gu .btn,#parent.gu .switch,#parent.gu .switch::after{transition:none}
+  #parent.gu .flashme{animation:none;outline:4px solid var(--toy-mustard);outline-offset:3px}
+}

@@ -1149,7 +1149,10 @@ function setStages(){
   $('#listenSpeed').style.display = mode==='listen'?'flex':'none'; $('#flashSpeed').style.display = mode==='flash'?'flex':'none';
   if (mode==='listen') setupGapSlider(); if (mode==='flash') setupFlashSlider();
 }
-$('#speedBtn').addEventListener('click', ()=>{ const p=$('#speedPop'); p.hidden=!p.hidden; $('#speedBtn').setAttribute('aria-expanded', String(!p.hidden)); });
+// The speed sliders are a grown-up control: closing is free, opening goes through the grown-ups gate (and comes straight back here).
+$('#speedBtn').addEventListener('click', ()=>{ const p=$('#speedPop'), b=$('#speedBtn');
+  if (!p.hidden){ p.hidden=true; b.setAttribute('aria-expanded','false'); return; }
+  openGate(()=>{ p.hidden=false; b.setAttribute('aria-expanded','true'); }); });
 function endDrill(){ dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
 function stopTest(){ /* the level test keeps a silent, generous time measure only (LT.start); nothing ticks on screen */ }
 function setEntry(v){ entry=v; Tool.readout(); }
@@ -1644,7 +1647,7 @@ async function renderChecklist(){
     ['ok', 'Listening voice', voice+'.', '<button class="btn small ghost" data-go="voice">Change</button>'],
     [lb ? (days_>30?'warn':'ok') : 'warn', 'Backup', lb ? `Last saved ${days_===0?'today':days_===1?'yesterday':days_+' days ago'}.` : 'Never saved. Save one so progress can be restored if the device is lost or reset.', '<button class="btn small ghost" data-go="backup">Back up</button>'],
   ];
-  box.innerHTML = rows.filter(Boolean).map(([st,t,d,btn])=>`<div class="ck ${st}"><span class="ck-i" aria-label="${st==='ok'?'done':st==='warn'?'worth a look':'to do'}">${st==='ok'?WS.icon('check', 18, 'currentColor', 3.2):st==='warn'?'!':''}</span><div class="ck-t"><b>${t}</b><span>${d}</span></div><div class="ck-b">${btn}</div></div>`).join('');
+  box.innerHTML = rows.filter(Boolean).map(([st,t,d,btn])=>`<div class="ck ${st}"><span class="ck-i" aria-label="${st==='ok'?'done':st==='warn'?'worth a look':'to do'}">${st==='ok'?TOY.icon('check', 18, 'currentColor', {stroke:3.4}):st==='warn'?'!':''}</span><div class="ck-t"><b>${t}</b><span>${d}</span></div><div class="ck-b">${btn}</div></div>`).join('');
   const go={ name:'#sName', skill:'#sNode', treats:'#tpList', voice:'#sVoice', backup:'#bkMake' };
   box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ const k=b.dataset.go; if (k==='check'){ Recorder.stop(); return Setup.open('check'); } const el=$(go[k]); el.scrollIntoView({behavior:'smooth', block:'center'}); setTimeout(()=>{ el.focus && el.focus(); el.classList.add('flashme'); setTimeout(()=>el.classList.remove('flashme'),1600); }, 400); });
 }
@@ -1687,6 +1690,10 @@ function fmtRange(a, b){
   return A.getMonth()===B.getMonth() ? `${mo(A)} ${A.getDate()} – ${B.getDate()}` : `${mo(A)} ${A.getDate()} – ${mo(B)} ${B.getDate()}`;
 }
 let lastReport=null;
+// Small drawings for the grown-ups area that the kit does not have (see "Kit requests"): a share glyph, and beads threaded on a brass rod.
+const KID_LAC=['red','indigo','teal','mustard'];
+const guShare=(size)=>`<svg class="toy-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12,14.6 V3.6 M7.8,7.6 L12,3.4 L16.2,7.6"/><path d="M6,11.6 V18 a2.2,2.2 0 0 0 2.2,2.2 H15.8 a2.2,2.2 0 0 0 2.2,-2.2 V11.6"/></svg>`;
+const guRodBeads=(n, color, size)=>`<span class="gu-rodbeads" aria-hidden="true">${Array.from({length:n}, ()=>TOY.bead(color, size||22, {tall:true, shadow:false})).join('')}</span>`;
 function renderReport(){
   if (!PBrain) return;
   const data=reportData(), r=PBrain.weeklyReport(data), name=(settings.name||'').trim();
@@ -1695,15 +1702,15 @@ function renderReport(){
   $('#repDates').textContent = fmtRange(r.weekStart, r.weekEnd);
   // children switcher (switching reloads the app as that child, then comes straight back here)
   const act=Store.activeId(), kids=Store.children();
-  $('#repKids').innerHTML = kids.map(c=>`<button data-rk="${c.id}" aria-pressed="${c.id===act}">${esc(childLabel(c))}</button>`).join('')
-    + `<button class="gu-add" id="repAdd" aria-label="Add a child">${WS.icon('plus', 18, 'currentColor', 2.6)}</button>`;
+  $('#repKids').innerHTML = kids.map((c,i)=>`<button data-rk="${c.id}" aria-pressed="${c.id===act}"><span class="gu-kbead toy-lac--${KID_LAC[i%KID_LAC.length]}" data-i="${esc(childLabel(c).trim().charAt(0).toUpperCase())}" aria-hidden="true"></span>${esc(childLabel(c))}</button>`).join('')
+    + `<button class="gu-add" id="repAdd" aria-label="Add a child">${TOY.icon('plus', 22, 'currentColor')}</button>`;
   $$('#repKids [data-rk]').forEach(b=>b.onclick=()=>{ if (b.dataset.rk===Store.activeId()) return; Recorder.stop(); Store.switchTo(b.dataset.rk); sessionStorage.setItem('abacus.who','1'); sessionStorage.setItem('abacus.reopen','parent'); location.reload(); });
   $('#repAdd').onclick=()=>$('#kidAdd').click();
-  $('#repShare').innerHTML=WS.icon('share', 20, 'currentColor', 2.4)+'<span>Share report</span>';
-  // days practised: one bead per day, oldest first
+  $('#repShare').innerHTML=guShare(22)+'<span>Share report</span>';
+  // days practised: one bead per day on a rod, oldest first (teal = practised)
   const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const beads=r.days.map(d=>{ const w=new Date(d.date+'T12:00:00').getDay(); return `<span class="rd-day">${WS.bead(d.practiced?'jade':'pale', 36, {label:`${DOW[w]}, ${d.practiced?'practised':'not practised'}`})}<i aria-hidden="true">${DOW[w][0]}</i></span>`; }).join('');
-  $('#repDays').innerHTML=`<span class="rep-k">Days practised</span><div class="rep-beads">${beads}</div><span class="rep-big" id="repDaysN">${r.daysPracticed} of 7 days${r.minutes?` · ${r.minutes} min`:''}</span>`;
+  const beads=r.days.map(d=>{ const w=new Date(d.date+'T12:00:00').getDay(); return `<span class="rd-day${d.practiced?' on':''}">${TOY.bead('teal', 50, {tall:true, dim:!d.practiced, label:`${DOW[w]}, ${d.practiced?'practised':'not practised'}`})}<i aria-hidden="true">${DOW[w][0]}</i></span>`; }).join('');
+  $('#repDays').innerHTML=`<span class="rep-k">Days practised</span><span class="rep-big" id="repDaysN">${r.daysPracticed} of 7 days${r.minutes?` · ${r.minutes} min`:''}</span><div class="rep-beads"><span class="rd-post" aria-hidden="true"></span>${beads}<span class="rd-post" aria-hidden="true"></span></div>`;
   // mastered this week (+ certificates)
   const certs=certificates(), from=r.weekStart, to=r.weekEnd;
   const certFor=id=>certs.find(c=>c.nodeId===id);
@@ -1713,32 +1720,32 @@ function renderReport(){
   if (mastered.length){
     const m=mastered[0], c=certFor(m.nodeId);
     mh+=`<span class="rep-big" id="repMasteredN">${esc(m.label)}</span>`;
-    mh+= c ? `<span class="rep-s">${WS.icon('star', 18, WS.colors.ochre)} Certificate earned${c.accuracy!=null?` · ${Math.round(c.accuracy<=1?c.accuracy*100:c.accuracy)}% right`:''}</span>` : `<span class="rep-s">A new skill, learned by practising</span>`;
+    mh+= c ? `<span class="rep-s rep-cert">${TOY.icon('star', 20, '#C98A16')} Certificate earned${c.accuracy!=null?` · ${Math.round(c.accuracy<=1?c.accuracy*100:c.accuracy)}% right`:''}</span>` : `<span class="rep-s">A new skill, learned by practising</span>`;
     if (mastered.length>1) mh+=`<span class="rep-s">and ${mastered.slice(1).map(x=>esc(x.label)).join(', ')}</span>`;
   } else mh+=`<span class="rep-big quiet" id="repMasteredN">Nothing new yet</span><span class="rep-s">Skills move on at 80% on 2 days. Steady practice gets there.</span>`;
   $('#repMastered').innerHTML=mh;
-  // working on now: accuracy bar with the 80% mark
-  const cu=r.current, acc=cu.accuracy===null?null:Math.round(cu.accuracy*100);
+  // working on now: a bead slides along the rod to the accuracy; the flag marks the 80% needed
+  const cu=r.current, acc=cu.accuracy===null?null:Math.round(cu.accuracy*100), goal=Math.round(cu.needed*100);
   const need = acc===null ? 'Not practised yet. It moves on at 80% right on 2 different days.'
-    : `${acc}% right · needs ${Math.round(cu.needed*100)}% on ${cu.daysNeeded} days to move on` + (cu.problems<cu.problemsNeeded ? ` (${cu.problems} of ${cu.problemsNeeded} problems so far)` : '');
+    : `${acc}% right · needs ${goal}% on ${cu.daysNeeded} days to move on` + (cu.problems<cu.problemsNeeded ? ` (${cu.problems} of ${cu.problemsNeeded} problems so far)` : '');
   $('#repWorking').innerHTML=`<span class="rep-k">Working on now</span><span class="rep-big">${esc(cu.label)}</span>
-    <div class="rep-bar" role="img" aria-label="${acc===null?'no answers yet':acc+'% right'}, 80% needed"><i style="width:${acc||0}%"></i><b style="left:${Math.round(cu.needed*100)}%"></b></div><span class="rep-s" id="repNeed">${need}</span>`;
-  // tonight's tip
+    <div class="rep-bar${acc===null?' none':acc>=goal?' there':''}" role="img" aria-label="${acc===null?'no answers yet':acc+'% right'}, ${goal}% needed"><i style="width:${acc||0}%"></i><b style="left:${goal}%"><u>${goal}%</u></b></div><span class="rep-s" id="repNeed">${need}</span>`;
+  // tonight's tip: the moon keeps the long view, so she signs it
   const tip=pickTip(data); window.__tip=tip;
-  $('#repTip').innerHTML=`<span class="tip-k">Tonight’s 2-minute tip</span><h3 class="tip-t" id="repTipTitle" data-tip="${esc(tip.id)}">${esc(tip.title)}</h3><p class="tip-x">${esc(tip.text)}</p><p class="tip-why">${esc(tip.why||'')}</p>
-    <div class="tip-b"><button class="tip-watch" id="repWatch">${WS.icon('play', 18, 'currentColor')}<span>Watch Bix show it</span></button><button class="tip-more" id="repHow">How the abacus works</button></div>`;
+  $('#repTip').innerHTML=`<div class="tip-head"><span class="tip-moon">${TOY.moon('calm', 92, {still:true})}</span><div><span class="tip-k">Tonight’s 2-minute tip</span><h3 class="tip-t" id="repTipTitle" data-tip="${esc(tip.id)}">${esc(tip.title)}</h3></div></div><p class="tip-x">${esc(tip.text)}</p><p class="tip-why">${esc(tip.why||'')}</p>
+    <div class="tip-b"><button class="tip-watch" id="repWatch">${TOY.icon('play', 22, 'currentColor')}<span>Watch Bix show it</span></button><button class="tip-more" id="repHow">How the abacus works</button></div>`;
   $('#repWatch').onclick=()=>{ Speaker.unlock(); Recorder.stop(); startLesson(lessonTarget(NODES[curIdx()]), 'parent'); };
   $('#repHow').onclick=()=>$('#guTech').scrollIntoView({behavior:'smooth', block:'start'});
-  // missed most
+  // missed most: one small bead per miss (up to 8 drawn; the number is always written)
   const mm=r.missedMost.concat(mulMissed(r.weekStart, r.weekEnd)).sort((a,b)=>b.count-a.count).slice(0,3);
-  $('#repMissed').innerHTML='<h3>Missed most</h3>'+(mm.length ? mm.map(m=>`<div class="mm-row"><span>${esc(m.label)}</span><b class="${m.count>=3?'hot':''}">${m.count} time${m.count===1?'':'s'}</b></div>`).join('')
+  $('#repMissed').innerHTML='<h3>Missed most</h3>'+(mm.length ? mm.map(m=>`<div class="mm-row"><span>${esc(m.label)}</span>${guRodBeads(Math.min(m.count, 8), 'mustard', 24)}<b>${m.count} time${m.count===1?'':'s'}</b></div>`).join('')
     : '<p class="rep-s">Nothing missed this week.</p>');
   // gentle alerts + treats waiting to be handed over
   const al=PBrain.stuckAlerts(data).sort((a,b)=>b.severity-a.severity).slice(0,2);
   const w=(Fun.data.wallet||{}), open=(w.tickets||[]).filter(x=>!x.given);
-  let ah=al.map(a=>`<div class="rep-alert" data-kind="${a.kind}">${WS.icon('sprout', 30, WS.colors.ochre)}<div><b>${esc(a.message)}</b><span>${esc(a.suggestion)}</span></div></div>`).join('');
-  if (open.length) ah+=`<button class="rep-alert as-btn" id="repTickets">${WS.icon('star', 30, WS.colors.ochre)}<div><b>${open.length} treat${open.length===1?'':'s'} to hand over</b><span>${esc(name||'They')} bought ${open.map(t=>esc(t.name)).join(', ')}. Tap to see the tickets.</span></div></button>`;
-  if (!ah) ah=`<div class="rep-alert calm">${WS.icon('check', 30, WS.colors.jade, 3)}<div><b>Nothing to worry about</b><span>No stuck spots this week. Short, happy practice most days is the whole secret.</span></div></div>`;
+  let ah=al.map(a=>`<div class="rep-alert" data-kind="${a.kind}"><span class="ra-ic">${TOY.bead('mustard', 34)}</span><div><b>${esc(a.message)}</b><span>${esc(a.suggestion)}</span></div></div>`).join('');
+  if (open.length) ah+=`<button class="rep-alert as-btn" id="repTickets"><span class="ra-ic">${TOY.icon('star', 30, '#C98A16')}</span><div><b>${open.length} treat${open.length===1?'':'s'} to hand over</b><span>${esc(name||'They')} bought ${open.map(t=>esc(t.name)).join(', ')}. Tap to see the tickets.</span></div></button>`;
+  if (!ah) ah=`<div class="rep-alert calm"><span class="ra-ic ra-ok">${TOY.icon('check', 22, '#fff', {stroke:3.4})}</span><div><b>Nothing to worry about</b><span>No stuck spots this week. Short, happy practice most days is the whole secret.</span></div></div>`;
   $('#repAlerts').innerHTML=ah;
   const tk=$('#repTickets'); if (tk) tk.onclick=()=>$('#guTreats').scrollIntoView({behavior:'smooth', block:'start'});
 }
@@ -1752,7 +1759,7 @@ $('#repShare').addEventListener('click', async()=>{
 });
 // After switching child from the report, come straight back to it.
 setTimeout(()=>{ if (sessionStorage.getItem('abacus.reopen')==='parent'){ sessionStorage.removeItem('abacus.reopen'); renderParent(); show('parent'); } }, 0);
-$('#parentDone').innerHTML=BACK_ICON();
+$('#parentDone').innerHTML=TOY.icon('back', 30, 'currentColor');
 $('#parent .gu-nav').addEventListener('click', e=>{ const a=e.target.closest('a'); if (!a) return; e.preventDefault(); const t=$(a.getAttribute('href')); if (t) t.scrollIntoView({behavior:'smooth', block:'start'}); });
 async function renderParent(){
   renderReport();
@@ -1764,7 +1771,7 @@ async function renderParent(){
   const tb=$('#nodeTable tbody'); tb.innerHTML='';
   NODES.forEach((n,i)=>{ if (i===0 || levelOf(NODES[i-1])!==levelOf(n)){ const lr=document.createElement('tr'); lr.className='lvl-row'; lr.innerHTML=`<th colspan="5">Level ${levelOf(n)}</th>`; tb.appendChild(lr); } const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
     const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':st.mastered==='placed'?'<span class="pill good">learned (level check)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
-    tr.innerHTML=`<td>${esc(n.title)}</td><td>${st.lesson?`<span class="gu-tick" aria-label="done">${WS.icon('check', 18, 'currentColor', 3)}</span>`:'—'}</td><td>${acc===null?'—':`<span class="mini"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}">${st.mastered?'un-learn':'mark learned'}</button></td>`;
+    tr.innerHTML=`<td>${esc(n.title)}</td><td>${st.lesson?`<span class="gu-tick" aria-label="done">${TOY.icon('check', 20, 'currentColor', {stroke:3.2})}</span>`:'—'}</td><td>${acc===null?'—':`<span class="mini" aria-hidden="true"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}">${st.mastered?'un-learn':'mark learned'}</button></td>`;
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
   Treats.renderParent(); Treats.bindParent();
@@ -1785,7 +1792,7 @@ async function renderParent(){
   $('#recWho').onchange=async()=>{ await Recorder.select($('#recWho').value); $('#recName').value=profileName(Recorder.pid); };
   $('#recName').onchange=()=>{ const p=profiles().find(x=>x.id===Recorder.pid); if(!p) return; p.name=$('#recName').value.trim()||p.name; saveSettings(); renderProfiles(); fillVoiceSelect(); };
   $('#recAdd').onclick=async()=>{ const name=$('#recNew').value.trim(); if(!name){ $('#recNew').focus(); return; } const id=newProfileId(); profiles().push({id, name}); saveSettings(); $('#recNew').value=''; Recorder.pid=id; await renderProfiles(); fillVoiceSelect(); $('#recStatus').textContent=`Added ${name}. Tap "Start recording" and record the ${RECORD_WORDS.length} words.`; };
-  $('#recDelete').onclick=async()=>{ const pid=Recorder.pid; if(!pid) return; if(!await WS.confirm(`Delete ${profileName(pid)}?`, `This deletes ${profileName(pid)} and all of their recordings from this device.`, {ok:'Delete', cancel:'Keep', danger:true})) return; await ClipStore.deleteProfile(pid); settings.profiles=profiles().filter(p=>p.id!==pid); if (settings.voice==='rec:'+pid || (settings.voice==='rec:turns' && profiles().filter(p=>Speaker.isComplete(p.id)).length<2)) settings.voice=profiles()[0]?'rec:'+profiles()[0].id:'device'; delete Speaker.recs[pid]; delete Speaker.recLoaded[pid]; saveSettings(); Recorder.pid=null; await renderProfiles(); fillVoiceSelect(); };
+  $('#recDelete').onclick=async()=>{ const pid=Recorder.pid; if(!pid) return; if(!await TOY.confirm(`Delete ${profileName(pid)}?`, `This deletes ${profileName(pid)} and all of their recordings from this device.`, {ok:'Delete', cancel:'Keep', danger:true})) return; await ClipStore.deleteProfile(pid); settings.profiles=profiles().filter(p=>p.id!==pid); if (settings.voice==='rec:'+pid || (settings.voice==='rec:turns' && profiles().filter(p=>Speaker.isComplete(p.id)).length<2)) settings.voice=profiles()[0]?'rec:'+profiles()[0].id:'device'; delete Speaker.recs[pid]; delete Speaker.recLoaded[pid]; saveSettings(); Recorder.pid=null; await renderProfiles(); fillVoiceSelect(); };
   $('#recStart').onclick=async()=>{ Speaker.unlock(); if (await Recorder.start()) $('#recStatus').textContent+=' — microphone ready'; };
   const rb=$('#recBtn'); rb.onpointerdown=e=>{ e.preventDefault(); if(!Recorder.stream){ $('#recStatus').textContent='Tap "Start recording" first.'; return; } Recorder.begin(); };
   rb.onpointerup=rb.onpointerleave=rb.onpointercancel=()=>Recorder.end();
@@ -1794,11 +1801,11 @@ async function renderParent(){
   $('#bkMake').onclick=async()=>{ const b=$('#bkMake'); b.disabled=true; b.textContent='Preparing…'; try{ const f=await Backup.build(); $('#bkSave').style.display=''; $('#bkInfo').textContent=`Ready: ${f.name} (${(f.size/1048576).toFixed(1)} MB, ${profiles().length} voice${profiles().length===1?'':'s'}, progress and settings). Tap "Save file", then choose "Save to Files".`; }catch(e){ $('#bkInfo').textContent='Could not prepare backup: '+(e&&e.message||e); } b.disabled=false; b.textContent='1. Prepare backup'; };
   $('#bkSave').onclick=async()=>{ const r=await Backup.save(); if (r==='shared'||r==='downloaded'){ settings.lastBackup=new Date().toISOString(); saveSettings(); renderChecklist(); } $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
   $('#bkOpen').onclick=()=>$('#bkFile').click();
-  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=await WS.confirm('Restore progress and settings too?', 'Recorded voices are always restored. This backup can also bring back the children’s progress and settings, replacing what is on this device now.', {ok:'Voices, progress and settings', cancel:'Voices only'}); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
+  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=await TOY.confirm('Restore progress and settings too?', 'Recorded voices are always restored. This backup can also bring back the children’s progress and settings, replacing what is on this device now.', {ok:'Voices, progress and settings', cancel:'Voices only'}); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#soundTest').onclick=async()=>{ Speaker.unlock(); Sfx.star(); await sleep(450); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); Diag.add('sound test ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); };
-  $('#guVer').textContent='Bix Abacus v'+appVersion();
+  $('#guVer').textContent='Bix Abacus v'+appVersion(); if (!$('#guSign').firstChild) $('#guSign').innerHTML=TOY.bix('happy', 54, {still:true});
   $('#diagTts').onclick=async()=>{ Speaker.unlock(); const r=await Speaker.sayDevice('seven, plus three'); Diag.add('device test: '+r); $('#diagLog').textContent=Diag.lines.join('\n'); };
   $('#diagBeep').onclick=()=>{ Speaker.unlock(); Sfx.star(); Diag.add('beep ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); $('#diagLog').textContent=Diag.lines.join('\n'); };
   const st=$('#sessions tbody'); st.innerHTML='';
@@ -1809,7 +1816,7 @@ async function renderParent(){
 }
 $('#parentDone').addEventListener('click', ()=>{ Recorder.stop(); renderHome(); show('home'); });
 // Grown-up icons in static markup (data-ic), drawn from the kit.
-$$('#parent .gu-ic[data-ic]').forEach(el=>{ el.innerHTML=WS.icon(el.dataset.ic, 20, 'currentColor', 2.6); });
+$$('#parent .gu-ic[data-ic]').forEach(el=>{ el.innerHTML=TOY.icon(el.dataset.ic, 22, 'currentColor', {stroke:2.8}); });
 // The version lives only here in grown-ups (the child's home shows none): read from app.js's own ?v= cache tag.
 function appVersion(){ const sc=document.querySelector('script[src*="app.js"]'); const m=sc && /[?&]v=([\w.]+)/.exec(sc.getAttribute('src')); return m ? m[1] : ''; }
 // Sound diagnostics are for support only: five quick taps on the version line show them.
@@ -1819,9 +1826,9 @@ function appVersion(){ const sc=document.querySelector('script[src*="app.js"]');
 function childLabel(c){ return c.name || 'New child'; }
 function renderChildren(){
   const box=$('#kidsList'); if(!box) return; const act=Store.activeId();
-  box.innerHTML=Store.children().map(c=>`<div class="kidrow"><span class="kidname">${esc(childLabel(c))}${c.id===act?' <em>(practising now)</em>':''}</span>${c.id===act?'':`<button class="btn small" data-kidgo="${c.id}">Switch to</button>`}<button class="btn small ghost" data-kidrm="${c.id}">Remove</button></div>`).join('');
+  box.innerHTML=Store.children().map((c,i)=>`<div class="kidrow"><span class="gu-kbead toy-lac--${KID_LAC[i%KID_LAC.length]}" data-i="${esc(childLabel(c).trim().charAt(0).toUpperCase())}" aria-hidden="true"></span><span class="kidname">${esc(childLabel(c))}${c.id===act?' <em>(practising now)</em>':''}</span>${c.id===act?'':`<button class="btn small" data-kidgo="${c.id}">Switch to</button>`}<button class="btn small ghost" data-kidrm="${c.id}">Remove</button></div>`).join('');
   box.querySelectorAll('[data-kidgo]').forEach(b=>b.onclick=()=>{ Store.switchTo(b.dataset.kidgo); location.reload(); });
-  box.querySelectorAll('[data-kidrm]').forEach(b=>b.onclick=async()=>{ const c=Store.children().find(x=>x.id===b.dataset.kidrm); if(!await WS.confirm(`Remove ${childLabel(c)} from this device?`, 'This erases their progress, stickers, beads, garden and treats. Recorded voices are kept.', {ok:'Remove', cancel:'Keep', danger:true})) return; Store.removeChild(c.id); location.reload(); });
+  box.querySelectorAll('[data-kidrm]').forEach(b=>b.onclick=async()=>{ const c=Store.children().find(x=>x.id===b.dataset.kidrm); if(!await TOY.confirm(`Remove ${childLabel(c)} from this device?`, 'This erases their progress, stickers, beads, garden and treats. Recorded voices are kept.', {ok:'Remove', cancel:'Keep', danger:true})) return; Store.removeChild(c.id); location.reload(); });
 }
 $('#kidAdd').addEventListener('click', ()=>{ const id=Store.addChild(); Store.switchTo(id); location.reload(); });
 // "Who's practising?" when more than one child uses this device. Each child is a wooden block with a bead in their own lacquer colour.

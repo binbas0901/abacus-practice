@@ -186,9 +186,9 @@
     const tb = $('#tpList'); tb.innerHTML = '';
     list().forEach((t, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><input class="txt" style="width:58px;min-width:0;text-align:center;font-size:22px" value="${t.emoji}" data-f="emoji"></td><td><input class="txt" value="${esc(t.name)}" data-f="name"></td><td><input class="txt" type="number" min="1" style="width:80px;min-width:0" value="${t.price}" data-f="price" aria-label="Price in golden beads"> <span class="tp-bead">${root.WS.bead('ochre', 30, { label: 'golden beads' })}</span></td><td><button class="btn small ghost" data-del>Remove</button></td>`;
+      tr.innerHTML = `<td><input class="txt" style="width:58px;min-width:0;text-align:center;font-size:22px" value="${t.emoji}" data-f="emoji"></td><td><input class="txt" value="${esc(t.name)}" data-f="name"></td><td><input class="txt" type="number" min="1" style="width:80px;min-width:0" value="${t.price}" data-f="price" aria-label="Price in golden beads"> <span class="tp-bead">${root.TOY.bead('mustard', 34, { label: 'golden beads' })}</span></td><td><button class="btn small ghost" data-del>Remove</button></td>`;
       tr.querySelectorAll('input').forEach(inp => inp.onchange = () => { const f = inp.dataset.f; t[f] = f === 'price' ? Math.max(1, parseInt(inp.value, 10) || 1) : (inp.value.trim() || t[f]); App().saveSettings(); renderJar(); if (App().renderChecklist) App().renderChecklist(); });
-      tr.querySelector('[data-del]').onclick = async () => { if (!await root.WS.confirm(`Remove ${t.name}?`, 'It comes off the treat list. Tickets already bought stay.', { ok: 'Remove', cancel: 'Keep', danger: true })) return; list().splice(i, 1); if (w.goal === t.id) w.goal = null; App().saveSettings(); F().save(); renderParent(); renderJar(); };
+      tr.querySelector('[data-del]').onclick = async () => { if (!await root.TOY.confirm(`Remove ${t.name}?`, 'It comes off the treat list. Tickets already bought stay.', { ok: 'Remove', cancel: 'Keep', danger: true })) return; list().splice(i, 1); if (w.goal === t.id) w.goal = null; App().saveSettings(); F().save(); renderParent(); renderJar(); };
       tb.appendChild(tr);
     });
     const open = w.tickets.filter(x => !x.given), done = w.tickets.filter(x => x.given).slice(-8).reverse();
@@ -198,7 +198,7 @@
   }
   function bindParent() {
     $('#tpAdd').onclick = () => { const ids = new Set(list().map(t => t.id)); let i = 1; while (ids.has('t' + i)) i++; list().push({ id: 't' + i, emoji: '🎁', name: 'New treat', price: 10 }); App().saveSettings(); renderParent(); };
-    $('#tpDefaults').onclick = async () => { if (!await root.WS.confirm('Reset the treat list?', 'This puts back the original six treats and removes any you added or changed.', { ok: 'Reset list', cancel: 'Keep my list' })) return; App().settings.treats = DEFAULT_TREATS.map(t => Object.assign({}, t)); App().saveSettings(); renderParent(); renderJar(); };
+    $('#tpDefaults').onclick = async () => { if (!await root.TOY.confirm('Reset the treat list?', 'This puts back the original six treats and removes any you added or changed.', { ok: 'Reset list', cancel: 'Keep my list' })) return; App().settings.treats = DEFAULT_TREATS.map(t => Object.assign({}, t)); App().saveSettings(); renderParent(); renderJar(); };
     document.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => { const w = wallet(); w.beads = Math.max(0, w.beads + parseInt(b.dataset.adj, 10)); F().save(); renderParent(); renderJar(); });
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
