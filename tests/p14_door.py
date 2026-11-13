@@ -15,8 +15,9 @@ async def door(pg):
 async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
-        ctx=await b.new_context(viewport={'width':1180,'height':820}); errs=[]
+        ctx=await b.new_context(viewport={'width':1180,'height':820}); errs=[]; dialogs=[]
         pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        pg.on('dialog', lambda d: (dialogs.append(d.message), asyncio.ensure_future(d.dismiss())))
         await pg.add_init_script(SEED); await pg.add_init_script(SHARE)
         await pg.goto(URL); await pg.wait_for_timeout(900)
 
@@ -30,6 +31,10 @@ async def main():
         check('current skill is Big friends +9…+6 and has the star bead', nodes[2][1].startswith('Big friends') and await pg.locator('#doorPath .dp-node.cur .dp-bead svg').count()>=2)
         check('more skills hinted with … on both sides', await pg.locator('#doorPath .dp-more:has-text("…")').count()==2)
         check('Learn it with Bix button under the current skill', await pg.locator('#doorPath .dp-node.cur #doorLearn').count()==1)
+        lh=await pg.eval_on_selector('#doorLearn','e=>e.getBoundingClientRect().height')
+        check('Learn it with Bix is a child-size target (>= 60px)', lh>=60, lh)
+        sp=await pg.evaluate("(()=>{const b=document.querySelector('#bixDoor .bubble'), drawn=p=>{const c=getComputedStyle(b,p); return c.display!=='none' && !['none','normal'].includes(c.content) && c.maskImage!=='none'}; return {say:b.querySelectorAll('.ws-say').length, after:drawn('::after'), before:drawn('::before')}})()")
+        check('door bubble: one speaker mark (no CSS pseudo-element icon)', sp['say']<=1 and not sp['after'] and not sp['before'], sp)
         await pg.click('#doorPath .dp-node.locked .dp-bead >> nth=0'); await pg.wait_for_timeout(200)
         check('tapping a locked bead: Bix explains it is locked', 'Locked' in await pg.text_content('#bixDoor .bubble'))
         await pg.click('#doorPath .dp-node.done .dp-bead >> nth=0'); await pg.wait_for_timeout(200)
@@ -43,9 +48,19 @@ async def main():
         # Learn it with Bix -> lesson for the current skill -> back to the door
         await door(pg); await pg.click('#doorLearn'); await pg.wait_for_selector('#lesson.active')
         check('Learn it with Bix opens the lesson for the current skill', (await pg.text_content('#lessonTitle')).startswith('Big friends') and await pg.text_content('#capKind')=='New skill')
-        check('lesson: wooden Workshop soroban', await pg.locator('#lessonAbacus.ws-soroban .sb-rod').count()==5)
+        check('lesson: the practice soroban (AbacusInput), rods sized to the lesson', await pg.locator('#lessonAbacus .abx .abx-rod').count()==3 and await pg.locator('#lessonAbacus .sb-rod').count()==0)
+        check('lesson intro: beads are read-only while Bix talks', await pg.locator('#lessonAbacus.ab-ro').count()==1)
+        check('lesson progress is a row of beads, not a bar', await pg.locator('#lessonSteps .ls-dot').count()>=4 and await pg.locator('#lesson .progressbar').count()==0)
         await pg.click('#lessonNext'); await pg.wait_for_timeout(300)
         check('lesson: Next shows a demonstration', (await pg.text_content('#capKind')).startswith('Watch 1 of'), await pg.text_content('#capKind'))
+        nd=await pg.evaluate("window.App && Curriculum.BY_ID.bf_add_a.demos.length")
+        for _ in range(nd-1): await pg.click('#lessonNext'); await pg.wait_for_timeout(150)
+        dots=await pg.eval_on_selector_all('#lessonSteps .ls-dot','els=>els.map(e=>e.className.replace("ls-dot","").trim())')
+        check(f'lesson: on "Watch {nd} of {nd}" the first {nd} step beads are filled (done + current)', (await pg.text_content('#capKind'))==f'Watch {nd} of {nd}' and dots[:nd]==['ok']*(nd-1)+['cur'] and all(d=='' for d in dots[nd:]), dots)
+        fr=await pg.eval_on_selector_all('#capFriends span','els=>els.map(e=>Math.round(e.getBoundingClientRect().top))')
+        check('lesson: friend chips sit on one line', len(fr)==5 and len(set(fr))==1, fr)
+        await pg.click('#lessonNext'); await pg.wait_for_timeout(300)
+        check('lesson: on "Your turn" the beads can be moved', (await pg.text_content('#capKind')).startswith('Your turn') and await pg.locator('#lessonAbacus.ab-ro').count()==0)
         await pg.click('#exitLesson'); await pg.wait_for_timeout(300)
         check('leaving a lesson started at the door returns to the door', await pg.locator('#door.active').count()==1)
 
@@ -53,19 +68,60 @@ async def main():
         await pg.evaluate("App.goPlay()"); await pg.wait_for_selector('#play.active')
         cards=await pg.eval_on_selector_all('.gcard','els=>els.map(e=>e.dataset.game+":"+e.className)')
         check('play hub: three Workshop game blocks', len(cards)==3 and all('ws-block' in c for c in cards), cards)
+        cols=await pg.eval_on_selector_all('.gcard','els=>els.map(e=>e.dataset.game+":"+["red","indigo","ochre","jade"].find(c=>e.classList.contains(c)))')
+        check('each game has its own kit colour: Friend Pop red, Bead Detective indigo, Bead Builder ochre', cols==['pop:red','reader:indigo','build:ochre'], cols)
+        hub=await pg.text_content('#playCards')
+        check('hub cards show no times', not re.search(r'\d\s*s\b|second', hub), hub)
+        sp=await pg.evaluate("(()=>{const b=document.querySelector('#bixPlay .bubble'); return {say:b.querySelectorAll('.ws-say svg').length, after:getComputedStyle(b,'::after').content}})()")
+        check('Play bubble: exactly one speaker icon', sp['say']==1 and sp['after'] in ('none','normal'), sp)
+        check('no countdown bar on the game screen', await pg.locator('#game .gbar, #gameBar').count()==0)
         for g, name in (('pop','Friend Pop'),('reader','Bead Detective'),('build','Bead Builder')):
             await pg.click(f'.gcard[data-game={g}]'); await pg.wait_for_selector('#game.active'); await pg.wait_for_timeout(400)
             check(f'{name} opens', name in await pg.text_content('#gameTitle') and await pg.locator('#gameStage > *').count()>0)
+            if g=='pop':
+                w0=await pg.evaluate("document.querySelector('#gameScore').innerHTML"); await pg.wait_for_timeout(1500)
+                check('Friend Pop: nothing runs down while she plays (round = 12 friends to find)', await pg.locator('#gameScore .gdot').count()==12 and w0==await pg.evaluate("document.querySelector('#gameScore').innerHTML"))
+            if g=='reader':
+                await pg.wait_for_selector('#rdCover.on', timeout=8000)
+                keys=await pg.eval_on_selector_all('#rdPad .g-keys button','els=>els.map(e=>e.dataset.k)')
+                check('Bead Detective keypad: 7-8-9/4-5-6/1-2-3, then delete and a wide 0; no GO key in the grid', keys==['7','8','9','4','5','6','1','2','3','del','0'] and await pg.locator('#rdPad .g-keys .go, #rdPad .g-keys [data-k=go]').count()==0, keys)
+                check('Bead Detective: red Check outside the grid, off until a number is typed', await pg.locator('#rdPad > .ws-btn.g-check[data-k=go]:disabled').count()==1)
+                await pg.click('#rdPad [data-k="5"]')
+                check('Bead Detective: Check turns on after typing', await pg.locator('#rdPad .g-check:disabled').count()==0)
+                bg=await pg.eval_on_selector('#rdCover','e=>getComputedStyle(e).backgroundImage')
+                check('Bead Detective cover: solid, no striped strip', bg=='none', bg)
+                check('Bead Detective: the practice soroban, read-only', await pg.locator('#rdAb.ab-ro .abx').count()==1)
+            if g=='build':
+                check('Bead Builder: the practice soroban, beads big enough to tap (>= 56px slots)', await pg.locator('#bdAb .abx').count()==1 and await pg.evaluate("(()=>{const r=document.querySelector('#bdAb .abx-hit').getBoundingClientRect(); return r.height>=56})()"))
             await pg.click('#exitGame'); await pg.wait_for_selector('#play.active')
+        # no timers anywhere in the games code (no countdown, best times or seconds)
+        src=open(os.path.join(HERE,'..','games.js')).read()
+        check('games.js has no countdown / best-time code', not re.search(r'gameSeconds|setBar|Date\.now\(\)\s*-\s*t0|best times?|seconds\b|\bsec\b', src))
+        await pg.evaluate("App.gamePops=2"); await pg.click('.gcard[data-game=pop]'); await pg.wait_for_selector('#game.active')
+        for _ in range(150):
+            if await pg.locator('.gresult').count(): break
+            ans=await pg.evaluate("(()=>{const q=document.querySelector('.pq-a'), f=document.querySelector('.pq-f'); return q? (+f.textContent - +q.textContent) : null})()")
+            if ans is not None and await pg.locator(f'.bub[data-v="{ans}"]:not(.popped)').count():
+                try: await pg.locator(f'.bub[data-v="{ans}"]:not(.popped)').first.dispatch_event('pointerdown')
+                except Exception: pass
+            await pg.wait_for_timeout(80)
+        await pg.wait_for_selector('.gresult', timeout=10000)
+        txt=await pg.text_content('.gresult')
+        check('Friend Pop ends after its friends are found, counted not timed', '2 friends found' in txt and not re.search(r'second|\d\s*s\b', txt), txt)
+        for _ in range(4):
+            if not await pg.locator('#stickerReveal.active').count(): break
+            await pg.click('#rvPack', force=True); await pg.wait_for_timeout(400); await pg.click('#rvOk'); await pg.wait_for_timeout(300)
+        await pg.evaluate("App.gamePops=null"); await pg.click('.gresult [data-a=done]'); await pg.wait_for_selector('#play.active')
         await pg.click('#exitPlay'); await pg.wait_for_timeout(300)
 
         # ---- gate: non-readers hear/see "get a grown-up"; See all skills goes through it ----
         await door(pg); await pg.click('#doorAll'); await pg.wait_for_selector('#gate.active')
         check('gate: Bix says go get a grown-up, with a picture', 'grown-up' in await pg.text_content('#bixGate .bubble') and await pg.locator('#gateArt svg').count()==1)
         check('gate: number in words', re.search(r'[a-z]', await pg.text_content('#gateQ .gw')) is not None)
+        check('gate: one back button', await pg.locator('#gate button:has-text("Back"), #gate [aria-label="Back"]').count()==1)
         await pg.fill('#gateA','1'); await pg.click('#gateOk'); await pg.wait_for_timeout(200)
-        check('gate: wrong answer stays locked with a new number', await pg.locator('#gate.active').count()==1 and await pg.input_value('#gateA')=='')
-        await pg.click('#gateCancel'); await pg.wait_for_timeout(200)
+        check('gate: wrong answer stays locked with a new number and a kind message', await pg.locator('#gate.active').count()==1 and await pg.input_value('#gateA')=='' and 'new number' in await pg.text_content('#gateMsg'))
+        await pg.click('#gateBack'); await pg.wait_for_timeout(200)
         check('gate: Back returns to where it was opened (door)', await pg.locator('#door.active').count()==1)
         await pg.click('#doorAll'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)
         inview=await pg.evaluate("(()=>{const r=document.querySelector('#guSkills').getBoundingClientRect(); return r.top>=-5 && r.top<innerHeight/2})()")
@@ -111,6 +167,27 @@ async def main():
         ids=['setupList','sNode','sName','nodeTable','kidsList','kidAdd','tpBeads','tpList','sCount','sSfx','sBixTalks','sBixVoice','sVoice','recPanel','sessions','bkMake','diagLog']
         missing=[i for i in ids if not await pg.locator('#parent #'+i).count()]
         check('settings sit in grouped panels with every control', not missing and await pg.locator('#parent .gu-panel').count()>=8, missing)
+        # grown-ups: no web/debug leftovers, no emoji UI, 44px targets, Workshop dialogs
+        ck=await pg.text_content('#setupList')
+        check('checklist: no "Storage" row, Home Screen advice only as a gentle browser-tab note', 'Storage' not in ck and 'not protected' not in ck.lower() and ('Home Screen' not in ck or 'browser tab' in ck), ck)
+        await pg.evaluate("window.matchMedia=(q)=>({matches:/standalone/.test(q), addListener(){}, removeListener(){}})"); await pg.evaluate("App.renderChecklist && App.renderChecklist()"); await pg.wait_for_timeout(300)
+        check('checklist as an installed app: no Home Screen row at all', 'Home Screen' not in await pg.text_content('#setupList'), await pg.text_content('#setupList'))
+        check("backup copy does not mention Safari's website data", 'Safari' not in await pg.text_content('#guBackup'))
+        check('sound check: diagnostics hidden, plain Test sound shown', await pg.is_hidden('#diagLog') and await pg.is_hidden('#diagState') and await pg.is_visible('#soundTest') and 'Mozilla' not in await pg.evaluate("document.querySelector('#guSound').innerText"))
+        for _ in range(5): await pg.click('#guVer')
+        check('five quick taps on the version show the diagnostics', await pg.is_visible('#diagLog'))
+        for _ in range(5): await pg.click('#guVer')
+        emo=await pg.evaluate(r"(()=>{const t=[...document.querySelectorAll('#parent .gu-panel')].map(p=>p.innerText+' '+[...p.querySelectorAll('option')].map(o=>o.textContent).join(' ')).join(' '); return (t.match(/[\u{1F300}-\u{1FAFF}\u{2B50}\u{2B55}\u{1F7E1}]/gu)||[]).join('')})()")
+        tk=await pg.evaluate("[...document.querySelectorAll('#tpTickets .ticket')].map(e=>e.textContent).join('')")
+        check('no emoji as grown-up UI icons (treat pictures aside)', all(ch in tk for ch in emo) and await pg.locator('#tpList .tp-bead .ws-bead').count()>=1, emo)
+        small=await pg.evaluate("[...document.querySelectorAll('#parent [data-toggle], #parent [data-del], #parent [data-kidrm], #parent [data-give]')].map(b=>Math.round(b.getBoundingClientRect().height)).filter(h=>h>0 && h<44)")
+        check('grown-up un-learn / Remove / Given buttons are >= 44px', not small, small)
+        await pg.click('#tpList [data-del] >> nth=0'); await pg.wait_for_selector('.ws-dialog')
+        check('removing a treat asks in a Workshop dialog (not confirm())', await pg.locator('.ws-dialog .ws-dialog-btn').count()==2 and not dialogs)
+        n0=await pg.locator('#tpList tr').count(); await pg.click('.ws-dialog [data-r="0"]'); await pg.wait_for_timeout(200)
+        check('Keep closes the dialog and keeps the treat', await pg.locator('.ws-dialog').count()==0 and await pg.locator('#tpList tr').count()==n0)
+        await pg.click('#tpDefaults'); await pg.wait_for_selector('.ws-dialog'); await pg.keyboard.press('Escape'); await pg.wait_for_timeout(150)
+        check('Escape cancels a dialog', await pg.locator('.ws-dialog').count()==0)
         # children switcher: switch reloads into that child and comes back to the report
         await pg.evaluate("(()=>{ const id=Store.addChild(); window.__arjun=id; })()")
         arjun=await pg.evaluate("window.__arjun")
@@ -134,7 +211,7 @@ async def main():
             await pg.click('#doorLearn'); await pg.wait_for_selector('#lesson.active')
             check('multiplication lesson shows the method', await pg.locator('#capText ol.method li').count()==3)
             await pg.click('#lessonNext'); await pg.wait_for_timeout(300)
-            check('multiplication demo reads as a times problem, starting from 0', '×' in await pg.text_content('#capProb') and await pg.evaluate("[...document.querySelectorAll('#lessonAbacus .sb-label')].map(e=>e.textContent).join('')")=='00000', await pg.text_content('#capProb'))
+            check('multiplication demo reads as a times problem, starting from 0', '×' in await pg.text_content('#capProb') and await pg.get_attribute('#lessonAbacus .abx','aria-label')=='Abacus showing 0', await pg.text_content('#capProb'))
             await pg.click('#exitLesson'); await pg.wait_for_selector('#door.active')
             await pg.click('#doorAll'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(400)
             lv=await pg.eval_on_selector_all('#nodeTable tr.lvl-row','els=>els.map(e=>e.textContent)')
@@ -143,7 +220,7 @@ async def main():
             mm=await pg.eval_on_selector_all('#repMissed .mm-row','els=>els.map(e=>e.textContent)')
             check('missed multiplication is labelled 34 × 6', any(x.startswith('34 × 6') and '6 times' in x for x in mm), mm)
         await ctx2.close()
-        check('no page errors', not errs, errs)
+        check('no page errors and no browser confirm()/alert()', not errs and not dialogs, [errs, dialogs])
         await b.close()
     print(f"\n{sum(res)}/{len(res)} passed")
 asyncio.run(main())

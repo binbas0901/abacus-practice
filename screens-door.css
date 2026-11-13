@@ -13,9 +13,8 @@
   font-family:var(--ws-display);font-weight:600;font-size:22px;line-height:1.25;color:var(--ws-ink);max-width:560px;
   display:flex;align-items:center;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .c-topbix .bubble::before,.gate-bix .bubble::before{display:none}
-.c-topbix .bubble::after,.gate-bix .bubble::after{content:"";flex:none;width:24px;height:24px;background:var(--ws-indigo);opacity:.85;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 5 6 9H2v6h4l5 4V5z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E") center/contain no-repeat;
-          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 5 6 9H2v6h4l5 4V5z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7'/%3E%3C/svg%3E") center/contain no-repeat}
+/* the speaker mark is fun.js's own .ws-say (one per bubble) */
+.c-topbix .bubble .ws-say,.gate-bix .bubble .ws-say{flex:none;line-height:0}
 
 /* drawing colours (inline SVG art uses classes so every colour stays a kit token) */
 .a-maple{fill:var(--ws-maple)} .a-wood{fill:var(--ws-wood)} .a-rod{fill:var(--ws-rod)} .a-walnut{fill:var(--ws-walnut)} .a-red{fill:var(--ws-red)}
@@ -57,17 +56,21 @@
 .dp-node.done .dp-name{color:var(--ws-jade-dk)} .dp-node.locked .dp-name{color:var(--ws-wood)}
 .dp-node.cur .dp-name{font-weight:700;font-size:24px;color:var(--ws-indigo)}
 .dp-node.cur{gap:10px}
-.dp-learn{margin-top:4px;font-size:21px}
+.dp-learn.ws-btn.small{margin-top:4px;font-size:22px;min-height:62px;padding:0 26px;box-shadow:0 6px 0 var(--d)}
 .dp-more{font-family:var(--ws-display);font-size:34px;line-height:104px;color:var(--ws-walnut);min-width:24px;text-align:center}
 
 /* ======================= Lessons ======================= */
 .ws-lesson .c-top .lvl{font-family:var(--ws-display);font-weight:700;font-size:32px;color:var(--ws-indigo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
-.ws-lesson .progressbar{flex:1 0 160px;max-width:340px;margin-left:auto;height:16px;border-radius:var(--ws-r-pill);background:var(--ws-white);box-shadow:inset 0 0 0 2px var(--ws-line);overflow:hidden}
-.ws-lesson .progressbar i{display:block;height:100%;background:var(--ws-jade);border-radius:var(--ws-r-pill);transition:width .35s var(--ws-ease)}
+.ws-lesson .lesson-steps{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.ls-dot{display:block;width:34px;height:21px;background:var(--ws-line);transition:background-color .3s ease;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 104' preserveAspectRatio='none'%3E%3Cpath d='M4 52 Q85 -12 166 52 Q85 116 4 52Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 104' preserveAspectRatio='none'%3E%3Cpath d='M4 52 Q85 -12 166 52 Q85 116 4 52Z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
+.ls-dot.ok{background:var(--ws-jade)} .ls-dot.cur{background:var(--ws-indigo)}
 .ws-lesson .lesson-body{flex:1;display:flex;gap:36px;align-items:center;justify-content:center;min-height:0;padding:0}
-.lesson-frame.ws-frame{flex:none;padding:14px;border-radius:var(--ws-r-lg)}
-.lesson-inner.ws-inner{padding:16px 20px 6px}
-.ws-lesson .lesson-side{width:auto;flex:0 1 470px;min-width:360px;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:18px 14px;align-items:start}
+.lesson-ab{flex:1 1 auto;min-width:0;max-width:760px;line-height:0}
+.lesson-ab .abx{display:flex}
+.lesson-ab .abx-svg{width:100%;height:auto;max-height:calc(100vh - 250px)}
+.ws-lesson .lesson-side{width:auto;flex:0 0 410px;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:18px 14px;align-items:start}
 .lesson-bix{--bix:96px;padding-top:8px}
 .ws-lesson .caption{position:relative;background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:18px 22px 20px;
   font-family:var(--ws-display);font-weight:500;font-size:23px;line-height:1.35;color:var(--ws-ink);min-height:190px}
@@ -78,31 +81,18 @@
 .ws-lesson .caption .prob{font-family:var(--ws-display);font-weight:700;font-size:56px;line-height:1.05;margin:4px 0 6px;color:var(--ws-ink);font-variant-numeric:tabular-nums}
 .ws-lesson .caption .prob:empty{display:none}
 .ws-lesson .caption b{color:var(--ws-red-dk);font-family:var(--ws-display);font-weight:700}
-.ws-lesson .friends{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ws-lesson .friends{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;margin-top:12px}
 .ws-lesson .friends:empty{display:none}
-.ws-lesson .friends span{font-family:var(--ws-display);font-weight:600;font-size:18px;background:var(--ws-maple);color:var(--ws-wood-dk);border-radius:12px;padding:4px 12px;box-shadow:0 3px 0 var(--ws-maple-dk)}
+.ws-lesson .friends span{font-family:var(--ws-display);font-weight:600;font-size:17px;background:var(--ws-maple);color:var(--ws-wood-dk);border-radius:12px;padding:4px 2px;box-shadow:0 3px 0 var(--ws-maple-dk);text-align:center;white-space:nowrap}
 .ws-lesson .lesson-nav{grid-column:1 / -1;display:flex;gap:14px;align-items:center}
 .ws-lesson .lesson-nav .sp{flex:1}
 #lessonNext{min-width:220px}
-
-/* ---------- the wooden Workshop soroban (soroban.js markup, restyled) ---------- */
-.soroban.ws-soroban{background:none;box-shadow:none;border-radius:0;padding:4px 6px 34px;--bead:60px;--rodh:430px}
-.ws-soroban .sb-frame{gap:12px}
-.ws-soroban .sb-rod.hl{background:color-mix(in srgb, var(--ws-ochre) 32%, transparent)}
-.ws-soroban .sb-line{width:5px;margin-left:-2.5px;background:var(--ws-rod)}
-.ws-soroban .sb-bar{height:10px;border-radius:3px;background:var(--ws-rod);box-shadow:none}
-.ws-soroban .sb-rod.sb-unit::after{content:"";position:absolute;left:50%;top:calc(var(--bead) * 1.55 + 2px);width:6px;height:6px;margin-left:-3px;border-radius:50%;background:var(--ws-maple);z-index:4}
-.ws-soroban .sb-rod .sb-bead{background:var(--ws-walnut);border-radius:0;box-shadow:none;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 104' preserveAspectRatio='none'%3E%3Cpath d='M4 52 Q85 -12 166 52 Q85 116 4 52Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
-          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 104' preserveAspectRatio='none'%3E%3Cpath d='M4 52 Q85 -12 166 52 Q85 116 4 52Z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
-.ws-soroban .sb-rod .sb-bead.on{background:var(--ws-red)}
-.ws-soroban .sb-bead::after{content:"";position:absolute;left:26%;top:18%;width:30%;height:20%;border-radius:50%;background:var(--ws-white);opacity:.28}
-.ws-soroban .sb-label{bottom:-32px;color:var(--ws-wood-dk);font-family:var(--ws-display);font-weight:700;font-size:20px}
 
 /* ======================= Games ======================= */
 .ws-play .play-body{flex:1;display:flex;align-items:center;justify-content:center;padding:0;gap:0;min-height:0}
 .ws-play .gcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;width:100%;height:100%;max-height:470px}
 .ws-play .gcard.jade{--c:var(--ws-jade);--d:var(--ws-jade-dk)} .ws-play .gcard.indigo{--c:var(--ws-indigo);--d:var(--ws-indigo-dk)} .ws-play .gcard.red{--c:var(--ws-red);--d:var(--ws-red-dk)}
+.ws-play .gcard.ochre{--c:var(--ws-ochre);--d:var(--ws-ochre-dk);--t:#3D2412}
 .ws-play .gcard.ws-block{width:auto;min-height:0;height:100%;border:0;border-radius:var(--ws-r-lg);background:var(--c);box-shadow:0 9px 0 var(--d);color:var(--t);
   padding:22px 22px 26px;gap:12px;text-align:center}
 .ws-play .gcard.ws-block:active{transform:translateY(var(--ws-press));box-shadow:0 3px 0 var(--d)}
@@ -116,11 +106,9 @@
 .ws-game{position:relative}
 .ws-game .gtitle{display:flex;align-items:center;gap:12px;font-family:var(--ws-display)!important;font-weight:600!important;font-size:30px!important;color:var(--ws-indigo)!important;white-space:nowrap}
 .gt-art{display:flex;width:64px;height:52px;border-radius:14px;align-items:center;justify-content:center;background:var(--c);--c:var(--ws-indigo)}
-.gt-art.g-jade{--c:var(--ws-jade)} .gt-art.g-red{--c:var(--ws-red)}
+.gt-art.g-jade{--c:var(--ws-jade)} .gt-art.g-red{--c:var(--ws-red)} .gt-art.g-ochre{--c:var(--ws-ochre)}
 .gt-art .g-art{width:54px;height:44px}
-.ws-game .gbar{flex:1;max-width:420px;margin-left:auto;height:16px;border-radius:var(--ws-r-pill);background:var(--ws-white);box-shadow:inset 0 0 0 2px var(--ws-line);overflow:hidden}
-.ws-game .gbar i{display:block;height:100%;width:100%;background:var(--ws-jade);border-radius:var(--ws-r-pill);transition:width .2s linear}
-.ws-game .gscore{display:inline-flex;align-items:center;gap:6px;min-height:44px;background:var(--ws-white);border-radius:var(--ws-r-pill);padding:0 16px;box-shadow:0 3px 0 var(--ws-line);
+.ws-game .gscore{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;background:var(--ws-white);border-radius:var(--ws-r-pill);padding:0 16px;box-shadow:0 3px 0 var(--ws-line);
   font-family:var(--ws-display);font-weight:700;font-size:24px;color:var(--ws-ink)}
 .ws-game .gscore:empty{visibility:hidden}
 .gdot{display:inline-block;width:22px;height:14px;background:var(--ws-line);
@@ -138,28 +126,37 @@
 .ws-game .pop-q .pq-op{color:var(--ws-ink-2)} .ws-game .pop-q .pq-f{color:var(--ws-indigo)}
 .ws-game .pop-hint{font-family:var(--ws-display);font-weight:600;font-size:20px;color:var(--ws-ink-2);margin-top:6px}
 .ws-game .pop-field{margin:12px 0 0;border-radius:var(--ws-r-lg);background:var(--ws-maple);border:12px solid var(--ws-wood);box-shadow:0 7px 0 var(--ws-wood-dk)}
-.ws-game .bub{background:var(--ws-white);color:var(--ws-ink);border:0;box-shadow:inset 0 0 0 5px var(--ws-jade),0 4px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:46px}
-.ws-game .bub::after{content:"";position:absolute;left:22%;top:16%;width:26%;height:16%;border-radius:50%;background:var(--ws-jade);opacity:.18;pointer-events:none}
+.ws-game .bub{background:var(--ws-white);color:var(--ws-ink);border:0;box-shadow:inset 0 0 0 5px var(--ws-red),0 4px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:46px}
+.ws-game .bub::after{content:"";position:absolute;left:22%;top:16%;width:26%;height:16%;border-radius:50%;background:var(--ws-red);opacity:.16;pointer-events:none}
 
 /* Bead Detective */
 .ws-game .rd-wrap,.ws-game .bd-wrap{gap:44px;padding:0 0 10px}
 .ws-game .rd-left{min-width:360px}
 .ws-game .rd-msg{font-family:var(--ws-display);font-weight:600;font-size:30px;color:var(--ws-indigo);text-align:center}
-#game[data-game=reader] .gbar,#game[data-game=build] .gbar{visibility:hidden}
-.ws-game .rd-ab.ws-frame{position:relative;padding:14px;border-radius:var(--ws-r-lg)}
-.ws-game .rd-ab .ws-inner,.ws-game .bd-frame .ws-inner{padding:12px 16px 2px}
-.ws-game .ws-soroban{--bead:50px;--rodh:330px;padding-bottom:10px}
-.ws-game .rd-cover{inset:0;box-shadow:0 8px 0 var(--ws-indigo-dk);border-radius:var(--ws-r-lg);background:repeating-linear-gradient(135deg,var(--ws-indigo) 0 22px,var(--ws-indigo-dk) 22px 44px);font-size:0}
+.ws-game .rd-ab{position:relative;line-height:0}
+.ws-game .rd-ab .abx-svg{width:auto;height:min(440px, calc(100vh - 330px));max-width:44vw}
+/* the cover fades over the beads (solid indigo, no stripes, no wipe) */
+.ws-game .rd-cover{inset:-4px -4px 2px;box-shadow:0 8px 0 var(--ws-indigo-dk);border-radius:20px;background:var(--ws-indigo);font-size:0;
+  transform:none;opacity:0;pointer-events:none;transition:opacity .22s ease}
+.ws-game .rd-cover.on{transform:none;opacity:1}
 .ws-game .rd-cover span{display:flex;flex-direction:column;align-items:center;gap:2px}
 .ws-game .rd-cover b{font-family:var(--ws-display);font-weight:700;font-size:64px;line-height:1;color:var(--ws-maple)}
 .ws-game .rd-right{width:330px;gap:14px}
-.ws-game .answer{background:var(--ws-white);border:0;box-shadow:inset 0 0 0 3px var(--ws-line);border-radius:22px;height:92px;font-family:var(--ws-display);font-weight:700;font-size:58px;color:var(--ws-ink)}
+.ws-game .answer{background:var(--ws-white);border:0;box-shadow:0 3px 0 var(--ws-line);border-radius:var(--ws-r-md);height:92px;font-family:var(--ws-display);font-weight:700;font-size:58px;color:var(--ws-indigo)}
+.ws-game .answer.empty{color:var(--ws-line)}
 .ws-game .feedback{font-family:var(--ws-display);font-weight:700;font-size:26px} .ws-game .feedback.ok{color:var(--ws-jade-dk)} .ws-game .feedback.bad{color:var(--ws-red-dk)}
-.ws-game .pad{gap:12px}
-.ws-game .pad button{height:72px;border:0;border-radius:18px;background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);color:var(--ws-ink);font-family:var(--ws-display);font-weight:700;font-size:34px;cursor:pointer}
-.ws-game .pad button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ws-maple-dk)}
-.ws-game .pad button.go{background:var(--ws-jade);color:var(--ws-white);box-shadow:0 5px 0 var(--ws-jade-dk);font-size:28px}
-.ws-game .pad button.del{background:var(--ws-line);color:var(--ws-ink-2);box-shadow:0 5px 0 var(--ws-ink-2);font-size:28px}
+/* keypad: the practice keypad spec (3×3, ⌫ + wide 0, red Check outside the grid) */
+.ws-game .pad.g-pad{display:flex;flex-direction:column;align-items:center;gap:20px;width:auto}
+.ws-game .g-keys{display:grid;grid-template-columns:repeat(3,96px);gap:12px;transition:opacity .2s ease}
+.ws-game .g-keys button{height:72px;padding:0;border:0;border-radius:var(--ws-r-sm);background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);color:var(--ws-ink);
+  font-family:var(--ws-display);font-weight:700;font-size:38px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .08s ease, box-shadow .08s ease;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.ws-game .g-keys button:active{transform:translateY(var(--ws-press));box-shadow:0 0 0 var(--ws-maple-dk)}
+.ws-game .g-keys .zero{grid-column:span 2}
+.ws-game .g-keys .del{background:var(--ws-bead-off);box-shadow:0 5px 0 var(--ws-line);color:var(--ws-ink-2)}
+.ws-game .pad .g-check{min-width:220px;height:auto;min-height:72px;padding:0 40px;border-radius:var(--ws-r-pill);background:var(--c);color:var(--t);box-shadow:0 7px 0 var(--d);font-size:30px}
+.ws-game .pad .g-check:active{box-shadow:0 2px 0 var(--d)}
+.ws-game .g-pad.idle .g-keys{opacity:.45;pointer-events:none}
 
 /* Bead Builder */
 .ws-game .bd-q{gap:14px;min-width:260px}
@@ -168,11 +165,14 @@
 .ws-game .bd-num:empty{visibility:hidden}
 .ws-game .bd-num.pop{animation:ws-pop .38s var(--ws-ease) both}
 .ws-game .bd-tools{display:flex;gap:12px;margin-top:8px}
-.bd-frame.ws-frame{padding:14px;border-radius:var(--ws-r-lg)}
+.ws-game .bd-ab{line-height:0}
+.ws-game .bd-ab .abx-svg{width:auto;height:min(560px, calc(100vh - 220px));max-width:calc(100vw - 420px)}
 
 /* results card */
 .ws-game .gresult{background:var(--ws-white);border-radius:var(--ws-r-lg);box-shadow:0 8px 0 var(--ws-line);padding:28px 36px 32px;gap:10px;width:min(560px,90%)}
-.ws-game .gr-icon{line-height:0} .ws-game .gr-icon .g-art{width:150px;height:120px}
+.ws-game .gr-icon{line-height:0;border-radius:var(--ws-r-md);padding:10px 18px;background:var(--c,var(--ws-indigo))}
+.ws-game .gr-icon.g-red{--c:var(--ws-red)} .ws-game .gr-icon.g-ochre{--c:var(--ws-ochre)} .ws-game .gr-icon.g-indigo{--c:var(--ws-indigo)}
+.ws-game .gr-icon .g-art{width:130px;height:104px}
 .ws-game .gr-big{font-family:var(--ws-display);font-weight:700;font-size:52px;color:var(--ws-ink)}
 .ws-game .gr-dots{display:flex;gap:6px} .ws-game .gr-dots .gdot{width:34px;height:21px}
 .ws-game .gr-sub{font-family:var(--ws-body);font-size:20px;color:var(--ws-ink-2)} .ws-game .gr-sub2{font-family:var(--ws-body);font-size:18px;color:var(--ws-ink-2)}
@@ -196,7 +196,6 @@
 /* ======================= other iPad sizes ======================= */
 @media (max-height:760px){
   .door-blocks{height:240px} .door-tiles{font-size:28px} .door-label{font-size:30px}
-  .soroban.ws-soroban{--bead:48px;--rodh:340px}
 }
 /* portrait iPad: blocks stay side by side, everything breathes vertically */
 @media (orientation:portrait){
@@ -214,16 +213,37 @@
   .ws-play .gcard .gc-name{grid-column:2;grid-row:2} .ws-play .gcard .gc-desc{grid-column:2;grid-row:3;max-width:none}
   .ws-play .gcard .gc-best{grid-column:2;grid-row:4;align-self:start}
   .ws-game .rd-wrap,.ws-game .bd-wrap{flex-direction:column;gap:20px}
-  .ws-game .ws-soroban{--bead:44px;--rodh:290px}
+  #game[data-game=reader] .rd-wrap{flex-direction:row;gap:32px}
+  .ws-game .rd-left{min-width:0}
+  .ws-game .rd-ab .abx-svg{height:min(440px, calc(100vh - 560px));max-width:calc(100vw - 460px)}
+  .ws-game .bd-ab .abx-svg{width:auto;height:min(600px, calc(100vh - 590px));max-width:calc(100vw - 80px)}
+  .lesson-ab{flex:none;width:100%;max-width:none}
+  .lesson-ab .abx-svg{max-height:calc(100vh - 640px)}
   .ws-gate .gate-body{flex-direction:column;gap:36px}
 }
 @media (min-width:1300px) and (min-height:980px){
   .ws-play .gcards{max-height:600px}
-  .door-blocks{height:380px} .soroban.ws-soroban{--bead:68px;--rodh:500px}
+  .door-blocks{height:380px}
   .ws-lesson .lesson-side{flex-basis:540px} .ws-lesson .caption{font-size:26px}
-  .ws-game .ws-soroban{--bead:58px;--rodh:390px}
+
 }
-@media (prefers-reduced-motion: reduce){ .ws-door.intro .door-block,.ws-game .bd-num.pop{animation:none} .ws-lesson .progressbar i{transition:none} }
+@media (prefers-reduced-motion: reduce){ .ws-door.intro .door-block,.ws-game .bd-num.pop{animation:none} .ls-dot,.ws-game .rd-cover{transition:none} }
 .times{color:var(--ws-indigo);font-style:normal}
 .ws-lesson .caption ol.method{margin:10px 0 0;padding-left:24px;font-size:19px;line-height:1.35}
 .ws-lesson .caption ol.method li{margin:4px 0}
+
+/* ---------- the practice soroban (AbacusInput) used as a lesson / game abacus (DemoAbacus in games.js) ---------- */
+.ab-demo .abx{display:flex}
+.ab-demo.ab-ro .abx-svg{pointer-events:none}
+.ab-demo.ab-ro .abx-bead{cursor:default}
+.ab-demo .abx-bead{transition-duration:260ms}
+.ab-demo .abx-rod.hl .abx-rodline{fill:var(--ws-ochre);stroke:var(--ws-ochre);stroke-width:8}
+.ab-demo .abx-readout{display:inline-flex;align-items:center;gap:10px;align-self:center;background:var(--ws-white);border-radius:var(--ws-r-pill);padding:6px 20px;
+  box-shadow:0 3px 0 var(--ws-line);font-family:var(--ws-body);font-weight:400;font-size:18px;color:var(--ws-ink-2);line-height:1.2;margin-top:12px}
+.ab-demo .abx-readout[hidden]{display:none}
+.ab-demo .abx-readout b{font-family:var(--ws-display);font-weight:700;font-size:30px;color:var(--ws-indigo);font-variant-numeric:tabular-nums}
+
+/* ---------- gate: one way back, and a kind word when the number was wrong ---------- */
+.gate-card .gate-msg{min-height:24px;font-family:var(--ws-body);font-size:18px;color:var(--ws-red-dk);margin:-6px 0 -4px}
+.gate-card .gate-open{min-width:220px}
+@media (orientation:portrait){ .ls-dot{width:24px;height:15px} .ws-lesson .lesson-steps{gap:5px} }

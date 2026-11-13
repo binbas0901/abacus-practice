@@ -22,8 +22,8 @@ async def main():
         print('phase caption:', await pg.text_content('#capKind'))
         await pg.screenshot(path='/tmp/p2_guided.png')
         # solve guided 1: abacus shows 2, add 9 -> 11: tap beads to make 11: rod1 earth k0, rod0: currently 2 -> need 1: tap earth k0 (active index0 => set e=0)? tapping k=0 when ev=2 -> k<ev -> ne=0 -> wrong. tap k=1? k=1<2 -> ne=1 -> rod0=1. good
-        await pg.click('#lessonAbacus .sb-rod[data-rod="0"] .sb-earth[data-k="1"]'); await pg.wait_for_timeout(100)
-        await pg.click('#lessonAbacus .sb-rod[data-rod="1"] .sb-earth[data-k="0"]'); await pg.wait_for_timeout(1200)
+        await pg.click('#lessonAbacus .abx-rod[data-rod="0"] .abx-bead[data-kind="e"][data-k="1"]'); await pg.wait_for_timeout(100)
+        await pg.click('#lessonAbacus .abx-rod[data-rod="1"] .abx-bead[data-kind="e"][data-k="0"]'); await pg.wait_for_timeout(1200)
         print('after guided 1:', await pg.text_content('#capKind'))
         # hint
         await pg.click('#lessonHint'); await pg.wait_for_timeout(3000); await pg.screenshot(path='/tmp/p2_hint.png')

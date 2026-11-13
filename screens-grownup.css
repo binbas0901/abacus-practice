@@ -111,7 +111,7 @@
 .ws-grownup .pill.good{background:var(--ws-jade);color:var(--ws-white)} .ws-grownup .pill.bad{background:var(--ws-cream);color:var(--ws-red-dk)}
 .ws-grownup .nodetable .mini{width:72px;height:8px;background:var(--ws-mist);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
 .ws-grownup .nodetable .mini i{display:block;height:100%;background:var(--ws-indigo)}
-.ws-grownup .nodetable td .btn{min-height:36px;padding:0 12px;font-size:14px}
+.ws-grownup .nodetable td .btn{min-height:44px;padding:0 14px;font-size:15px}
 /* set-up checklist */
 .ws-grownup .checkl{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .ws-grownup .ck{display:flex;align-items:center;gap:14px;background:var(--ws-paper);border:0;border-radius:14px;padding:10px 14px}
@@ -147,3 +147,18 @@
 @media (prefers-reduced-motion: reduce){ #parent.ws-grownup{scroll-behavior:auto} .rep-bar i,.gu-toast{transition:none} }
 .ws-grownup .nodetable tr.lvl-row th{padding:16px 10px 6px;font-family:var(--ws-display);font-weight:600;font-size:16px;color:var(--ws-indigo);border-bottom:2px solid var(--ws-mist)}
 @media (orientation:portrait){ .ws-grownup .nodetable th:nth-child(4),.ws-grownup .nodetable td:nth-child(4){display:none} }
+
+/* ---------- fix pass: icons instead of emoji, 44px targets, quiet support tools ---------- */
+.ws-grownup .gu-ic{display:inline-flex;line-height:0}
+.ws-grownup .btn.gu-sq{width:48px;padding:0}
+.ws-grownup .gu-flip svg{transform:scaleX(-1)}
+.ws-grownup .gu-recdot{width:14px;height:14px;border-radius:50%;background:var(--ws-white);flex:none}
+.ws-grownup .gu-tick{display:inline-flex;color:var(--ws-jade-dk);line-height:0}
+.ws-grownup .tp-bead{display:inline-flex;vertical-align:middle;line-height:0}
+.ws-grownup .tptable td .btn,.ws-grownup .gu-tickets .btn,.ws-grownup .kids .btn{min-height:44px;padding:0 16px;font-size:15px}
+.ws-grownup .ck-i svg{display:block}
+.gu-foot{display:flex;justify-content:center;margin-top:28px}
+.gu-ver{border:0;background:transparent;min-height:44px;padding:0 16px;font:inherit;font-size:14px;color:var(--ws-ink-2);cursor:default;-webkit-tap-highlight-color:transparent}
+.ws-grownup .gu-diag{margin-top:14px;padding-top:6px;border-top:1px solid var(--ws-mist)}
+.ws-grownup .gu-diag[hidden]{display:none}
+.ws-grownup .gu-diag h3{margin-top:10px}
