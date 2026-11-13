@@ -24,9 +24,9 @@
     // iPads only allow sound after a tap, so Bix introduces himself on the first touch.
     const hello = () => { if (my !== token || state.introDone) return; state.introDone = true; say("Hi there! I'm Bix! I'm a little bead from an abacus, and I love numbers!", 0, 'intro_hi');
       root.Fun.Mascot.react(bix(), 'happy'); setTimeout(async () => { await root.Fun.BixVoice.load(); }, 0);
-      const wait = () => root.Fun.BixVoice.src ? setTimeout(wait, 200) : (my === token && $('#suName').classList.contains('on') && say("What's your name? Type it in for me!", 0, 'intro_name'));
+      const wait = () => root.Fun.BixVoice.busy() ? setTimeout(wait, 200) : (my === token && $('#suName').classList.contains('on') && say("What's your name? Type it in for me!", 0, 'intro_name'));
       setTimeout(wait, 900); };
-    $('#setup').addEventListener('pointerdown', () => { App().unlock(); setTimeout(hello, 60); }, { once: true });
+    $('#setup').addEventListener('click', () => { App().unlock(); setTimeout(hello, 60); }, { once: true });
     setTimeout(() => { if (my === token) $('#suNameIn').focus(); }, 300);
   }
   function nameGo() {
@@ -106,7 +106,7 @@
     $('#suDoneP').textContent = `${state.name}, your first stop is ${App().nodeTitle(current)}. Tap Start each day for a short practice.`;
     const standalone = (window.navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     $('#suInstall').style.display = standalone ? 'none' : '';
-    step('suDone'); root.Fun.Mascot.react(bix(), 'cheer', 2000); say('Yay! Let’s go!', 0, 'intro_done'); root.Fun.confetti(70); App().Sfx.star();
+    step('suDone'); root.Fun.Mascot.react(bix(), 'cheer', 2000); say(null, 0, 'intro_done'); root.Fun.confetti(70); App().Sfx.star();
   }
 
   function bind() {

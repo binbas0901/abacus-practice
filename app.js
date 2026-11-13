@@ -125,7 +125,8 @@ const Speaker = {
   recPids(){ const v=settings.voice||''; if (v==='rec:turns') return profiles().map(p=>p.id); return v.startsWith('rec:') ? [v.slice(4)] : []; },
   isComplete(pid){ const r=this.recs[pid]; return !!r && RECORD_WORDS.every(w=>r[w]); },
   ensureCtx(){ if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); return this.ctx; },
-  unlock(){ // must run inside a user gesture on iOS
+  unlock(){ // must run inside a user gesture on iOS (a finger LIFT or click, not a touch-down)
+    this.gestured=true;
     try{ const c=this.ensureCtx(); if (c.state==='suspended') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
     if ('speechSynthesis' in window && !this.ttsReady){
       // iOS: speech is unlocked only once an utterance really starts inside a tap. Speak something
@@ -359,7 +360,7 @@ const HOME_LINES = (n)=>{
 };
 let greeted=false;
 function greetIdx(){ return (Fun.data.seen++) % 2 === 0 ? 0 : 1; }
-document.addEventListener('pointerdown', e=>{
+document.addEventListener('click', e=>{
   if (greeted || !$('#home').classList.contains('active')) return;
   const onButton = e.target.closest('button') && !e.target.closest('#bixHome');
   setTimeout(()=>{ if (!onButton && !greeted && $('#home').classList.contains('active')) renderHome(); }, 120);
@@ -371,7 +372,7 @@ function renderHome(){
   const bh=$('#bixHome'); if (!bh.querySelector('.bix')) Fun.Mascot.mount(bh, {size:92, keep:true});
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
   // Bix talks on the home screen once per visit to the app (the first time sound is allowed), and when today is finished.
-  const canTalk = Speaker.ctx && Speaker.ctx.state==='running';
+  const canTalk = !!Speaker.gestured;   // sound is allowed once she has tapped
   const line = !settings.name ? ["I don't know your name yet! Tap me to tell me. 😊", 'ask_name']
     : allDone ? [`All done today, ${settings.name}! 🌸 Play a game or collect stickers.`, 'all_done']
     : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
@@ -848,6 +849,7 @@ Setup.bind();
 if (firstRun){ show('setup'); Setup.open(); } else renderHome();
 setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
-document.addEventListener('pointerdown', ()=>Speaker.unlock(), {once:true});
+// iPad Safari only allows sound to start on a finger lift / click, so try on every tap until it's on.
+['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)) Speaker.unlock(); }, true));
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();

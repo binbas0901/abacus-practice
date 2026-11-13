@@ -36,7 +36,8 @@
   /* ---------------- Bix's voice (pre-recorded lines, see tools/make_bix_voice.py) ---------------- */
   const LINES = () => root.BIX_LINES || {};
   const BixVoice = {
-    buf: {}, map: {}, loading: {}, src: null, talkingEl: null, spokenIntro: false,
+    buf: {}, map: {}, loading: {}, src: null, talkingEl: null, spokenIntro: false, queued: 0, seq: 0,
+    busy() { return !!this.src || this.queued > 0; },
     voices: { sweet:'Sweet' },
     tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] ? t : 'sweet'; },
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
@@ -58,8 +59,15 @@
     async play(id, el) {
       if (!id || !this.enabled()) return;
       const a = App(); if (!a || (a.quietNow && a.quietNow())) return;
-      const ctx = a.Speaker.ensureCtx(); if (ctx.state !== 'running') return;     // no sound before the first tap (iPad rule)
-      const tag = this.tag(); await this.load(tag);
+      if (!a.Speaker.gestured) return;                                            // no sound before the first tap (iPad rule)
+      const ctx = a.Speaker.ensureCtx();
+      this.queued++; const my = ++this.seq;
+      try {
+        if (ctx.state !== 'running') { try { await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 800))]); } catch (e) {} }
+        await this.load(this.tag());
+      } finally { this.queued--; }
+      if (my !== this.seq || ctx.state !== 'running') return;                    // a newer line was asked for, or sound is still off
+      const tag = this.tag();
       const buf = this.buf[tag], sp = this.map[tag] && this.map[tag][id]; if (!buf || !sp) return;
       this.stop();
       const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start(ctx.currentTime + 0.02, sp[0], sp[1]); this.src = s;
@@ -67,7 +75,7 @@
       await new Promise(r => { s.onended = r; setTimeout(r, sp[1] * 1000 + 400); });
       if (this.src === s) { this.src = null; if (bx) bx.classList.remove('talking'); }
     },
-    stop() { if (this.src) { try { this.src.stop(); } catch (e) {} this.src = null; } if (this.talkingEl) { this.talkingEl.classList.remove('talking'); this.talkingEl = null; } },
+    stop() { this.seq++; if (this.src) { try { this.src.stop(); } catch (e) {} this.src = null; } if (this.talkingEl) { this.talkingEl.classList.remove('talking'); this.talkingEl = null; } },
   };
 
   const TAP_LINES = [
@@ -80,7 +88,7 @@
       if (!el) return;
       el.classList.add('bixwrap'); if (opts.size) el.style.setProperty('--bix', opts.size + 'px');
       el.innerHTML = bixSVG() + (opts.bubble === false ? '' : '<div class="bubble"></div>');
-      el.querySelector('.bix').addEventListener('pointerdown', () => {
+      el.querySelector('.bix').addEventListener('click', () => {
         Mascot.react(el, 'happy'); const a = App(); if (a) a.Sfx.boing();
         if (opts.onTap && opts.onTap() === false) return;
         const id = 'tap_' + (1 + Math.floor(Math.random() * 16)); const text = LINES()[id] || pick(TAP_LINES);
