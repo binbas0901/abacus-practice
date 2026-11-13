@@ -577,7 +577,19 @@ $$('.c-top .exit').forEach(b=>{ if (!b.innerHTML.trim()) b.innerHTML=BACK_ICON()
 /* ---- Practice door: Look / Listen / Flash for the current skill, and "My path" ---- */
 // Short names a child can read on the path rod (new skills fall back to their own short name).
 const PATH_NAMES = { beads:'Beads', add_direct:'Adding', sub_direct:'Taking away', sf_add:'Small friends +', sf_sub:'Small friends −',
-  bf_add_a:'Big friends +9…+6', bf_add_b:'Big friends +5…+1', bf_sub_a:'Big friends −9…−6', bf_sub_b:'Big friends −5…−1', combined:'Both friends', two_digit:'Two digits', anzan:'In my head' };
+  bf_add_a:'Big friends +9…+6', bf_add_b:'Big friends +5…+1', bf_sub_a:'Big friends −9…−6', bf_sub_b:'Big friends −5…−1', combined:'Both friends', two_digit:'Two digits', anzan:'In my head',
+  long_rows:'Long rows', rows_2d:'Two-digit rows', anzan_more:'In my head: 5', three_digit:'Three digits', times_a:'Times 2–5', times_b:'Times 6–9',
+  anzan_2d:'In my head: 2 digits', four_digit:'Four digits', mul_2x1:'Times: 2 digits', mul_3x1:'Times: 3 digits' };
+// Skill levels for grown-ups (Levels 4-6 carry node.level; the first twelve skills are Levels 1-3).
+const OLD_LEVEL = { beads:1, add_direct:1, sub_direct:1, sf_add:1, sf_sub:1, bf_add_a:2, bf_add_b:2, bf_sub_a:2, bf_sub_b:2, combined:3, two_digit:3, anzan:3 };
+function levelOf(n){ if (n.level) return n.level; if (OLD_LEVEL[n.id]) return OLD_LEVEL[n.id]; const i=NODE_IDX[n.id]; return i>0 ? levelOf(NODES[i-1]) : 1; }
+// Which skill a door block drills: Look/Listen need a written-sum skill, Flash a mental-abacus one.
+function doorDrillNode(m, n){
+  const before=NODES.slice(0, NODE_IDX[n.id]+1).reverse();
+  if (m==='flash') return (n.drill && n.drill.op==='mul') ? (before.find(x=>x.kind==='flash') || n) : n;
+  if (n.kind==='flash') return before.find(x=>x.drill && !x.drill.flash && x.drill.op!=='mul') || C.BY_ID.combined;
+  return n;
+}
 function pathName(n){ return PATH_NAMES[n.id] || n.short || n.title; }
 function lessonTarget(n){ return hasLesson(n) ? n : NODES.slice(0, NODE_IDX[n.id]).reverse().find(x=>x.demos) || n; }
 const DOOR_ART = {
@@ -625,8 +637,7 @@ new MutationObserver(()=>{ const d=$('#door'); if (d.classList.contains('active'
 $$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
   Speaker.unlock(); const m=b.dataset.door, n=NODES[curIdx()];
   if (!n.drill) return startLesson(lessonTarget(n), 'door');                  // nothing to drill yet (bead numbers): learn it
-  if (m==='flash') return startDrill('flash', n);
-  startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
+  startDrill(m, doorDrillNode(m, n));
 }));
 $('#exitDoor').addEventListener('click', ()=>{ Fun.BixVoice.stop(); renderHome(); show('home'); });
 $('#doorAll').addEventListener('click', ()=>openGate('skills'));
@@ -642,31 +653,36 @@ function startLesson(n, from){
   const bl=$('#bixLesson'); if (!bl.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(bl, {size:96, bubble:false});
   show('lesson'); renderLesson();
 }
+// One demo/guided pair of any skill -> {start, target, label, op, steps} (Curriculum.lessonStep knows multiplication).
+function lessonStep(n, pair){
+  if (C.lessonStep) return C.lessonStep(n, pair);
+  const [x,y]=pair; return { start:x, target:x+y, label:`${x} ${y<0?'−':'+'} ${Math.abs(y)}`, op:y<0?'sub':'add', steps:C.explain(x,y) };
+}
 function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1; }
 function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx:0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
 // The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
-function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>'); }
+function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>').replace(/×/g,'<i class="times">×</i>'); }
 function cap(kind, text, prob){ $('#capKind').textContent=kind; $('#capText').innerHTML=text; if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? WS.icon('star', 64, WS.colors.ochre) : probHtml(prob||''); } }
 function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); b.className='ws-btn big'+(kind?' '+kind:''); b.innerHTML=(icon?WS.icon(icon, 30, 'currentColor', 3):'')+`<span>${label}</span>`; }
 function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); }
 async function renderLesson(){
   const n=L.node; $('#lessonProg').style.width=(100*lessonDone()/lessonTotal())+'%'; $('#lessonHint').style.display='none';
   $('#lesson').dataset.phase=L.phase;
-  if (L.phase==='intro'){ cap('New skill', n.intro, ''); lessonBtn('Show me', 'play', 'ws-nudge'); lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); return; }
+  if (L.phase==='intro'){ cap('New skill', esc(n.intro)+(Array.isArray(n.method) ? '<ol class="method">'+n.method.map(m=>`<li>${esc(m)}</li>`).join('')+'</ol>' : ''), ''); lessonBtn('Show me', 'play', 'ws-nudge'); lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); return; }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
     cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonBtn('Skip', null, 'maple'); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
   }
   if (L.phase==='demo'){
-    const [t,d]=n.demos[L.demoIdx]; L.steps=C.explain(t,d); L.step=0; lessonAb.value=t;
-    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', `${t} ${d<0?'−':'+'} ${Math.abs(d)}`); if (L.demoIdx===0) lessonSay('lesson_watch'); lessonBtn('Next', 'play');
+    const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start;
+    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); if (L.demoIdx===0) lessonSay('lesson_watch'); lessonBtn('Next', 'play');
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
     if (L.phase==='demo' && !L.busy) $('#lessonNext').classList.add('ws-nudge');
     return;
   }
   if (L.phase==='guided'){
-    const [t,d]=n.guided[L.guidedIdx]; L.target=t+d; lessonAb.value=t;
-    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `The abacus shows <b>${t}</b>. Now ${d<0?'take away':'add'} <b>${Math.abs(d)}</b>.`, `${t} ${d<0?'−':'+'} ${Math.abs(d)}`);
+    const ls=lessonStep(n, n.guided[L.guidedIdx]); L.target=ls.target; lessonAb.value=ls.start;
+    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label);
     lessonBtn('Skip', null, 'maple'); $('#lessonHint').style.display=''; if (L.guidedIdx===0) lessonSay('lesson_turn'); return;
   }
   if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check', 'jade ws-nudge'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
@@ -695,7 +711,13 @@ function advanceLesson(){
   renderLesson();
 }
 $('#lessonNext').addEventListener('click', ()=>advanceLesson());
-$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx; const [t,d]=L.node.guided[gi]; const steps=C.explain(t,d); lessonAb.value=t; const tok=animToken+1; await playSteps(lessonAb, steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=t; cap(`Your turn ${gi+1} of ${L.node.guided.length}`, `Now you: the abacus shows <b>${t}</b>. ${d<0?'Take away':'Add'} <b>${Math.abs(d)}</b>.`); });
+// What to do on a "your turn" step, in words (multiplication starts from 0 and ends on the product).
+function guidedText(ls, pair, lead){
+  const [x,y]=pair;
+  if (ls.op==='mul') return `${lead}Start at <b>0</b>. Work out <b>${x} × ${y}</b> on the abacus.`;
+  return `${lead}${lead?'the abacus':'The abacus'} shows <b>${x}</b>. ${lead?(y<0?'Take away':'Add'):'Now '+(y<0?'take away':'add')} <b>${Math.abs(y)}</b>.`;
+}
+$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
 $('#exitLesson').addEventListener('click', ()=>{ Fun.BixVoice.stop(); leaveLesson(); });
 
 /* ---------------- drills ---------------- */
@@ -932,7 +954,19 @@ async function renderChecklist(){
 }
 /* ---- the weekly report for the child who is practising (ParentBrain does the thinking; this only draws) ---- */
 const PB = window.ParentBrain;
-function reportData(){ return { history, days, progress, settings }; }
+// Multiplication misses ({op:'mul'} or from a times skill) are not bead moves: ParentBrain reads them as sums,
+// so they are kept out of its analysis and counted here instead, labelled "34 × 6".
+function isMulMiss(m, s){ const n=s && C.BY_ID[s.node]; return !!m && (m.op==='mul' || !!(n && n.drill && n.drill.op==='mul')); }
+function reportData(){
+  const h=history.map(s=>(s.missed||[]).some(m=>isMulMiss(m,s)) ? Object.assign({}, s, {missed:s.missed.filter(m=>!isMulMiss(m,s))}) : s);
+  return { history:h, days, progress, settings };
+}
+function mulMissed(from, to){
+  const g={};
+  for (const s of history){ const d=new Date(s.at); if (isNaN(d)) continue; const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); if (k<from || k>to) continue;
+    for (const m of (s.missed||[])) if (isMulMiss(m,s) && Array.isArray(m.terms) && m.terms.length>=2){ const label=`${Math.abs(m.terms[0])} × ${Math.abs(m.terms[1])}`; (g[label]=g[label]||{key:'mul:'+label, label, count:0}).count++; } }
+  return Object.values(g);
+}
 // Certificates (stream B saves them when a level test is passed). Read defensively: an array of
 // {nodeId,title,date,accuracy} for this child, wherever it ends up being kept.
 function certificates(){
@@ -1000,7 +1034,7 @@ function renderReport(){
   $('#repWatch').onclick=()=>{ Speaker.unlock(); Recorder.stop(); startLesson(lessonTarget(NODES[curIdx()]), 'parent'); };
   $('#repHow').onclick=()=>$('#guTech').scrollIntoView({behavior:'smooth', block:'start'});
   // missed most
-  const mm=r.missedMost;
+  const mm=r.missedMost.concat(mulMissed(r.weekStart, r.weekEnd)).sort((a,b)=>b.count-a.count).slice(0,3);
   $('#repMissed').innerHTML='<h3>Missed most</h3>'+(mm.length ? mm.map(m=>`<div class="mm-row"><span>${esc(m.label)}</span><b class="${m.count>=3?'hot':''}">${m.count} time${m.count===1?'':'s'}</b></div>`).join('')
     : '<p class="rep-s">Nothing missed this week.</p>');
   // gentle alerts + treats waiting to be handed over
@@ -1027,14 +1061,14 @@ $('#parent .gu-nav').addEventListener('click', e=>{ const a=e.target.closest('a'
 async function renderParent(){
   renderReport();
   for (const pp of profiles()) { try{ await Speaker.loadRec(pp.id, true); }catch(e){} }
-  const sel=$('#sNode'); sel.innerHTML=''; NODES.forEach(n=>{ const o=document.createElement('option'); o.value=n.id; o.textContent=n.icon+' '+n.title; sel.appendChild(o); }); sel.value=progress.current;
+  const sel=$('#sNode'); sel.innerHTML=''; let og=null; NODES.forEach(n=>{ const lv=levelOf(n); if (!og || og.dataset.lv!=lv){ og=document.createElement('optgroup'); og.label='Level '+lv; og.dataset.lv=lv; sel.appendChild(og); } const o=document.createElement('option'); o.value=n.id; o.textContent=n.title; og.appendChild(o); }); sel.value=progress.current;
   sel.onchange=()=>{ setTimeout(renderChecklist,0); progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
   $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); renderChecklist(); };
   renderChecklist(); renderChildren();
   const tb=$('#nodeTable tbody'); tb.innerHTML='';
-  NODES.forEach((n,i)=>{ const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
+  NODES.forEach((n,i)=>{ if (i===0 || levelOf(NODES[i-1])!==levelOf(n)){ const lr=document.createElement('tr'); lr.className='lvl-row'; lr.innerHTML=`<th colspan="5">Level ${levelOf(n)}</th>`; tb.appendChild(lr); } const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
     const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned ✓</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':st.mastered==='placed'?'<span class="pill good">learned (level check)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
-    tr.innerHTML=`<td>${n.icon} ${n.title}</td><td>${st.lesson?'✓':'—'}</td><td>${acc===null?'—':`<span class="mini"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}" style="padding:4px 10px;min-height:30px;font-size:13px">${st.mastered?'un-learn':'mark learned'}</button></td>`;
+    tr.innerHTML=`<td>${esc(n.title)}</td><td>${st.lesson?'✓':'—'}</td><td>${acc===null?'—':`<span class="mini"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}" style="padding:4px 10px;min-height:30px;font-size:13px">${st.mastered?'un-learn':'mark learned'}</button></td>`;
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
   Treats.renderParent(); Treats.bindParent();
@@ -1071,7 +1105,7 @@ async function renderParent(){
   $('#diagBeep').onclick=()=>{ Speaker.unlock(); Sfx.star(); Diag.add('beep ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); $('#diagLog').textContent=Diag.lines.join('\n'); };
   const st=$('#sessions tbody'); st.innerHTML='';
   history.slice(0,20).forEach(h=>{ const tr=document.createElement('tr'); const when=new Date(h.at); const ws=when.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+when.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
-    const missed=(h.missed||[]).map(m=>'<span class="pill bad">'+m.terms.map((t,i)=>i===0?t:(t<0?' − '+(-t):' + '+t)).join('')+' = '+m.answer+(m.given?' (said '+m.given+')':'')+'</span>').join(' ');
+    const missed=(h.missed||[]).map(m=>'<span class="pill bad">'+(isMulMiss(m,h) ? m.terms.join(' × ') : m.terms.map((t,i)=>i===0?t:(t<0?' − '+(-t):' + '+t)).join(''))+' = '+m.answer+(m.given?' (said '+m.given+')':'')+'</span>').join(' ');
     const nn=C.BY_ID[h.node]||C.BY_ID[h.preset]||{short:h.preset||''};
     tr.innerHTML=`<td>${ws}</td><td>${h.mode==='listen'?'Listen'+(h.gap?' '+h.gap+'s':''):h.mode==='flash'?'Flash':'Look'}</td><td>${nn.short||''}</td><td>${h.correct}/${h.count}</td><td>${Math.floor(h.secs/60)}:${String(h.secs%60).padStart(2,'0')}</td><td>${missed||'—'}</td>`; st.appendChild(tr); });
 }

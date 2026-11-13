@@ -224,3 +224,6 @@
   .ws-game .ws-soroban{--bead:58px;--rodh:390px}
 }
 @media (prefers-reduced-motion: reduce){ .ws-door.intro .door-block,.ws-game .bd-num.pop{animation:none} .ws-lesson .progressbar i{transition:none} }
+.times{color:var(--ws-indigo);font-style:normal}
+.ws-lesson .caption ol.method{margin:10px 0 0;padding-left:24px;font-size:19px;line-height:1.35}
+.ws-lesson .caption ol.method li{margin:4px 0}

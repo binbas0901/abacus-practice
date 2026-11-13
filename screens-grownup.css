@@ -145,3 +145,5 @@
 }
 @media (min-width:1300px){ .gu-wrap{max-width:1240px} .rep-row{min-height:520px} }
 @media (prefers-reduced-motion: reduce){ #parent.ws-grownup{scroll-behavior:auto} .rep-bar i,.gu-toast{transition:none} }
+.ws-grownup .nodetable tr.lvl-row th{padding:16px 10px 6px;font-family:var(--ws-display);font-weight:600;font-size:16px;color:var(--ws-indigo);border-bottom:2px solid var(--ws-mist)}
+@media (orientation:portrait){ .ws-grownup .nodetable th:nth-child(4),.ws-grownup .nodetable td:nth-child(4){display:none} }

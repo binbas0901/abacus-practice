@@ -18,5 +18,15 @@
 "learn_bf_sub_b": "Same trick with smaller numbers. Take ten, and add back the big friend.",
 "learn_combined": "Sometimes the big friend needs a small friend inside it. Two tricks, one move!",
 "learn_two_digit": "Work left to right. Tens rod first, then the ones. Every rod uses the same friends.",
-"learn_anzan": "Picture the beads in your head. Move them in your mind, and say the answer."
+"learn_anzan": "Picture the beads in your head. Move them in your mind, and say the answer.",
+"learn_long_rows": "Long rows use every friend you know. Keep going, number after number, and let the beads do the thinking.",
+"learn_rows_2d": "Five big numbers in a row. Tens rod first, then the ones.",
+"learn_anzan_more": "Same beads in your head, more numbers. Keep the picture still between numbers.",
+"learn_three_digit": "Now three rods for each number: hundreds, tens, and ones. Always start on the left.",
+"learn_times_a": "Three times four means three fours: four, eight, twelve. Count up on the abacus, then learn it by heart.",
+"learn_times_b": "The bigger tables! Three times seven is three sevens: seven, fourteen, twenty one.",
+"learn_anzan_2d": "Picture two rods now, tens and ones. Add the tens first, then the ones.",
+"learn_four_digit": "Four rods for each number now. Left to right, one rod at a time. Every friend still works.",
+"learn_mul_2x1": "Start at zero. Go left to right. Times each digit by the small number, and add the answer to the abacus.",
+"learn_mul_3x1": "Same trick, one more digit. Hundreds, then tens, then ones."
 }
