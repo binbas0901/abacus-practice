@@ -86,9 +86,10 @@ const dflt = cfg => cfg.allowMove || (m => (m.carry && m.rule === 'direct') || !
 // Reference generator: the original slow generateProblem2/generateSet2 built on legalDeltas2.
 function refProblem2(cfg, rng) {
   const req = cfg.requireMove || null;
+  const nOps = cfg.operandsMax > cfg.operands ? cfg.operands + Math.floor(rng() * (cfg.operandsMax - cfg.operands + 1)) : cfg.operands;
   for (let attempt = 0; attempt < 300; attempt++) {
     let total = 0; const terms = [], list = []; let ok = true;
-    for (let i = 0; i < cfg.operands; i++) {
+    for (let i = 0; i < nOps; i++) {
       const legal = E.legalDeltas2(total, cfg, i === 0);
       if (!legal.length) { ok = false; break; }
       let pool = legal;
@@ -152,15 +153,40 @@ const tryGen = f => { try { return slim(f()); } catch (e) { return 'error'; } };
 }
 // --- 2. generateSet2 returns exactly what the original slow generator returned (same seed)
 {
-  const cfgs = C.NODES.filter(n => n.drill).map(n => [n.id, n.drill]).concat([
+  // (mul drills have their own generator, checked in section 9)
+  const cfgs = C.NODES.filter(n => n.drill && n.drill.op !== 'mul').map(n => [n.id, n.drill]).concat([
     ['2d-noborrow', { operands: 4, digits: 2, maxTotal: 999, allowSubtraction: true, allowBorrow: false, allowedRules: ALL }],
     ['2d-five', { operands: 5, digits: 2, maxTotal: 99, allowSubtraction: true, allowedRules: ['direct', 'five'], requireMove: m => m.rule === 'five' && m.rod === 1 }],
   ]);
-  for (const [name, cfg] of cfgs) for (const seed of [1, 2, 3]) {
-    eq(tryGen(() => E.generateSet2(cfg, 8, E.makeRng(seed))), refSet2(cfg, 8, E.makeRng(seed)), `generateSet2 == reference ${name} seed ${seed}`);
+  // the reference builds 10^digits candidates per slot, so 4-digit drills get one smaller set (about 1 s)
+  for (const [name, cfg] of cfgs) for (const seed of (cfg.digits >= 4 ? [1] : [1, 2, 3])) {
+    const k = cfg.digits >= 4 ? 3 : 8;
+    eq(tryGen(() => E.generateSet2(cfg, k, E.makeRng(seed))), refSet2(cfg, k, E.makeRng(seed)), `generateSet2 == reference ${name} seed ${seed}`);
   }
 }
 // --- 3. multi-digit generation: rule semantics hold for 3- and 4-digit terms
+// Multiplication problems (engine.js Phase 4): shape, answer, config constraints, partials and their bead moves.
+function checkMul(name, cfg, probs) {
+  const bs = cfg.bSet || Array.from({ length: cfg.b[1] - cfg.b[0] + 1 }, (_, k) => cfg.b[0] + k);
+  for (const p of probs) {
+    const [a, b] = p.terms, ds = String(a).split('').map(Number);
+    let ok = p.op === 'mul' && p.terms.length === 2 && p.answer === a * b && a >= cfg.a[0] && a <= cfg.a[1] && bs.includes(b);
+    if ((cfg.zeros || 'none') === 'none' ? ds.includes(0) : ds[ds.length - 1] === 0) ok = false;
+    if (cfg.twoDigitPartial && !ds.some(d => d * b >= 10)) ok = false;
+    if (!(Array.isArray(p.rulesUsed) && Array.isArray(p.moveKeys))) ok = false;
+    // partials: left to right, digit*b placed with its units on the digit's rod, running total ends on the answer
+    let t = 0;
+    if (p.partials.length !== ds.length || p.moves.length !== ds.length) ok = false;
+    p.partials.forEach((pt, i) => {
+      const place = ds.length - 1 - i;
+      if (pt.digit !== ds[i] || pt.place !== place || pt.product !== ds[i] * b || pt.value !== ds[i] * b * Math.pow(10, place)) ok = false;
+      if (JSON.stringify(p.moves[i]) !== JSON.stringify(pt.value ? E.stepMoves(t, pt.value) : [])) ok = false;
+      t += pt.value; if (pt.total !== t) ok = false;
+    });
+    if (t !== p.answer) ok = false;
+    if (!ok) eq(false, true, `${name} mul problem ${JSON.stringify(p)}`); else passes++;
+  }
+}
 function checkProblems(name, cfg, probs) {
   const allow = dflt(cfg), lo = cfg.minTerm || 1, hi = Math.pow(10, cfg.digits) - 1;
   for (const p of probs) {
@@ -300,7 +326,7 @@ function checkExplain(total, delta) {
     if (r) eq(moves.map(dr.requireMove), moves.map(r), `${id} requireMove unchanged`);
   }
   eq(['two_digit', 'anzan', 'beads'].map(id => C.BY_ID[id].drill && C.BY_ID[id].drill.requireMove), [undefined, undefined, null], 'nodes without require');
-  eq(C.NODES.map(n => n.id), ['beads', 'add_direct', 'sub_direct', 'sf_add', 'sf_sub', 'bf_add_a', 'bf_add_b', 'bf_sub_a', 'bf_sub_b', 'combined', 'two_digit', 'anzan'], 'node order unchanged');
+  eq(C.NODES.slice(0, 12).map(n => n.id), ['beads', 'add_direct', 'sub_direct', 'sf_add', 'sf_sub', 'bf_add_a', 'bf_add_b', 'bf_sub_a', 'bf_sub_b', 'combined', 'two_digit', 'anzan'], 'node order unchanged');
   const mm = C.moveMatcher('ten:sub:6-9:1');
   eq([mm({ rule: 'ten', op: 'sub', d: 7, rod: 1 }), mm({ rule: 'ten', op: 'sub', d: 7, rod: 0 }), mm({ rule: 'ten', op: 'sub', d: 5, rod: 1 }), mm({ rule: 'ten', op: 'add', d: 7, rod: 1 })], [true, false, false, false], 'moveMatcher rule:op:digits:rods');
   eq([C.moveMatcher('any:sub')({ rule: 'five', op: 'sub', d: 1, rod: 0 }), C.moveMatcher('five:*:1,3')({ rule: 'five', op: 'add', d: 3, rod: 2 }), C.moveMatcher({ rule: 'combined', rod: [2] })({ rule: 'combined', op: 'add', d: 6, rod: 2 })], [true, true, true], 'moveMatcher wildcards and object form');
@@ -316,7 +342,7 @@ function checkExplain(total, delta) {
     const rev = t.problems.filter(p => p.review);
     eq(rev.length, earlier.length ? 3 : 0, `${n.id} review share`);
     eq(rev.every(p => earlier.includes(p.nodeId)) && t.problems.filter(p => !p.review).every(p => p.nodeId === n.id), true, `${n.id} review from earlier nodes only`);
-    for (const p of t.problems) checkProblems(`${n.id} test (${p.nodeId})`, Object.assign({}, C.BY_ID[p.nodeId].drill), [p]);
+    for (const p of t.problems) (p.op === 'mul' ? checkMul : checkProblems)(`${n.id} test (${p.nodeId})`, Object.assign({}, C.BY_ID[p.nodeId].drill), [p]);
     eq(t.timeLimitSec > 0 && t.timeLimitSec % 30 === 0, true, `${n.id} time limit`);
     eq(t.passRule, { minAccuracy: 0.8, withinTimeLimit: true }, `${n.id} pass rule`);
     eq(t.kind, n.kind === 'flash' ? 'flash' : 'visual', `${n.id} kind`);
@@ -344,6 +370,97 @@ function checkExplain(total, delta) {
   eq([s.passed, s.answered, s.correct, s.perProblem[9].answer], [false, 7, 7, null], 'skipped answers count as wrong; numeric strings accepted');
   s = C.scoreLevelTest(C.levelTest('two_digit', { seed: 3 }), [], 1000);
   eq(Object.values(s.byNode).reduce((a, b) => a + b.total, 0), 10, 'byNode totals');
+}
+// ===================== Levels 4-6 (nodes 13-21) =====================
+{
+  const NEW = ['long_rows', 'rows_2d', 'anzan_more', 'three_digit', 'times_a', 'times_b', 'anzan_2d', 'four_digit', 'mul_2x1', 'mul_3x1'];
+  const ICONS = ['eye', 'ear', 'bolt', 'game', 'home', 'lock', 'back', 'close', 'check', 'retry', 'speaker', 'keypad', 'share', 'plus', 'book', 'sprout', 'jar', 'gear', 'play', 'star', 'abacus'];
+  // unlock order: appended after the 12 original nodes, levels in order, reviews only look back
+  eq(C.NODES.map(n => n.id).slice(12), NEW, 'levels 4-6 appended in order after anzan');
+  eq(C.NODES.indexOf(C.BY_ID.long_rows), 12, 'mastering node 12 (anzan) unlocks long_rows (13th node)');
+  eq(NEW.map(id => C.BY_ID[id].level), [4, 4, 4, 5, 5, 5, 5, 6, 6, 6], 'level numbers');
+  eq(C.advanceCurrent('anzan', id => id === 'anzan'), 'long_rows', 'child who mastered anzan moves on to long_rows');
+  eq(C.advanceCurrent('anzan', () => false), 'anzan', 'unmastered current stays');
+  eq(C.advanceCurrent('two_digit', id => ['two_digit', 'anzan', 'long_rows'].includes(id)), 'rows_2d', 'skips every mastered node');
+  eq(C.advanceCurrent('mul_3x1', () => true), 'mul_3x1', 'last node stays');
+  eq(C.advanceCurrent('gone', () => true), 'beads', 'unknown id falls back to the first node');
+  for (const id of NEW) {
+    const n = C.BY_ID[id], i = C.NODES.indexOf(n);
+    eq([typeof n.title, typeof n.short, typeof n.icon, ICONS.includes(n.iconKey), n.intro.length > 20, n.mastery], ['string', 'string', 'string', true, true, { lastN: 20, minAccuracy: 0.8, minDays: 2 }], `${id} fields`);
+    eq((n.review || []).every(r => C.NODES.indexOf(C.BY_ID[r]) >= 0 && C.NODES.indexOf(C.BY_ID[r]) < i && !C.BY_ID[r].drill.flash), true, `${id} review nodes are earlier, non-flash`);
+    // lesson: every demo/guided pair animates from its start to its target with physically possible bead moves
+    eq(n.demos.length >= 2 && n.guided.length >= 3, true, `${id} has demos and guided`);
+    for (const pair of n.demos.concat(n.guided)) {
+      const L = C.lessonStep(n, pair), rods = String(L.start).padStart(12, '0').split('').reverse().map(Number);
+      let ok = L.steps.length >= 2 && L.target === (n.drill.op === 'mul' ? pair[0] * pair[1] : pair[0] + pair[1]);
+      for (const st of L.steps) for (const m of st.do) { if (!beadMoveOk(rods[m.rod], m.delta)) ok = false; rods[m.rod] += m.delta; }
+      if (Number(rods.slice().reverse().join('')) !== L.target || L.target >= 100000) ok = false;   // lesson abacus has 5 rods
+      eq(ok, true, `${id} lesson ${pair} animates to ${L.target}`);
+    }
+    // guided add rows chain (each starts where the last ended), so the child does one long row
+    if (n.drill.op !== 'mul' && !n.drill.flash) eq(n.guided.every((g, k) => k === 0 || g[0] === n.guided[k - 1][0] + n.guided[k - 1][1]), true, `${id} guided is one chained row`);
+    // generation validity + rule constraints
+    const probs = E.generateSet2(n.drill, 40, E.makeRng(100 + i));
+    eq(probs.length, 40, `${id} set of 40`);
+    if (n.drill.op === 'mul') checkMul(id, n.drill, probs);
+    else {
+      checkProblems(id, n.drill, probs);
+      const lens = probs.map(p => p.terms.length), lo = n.drill.operands, hi = n.drill.operandsMax || lo;
+      eq(lens.every(l => l >= lo && l <= hi) && lens.includes(lo) && lens.includes(hi), true, `${id} row length ${lo}-${hi}`);
+      if (n.drill.flash) eq(probs.every(p => p.terms.every(t => t > 0)) && n.drill.flashSec > 0, true, `${id} flash is add-only with a flash speed`);
+      eq(new Set(probs.map(p => p.terms.join())).size, 40, `${id} problems are distinct`);
+    }
+    // speed: a set of 10 in well under 50 ms (median of 5)
+    const times = [];
+    for (let k = 0; k < 5; k++) { const t0 = process.hrtime.bigint(); E.generateSet2(n.drill, 10, E.makeRng(k + 1)); times.push(Number(process.hrtime.bigint() - t0) / 1e6); }
+    times.sort((a, b) => a - b);
+    eq(times[2] < 50, true, `${id} set of 10 in < 50 ms (median ${times[2].toFixed(1)} ms)`);
+  }
+  // rows_2d really practises carrying between tens and hundreds
+  eq(E.generateSet2(C.BY_ID.rows_2d.drill, 30, E.makeRng(3)).every(p => p.moves.flat().some(m => (m.rule === 'ten' || m.rule === 'combined') && m.rod >= 1)), true, 'rows_2d: big friend on the tens/hundreds rod in every problem');
+  // times tables: all 32 facts of each half appear; a 0 digit only inside 3-digit multiplicands
+  for (const id of ['times_a', 'times_b']) {
+    const ps = E.generateSet2(C.BY_ID[id].drill, 32, E.makeRng(9));
+    eq(new Set(ps.map(p => p.terms.join('x'))).size, 32, `${id}: 32 different facts in a set of 32`);
+  }
+  const m3 = E.generateSet2(C.BY_ID.mul_3x1.drill, 300, E.makeRng(4));
+  eq([m3.some(p => String(p.terms[0])[1] === '0'), m3.every(p => p.terms[0] % 10 !== 0)], [true, true], 'mul_3x1: inner zeros appear, trailing zeros never');
+  // mul shape on the exact fields the practice screen reads
+  const p = E.mulProblem(34, 6);
+  eq([p.op, p.terms, p.answer, p.partials.map(x => [x.digit, x.place, x.product, x.value, x.total]), p.rulesUsed.sort()],
+    ['mul', [34, 6], 204, [[3, 1, 18, 180, 180], [4, 0, 24, 24, 204]], ['direct', 'ten']], 'mulProblem(34, 6)');
+  eq(E.mulProblem(406, 7).moves.map(ms => ms.length > 0), [true, false, true], '0 digit has no moves (moves aligned with partials)');
+  eq(E.generateSet2({ op: 'mul', a: [12, 99], b: [2, 9] }, 5, E.makeRng(1)).every(q => q.op === 'mul'), true, 'generateSet2 dispatches op mul');
+  // explainMul: every 1-3 digit x 1-digit animates correctly from 0 to the answer and ends by saying it
+  let bad = 0;
+  for (let a = 1; a <= 999; a++) for (let b = 1; b <= 9; b++) {
+    const steps = C.explainMul(a, b), rods = new Array(12).fill(0);
+    let ok = true;
+    for (const st of steps) for (const m of st.do) { if (!beadMoveOk(rods[m.rod], m.delta)) ok = false; rods[m.rod] += m.delta; }
+    if (Number(rods.slice().reverse().join('')) !== a * b || !steps[steps.length - 1].say.includes(String(a * b)) || !steps.every(st => typeof st.say === 'string')) ok = false;
+    if (!ok) bad++;
+  }
+  eq(bad, 0, 'explainMul valid for every a in 1..999, b in 1..9');
+  eq(C.explainMul(34, 6).map(s => s.say), ['34 × 6. Start at 0. Go left to right: times each digit of 34 by 6.',
+    '3 × 6 = 18. 3 is on the tens rod, so 18 goes on the hundreds and tens rods: add 180.',
+    '4 × 6 = 24. 4 is on the units rod, so 24 goes on the tens and units rods: add 24.',
+    'Now it shows 204. 34 × 6 = 204.'], 'explainMul(34, 6) text, left to right');
+  eq(C.explainMul(23, 3)[1].say.includes('= 06'), true, 'explainMul says a 1-digit product as two digits');
+  eq(C.explainMul(406, 7)[2].say, '0 × 7 = 00. Nothing to add: move one rod to the right.', 'explainMul: zero digit');
+  eq(C.explainMul(7, 3).map(s => s.say)[3], 'Add 7: 7, 14, 21.', 'explainMul counts up for a times fact');
+  eq(C.explainMul(7, 3, { countUp: false }).length, 3, 'explainMul countUp:false places the fact in one step');
+  eq([C.lessonStep(C.BY_ID.mul_2x1, [34, 6]).label, C.lessonStep(C.BY_ID.long_rows, [16, -8]).label, C.lessonStep(C.BY_ID.long_rows, [16, -8]).op], ['34 × 6', '16 − 8', 'sub'], 'lessonStep labels');
+  // level tests on the new nodes
+  const TM = C.levelTest('mul_2x1', { seed: 4 });
+  eq([TM.kind, TM.problems.filter(q => !q.review).every(q => q.op === 'mul' && q.nodeId === 'mul_2x1'), TM.problems.filter(q => q.review).length], ['visual', true, 3], 'mul_2x1 level test');
+  eq(TM.timeLimitSec, Math.ceil(TM.problems.reduce((s, q) => s + (q.op === 'mul' ? 4 + 6 * String(q.terms[0]).length : 5 + q.terms.reduce((a, t) => a + 2 + 4 * String(Math.abs(t)).length, 0)), 0) / 30) * 30, 'mul time estimate');
+  let sc = C.scoreLevelTest(TM, TM.problems.map(q => q.answer), 30000);
+  eq([sc.passed, sc.accuracy, sc.certificate && sc.certificate.nodeId], [true, 1, 'mul_2x1'], 'mul level test: all right passes with a certificate');
+  sc = C.scoreLevelTest(TM, TM.problems.map((q, k) => k < 3 ? q.answer + 1 : q.answer), 30000);
+  eq([sc.passed, sc.accuracy], [false, 0.7], 'mul level test: 7/10 fails');
+  eq(C.levelTest('times_a', { seed: 1, reviewShare: 0 }).timeLimitSec, 120, 'times-table test: 10 s per fact (100 s -> 120)');
+  eq(C.levelTest('long_rows', { seed: 2, operands: 4 }).problems.filter(q => !q.review).every(q => q.terms.length === 4), true, 'operands option is exact even with operandsMax');
+  eq(C.levelTest('anzan_2d', { seed: 2 }).kind, 'flash', 'anzan_2d level test is a flash test');
 }
 console.log(`${passes} passed, ${fails} failed`);
 process.exit(fails ? 1 : 0);
