@@ -173,8 +173,10 @@ async def main():
         check('level test passed -> certificate with name, skill and date', (await pg.text_content('#certName')) == 'Mia' and 'Big friends' in await pg.text_content('#certSkill') and len(await pg.text_content('#certDate')) > 6)
         certs = await pg.evaluate("Store.get('certificates')")
         check('certificate saved per child as {nodeId,title,date,accuracy}', isinstance(certs, list) and len(certs) == 1 and set(certs[0]) == {'nodeId', 'title', 'date', 'accuracy'} and certs[0]['nodeId'] == 'bf_add_a' and certs[0]['accuracy'] == 1, certs)
-        await pg.evaluate("()=>{ window.print=()=>{ window.__printed=(window.__printed||0)+1; }; }"); await pg.click('#certPrint'); await pg.wait_for_timeout(200)
-        check('certificate is printable (window.print)', await pg.evaluate("window.__printed") == 1)
+        await pg.evaluate("()=>{ window.print=()=>{ window.__printed=(window.__printed||0)+1; }; }"); await pg.click('#certPrint'); await pg.wait_for_timeout(300)
+        check('certificate: printing/sharing asks for a grown-up first (Kids Category)', await pg.is_visible('#gate') and not await pg.evaluate("window.__printed"))
+        await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_timeout(300)
+        check('certificate is printable after the gate, and returns to the certificate (window.print)', await pg.evaluate("window.__printed") == 1 and await pg.is_visible('#certificate'))
         check('certificate: one way out (Done, no duplicate X) and a printer icon on Print', not await pg.locator('#certClose').count() and await pg.evaluate("document.querySelector('#certPrint svg').innerHTML.includes('M6 9V3h12v6')"))
         await shot(pg, 'certificate')
         await collect_all(pg)
@@ -317,12 +319,14 @@ async def main():
             await pg.evaluate("()=>{ window.print=()=>{ window.__printed=1; }; LevelTest.show({nodeId:'bf_add_a',title:'Big friends: adding',date:'2026-11-13',accuracy:1}); }"); await pg.wait_for_selector('#certificate.active')
             label = (await pg.inner_text('#certPrint')).strip()
             if share:
-                await pg.click('#certPrint'); await pg.wait_for_function("window.__shared.length>0", timeout=6000); sh = await pg.evaluate("window.__shared")
+                await pg.click('#certPrint'); await pg.wait_for_timeout(300); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk')
+                await pg.wait_for_function("window.__shared.length>0", timeout=6000); sh = await pg.evaluate("window.__shared")
                 check('standalone app: certificate button says "Save picture" and shares a PNG of the certificate (no window.print)',
                       label == 'Save picture' and sh[0]['type'] == 'image/png' and sh[0]['w'] == 1600 and sh[0]['h'] == 1130 and sh[0]['size'] > 20000 and not await pg.evaluate("window.__printed"), (label, sh))
                 await shot(pg, 'certificate_standalone')
             else:
-                async with pg.expect_download(timeout=6000) as dl: await pg.click('#certPrint')
+                await pg.click('#certPrint'); await pg.wait_for_timeout(300); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer')))
+                async with pg.expect_download(timeout=6000) as dl: await pg.click('#gateOk')
                 f = await dl.value
                 check('standalone app without a share sheet: the PNG is downloaded instead', label == 'Save picture' and f.suggested_filename.endswith('.png') and not await pg.evaluate("window.__printed"), (label, f.suggested_filename))
             check('child targets >= 60px on the certificate', not await pg.evaluate(SMALL, '#certificate'), await pg.evaluate(SMALL, '#certificate'))

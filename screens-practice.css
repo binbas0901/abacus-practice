@@ -48,6 +48,7 @@
 #drill .pr-bubble .pr-btxt.pr-fresh{animation:pr-fresh .22s ease-out both}
 @keyframes pr-fresh{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 #drill .pr-bubble .ws-say{visibility:visible!important}
+#drill .pr-bubble.empty .ws-say{visibility:hidden!important}   /* no speaker mark without words */
 #drill .pr-bubble .ws-say{line-height:0}
 
 /* the problem: ONE column of tiles, read top to bottom; long rows (up to 10 numbers) get smaller tiles (fitTiles in app.js) */

@@ -225,16 +225,16 @@
       $('#rdCover').classList.remove('on');
       if (ans === v) {
         score++; streak++; misses = 0; show = Math.max(0.6, show * 0.85); marks[i] = true; setScore(beadDots(N, i + 1, marks));
-        $('#rdFb').textContent = 'Yes!'; $('#rdFb').className = 'feedback ok'; a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
+        $('#rdFb').textContent = 'Yes!'; $('#rdFb').className = 'feedback ok'; $('#rdAns').classList.add('is-right'); a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
         if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; bixLine('Super detective! More beads now!', 'reader_more', 0); await sleep(1500); }
         else await sleep(900);
       } else {
         streak = 0; misses++; show = Math.min(3.5, show * 1.25); marks[i] = false; setScore(beadDots(N, i + 1, marks));
-        $('#rdFb').innerHTML = `It was <b>${v}</b>`; $('#rdFb').className = 'feedback bad'; a.Sfx.soft(); root.Fun.Mascot.react(bix(), 'oops');
+        $('#rdFb').innerHTML = `It was <b>${v}</b>`; $('#rdFb').className = 'feedback bad'; $('#rdAns').classList.add('is-wrong'); bixLine(`It was ${v}. Next one!`, null, 0, true); a.Sfx.soft(); root.Fun.Mascot.react(bix(), 'oops');
         if (misses >= 2 && rods > 1) { rods--; misses = 0; }
         await sleep(1800);
       }
-      P.clear();
+      P.clear(); $('#rdAns').classList.remove('is-right', 'is-wrong');
     }
     return { score, of: N, rods: abRods, marks };
   }

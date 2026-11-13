@@ -283,3 +283,8 @@ body.ws-calm .ws-game .bub.in{animation:none}
 .gate-card .gate-msg{min-height:24px;font-family:var(--ws-body);font-size:18px;color:var(--ws-red-dk);margin:-6px 0 -4px}
 .gate-card .gate-open{min-width:220px}
 @media (orientation:portrait){ .ls-dot{width:24px;height:15px} .ws-lesson .lesson-steps{gap:5px} }
+
+/* Bead Detective: the answer box shows right/wrong the same way practice does */
+#rdAns.is-right{background:var(--ws-jade);color:#fff;animation:ws-pop .38s var(--ws-ease) both}
+#rdAns.is-wrong{background:var(--ws-red);color:#fff;animation:ws-shake .3s ease}
+@media (prefers-reduced-motion: reduce){ #rdAns.is-right,#rdAns.is-wrong{animation:none} }

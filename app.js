@@ -976,7 +976,8 @@ async function startDrill(m, n){
   try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ if (window.WS && WS.confirm) WS.confirm('No problems to make', 'The grown-up settings for numbers and speed can’t make problems for this skill. Change them in Grown-ups → Practice.', {ok:'OK', cancel:'Close'}); return; }
   beginSet();
   presentProblem();                       // start speaking while we are still inside the tap
-  if (mode!=='listen') PB.say(mode==='flash'?'Watch the numbers carefully!':'You can do it!', 'happy', mode==='flash' ? 'drill_flash' : 'drill_look', 2200);
+  if (mode==='listen') PB.say('Listen carefully!', 'happy', 'drill_listen', 2600);   // spoken before Ready; numbers stop Bix
+  else PB.say(mode==='flash'?'Watch the numbers carefully!':'You can do it!', 'happy', mode==='flash' ? 'drill_flash' : 'drill_look', 2200);
   try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
 }
 // Show only the stage for the current mode (Look: number tiles; Listen: the listening card; Flash: the flash card). Used by drills, the fix pass and level tests.
@@ -1287,7 +1288,8 @@ function showCertificate(c){
   Fun.BixVoice.play('lesson_done', $('#certCard'));
 }
 let certShown=null, certPic=null;
-function standaloneApp(){ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches; }catch(e){ return false; } }
+// Home Screen app or the native App Store wrapper (WKWebView): window.print does nothing there, so save a picture instead.
+function standaloneApp(){ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || !!(window.Capacitor || window.cordova || window.ReactNativeWebView || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bix)); }catch(e){ return false; } }
 // The certificate as a PNG (1600×1130), drawn on a canvas with the app's own fonts, colours, Bix and beads.
 async function certPicture(c){
   const W=1600, H=1130, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
@@ -1335,13 +1337,13 @@ function certPicView(url){
     $('#certificate').appendChild(box); box.querySelector('#certPicDone').addEventListener('click', ()=>box.classList.remove('on')); }
   box.querySelector('img').src=url; box.classList.add('on');
 }
-$('#certPrint').addEventListener('click', ()=>{ Sfx.tap(); if (standaloneApp()) saveCertPicture(); else window.print(); });
+$('#certPrint').addEventListener('click', ()=>{ Sfx.tap(); openGate(()=>{ if (standaloneApp()) saveCertPicture(); else window.print(); }); });   // sharing leaves the app: grown-ups only
 $('#certDone').addEventListener('click', ()=>{ renderHome(); show('home'); });
 // Other screens (practice door, grown-ups) can start a level test or read this child's certificates.
 window.LevelTest = { start: startLevelTest, certificates, show: c=>showCertificate(c), picture: c=>certPicture(c||certShown) };
 
 /* ---------------- parent gate ---------------- */
-let gateAnswer=0, gateNext=null, gateFrom='home'; $('#grownups').addEventListener('click', ()=>openGate());
+let gateAnswer=0, gateNext=null, gateFrom='home', gateCb=null; $('#grownups').addEventListener('click', ()=>openGate());
 // Grown-ups gate (Apple Kids Category parental gate). Two steps, both beyond this app's children:
 //  1. press and hold a button for 3 seconds (the bar fills; letting go early starts again), then
 //  2. a written instruction: "Type the fourth, first and second digits of 5 2 8 9 3". Our oldest children read big
@@ -1357,7 +1359,7 @@ const GATE_ART = `<svg width="190" height="200" viewBox="0 0 190 200"><ellipse c
 // A new question: 5 digits (1-9, so no leading-zero answers) and 3 different positions in a random order.
 function gateQuestion(){
   const digits=Array.from({length:5}, ()=>1+Math.floor(Math.random()*9));
-  const pos=[0,1,2,3,4].sort(()=>Math.random()-0.5).slice(0,3);
+  let pos; do { pos=[0,1,2,3,4].sort(()=>Math.random()-0.5).slice(0,3); } while (pos[0]<pos[1] && pos[1]<pos[2]);   // never in plain left-to-right order
   gateAnswer=+pos.map(i=>digits[i]).join(''); window.__gateAnswer=gateAnswer;
   const ord=pos.map(i=>'<b>'+GATE_ORD[i]+'</b>');
   $('#gateQ').innerHTML='<small>Type these digits, in this order</small><span class="gw">The '+ord[0]+', '+ord[1]+' and '+ord[2]+' digits of</span>'
@@ -1384,16 +1386,17 @@ const GateHold={ t0:0, raf:0,
 function openGate(next){
   const g=$('#gate');
   if (g.classList.contains('active')) return;
-  gateNext = typeof next==='string' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home';
+  gateNext = typeof next==='string' ? next : null; gateCb = typeof next==='function' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home';
   GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   gateAnswer=-1; window.__gateAnswer=null;
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
   show('gate'); const bg=$('#bixGate'); mountBix(bg, 80); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
 }
-function leaveGate(){ GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
+function leaveGate(){ gateCb=null; GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
 $('#gateOk').addEventListener('click', ()=>{
   if ($('#gateCard').dataset.step!=='ask') return;
+  if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer && gateCb){ const cb=gateCb; gateCb=null; Fun.BixVoice.stop(); GateHold.reset(); show(gateFrom); cb(); return; }   // a grown-up action, then back where we were
   if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
   else { const c=$('#gateCard'); c.classList.remove('ws-shake'); void c.offsetWidth; c.classList.add('ws-shake'); gateQuestion(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; setTimeout(()=>$('#gateA').focus(),50); }
 });
