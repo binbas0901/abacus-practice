@@ -25,7 +25,7 @@ async def main():
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(600)
         steps = await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.textContent)')
-        check('home: Bix, greeting, 3 steps, 3 doors; My Room has the garden pot', await pg.locator('#bixHome .bix').count()==1 and len(steps)==3 and await pg.locator('.hm-doors > button').count()==3, f"{await pg.text_content('#bixHome .bubble')} | {steps}")
+        check('home: Bix, greeting, 3 steps, 3 doors; My Room has the garden pot', await pg.locator('#bixHome .bix').count()==1 and len(steps)==3 and await pg.locator('.th-doors > button').count()==3, f"{await pg.text_content('#bixHome .bubble')} | {steps}")
         await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active')
         check('My Room: garden pot drawn (sprout today, nothing wilts)', await pg.locator('#garden .plot').count()>0 and await pg.locator('#garden .g-pot').count()==1, await pg.text_content('#gardenLabel'))
         await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')

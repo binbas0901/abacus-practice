@@ -1,6 +1,6 @@
 import asyncio, json, os, datetime
 from playwright.async_api import async_playwright
-# Workshop home (Today beads + three doors), My Room (sticker book, flower pot, treat jar, "I wish for…"),
+# Toy Table home (Today beads on the rod + three doors, the moon in the window), My Room (sticker book, flower pot, treat jar, "I wish for…"),
 # Who's practising, and the "abacus at home?" setup question saved per child.
 res=[]
 def check(label, ok, extra=''): res.append(bool(ok)); print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
@@ -16,7 +16,7 @@ STATE="""(()=>{ if (localStorage.getItem('abacus.p12')) return; localStorage.set
 })()""" % (json.dumps({'%s-%02d' % (ym, d): True for d in PRACTISED}), ym)
 async def no_overflow(pg):
     return await pg.evaluate("""(()=>{ const W=innerWidth,H=innerHeight; const bad=[];
-      document.querySelectorAll('#home.active button, #home.active .hm-frame, #room.active button, #room.active .rm-shelf').forEach(e=>{ const r=e.getBoundingClientRect(); if(!r.width) return;
+      document.querySelectorAll('#home.active button, #home.active .th-today, #home.active .th-doors, #room.active button, #room.active .rm-shelf').forEach(e=>{ const r=e.getBoundingClientRect(); if(!r.width) return;
         if(r.left<-1||r.top<-1||r.right>W+1||r.bottom>H+1) bad.push((e.id||e.className)+' '+[r.left,r.top,r.right,r.bottom].map(Math.round)); });
       return bad; })()""")
 async def main():
@@ -30,20 +30,20 @@ async def main():
         # ---------- home ----------
         steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
         check('home: Bix + greeting bubble + grown-ups lock', await pg.locator('#bixHome .bix.ws-bix').count()==1 and 'Mia' in await pg.text_content('#bixHome .bubble') and await pg.locator('#home #grownups[aria-label]').count()==1)
-        check('home: Today with 3 lacquered beads on the rod; only the next one pulses, later ones faded',
-              len(steps)==3 and 'next' in steps[0] and 'later' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .ws-pulse').count()==1 and await pg.locator('#todaySteps svg.ws-bead').count()==3, steps)
+        check('home: Today with 3 lacquered beads on the rod; only the next one glows',
+              len(steps)==3 and 'next' in steps[0] and 'later' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.now').count()==1 and await pg.locator('#todaySteps svg.toy-bead').count()==3, steps)
         check('home: one big Start and three doors (Practice / Play / My Room with bead chip)',
-              (await pg.text_content('#todayGoT'))=='Start' and await pg.locator('.hm-doors > button').count()==3 and (await pg.text_content('#roomBeads')).strip()=='12')
+              (await pg.text_content('#todayGoT'))=='Start' and await pg.locator('.th-doors > button').count()==3 and (await pg.text_content('#roomBeads')).strip()=='12')
         check('home: old skill path, mode tiles, jar and garden are gone from home',
               await pg.locator('#home #path, #home .tile, #home #jar, #home #garden').count()==0)
         check('home: no emoji in the UI text', not any(ord(c)>0x2600 for c in await pg.text_content('#home')))
         start=await pg.eval_on_selector('#todayGo','e=>{const r=e.getBoundingClientRect(); return [r.width,r.height]}')
-        check('home: targets are big (Start >= 140px, doors >= 120px tall)', min(start)>=140 and await pg.evaluate("[...document.querySelectorAll('.hm-door')].every(e=>e.getBoundingClientRect().height>=120)"), start)
+        check('home: targets are big (Start >= 140px, three block doors >= 100px tall)', min(start)>=140 and await pg.evaluate("(d=>d.length===3 && d.every(e=>e.getBoundingClientRect().height>=100))([...document.querySelectorAll('.th-door')])"), start)
         check('home: one child -> no "Switch child"', not await pg.is_visible('#switchKid'))
         # a finished step turns jade with a check, the next one takes over
         await pg.evaluate("Fun.data.today.steps[0].done=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(200)
         steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
-        check('done step: jade bead + check, Start becomes Next for step 2', 'done' in steps[0] and 'next' in steps[1] and (await pg.text_content('#todayGoT'))=='Next' and '2 more' in await pg.text_content('#greetSub'), steps)
+        check('done step: teal bead + check, Start becomes Next for step 2', 'done' in steps[0] and 'next' in steps[1] and (await pg.text_content('#todayGoT'))=='Next' and '2 more' in await pg.text_content('#greetSub'), steps)
         await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(200)
         check('all done: "All done!", big button turns into Play', 'done' in await pg.text_content('#todayTitle') and (await pg.text_content('#todayGoT'))=='Play' and await pg.locator('#todayGo.play').count()==1)
         await pg.click('#todayGo'); await pg.wait_for_selector('#play.active'); await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
@@ -59,7 +59,7 @@ async def main():
         cur=await pg.evaluate("App.currentNode().id")
         check('plan frozen after a mid-day unlock (same steps, same order)', after==plan and cur=='bf_add_b', f"{plan} -> {after} (now {cur})")
         steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
-        check('finished step shown first (jade + check), the next one after it', 'done' in steps[0] and 'next' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.done .hm-bead path[fill="#2F9E7E"]').count()==1, steps)
+        check('finished step shown first (teal + check), the next one after it', 'done' in steps[0] and 'next' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.done .th-bead path[fill="url(#toy-lac-teal)"]').count()==1 and await pg.locator('#todaySteps .step.done .th-bead-ic svg').count()==1, steps)
         check('main button reads "Next" mid-day', (await pg.text_content('#todayGoT'))=='Next' and 'Next' in await pg.get_attribute('#todayGo','aria-label'))
         await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(150)
         check('end of the day: Play', (await pg.text_content('#todayGoT'))=='Play')
@@ -125,8 +125,8 @@ async def main():
 
         # ---------- reduced motion ----------
         await pg.emulate_media(reduced_motion='reduce'); await pg.wait_for_timeout(100)
-        anim=await pg.evaluate("[...document.querySelectorAll('#home .ws-pulse, #home .ws-bix-body')].map(e=>getComputedStyle(e).animationName)")
-        check('reduced motion: no pulse / bob', all(a=='none' for a in anim), anim)
+        anim=await pg.evaluate("[...document.querySelectorAll('#home .toy-bix-breathe, #home .toy-lid, #home .toy-moon-halo, #home .tb-toy svg, #home .th-bead, #home .ws-bix-body')].map(e=>getComputedStyle(e).animationName)")
+        check('reduced motion: Bix, the moon and the beads hold still', len(anim)>=4 and all(a=='none' for a in anim), anim)
         await pg.emulate_media(reduced_motion='no-preference')
         await ctx.close()
 
@@ -141,8 +141,8 @@ async def main():
             check(f'{W}x{H}: shop goal card first and fully on screen', gb and gb[0]>=0 and gb[1]<=gb[2], gb)
             await pg.click('#exitShop'); await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
             if W==1366:
-                gap=await pg.evaluate("(()=>{ const s=document.querySelector('#greetSub').getBoundingClientRect(), r=document.querySelector('.hm-rod').getBoundingClientRect(); return r.top-s.bottom; })()")
-                check('iPad Pro: "3 little steps" sits well clear of the rod (>= 16px)', gap>=16, gap)
+                gap=await pg.evaluate("(()=>{ const s=document.querySelector('#bixHome .bubble').getBoundingClientRect(), r=document.querySelector('.th-rack').getBoundingClientRect(); return r.top-s.bottom; })()")
+                check('iPad Pro: Bix\'s bubble sits well clear of the bead rod (>= 16px)', gap>=16, gap)
             await ctx.close()
 
         # ---------- first-time setup: "abacus at home?" saved per child ----------
@@ -178,8 +178,8 @@ async def main():
         small=await p3.evaluate("[...document.querySelectorAll('#setup .su-step.on button')].filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.dataset.id, Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)")
         check('setup skill list: every target at least 60px tall', not small, small)
         await p3.click('#suPickBack'); await p3.click('[data-lv=check]'); await p3.wait_for_selector('#suCheck.on')
-        keys=await p3.eval_on_selector_all('#suPad .ws-keypad button','els=>els.map(e=>e.dataset.k)')
-        check('level check uses the kit keypad (WS.keypad), no local copy', keys==['7','8','9','4','5','6','1','2','3','del','0'] and await p3.locator('#suPad > button').count()==0, keys)
+        keys=await p3.eval_on_selector_all('#suPad .toy-keypad button','els=>els.map(e=>e.dataset.k)')
+        check('level check uses the kit keypad (TOY.keypad, calculator order), no local copy', keys==['7','8','9','4','5','6','1','2','3','0','del'] and await p3.locator('#suPad > button').count()==0, keys)
         small=await p3.evaluate("[...document.querySelectorAll('#setup .su-step.on button')].filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.dataset.k, Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)")
         check('level check: every target at least 60px tall', not small, small)
         check('level check: the stop button says what it does ("Stop here")', (await p3.text_content('#suStop')).strip()=='Stop here' and 'Stop here' in (await p3.get_attribute('#suStop','aria-label')))
@@ -216,7 +216,7 @@ async def main():
         # ---------- who's practising + switch child ----------
         await pg.evaluate("sessionStorage.removeItem('abacus.who')"); await pg.reload(); await pg.wait_for_timeout(900)
         cards=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.textContent.trim())')
-        fills=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.querySelector(".ws-bead path").getAttribute("fill"))')
+        fills=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.querySelector(".toy-bead path").getAttribute("fill"))')
         check("Who's practising: a card per child, each bead a different lacquer colour, Bix asks", cards==['Ava','Ben','Cy'] and len(set(fills))==3 and 'practising' in await pg.text_content('#bixWho .bubble'), f"{cards} {fills}")
         await pg.screenshot(path='/tmp/p12_who.png')
         await pg.click('#whoList .who-card:has-text("Ben")'); await pg.wait_for_timeout(1200)

@@ -377,21 +377,58 @@ document.addEventListener('click', e=>{
   const onButton = e.target.closest('button') && !e.target.closest('#bixHome');
   setTimeout(()=>{ if (!onButton && !greeted && $('#home').classList.contains('active')) renderHome(); }, 120);
 }, true);
-// Each kind of step is a lacquered bead whose colour means something: red = learn (the main new thing), indigo = Look, ochre = Listen, jade = Flash / Play.
-const STEP_LOOK = { lesson:['book','red'], visual:['eye','indigo'], listen:['ear','ochre'], flash:['bolt','jade'], game:['game','jade'] };
+/* ---- Toy Table look for home, who, gate and first-run setup (TOY.* in toykit.js, styles in toy-home.css) ---- */
+// Fun.Mascot (fun.js) still mounts the Workshop Bix and owns his bubble, taps and voice. On the rebuilt screens this
+// draws TOY.bix over him and follows Mascot's moods and reactions; `rest` is his resting pose on that screen.
+const TOY_BIX_MOOD = { cheer:'cheer', think:'think', concerned:'oops', wow:'wow', sleepy:'sleepy' };
+function toyBix(el, rest, opts){
+  if (!el) return;
+  if (!el.querySelector('.bix')) Fun.Mascot.mount(el, Object.assign({size:96, keep:true}, opts||{}));
+  const bx=el.querySelector('.bix'); el.classList.add('tb'); if (rest) el.dataset.rest=rest;
+  let host=bx.querySelector('.tb-toy');
+  const draw=()=>{ const m = bx.classList.contains('cheer') ? 'cheer' : bx.classList.contains('oops') ? 'oops' : TOY_BIX_MOOD[bx.dataset.mood] || el.dataset.rest || 'happy';
+    if (host.dataset.m!==m){ host.dataset.m=m; host.innerHTML=TOY.bix(m, 320); } };
+  if (!host){ host=document.createElement('span'); host.className='tb-toy'; host.setAttribute('aria-hidden','true'); bx.appendChild(host);
+    new MutationObserver(draw).observe(bx, {attributes:true, attributeFilter:['class','data-mood']}); }
+  draw();
+}
+window.ToyBix = toyBix;
+// Today's steps are three lacquer beads on a rod: 1 red, 2 mustard, 3 indigo (the same colours as their number chips).
+// A finished bead turns teal with a tick; the next one glows.
+const STEP_COLORS = ['red','mustard','indigo'], KID_COLORS = ['red','indigo','teal','mustard'], NUM_WORD = ['No','One','Two','Three','Four','Five'];
 function stepBead(s, nextI){
-  const i = s.at, [ic, col] = STEP_LOOK[s.kind] || ['star','indigo'], cur = i===nextI, w = cur ? 170 : s.done ? 136 : 150;
-  const bead = s.done ? WS.bead('jade', w) : WS.bead(col, w);
-  const icon = s.done ? WS.icon('check', 40, '#fff', 3.2) : WS.icon(ic, cur ? 40 : 34, cur ? (col==='ochre' ? '#3D2412' : '#fff') : '#6E4126', 2.4);
+  const i = s.at, cur = i===nextI, col = STEP_COLORS[i%3];
   const state = s.done ? 'done' : cur ? 'now' : 'later', just = s.done && stepBead.seen && !stepBead.seen[i];
-  return `<li class="step hm-step ${state}${just?' just':''}${s.done?' done':''}${cur?' next':''}" aria-label="${esc(s.label)}${s.done?' (done)':cur?' (next)':''}"><span class="hm-bead${cur?' ws-pulse':''}">${bead}<span class="hm-bead-ic">${icon}</span></span><span class="sl hm-step-l">${esc(s.label)}</span></li>`;
+  return `<li class="step th-step ${state}${just?' just':''}${cur?' next':''}" data-n="${i+1}" data-c="${col}" aria-label="${esc(s.label)}${s.done?' (done)':cur?' (next)':''}">`
+    + `<span class="th-bead">${TOY.bead(s.done ? 'teal' : col, 150, {tall:true})}${s.done ? `<span class="th-bead-ic">${TOY.icon('check', 44, '#fff', {stroke:3.4})}</span>` : ''}</span><span class="sl th-lab" data-n="${i+1}">${esc(s.label)}</span></li>`;
+}
+// The moon in the window fills as today's steps get done: thin crescent, half, gibbous, then full and proud.
+const HOME_SPARKS = `<svg class="th-sparks" viewBox="0 0 430 200" aria-hidden="true">`
+  + [[52,44,9],[118,26,6],[246,40,10],[306,104,7],[362,36,8],[88,118,6],[270,132,5]].map(([x,y,r],i)=>`<path d="M${x},${y-r} Q${x+r*.18},${y-r*.18} ${x+r},${y} Q${x+r*.18},${y+r*.18} ${x},${y+r} Q${x-r*.18},${y+r*.18} ${x-r},${y} Q${x-r*.18},${y-r*.18} ${x},${y-r}Z" fill="${i%3===1?'#F7C843':'#FFFDF6'}"/>`).join('') + `</svg>`;
+function homeMoon(done, total){
+  const full = done>=total, phase = full ? 1 : .36 + .39*done/Math.max(1,total-1), key = done+'/'+total, sky=$('#homeSky');
+  if (sky.dataset.k===key) return; sky.dataset.k=key;
+  sky.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', phase) + (full ? HOME_SPARKS : '');
+}
+// The bubble as in the mockup: the greeting as a title, then the rest of what Bix says (the caption always holds the
+// spoken line) and how many beads are left today. The moon gets one mention.
+function homeBubble(text, steps){
+  const t=$('#bixHome .bubble .ws-text'); if (!t || !settings.name) return;
+  const n=steps.length, done=steps.filter(s=>s.done).length, left=n-done, m=/^(.*?[!.?])\s+(.*)$/.exec(text), title = m ? m[1] : text, rest = m ? m[2] : '';
+  const sub = !left ? `${TOY.moonName} is full! ${rest.replace('My Room', 'My room')}`
+    : rest + ' ' + (!done ? `${NUM_WORD[n]||n} beads to fill up ${TOY.moonName}!` : `${NUM_WORD[left]||left} more ${left===1?'bead':'beads'} to slide.`);
+  t.innerHTML = `<span class="toy-bubble-title">${esc(title)}</span> <span class="th-bub-sub">${esc(sub.trim())}</span>`;
 }
 function renderHome(){
-  $('#switchKid').style.display = Store.children().length>1 ? '' : 'none';
+  const many = Store.children().length>1, tagName = settings.name || (many ? 'New child' : '');
+  const tagCol = KID_COLORS[Math.max(0, Store.children().findIndex(c=>c.id===Store.activeId()))%KID_COLORS.length];
+  const sk=$('#switchKid'); sk.style.display = many ? '' : 'none'; sk.innerHTML = many ? TOY.tag(tagName, {hang:true, color:tagCol}) : '';
+  sk.setAttribute('aria-label', 'Switch child' + (tagName ? ` (now ${tagName})` : ''));
+  $('#homeTag').innerHTML = !many && tagName ? TOY.tag(tagName, {hang:true, color:tagCol}) : '';
   const cur = NODES[curIdx()];
-  // Bix
-  const bh=$('#bixHome'); if (!bh.querySelector('.bix')) Fun.Mascot.mount(bh, {size:92, keep:true});
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
+  // Bix
+  const bh=$('#bixHome'); toyBix(bh, allDone ? 'proud' : 'wave');
   // Bix talks on the home screen once per visit to the app (the first time sound is allowed), and when today is finished.
   const canTalk = !!Speaker.gestured;   // sound is allowed once she has tapped
   const line = !settings.name ? ["I don't know your name yet! Tap me to tell me.", 'ask_name']
@@ -399,31 +436,37 @@ function renderHome(){
     : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
   const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
   Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null, line[1]);
+  homeBubble(line[0], steps);
   if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; }
   Fun.save();
-  // Today: three beads on the soroban rod, finished ones first (slid to the left like counted beads)
+  // Today: three beads on the rod, finished ones first (slid to the left like counted beads); the moon shows the same count
   const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
+  $('#home').classList.toggle('is-done', allDone);
+  homeMoon(steps.length-left, steps.length);
   $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
   $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
   const shown = steps.filter(s=>s.done).concat(steps.filter(s=>!s.done));
   $('#todaySteps').innerHTML = shown.map(s=>stepBead(s,nextI)).join('');
   stepBead.seen = steps.map(s=>s.done);   // a step that turns done since the last visit pops (by its place in the plan)
   const go=$('#todayGo'); go.classList.toggle('play', allDone);
-  $('#todayGoIc').innerHTML = allDone ? WS.icon('game', 44, '#fff', 2.2) : WS.icon('play', 44, '#fff');
+  $('#todayGoIc').innerHTML = TOY.icon(allDone ? 'star' : 'play', 64, '#fff', {stroke:3, accent:'#fff'});
   $('#todayGoT').textContent = allDone ? 'Play' : (started ? 'Next' : 'Start');
   go.setAttribute('aria-label', allDone ? 'Play a game' : `${started?'Next':'Start'}: ${nextS.label}`);
   Treats.renderJar();
 }
-// Icons for the home screen (kit drawings, no emoji).
-$('#grownups').innerHTML = WS.icon('lock', 26, '#56627A');
-$('#doorPracticeIc').innerHTML = WS.icon('abacus', 56, '#F4E3C3');
-$('#doorPlayIc').innerHTML = WS.icon('game', 54, '#fff', 2);
-$('#doorRoomIc').innerHTML = WS.icon('home', 54, '#3D2412', 2);
+// Things on the home table that never change (kit drawings, no emoji).
+$('#grownups').innerHTML = TOY.icon('lock', 30, 'currentColor');
+$('#doorPracticeIc').innerHTML = TOY.icon('practice', 46, 'currentColor');
+$('#doorPlayIc').innerHTML = TOY.icon('star', 46, 'currentColor', {accent:'#FFFDF6'});
+$('#doorRoomIc').innerHTML = TOY.icon('room', 46, 'currentColor');
+$('#homeShelf').innerHTML = TOY.prop('rainbow', 150) + TOY.prop('plant', 170);
+$('#homeLoose').innerHTML = TOY.bead('mustard', 64) + TOY.bead('teal', 72) + TOY.bead('indigo', 58);
+$('#homeBowl').innerHTML = TOY.prop('bowl', 190);
 // Tapping Bix on the home screen asks for a name if the device doesn't have one yet.
 $('#bixHome').addEventListener('pointerup', e=>{ if (settings.name || !e.target.closest('.bix')) return; setTimeout(openNameAsk, 250); });
 function openNameAsk(){
   Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me.", 0, 'ask_name');
-  const nb=$('#bixName'); if (!nb.querySelector('.bix')) Fun.Mascot.mount(nb, {size:96, bubble:false});
+  toyBix($('#bixName'), 'happy', {bubble:false});
   $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200);
 }
 function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
@@ -431,7 +474,7 @@ $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
-// Each kind of Today step: [WS.icon name, label]. (The bead colour comes from STEP_LOOK.)
+// Each kind of Today step: [icon name, label]. (On the home rod the bead colour comes from its place: STEP_COLORS.)
 const STEP_INFO = { lesson:['book','Learn'], visual:['eye','Look'], listen:['ear','Listen'], flash:['bolt','Flash'], game:['game','Game'] };
 // Three short steps a day: learn/practise, a game, then the other practice mode.
 // The plan is made once per child per day (Fun.data is per child) and then frozen: unlocking a skill or a grown-up
@@ -1351,11 +1394,16 @@ let gateAnswer=0, gateNext=null, gateFrom='home', gateCb=null; $('#grownups').ad
 //     instruction is an adult reading task that takes a grown-up about 5 seconds.
 // Children who cannot read get a picture and Bix saying "Go get a grown-up!". window.__gateAnswer / __gateHold are test hooks.
 const GATE_ORD=['first','second','third','fourth','fifth'], GATE_HOLD_MS=3000;
-// A grown-up holding a child's hand: the picture says "fetch a grown-up" without words.
-const GATE_ART = `<svg width="190" height="200" viewBox="0 0 190 200"><ellipse class="a-line" cx="95" cy="190" rx="80" ry="8"/>
-  <circle class="a-indigo" cx="62" cy="34" r="22"/><path class="a-indigo" d="M30 84a32 32 0 0 1 64 0v60H30z"/><rect class="a-indigo-dk" x="36" y="140" width="20" height="46" rx="8"/><rect class="a-indigo-dk" x="68" y="140" width="20" height="46" rx="8"/>
-  <path class="a-indigo-s" d="M90 92 Q112 118 128 120" stroke-width="13" fill="none" stroke-linecap="round"/>
-  <circle class="a-ochre" cx="140" cy="94" r="16"/><path class="a-ochre" d="M118 136a22 22 0 0 1 44 0v26h-44z"/><rect class="a-ochre-dk" x="122" y="158" width="14" height="28" rx="6"/><rect class="a-ochre-dk" x="144" y="158" width="14" height="28" rx="6"/></svg>`;
+// A grown-up holding a child's hand, as two wooden peg dolls: the picture says "fetch a grown-up" without words.
+const GATE_ART = (()=>{ const sh=(cx,cy,rx,ry,o)=>`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#toy-g-shadow)" opacity="${o}"/>`;
+  const doll=(x, base, w, h, r, col)=>{ const top=base-h, hy=top-r*.62;
+    return `<path d="M${x-w},${base-8} Q${x-w-2},${top+h*.22} ${x-w*.5},${top+4} Q${x},${top-6} ${x+w*.5},${top+4} Q${x+w+2},${top+h*.22} ${x+w},${base-8} Q${x},${base+6} ${x-w},${base-8}Z" fill="url(#toy-lac-${col})"/>`
+      + `<ellipse cx="${x-w*.42}" cy="${top+h*.34}" rx="${w*.16}" ry="${h*.2}" transform="rotate(14 ${x-w*.42} ${top+h*.34})" fill="#fff" opacity=".5"/>`
+      + `<circle cx="${x+1.5}" cy="${hy+2.5}" r="${r}" fill="#B98448"/><circle cx="${x}" cy="${hy}" r="${r}" fill="url(#toy-g-maple)"/><ellipse cx="${x-r*.36}" cy="${hy-r*.42}" rx="${r*.34}" ry="${r*.2}" transform="rotate(-30 ${x-r*.36} ${hy-r*.42})" fill="#fff" opacity=".75"/>`; };
+  return `<svg width="230" height="200" viewBox="0 0 230 200">` + sh(92,184,62,10,.5) + sh(78,183,44,8,.95) + sh(176,185,42,8,.5) + sh(166,184,30,6,.95)
+    + `<path d="M108,116 Q126,140 144,140" fill="none" stroke="#1B2557" stroke-width="17" stroke-linecap="round"/><path d="M108,116 Q126,140 144,140" fill="none" stroke="#3A4B9C" stroke-width="13" stroke-linecap="round"/>`
+    + doll(76, 184, 36, 104, 25, 'indigo') + doll(164, 184, 26, 64, 19, 'mustard')
+    + `<circle cx="144" cy="140" r="9" fill="url(#toy-lac-mustard)"/></svg>`; })();
 // A new question: 5 digits (1-9, so no leading-zero answers) and 3 different positions in a random order.
 function gateQuestion(){
   const digits=Array.from({length:5}, ()=>1+Math.floor(Math.random()*9));
@@ -1376,7 +1424,8 @@ const GateHold={ t0:0, raf:0,
   stop(){ if (!this.t0) return; const early=performance.now()-this.t0 < GATE_HOLD_MS; this.reset(); if (early) $('#gateMsg').textContent='Keep holding until the bar is full.'; },
   reset(){ cancelAnimationFrame(this.raf); this.t0=0; const b=$('#gateHold'); b.classList.remove('holding'); b.style.setProperty('--p', 0); $('#gateHoldL').textContent='Hold'; },
 };
-(()=>{ const b=$('#gateHold'); b.querySelector('.gh-ic').innerHTML=WS.icon('lock', 28, 'currentColor', 2.6);
+$('#gateBack').innerHTML=TOY.icon('back', 30, 'currentColor');
+(()=>{ const b=$('#gateHold'); b.querySelector('.gh-ic').innerHTML=TOY.icon('lock', 30, 'currentColor');
   b.addEventListener('pointerdown', e=>{ e.preventDefault(); try{ b.setPointerCapture(e.pointerId); }catch(err){} GateHold.start(); });
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev, ()=>GateHold.stop()));
   b.addEventListener('contextmenu', e=>e.preventDefault());
@@ -1390,7 +1439,7 @@ function openGate(next){
   GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   gateAnswer=-1; window.__gateAnswer=null;
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
-  show('gate'); const bg=$('#bixGate'); mountBix(bg, 80); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
+  show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
 }
 function leaveGate(){ gateCb=null; GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
@@ -1398,7 +1447,7 @@ $('#gateOk').addEventListener('click', ()=>{
   if ($('#gateCard').dataset.step!=='ask') return;
   if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer && gateCb){ const cb=gateCb; gateCb=null; Fun.BixVoice.stop(); GateHold.reset(); show(gateFrom); cb(); return; }   // a grown-up action, then back where we were
   if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
-  else { const c=$('#gateCard'); c.classList.remove('ws-shake'); void c.offsetWidth; c.classList.add('ws-shake'); gateQuestion(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; setTimeout(()=>$('#gateA').focus(),50); }
+  else { const c=$('#gateCard'); c.classList.remove('tg-shake'); void c.offsetWidth; c.classList.add('tg-shake'); gateQuestion(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; setTimeout(()=>$('#gateA').focus(),50); }
 });
 $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
 
@@ -1604,13 +1653,13 @@ function renderChildren(){
   box.querySelectorAll('[data-kidrm]').forEach(b=>b.onclick=async()=>{ const c=Store.children().find(x=>x.id===b.dataset.kidrm); if(!await WS.confirm(`Remove ${childLabel(c)} from this device?`, 'This erases their progress, stickers, beads, garden and treats. Recorded voices are kept.', {ok:'Remove', cancel:'Keep', danger:true})) return; Store.removeChild(c.id); location.reload(); });
 }
 $('#kidAdd').addEventListener('click', ()=>{ const id=Store.addChild(); Store.switchTo(id); location.reload(); });
-// "Who's practising?" when more than one child uses this device. Each child is a bead in their own lacquer colour.
-const WHO_COLORS = ['red','indigo','jade','ochre'];
+// "Who's practising?" when more than one child uses this device. Each child is a wooden block with a bead in their own lacquer colour.
 function showWho(){
-  $('#whoList').innerHTML=Store.children().map((c,i)=>`<button class="who-card ws-card" data-who="${c.id}"><span class="who-bead wh-bead">${WS.bead(WHO_COLORS[i%WHO_COLORS.length], 150)}</span><span class="wh-name">${esc(childLabel(c))}</span></button>`).join('');
+  $('#whoList').innerHTML=Store.children().map((c,i)=>`<button type="button" class="who-card tw-card" data-who="${c.id}"><span class="tw-bead">${TOY.bead(KID_COLORS[i%KID_COLORS.length], 128, {tall:true})}</span><span class="tw-name">${esc(childLabel(c))}</span></button>`).join('');
   $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); Sfx.tap(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
+  if (!$('#whoSky').innerHTML){ $('#whoSky').innerHTML=TOY.skyMoon('calm', .5); $('#whoShelf').innerHTML=TOY.prop('rainbow', 150) + TOY.prop('plant', 170); }
   show('who');
-  const bw=$('#bixWho'); if (!bw.querySelector('.bix')) Fun.Mascot.mount(bw, {size:110, keep:true});
+  const bw=$('#bixWho'); toyBix(bw, 'wave');
   Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask');
   if (!showWho.bound){ showWho.bound=true; $('#who').addEventListener('click', e=>{ if (!e.target.closest('button') && !showWho.spoke){ showWho.spoke=true; Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask'); } }); }
 }

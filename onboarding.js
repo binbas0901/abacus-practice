@@ -11,13 +11,14 @@
   const PER = 3;
   let token = 0, state = { name: '', keepName: false };
 
-  function step(id) { $$('#setup .su-step').forEach(s => s.classList.toggle('on', s.id === id)); }
+  function step(id) { $$('#setup .su-step').forEach(s => s.classList.toggle('on', s.id === id)); $('#setup').dataset.step = id; $('#setup').classList.toggle('toy-scene--calm', id === 'suCheck' || id === 'suPick'); }
   function bix() { return $('#bixSetup'); }
   function say(t, ms = 0, vid, replay) { root.Fun.Mascot.say(bix(), t, ms, vid, replay); }
 
   function open(from) {
     const my = ++token; App().show('setup');
-    if (!bix().querySelector('.bix')) root.Fun.Mascot.mount(bix(), { size: 104 });
+    root.ToyBix(bix(), 'wave', { size: 104, keep: false });   // Toy Table Bix over Fun.Mascot (see app.js)
+    if (!$('#setupSky').innerHTML) { $('#setupSky').innerHTML = root.TOY.skyMoon('calm', .36); $('#setupShelf').innerHTML = root.TOY.prop('rainbow', 150) + root.TOY.prop('plant', 170); }
     if (from === 'level' || from === 'check') { state.name = App().settings.name || ''; state.keepName = true; if (from === 'check') check(); else toLevel(); return; }
     state = { name: '', keepName: false };
     $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! What's your name?");
@@ -49,10 +50,10 @@
   /* ---------- grown-up picks the skill ---------- */
   function toPick() {
     const box = $('#suPickList'); box.innerHTML = '';
-    const W = root.WS, fam = n => n.kind === 'flash' ? 'jade' : n.family === 10 ? 'red' : n.family === 5 ? 'ochre' : 'indigo';
+    const T = root.TOY, fam = n => n.kind === 'flash' ? 'teal' : n.family === 10 ? 'red' : n.family === 5 ? 'mustard' : 'indigo';
     App().nodes().forEach((n, i) => {
-      const b = document.createElement('button'); b.className = 'su-skill'; b.dataset.id = n.id;
-      b.innerHTML = `<span class="ic su-skill-bead c-${fam(n)}">${W.bead(fam(n), 64)}<i>${i + 1}</i></span><span><b>${n.title}</b><small>${example(n)}</small></span>`;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'su-skill to-skill'; b.dataset.id = n.id;
+      b.innerHTML = `<span class="to-skill-bead c-${fam(n)}">${T.bead(fam(n), 72)}<i>${i + 1}</i></span><span class="to-skill-t"><b>${n.title}</b><small>${example(n)}</small></span>`;
       b.onclick = () => finish(n.id, 'parent', `We'll start with ${n.title}.`);
       box.appendChild(b);
     });
@@ -82,7 +83,7 @@
     for (let li = 0; li < CHECK.length; li++) {
       const n = C.BY_ID[CHECK[li]];
       $('#suLevelName').textContent = n.title;
-      $('#suDots').innerHTML = CHECK.map((id, k) => `<i class="${k < li ? 'ok' : k === li ? 'cur' : ''}">${root.WS.bead(k < li ? 'jade' : k === li ? 'indigo' : 'pale', k === li ? 40 : 30)}</i>`).join('');
+      $('#suDots').innerHTML = CHECK.map((id, k) => `<i class="${k < li ? 'ok' : k === li ? 'cur' : ''}">${root.TOY.bead(k < li ? 'teal' : 'mustard', k === li ? 46 : 34, { dim: k > li })}</i>`).join('');
       const cfg = Object.assign({}, n.drill, { operands: 3 });
       let probs; try { probs = E.generateSet2(cfg, PER); } catch (e) { probs = []; }
       let right = 0;
@@ -90,12 +91,12 @@
         if (my !== token) return;
         if (stopAt) break;
         const p = probs[k];
-        $('#suProb').innerHTML = p.terms.map((t, i) => root.WS.tile(t, i === 0).replace('class="ws-tile', `class="term${t < 0 ? ' neg' : ''} ws-tile`)).join('');
-        $('#suFb').textContent = ''; $('#suFb').className = 'feedback';
+        $('#suProb').innerHTML = p.terms.map((t, i) => `<span class="term to-term${t < 0 ? ' neg' : ''}">${i === 0 ? '' : `<i>${t < 0 ? '−' : '+'}</i>`}<b>${Math.abs(t)}</b></span>`).join('');
+        $('#suFb').textContent = ''; $('#suFb').className = 'to-fb';
         const a = await pad.ask(); if (my !== token) return;
         if (stopAt) break;
-        if (a === p.answer) { right++; $('#suFb').innerHTML = root.WS.bead('jade', 54); $('#suFb').className = 'feedback ok ws-pop'; App().Sfx.ok(); }
-        else { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'feedback'; App().Sfx.tap();
+        if (a === p.answer) { right++; $('#suFb').innerHTML = root.TOY.bead('teal', 58); $('#suFb').className = 'to-fb ok to-pop'; App().Sfx.ok(); }
+        else { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'to-fb'; App().Sfx.tap();
           if (!hinted) { hinted = true; say('Too tricky? Tap “Stop here” and we’ll start with this one.'); } }
         await sleep(600);
       }
@@ -110,12 +111,12 @@
     }
     finish('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
   }
-  // The kit's one keypad (WS.keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ and a wide 0). The red Check button sits outside the grid.
+  // The kit's one keypad (TOY.keypad, calculator order: 7-8-9 / 4-5-6 / 1-2-3, then a wide 0 and delete). The round teal Check button sits beside the mat.
   function makePad(el, ansEl) {
     const go = $('#suGo');
     let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; go.disabled = !v; };
     el.innerHTML = '';
-    root.WS.keypad(el, { label: 'Number keys',
+    root.TOY.keypad(el, { label: 'Number keys', order: 'calc',
       onKey(d) { if (!waiting) return; App().Sfx.tap(); if (val.length < 4) set(val + d); },
       onBackspace() { if (!waiting) return; App().Sfx.tap(); set(val.slice(0, -1)); } });
     go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; go.disabled = true; w(parseInt(val, 10)); };
@@ -153,14 +154,14 @@
     $('#suPickBack').onclick = toLevel;
     $$('#suAbacus [data-abacus]').forEach(b => b.onclick = () => { App().unlock(); abacusAnswer(b.dataset.abacus); });
     // Kit drawings for the choices (no emoji).
-    const W = root.WS, K = W.colors;
-    const art = { yes: W.icon('abacus', 84, '#5E3519'), no: `<span class="su-cross">${W.icon('abacus', 84, '#B3BEC7')}${W.icon('close', 46, K.red, 3.4)}</span>`, unsure: `<span class="su-q">?</span>`,
-      new: W.icon('sprout', 76, K.jade, 2.2), check: W.icon('abacus', 80, '#5E3519'), pick: W.icon('lock', 70, K.indigo, 2.2) };
+    const T = root.TOY, WALNUT = '#7A4A24';
+    const art = { yes: T.icon('practice', 84, WALNUT), no: `<span class="to-cross">${T.icon('practice', 84, '#C4A988', { accent: '#E2CDAE' })}${T.icon('close', 50, '#2B3674')}</span>`, unsure: `<span class="to-q">?</span>`,
+      new: T.bead('red', 96, { tall: true }), check: T.icon('practice', 84, WALNUT), pick: T.icon('lock', 76, WALNUT) };
     $$('#setup .su-art').forEach(el => { el.innerHTML = art[el.dataset.art] || ''; });
-    $$('#setup .su-ic-next').forEach(el => { el.innerHTML = W.icon('play', 30, '#fff'); });
-    $('#suPickBack').innerHTML = W.icon('back', 28, '#F4E3C3', 3);
-    $('#suShareIc').innerHTML = W.icon('share', 20, K.indigo);
-    $('#suGoIc').innerHTML = W.icon('check', 30, '#fff', 3.2);
+    $$('#setup .su-ic-next').forEach(el => { el.innerHTML = T.icon('play', 34, '#fff'); });
+    $('#suPickBack').innerHTML = T.icon('back', 30, 'currentColor');
+    $('#suShareIc').innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B3674" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M7.5 7.5 12 3l4.5 4.5M6 11v8.5h12V11"/></svg>`;
+    $('#suGoIc').innerHTML = T.icon('check', 64, '#fff', { stroke: 3.4 });
     $('#suStart').onclick = () => App().goHome();
   }
   root.Setup = { open, bind, inBrowserTab };
