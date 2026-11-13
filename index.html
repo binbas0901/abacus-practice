@@ -123,45 +123,94 @@
   </div>
 </section>
 
-<section id="drill" class="screen">
-  <div class="topbar"><button class="exit" id="exitDrill">✕</button><div class="lvl" id="drillLevel"></div><div class="strip" id="strip"></div><div class="timer" id="timer">0:00</div></div>
-  <div class="drill-body">
-    <div class="dmascot" id="bixDrill"></div>
-    <div class="problem" id="problemArea"></div>
-    <div class="listen-stage" id="listenStage" style="display:none">
-      <div class="ear" id="ear">👂</div><div class="listen-msg" id="listenMsg">Listen…</div>
-      <button class="btn coral" id="listenGo" style="display:none">▶ Ready</button>
-      <button class="replay" id="replayBtn">🔁 say it again</button>
-      <div class="speed"><span>slow</span><input type="range" id="gapSlider" step="0.25"><span>fast</span><span id="gapVal"></span></div>
+<section id="drill" class="screen ws-screen pr">
+  <div class="pr-top">
+    <button class="ws-iconbtn" id="exitDrill" aria-label="Leave practice"><span class="pr-ic" data-ic="close"></span></button>
+    <span class="pr-fixlabel" id="fixLabel" hidden>Fixing</span>
+    <div class="pr-rodwrap">
+      <div class="pr-rod" id="strip" role="list" aria-label="Problems in this set"></div>
+      <div class="pr-time" id="testTime" hidden></div>
     </div>
-    <div class="flash-stage" id="flashStage" style="display:none"><div class="flash-dots" id="flashDots"></div><div class="flash-num" id="flashNum"></div><div class="flash-msg" id="flashMsg"></div><button class="btn coral" id="flashGo" style="display:none">▶ Ready</button><button class="replay" id="flashAgain" style="display:none">🔁 show again</button></div>
-    <div class="entry">
-      <div class="feedback" id="feedback"></div>
-      <div class="answer" id="answer">&nbsp;</div>
-      <div class="pad" id="pad">
+    <button class="ws-iconbtn quiet pr-speedbtn" id="speedBtn" aria-label="Speed (grown-ups)" aria-expanded="false" hidden><span class="pr-ic" data-ic="gear"></span></button>
+    <div class="pr-speed ws-card" id="speedPop" hidden>
+      <div class="speed" id="listenSpeed"><span>slow</span><input type="range" id="gapSlider" step="0.25" aria-label="Seconds between numbers"><span>fast</span><span class="pr-speedval" id="gapVal"></span></div>
+      <div class="speed" id="flashSpeed"><span>slow</span><input type="range" id="flashSlider" min="0.3" max="3" step="0.1" aria-label="Seconds each number shows"><span>fast</span><span class="pr-speedval" id="flashVal"></span></div>
+    </div>
+  </div>
+  <div class="pr-body">
+    <div class="pr-left">
+      <div class="pr-bix" id="bixDrill"></div>
+      <div class="pr-problem" id="problemArea" aria-label="The problem"></div>
+      <div class="pr-listen" id="listenStage" style="display:none">
+        <div class="pr-ear" id="ear"><span class="pr-ic" data-ic="ear"></span></div>
+        <div class="pr-msg" id="listenMsg" aria-live="polite">Listen…</div>
+        <button class="ws-btn ochre" id="listenGo" style="display:none"><span class="pr-ic" data-ic="play"></span>Ready</button>
+        <button class="ws-btn ghost" id="replayBtn"><span class="pr-ic" data-ic="retry"></span>Say it again</button>
+      </div>
+      <div class="pr-flash" id="flashStage" style="display:none">
+        <div class="pr-flashdots" id="flashDots" aria-hidden="true"></div>
+        <div class="flash-num" id="flashNum" aria-live="polite"></div>
+        <div class="pr-msg" id="flashMsg"></div>
+        <button class="ws-btn jade" id="flashGo" style="display:none"><span class="pr-ic" data-ic="play"></span>Ready</button>
+        <button class="ws-btn ghost" id="flashAgain" style="display:none"><span class="pr-ic" data-ic="retry"></span>Show again</button>
+      </div>
+      <button class="ws-btn indigo pr-showme" id="showMeBtn" style="display:none"><span class="pr-ic" data-ic="eye"></span>Show me</button>
+    </div>
+    <div class="pr-right" id="answerTool">
+      <div class="pr-readout" id="readout"><span class="pr-rolabel" id="readoutLabel">beads show</span><b id="answer">&nbsp;</b></div>
+      <div class="pr-abacus" id="abHost"></div>
+      <div class="pr-pad" id="pad">
+      <div class="pr-keys" id="padKeys">
         <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
         <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
         <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
-        <button data-k="del" class="del">⌫</button><button data-k="0">0</button><button data-k="go" class="go">GO</button>
+        <button data-k="0" class="zero">0</button><button data-k="del" class="del" aria-label="Delete"><span class="pr-ic" data-ic="back"></span></button>
       </div>
-      <div class="reveal" id="reveal"></div><button class="btn ghost small" id="showMeBtn" style="display:none">💡 Show me</button>
-      <div class="speed" id="flashSpeed" style="display:none"><span>slow</span><input type="range" id="flashSlider" min="0.3" max="3" step="0.1"><span>fast</span><span id="flashVal"></span></div>
+      <div class="pr-foot">
+        <button class="ws-btn ghost pr-switch" id="toolSwitch"></button>
+        <button class="ws-btn pr-check" data-k="go" id="checkBtn"><span class="pr-ic" data-ic="check"></span>Check</button>
+      </div>
+      </div>
+      <div class="pr-sr" id="feedback" aria-live="polite"></div>
     </div>
   </div>
 </section>
 
-<section id="summary" class="screen">
-  <div id="bixSum"></div>
-  <div class="bigstars" id="sumStars"></div>
-  <h2 id="sumTitle">Great job!</h2>
-  <div class="big" id="sumScore"></div>
-  <p id="sumTime"></p><p id="sumNote"></p>
-  <div class="row"><button class="btn coral" id="fixBtn">Fix the red ones</button><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="homeBtn">Home</button></div>
+<section id="summary" class="screen ws-screen pr-sum">
+  <div class="ws-chip pr-goldchip" id="sumGold" hidden></div>
+  <div class="pr-sumbix" id="bixSum"></div>
+  <div class="pr-sumhead"><h1 class="ws-h1" id="sumScore"></h1><button class="pr-say" id="sumSay" aria-label="Hear it again"><span class="pr-ic" data-ic="speaker"></span></button></div>
+  <div class="ws-frame pr-sumrod"><div class="ws-inner"><div class="pr-sumbeads" id="sumStars" role="list"></div></div></div>
+  <p class="bubble on pr-sumnote" id="sumNote"></p>
+  <div class="pr-sumtest" id="sumTest" hidden><button class="ws-btn ochre big" id="testBtn"><span class="pr-ic" data-ic="star"></span>Level test</button></div>
+  <div class="pr-sumbtns">
+    <button class="ws-btn big" id="fixBtn"><span class="pr-ic" data-ic="retry"></span>Fix the red ones</button>
+    <button class="ws-btn big jade" id="againBtn"><span class="pr-ic" data-ic="retry"></span>Play again</button>
+    <button class="ws-btn big maple" id="homeBtn">I’m done</button>
+  </div>
 </section>
 
-<div id="showme"><div class="showme-card"><div id="showmeAbacus"></div><div class="showme-side"><div class="caption"><div class="k">Show me</div><div class="prob" id="showmeProb"></div><div id="showmeText"></div></div><div class="lesson-nav"><button class="btn ghost small" id="showmeReplay">🔁 Again</button><span style="flex:1"></span><button class="btn small" id="showmeClose">Got it</button></div></div></div></div>
+<section id="certificate" class="screen ws-screen pr-cert">
+  <div class="pr-certtop"><button class="ws-iconbtn" id="certClose" aria-label="Close"><span class="pr-ic" data-ic="close"></span></button></div>
+  <div class="ws-frame pr-certframe"><div class="ws-inner pr-certcard" id="certCard">
+    <div class="pr-certbix" id="certBix"></div>
+    <div class="pr-certkick">Certificate of mastery</div>
+    <div class="pr-certname" id="certName"></div>
+    <div class="pr-certline">has mastered</div>
+    <div class="pr-certskill" id="certSkill"></div>
+    <div class="pr-certbeads" id="certBeads" aria-hidden="true"></div>
+    <div class="pr-certmeta"><span id="certDate"></span><span class="dot">·</span><span>Bix Abacus</span></div>
+  </div></div>
+  <div class="pr-certbtns"><button class="ws-btn indigo" id="certPrint"><span class="pr-ic" data-ic="share"></span>Print</button><button class="ws-btn jade big" id="certDone"><span class="pr-ic" data-ic="check"></span>Done</button></div>
+</section>
 
-<div id="stickerReveal"><div class="rv-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack"><span class="rv-wrap"><span class="bow">🎀</span><small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="btn" id="rvOk">Add to my album</button></div></div>
+<div id="showme" role="dialog" aria-label="Show me"><div class="pr-showcard ws-card">
+  <div class="pr-showleft"><div class="pr-showbix" id="showmeBix"></div><div class="pr-showprob" id="showmeProb"></div><div class="pr-showtext" id="showmeText" aria-live="polite"></div>
+    <div class="pr-showbtns"><button class="ws-btn ghost" id="showmeReplay"><span class="pr-ic" data-ic="retry"></span>Again</button><button class="ws-btn jade" id="showmeClose"><span class="pr-ic" data-ic="check"></span>Got it</button></div></div>
+  <div class="pr-showab" id="showmeAbacus"></div>
+</div></div>
+
+<div id="stickerReveal" role="dialog" aria-label="A sticker for you"><div class="rv-card ws-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack" aria-label="Open the present"><span class="rv-wrap"><span class="bow"></span><small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="ws-btn jade" id="rvOk"><span class="pr-ic" data-ic="book"></span>Add to my album</button></div></div>
 
 <div id="nameAsk" class="askm"><div class="ask-card"><div class="ask-t">What's your name?</div><input id="nameAskIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name"><div class="row"><button class="btn" id="nameAskOk">That's me!</button><button class="btn ghost" id="nameAskNo">Later</button></div></div></div>
 
