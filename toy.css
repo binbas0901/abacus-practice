@@ -1,0 +1,283 @@
+/* =====================================================================
+   Toy Table kit — the shared look for every Bix Abacus screen (v4 art direction).
+   A sunlit maple table under a sage wall with a window; glossy lacquered beads,
+   wooden blocks, a felt mat, paper. Light comes from the window, top-left:
+   highlights sit top-left, every object drops a soft contact shadow down-right.
+   Build screens from these tokens and classes plus TOY.* in toykit.js.
+   Rules: design/BRIEF2.md. No SVG/CSS filters, no backdrop effects (iPad Safari).
+   ===================================================================== */
+
+@font-face{font-family:"Andika";font-weight:400;font-display:swap;src:url(fonts/andika-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Andika";font-weight:700;font-display:swap;src:url(fonts/andika-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Fredoka";font-weight:500;font-display:swap;src:url(fonts/fredoka-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Fredoka";font-weight:600;font-display:swap;src:url(fonts/fredoka-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Fredoka";font-weight:700;font-display:swap;src:url(fonts/fredoka-latin-700-normal.woff2) format("woff2")}
+
+:root{
+  /* wood */
+  --toy-maple:#E2B782; --toy-maple-dk:#CF9858;        /* the table */
+  --toy-wood-lt:#F6D9AA; --toy-wood:#DDAE72;           /* blocks, plaques, keys (top face) */
+  --toy-wood-edge:#B98448; --toy-wood-deep:#A97540;    /* their side faces */
+  --toy-walnut:#7A4A24;                                 /* dark wood, icon ink on wood */
+  /* room */
+  --toy-wall:#D3DEC8; --toy-wall-dk:#B4C6AE;
+  --toy-felt:#F4ECDC; --toy-felt-dk:#E2D6BF; --toy-felt-edge:#B5A688; --toy-stitch:#B89B6E;
+  --toy-paper:#FFFDF6; --toy-paper-dk:#F6EEDC;
+  /* lacquer */
+  --toy-red:#E5402F;     --toy-red-dk:#B52323;     --toy-red-deep:#8A181D;
+  --toy-mustard:#F2B632; --toy-mustard-dk:#C98A16; --toy-mustard-deep:#9E690D;
+  --toy-indigo:#3F52A8;  --toy-indigo-dk:#28357A;  --toy-indigo-deep:#1B2557;
+  --toy-teal:#1FA595;    --toy-teal-dk:#137A70;    --toy-teal-deep:#0C5A54;
+  --toy-plum:#9255C4;    --toy-plum-dk:#6A3596;                              /* cast only (2 & 8) */
+  --toy-moon:#FBEFC2;    --toy-moon-dk:#EDD288;                              /* the moon only */
+  /* ink */
+  --toy-ink:#2B3674;        /* all text on wood, felt and paper (AA on every light surface here) */
+  --toy-ink-soft:#5B4A36;   /* captions on paper and felt only (not on wood) */
+  --toy-on-mustard:#4A2C06; /* text on mustard lacquer */
+  /* type */
+  --toy-display:"Fredoka","Baloo 2",system-ui,sans-serif;
+  --toy-body:"Andika",system-ui,sans-serif;
+  /* shadows: one direction (down-right), warm brown, never black */
+  --toy-shade:58,30,6;
+  --toy-shadow-sm:2px 5px 6px rgba(var(--toy-shade),.32);
+  --toy-shadow-md:5px 12px 14px rgba(var(--toy-shade),.36);
+  --toy-shadow-lg:9px 22px 26px rgba(var(--toy-shade),.4);
+  /* shape */
+  --toy-r-sm:14px; --toy-r-md:20px; --toy-r-lg:34px;
+  --toy-press:6px;
+  /* scene */
+  --toy-wall-h:clamp(150px,25.6vh,250px);
+  --toy-window-x:clamp(90px,21vw,300px);
+  --toy-plank:124px;
+  /* grain: toykit.js replaces these with a canvas-drawn tile (once per page). These are the no-JS fallbacks. */
+  --toy-grain:repeating-linear-gradient(180deg,rgba(132,76,28,.07) 0 2px,rgba(132,76,28,0) 2px 7px,rgba(255,238,204,.1) 7px 8px,rgba(132,76,28,0) 8px 13px);
+  --toy-felt-grain:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,0));
+  /* window (day) — static SVG, gradients only */
+  --toy-window:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 200'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23BFE4F2'/><stop offset='.7' stop-color='%23E9F5E6'/><stop offset='1' stop-color='%23FFF6D6'/></linearGradient><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23FFFDF7'/><stop offset='1' stop-color='%23EDE4D2'/></linearGradient><radialGradient id='a'><stop offset='.3' stop-color='%236FAE7A'/><stop offset='1' stop-color='%236FAE7A' stop-opacity='0'/></radialGradient><radialGradient id='b'><stop offset='.3' stop-color='%239CCB92'/><stop offset='1' stop-color='%239CCB92' stop-opacity='0'/></radialGradient><radialGradient id='u'><stop offset='.25' stop-color='%23FFF8D2'/><stop offset='1' stop-color='%23FFF8D2' stop-opacity='0'/></radialGradient><clipPath id='g'><rect x='32' y='0' width='356' height='160'/></clipPath></defs><rect x='24' y='8' width='396' height='180' rx='6' fill='%2351683F' opacity='.14'/><rect x='20' y='4' width='396' height='180' rx='6' fill='%2351683F' opacity='.12'/><rect x='16' y='0' width='388' height='176' fill='url(%23f)'/><rect x='32' y='0' width='356' height='160' fill='url(%23s)'/><g clip-path='url(%23g)'><circle cx='350' cy='16' r='80' fill='url(%23u)'/><circle cx='360' cy='132' r='96' fill='url(%23b)'/><circle cx='70' cy='152' r='84' fill='url(%23b)'/><circle cx='150' cy='176' r='78' fill='url(%23a)'/><circle cx='272' cy='184' r='70' fill='url(%23b)'/><rect x='32' y='0' width='356' height='9' fill='%236B7F5A' opacity='.18'/><rect x='32' y='0' width='8' height='160' fill='%236B7F5A' opacity='.16'/></g><rect x='203' y='0' width='14' height='162' fill='url(%23f)'/><rect x='32' y='70' width='356' height='13' fill='url(%23f)'/><rect x='217' y='0' width='3' height='160' fill='%239AA58A' opacity='.35'/><rect x='32' y='83' width='356' height='3' fill='%239AA58A' opacity='.35'/><rect x='6' y='174' width='420' height='14' rx='5' fill='%2351683F' opacity='.2'/><rect x='0' y='160' width='420' height='20' rx='5' fill='%23FFFDF7'/><rect x='0' y='172' width='420' height='8' rx='4' fill='%23D9CEB8'/></svg>");
+  /* window (evening) */
+  --toy-window-eve:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 200'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23222C66'/><stop offset='.5' stop-color='%235A4E9A'/><stop offset='.82' stop-color='%23C9839A'/><stop offset='1' stop-color='%23F5B27C'/></linearGradient><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23F3E6CF'/><stop offset='1' stop-color='%23D9C6A6'/></linearGradient><radialGradient id='a'><stop offset='.35' stop-color='%23263A52'/><stop offset='1' stop-color='%23263A52' stop-opacity='0'/></radialGradient><clipPath id='g'><rect x='32' y='0' width='356' height='160'/></clipPath></defs><rect x='24' y='8' width='396' height='180' rx='6' fill='%23202A44' opacity='.16'/><rect x='20' y='4' width='396' height='180' rx='6' fill='%23202A44' opacity='.14'/><rect x='16' y='0' width='388' height='176' fill='url(%23f)'/><rect x='32' y='0' width='356' height='160' fill='url(%23s)'/><g clip-path='url(%23g)'><g fill='%23FFF6D0'><circle cx='250' cy='22' r='1.8'/><circle cx='300' cy='48' r='1.4'/><circle cx='346' cy='18' r='2'/><circle cx='372' cy='58' r='1.3'/><circle cx='270' cy='58' r='1.2'/><circle cx='60' cy='16' r='1.4'/><circle cx='176' cy='30' r='1.6'/><circle cx='330' cy='98' r='1.2'/><circle cx='236' cy='100' r='1.4'/><circle cx='52' cy='96' r='1.3'/></g><circle cx='360' cy='150' r='84' fill='url(%23a)'/><circle cx='70' cy='164' r='76' fill='url(%23a)'/><circle cx='160' cy='186' r='70' fill='url(%23a)'/><circle cx='272' cy='190' r='64' fill='url(%23a)'/><rect x='32' y='0' width='356' height='9' fill='%23141A3A' opacity='.3'/><rect x='32' y='0' width='8' height='160' fill='%23141A3A' opacity='.25'/></g><rect x='203' y='0' width='14' height='162' fill='url(%23f)'/><rect x='32' y='70' width='356' height='13' fill='url(%23f)'/><rect x='217' y='0' width='3' height='160' fill='%235A5270' opacity='.4'/><rect x='32' y='83' width='356' height='3' fill='%235A5270' opacity='.4'/><rect x='6' y='174' width='420' height='14' rx='5' fill='%23202A44' opacity='.25'/><rect x='0' y='160' width='420' height='20' rx='5' fill='%23F3E6CF'/><rect x='0' y='172' width='420' height='8' rx='4' fill='%23BFAE8E'/></svg>");
+  /* light falling through the window onto the table: four skewed panes, layered for a soft edge */
+  --toy-sun:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 410'><defs><linearGradient id='l' gradientUnits='userSpaceOnUse' x1='0' y1='0' x2='0' y2='400'><stop offset='0' stop-color='%23FFF6D8' stop-opacity='.5'/><stop offset='.7' stop-color='%23FFF3CC' stop-opacity='.3'/><stop offset='1' stop-color='%23FFF3CC' stop-opacity='0'/></linearGradient></defs><g transform='translate(8 0) skewX(40)'><g fill='url(%23l)'><rect x='0' y='0' width='172' height='150'/><rect x='190' y='0' width='172' height='150'/><rect x='0' y='172' width='172' height='226'/><rect x='190' y='172' width='172' height='226'/></g><g fill='url(%23l)' opacity='.5'><rect x='-5' y='-5' width='182' height='160' rx='6'/><rect x='185' y='-5' width='182' height='160' rx='6'/><rect x='-5' y='167' width='182' height='236' rx='6'/><rect x='185' y='167' width='182' height='236' rx='6'/></g><g fill='url(%23l)' opacity='.35'><rect x='-11' y='-11' width='194' height='172' rx='12'/><rect x='179' y='-11' width='194' height='172' rx='12'/><rect x='-11' y='161' width='194' height='248' rx='12'/><rect x='179' y='161' width='194' height='248' rx='12'/></g></g></svg>");
+}
+
+/* ============ the scene ============ */
+/* .toy-scene = wall (::before) + table (::after) behind everything inside it. Put it on the screen root. */
+.toy-scene{position:relative;isolation:isolate;min-height:100vh;min-height:100dvh;box-sizing:border-box;overflow:hidden;
+  color:var(--toy-ink);font-family:var(--toy-body);-webkit-tap-highlight-color:transparent;
+  --_win:var(--toy-window);--_light:var(--toy-sun);--_light-op:1;
+  --_wall-tint:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0));--_table-tint:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0));
+  --_vig:radial-gradient(120% 95% at 42% 40%,rgba(58,28,8,0) 48%,rgba(58,28,8,.34) 100%)}
+.toy-scene::before,.toy-scene::after{content:"";position:absolute;left:0;right:0;z-index:-1;pointer-events:none}
+.toy-scene::before{top:0;height:var(--toy-wall-h);
+  background:
+    var(--_wall-tint),
+    linear-gradient(rgba(122,85,48,0) calc(100% - 62px),rgba(122,85,48,.3) 100%),
+    var(--_win) var(--toy-window-x) 0/auto calc(100% - 16px) no-repeat,
+    linear-gradient(135deg,var(--toy-wall),var(--toy-wall-dk))}
+.toy-scene::after{top:var(--toy-wall-h);bottom:0;
+  background:
+    var(--_table-tint),
+    var(--_vig),
+    linear-gradient(rgba(252,228,184,.9) 0 6px,rgba(154,106,52,.28) 6px 9px,rgba(154,106,52,0) 9px) top/100% 12px no-repeat,
+    var(--_light) calc(var(--toy-window-x) + 10px) 6px/auto min(420px,62%) no-repeat,
+    repeating-linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) calc(var(--toy-plank) - 4px),rgba(122,74,30,.3) calc(var(--toy-plank) - 4px),rgba(122,74,30,.3) calc(var(--toy-plank) - 2px),rgba(255,233,194,.4) calc(var(--toy-plank) - 2px),rgba(255,233,194,.4) calc(var(--toy-plank) - .5px),rgba(0,0,0,0) calc(var(--toy-plank) - .5px),rgba(0,0,0,0) var(--toy-plank)),
+    var(--toy-grain) 0 0/512px 256px,
+    linear-gradient(var(--toy-maple),#DBA96C 50%,var(--toy-maple-dk))}
+/* calmer: for practice and anything the child must concentrate on — no light patch, lighter vignette */
+.toy-scene--calm{--_light:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0));--_vig:radial-gradient(130% 110% at 45% 40%,rgba(58,28,8,0) 55%,rgba(58,28,8,.22) 100%)}
+/* table only: no wall (dialogs, inner screens, grown-ups) */
+.toy-scene--table{--toy-wall-h:0px;--_light:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0))}
+.toy-scene--table::before{display:none}
+/* evening: dusk in the window, the wall in shade, a warm lamp pool on the table, the moon bright */
+.toy-scene--evening{--_win:var(--toy-window-eve);
+  --_wall-tint:radial-gradient(70% 120% at 62% 110%,rgba(255,190,110,.22),rgba(255,190,110,0) 70%),linear-gradient(160deg,rgba(46,48,112,.46),rgba(70,52,100,.42));
+  --_light:radial-gradient(closest-side,rgba(255,214,140,.5),rgba(255,200,120,.22) 55%,rgba(255,200,120,0));
+  --_table-tint:radial-gradient(90% 90% at 62% 30%,rgba(255,196,110,.16) 0,rgba(64,36,60,.2) 60%,rgba(40,24,56,.42) 100%);
+  --_vig:radial-gradient(110% 90% at 55% 34%,rgba(40,18,10,0) 40%,rgba(40,18,10,.4) 100%)}
+.toy-scene--evening::after{background-position:0 0,0 0,top,58% 4%,0 0,0 0,0 0;background-size:auto,auto,100% 12px,min(760px,84%) min(520px,80%),auto,512px 256px,auto}
+
+/* the moon's slot in the window (upper-left pane). Put TOY.skyMoon(mood, phase) inside .toy-scene. */
+.toy-sky-moon{position:absolute;z-index:0;--_h:calc(var(--toy-wall-h) - 16px);
+  width:calc(var(--_h)*.44);height:calc(var(--_h)*.44);
+  left:calc(var(--toy-window-x) + var(--_h)*.365);top:calc(var(--_h)*-.05);pointer-events:none;opacity:.66}
+.toy-sky-moon .toy-moon-dark{display:none}
+.toy-scene--evening .toy-sky-moon .toy-moon-dark{display:inline}
+.toy-sky-moon .toy-moon,.toy-sky-moon svg{display:block;width:100%;height:100%}
+.toy-sky-moon .toy-moon-halo{opacity:.25}
+.toy-scene--evening .toy-sky-moon{opacity:1}
+.toy-scene--evening .toy-sky-moon .toy-moon-halo{opacity:1}
+.toy-scene--table .toy-sky-moon{display:none}
+
+/* ============ type ============ */
+.toy-h1{margin:0;font:700 clamp(30px,3.4vw,42px)/1.1 var(--toy-display);color:var(--toy-ink)}
+.toy-h2{margin:0;font:600 clamp(22px,2.3vw,28px)/1.15 var(--toy-display);color:var(--toy-ink)}
+.toy-label{font:600 22px/1.2 var(--toy-display);color:var(--toy-ink)}
+.toy-caption{font:400 18px/1.4 var(--toy-body);color:var(--toy-ink)}
+.toy-num{font:700 clamp(64px,9vh,96px)/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums}
+
+/* ============ surfaces ============ */
+.toy-wood,.toy-plaque,.toy-key,.toy-tag,.toy-iconbtn,.toy-clipboard,.toy-block--wood,.toy-start{
+  background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;background-position:var(--toy-gx,0) var(--toy-gy,0),0 0}
+/* wooden plaque: a slab lying on the table */
+.toy-plaque{position:relative;display:inline-block;padding:14px 24px 16px;border-radius:var(--toy-r-md);color:var(--toy-ink);
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),inset 0 12px 0 rgba(255,244,220,.35),0 7px 0 var(--toy-wood-deep),6px 16px 16px rgba(var(--toy-shade),.38)}
+/* felt mat with a stitched edge */
+.toy-felt{position:relative;padding:28px;border-radius:var(--toy-r-lg);
+  background:var(--toy-felt-grain),linear-gradient(135deg,var(--toy-felt),var(--toy-felt-dk));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 4px 0 var(--toy-felt-edge),7px 13px 18px rgba(var(--toy-shade),.36)}
+.toy-felt::before{content:"";position:absolute;inset:10px;border-radius:calc(var(--toy-r-lg) - 9px);border:2.5px dashed var(--toy-stitch);opacity:.8;pointer-events:none}
+.toy-felt > *{position:relative}
+/* a sheet of paper */
+.toy-paper{position:relative;padding:22px 26px;border-radius:8px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
+  box-shadow:inset 0 1px 0 #fff,0 1px 0 #D9CEB8,4px 9px 12px rgba(var(--toy-shade),.3)}
+.toy-paper--tilt{transform:rotate(1.2deg)}
+/* clipboard: a wooden board with a brass clip; put a .toy-paper inside */
+.toy-clipboard{position:relative;display:inline-block;padding:46px 20px 20px;border-radius:18px;
+  background-image:var(--toy-grain),linear-gradient(#C99357,#B07A42);
+  box-shadow:inset 0 0 0 2px rgba(255,226,180,.45),0 6px 0 #8A5A2A,8px 18px 22px rgba(var(--toy-shade),.4)}
+.toy-clipboard::before{content:"";position:absolute;z-index:2;left:50%;top:-12px;width:112px;height:46px;margin-left:-56px;border-radius:10px;
+  background:radial-gradient(circle at 50% 62%,#5A4010 0 5px,#F5D77E 5.5px 9px,rgba(0,0,0,0) 9.5px),linear-gradient(#FFF1B8,#E2B54A 38%,#A47C24 74%,#C99A38);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 0 #7E5C16,3px 7px 8px rgba(var(--toy-shade),.4)}
+.toy-clipboard > .toy-paper{display:block}
+/* little paper pills (step labels) */
+.toy-chip{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:2px 14px 2px 6px;border-radius:999px;background:var(--toy-paper);color:var(--toy-ink);
+  font:600 20px/1 var(--toy-display);box-shadow:0 2px 0 rgba(138,90,38,.5)}
+.toy-chip--quiet{background:none;box-shadow:none}
+.toy-chip-n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--toy-red);color:#fff;font:700 16px/1 var(--toy-display)}
+.toy-chip-n.mustard{background:#A86F08}.toy-chip-n.indigo{background:var(--toy-indigo)}.toy-chip-n.teal{background:var(--toy-teal-dk)}
+
+/* ============ wooden block buttons ============ */
+.toy-block{--c1:#4A5DB6;--c2:#303F8C;--edge:#232F6B;--lip:#7E8FDC;--txt:#fff;--gloss:.11;
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:14px;box-sizing:border-box;
+  min-width:200px;min-height:96px;padding:6px 26px 4px;border:0;border-radius:var(--toy-r-md);cursor:pointer;
+  font:600 clamp(24px,2.5vw,30px)/1.05 var(--toy-display);color:var(--txt);text-align:left;
+  background:linear-gradient(var(--c1),var(--c2));
+  box-shadow:inset 0 5px 0 var(--lip),inset 0 -3px 0 rgba(0,0,0,.1),0 8px 0 var(--edge),7px 18px 14px rgba(var(--toy-shade),.42);
+  transition:transform .09s ease-out,box-shadow .09s ease-out;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.toy-block::before{content:"";position:absolute;left:5px;right:5px;top:6px;height:42%;border-radius:calc(var(--toy-r-md) - 5px);background:linear-gradient(rgba(255,255,255,calc(var(--gloss)*1.8)),rgba(255,255,255,var(--gloss)));pointer-events:none}
+.toy-block > *{position:relative}
+.toy-block:active,.toy-block.is-pressed{transform:translateY(var(--toy-press));box-shadow:inset 0 5px 0 var(--lip),inset 0 -3px 0 rgba(0,0,0,.1),0 2px 0 var(--edge),2px 5px 5px rgba(var(--toy-shade),.42)}
+.toy-block:focus-visible,.toy-key:focus-visible,.toy-start:focus-visible,.toy-iconbtn:focus-visible{outline:4px solid var(--toy-ink);outline-offset:4px}
+.toy-block:disabled{opacity:.5;pointer-events:none}
+.toy-block-label small{display:block;margin-top:5px;font:400 16px/1.2 var(--toy-body);opacity:.92}
+.toy-block--indigo{}
+.toy-block--mustard{--c1:#F8C548;--c2:#E3A21F;--edge:#B27A10;--lip:#FFE08A;--txt:var(--toy-on-mustard);--gloss:.2}
+.toy-block--red{--c1:#EA4C3A;--c2:#C92F27;--edge:#93201F;--lip:#FF8D78;--gloss:.12}
+.toy-block--teal{--c1:#1E9A8B;--c2:#14766C;--edge:#0B4F4A;--lip:#6FD9C8;--gloss:.12}
+.toy-block--plum{--c1:#9A5FCB;--c2:#7440A4;--edge:#4A2270;--lip:#C9A0EA;--gloss:.12}
+.toy-block--wood{background:var(--toy-grain) var(--toy-gx,0) var(--toy-gy,0)/512px 256px,linear-gradient(var(--toy-wood-lt),var(--toy-wood));--edge:var(--toy-wood-deep);--lip:rgba(255,246,224,.85);--txt:var(--toy-ink);--gloss:.14}
+.toy-block--sm{min-width:120px;min-height:64px;padding:4px 20px 2px;gap:10px;border-radius:16px;font-size:22px;
+  box-shadow:inset 0 4px 0 var(--lip),0 6px 0 var(--edge),4px 12px 10px rgba(var(--toy-shade),.4)}
+.toy-block--sm:active{transform:translateY(4px);box-shadow:inset 0 4px 0 var(--lip),0 2px 0 var(--edge),2px 4px 4px rgba(var(--toy-shade),.4)}
+.toy-block--wide{width:100%}
+.toy-blocks{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+
+/* ============ the round Start / check button: a lacquer dome on a wooden ring ============ */
+.toy-start{--d:clamp(170px,20vw,232px);position:relative;flex:none;width:var(--d);height:var(--d);padding:0;border:0;border-radius:50%;cursor:pointer;
+  box-shadow:inset 0 0 0 3px rgba(255,243,216,.7),0 calc(var(--d)*.045) 0 var(--toy-wood-deep),calc(var(--d)*.06) calc(var(--d)*.14) calc(var(--d)*.12) rgba(var(--toy-shade),.44);
+  touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.toy-start-dome{position:absolute;left:9%;right:9%;top:6%;bottom:12%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2%;
+  color:#fff;font:700 calc(var(--d)*.175)/1 var(--toy-display);text-shadow:1.5px 3px 0 rgba(10,74,69,.45);
+  background:radial-gradient(circle at 30% 22%,#8FEBD9 0,#1FA595 40%,#137A70 80%,#0C5A54 100%);
+  box-shadow:inset 0 0 0 calc(var(--d)*.035) rgba(31,165,149,0),inset 0 0 0 calc(var(--d)*.045) rgba(182,245,234,.16),0 calc(var(--d)*.06) 0 #0B4F4A,0 calc(var(--d)*.075) calc(var(--d)*.03) rgba(var(--toy-shade),.5);
+  transition:transform .09s ease-out,box-shadow .09s ease-out}
+.toy-start-dome::before{content:"";position:absolute;left:10%;top:9%;width:40%;height:19%;border-radius:50%;transform:rotate(-34deg);
+  background:radial-gradient(closest-side,rgba(255,255,255,.95) 0,rgba(255,255,255,.75) 28%,rgba(255,255,255,.22) 62%,rgba(255,255,255,0) 100%);pointer-events:none}
+.toy-start-dome .toy-icon{width:36%;height:36%;margin-top:2%;overflow:visible}
+.toy-start-label{margin-top:-2%}
+.toy-start:active .toy-start-dome,.toy-start.is-pressed .toy-start-dome{transform:translateY(calc(var(--d)*.045));box-shadow:inset 0 0 0 calc(var(--d)*.045) rgba(182,245,234,.16),0 calc(var(--d)*.015) 0 #0B4F4A,0 calc(var(--d)*.02) 3px rgba(var(--toy-shade),.5)}
+.toy-start--sm{--d:clamp(112px,13vw,150px)}
+.toy-start--sm .toy-start-dome .toy-icon{width:52%;height:52%;margin-top:0}
+.toy-start:disabled{opacity:.5;pointer-events:none}
+
+/* ============ small round wooden button (lock, close, back) ============ */
+.toy-iconbtn{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;padding:0 0 2px;border:0;border-radius:50%;color:var(--toy-walnut);cursor:pointer;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 5px 0 var(--toy-wood-deep),4px 10px 10px rgba(var(--toy-shade),.38);transition:transform .09s ease-out,box-shadow .09s ease-out;touch-action:manipulation}
+.toy-iconbtn:active{transform:translateY(4px);box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 1px 0 var(--toy-wood-deep),1px 3px 4px rgba(var(--toy-shade),.38)}
+
+/* ============ name tag ============ */
+.toy-tag{position:relative;display:inline-flex;align-items:center;gap:12px;height:58px;padding:0 24px 0 8px;border-radius:29px;color:var(--toy-ink);
+  font:600 26px/1 var(--toy-display);box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 3px 0 var(--toy-wood-edge),6px 10px 12px rgba(var(--toy-shade),.34)}
+.toy-tag-bead{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;color:#fff;font:700 23px/1 var(--toy-display);
+  box-shadow:1px 2px 2px rgba(var(--toy-shade),.4)}
+.toy-tag--hang{margin-top:24px}
+.toy-tag--hang::before{content:"";position:absolute;left:50%;top:-30px;width:60px;height:34px;margin-left:-30px;
+  background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 34'><path d='M10 32 L30 9 L50 32' fill='none' stroke='%23B48C54' stroke-width='3' stroke-linejoin='round'/><circle cx='31.5' cy='10.5' r='8' fill='%234A2E12' opacity='.25'/><circle cx='30' cy='8.5' r='8' fill='%23B98448'/><circle cx='28' cy='6.5' r='3' fill='%23FCE4B8' opacity='.7'/></svg>") center/contain no-repeat}
+/* lacquer swatches for round HTML things (tag bead, dots) */
+.toy-lac--red{background:radial-gradient(circle at 32% 26%,#FF8F70 0,#E5402F 42%,#B52323 82%,#8A181D 100%)}
+.toy-lac--mustard{background:radial-gradient(circle at 32% 26%,#FFE9A6 0,#F2B632 42%,#C98A16 82%,#9E690D 100%);color:var(--toy-on-mustard)}
+.toy-lac--indigo{background:radial-gradient(circle at 32% 26%,#96A5EA 0,#3F52A8 42%,#28357A 82%,#1B2557 100%)}
+.toy-lac--teal{background:radial-gradient(circle at 32% 26%,#95EDDC 0,#1FA595 42%,#137A70 82%,#0C5A54 100%)}
+.toy-lac--plum{background:radial-gradient(circle at 32% 26%,#DDB4F5 0,#9255C4 42%,#6A3596 82%,#4A2270 100%)}
+
+/* ============ keypad ============ */
+.toy-keypad-wrap{display:inline-flex;align-items:flex-end;gap:clamp(14px,2vw,26px)}
+.toy-keypad-mat{padding:clamp(18px,2.2vw,26px)}
+.toy-keypad{--kw:var(--toy-key-w,clamp(72px,8.3vw,104px));--kh:var(--toy-key-h,clamp(68px,11.4vh,100px));--kg:var(--toy-key-gap,clamp(10px,1.2vw,14px));
+  display:grid;grid-template-columns:repeat(3,var(--kw));gap:calc(var(--kg) + 6px) var(--kg);padding-bottom:7px}
+.toy-key{display:flex;align-items:center;justify-content:center;min-width:64px;min-height:64px;height:var(--kh);padding:0 0 4px;border:0;border-radius:18px;cursor:pointer;
+  color:var(--toy-ink);font:700 clamp(34px,4.6vh,46px)/1 var(--toy-display);text-shadow:0 1.5px 0 rgba(255,244,220,.9);
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.75),inset 0 12px 0 rgba(255,246,226,.42),0 7px 0 var(--toy-wood-edge),4px 12px 9px rgba(var(--toy-shade),.36);
+  transition:transform .08s ease-out,box-shadow .08s ease-out;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.toy-key:nth-child(3n+2){--toy-gx:-140px;--toy-gy:-60px}.toy-key:nth-child(3n){--toy-gx:-300px;--toy-gy:-130px}.toy-key:nth-child(n+7){--toy-gy:-190px}
+.toy-key:active,.toy-key.is-pressed{transform:translateY(5px);box-shadow:inset 0 0 0 2px rgba(255,243,216,.75),inset 0 12px 0 rgba(255,246,226,.42),0 2px 0 var(--toy-wood-edge),1px 4px 4px rgba(var(--toy-shade),.36)}
+.toy-key--zero{grid-column:span 2}
+.toy-key--del{color:var(--toy-red-dk)}
+.toy-key:disabled{opacity:.45;pointer-events:none}
+.toy-keypad-wrap.off{opacity:.6}
+
+/* ============ speech bubble: a paper card with a tail ============ */
+.toy-bubble{position:relative;display:inline-block;box-sizing:border-box;max-width:min(440px,100%);padding:18px 28px 20px;border-radius:28px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:400 clamp(18px,1.9vw,22px)/1.35 var(--toy-body);
+  box-shadow:inset 0 2px 0 #fff,7px 12px 18px rgba(var(--toy-shade),.3)}
+.toy-bubble-title{display:block;margin-bottom:4px;font:700 clamp(24px,2.7vw,32px)/1.15 var(--toy-display)}
+.toy-bubble::after{content:"";position:absolute;width:56px;height:34px;background:var(--toy-paper-dk)}
+.toy-bubble--left::after{left:10px;bottom:-24px;clip-path:polygon(26% 0,100% 0,0 100%)}
+.toy-bubble--right::after{right:10px;bottom:-24px;clip-path:polygon(0 0,74% 0,100% 100%)}
+.toy-bubble--side::after{left:-26px;bottom:22px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
+.toy-bubble--none::after{display:none}
+
+/* ============ drawings ============ */
+.toy-bix,.toy-buddy,.toy-pair,.toy-moon{display:inline-block;flex:none;line-height:0;vertical-align:middle}
+.toy-bix svg,.toy-buddy svg,.toy-pair svg,.toy-moon svg,.toy-bead,.toy-prop,.toy-rodprogress,.toy-moonphases{overflow:visible;max-width:100%}
+.toy-rodprogress,.toy-moonphases{height:auto}
+.toy-icon{flex:none;vertical-align:middle}
+
+/* idle motion: only the two leads move by themselves. Bix breathes and blinks; the moon's glow swells slowly. */
+.toy-bix-breathe{transform-box:fill-box;transform-origin:50% 100%;animation:toy-breathe 3.8s ease-in-out infinite}
+.toy-lid{transform-box:fill-box;transform-origin:50% 0;transform:scaleY(0);animation:toy-blink 5.4s linear infinite}
+.toy-moon-halo{transform-box:fill-box;transform-origin:50% 50%;animation:toy-glow 6.5s ease-in-out infinite}
+@keyframes toy-breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.008,1.022)}}
+@keyframes toy-blink{0%,94%,100%{transform:scaleY(0)}96%,97.5%{transform:scaleY(1)}}
+@keyframes toy-glow{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.toy-still .toy-bix-breathe,.toy-still .toy-lid,.toy-still .toy-moon-halo{animation:none}
+
+/* ============ dialog ============ */
+.toy-dialog{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(58,30,6,.55);animation:toy-fade .16s ease both}
+.toy-dialog-panel.toy-paper{width:min(520px,100%);padding:28px 30px 26px;border-radius:16px;box-shadow:inset 0 2px 0 #fff,0 4px 0 #D9CEB8,10px 24px 30px rgba(30,14,2,.45)}
+.toy-dialog-title{margin:0 0 10px;font:700 26px/1.2 var(--toy-display);color:var(--toy-ink)}
+.toy-dialog-msg p{margin:0 0 8px;font:400 18px/1.45 var(--toy-body);color:var(--toy-ink)}
+.toy-dialog-btns{display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;padding-bottom:8px}
+@keyframes toy-fade{from{opacity:0}to{opacity:1}}
+
+/* ============ sizes ============ */
+/* portrait iPad: a lower wall, blocks may wrap, keys go by width */
+@media (orientation:portrait){
+  :root{--toy-wall-h:clamp(150px,19vh,230px);--toy-window-x:clamp(40px,12vw,160px)}
+  .toy-block{min-width:180px}
+  .toy-keypad{--kw:var(--toy-key-w,clamp(72px,12vw,104px));--kh:var(--toy-key-h,clamp(68px,8vh,100px))}
+  .toy-key{font-size:clamp(34px,4.4vw,46px)}
+  .toy-start{--d:clamp(170px,26vw,232px)}
+  .toy-start--sm{--d:clamp(112px,17vw,150px)}
+}
+/* iPad Pro 12.9: everything a touch larger */
+@media (min-width:1300px) and (min-height:960px){
+  :root{--toy-plank:144px}
+  .toy-block{min-width:230px;min-height:108px}
+  .toy-tag{height:64px;font-size:28px}
+  .toy-iconbtn{width:72px;height:72px}
+}
+@media (prefers-reduced-motion:reduce){
+  .toy-bix-breathe,.toy-lid,.toy-moon-halo,.toy-dialog{animation:none}
+  .toy-block,.toy-key,.toy-start-dome,.toy-iconbtn{transition:none}
+}
