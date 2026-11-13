@@ -64,15 +64,15 @@ async def main():
         await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(150)
         check('end of the day: Play', (await pg.text_content('#todayGoT'))=='Play')
         # the Switch child button and the version stay out of the child's way
-        ver=await pg.eval_on_selector('#ver','e=>{const r=e.getBoundingClientRect(), s=getComputedStyle(e); return [r.left, innerHeight-r.bottom, parseFloat(s.fontSize)]}')
-        check('version is tiny and tucked in the bottom-left corner', ver[0]<30 and ver[1]<20 and ver[2]<=11, ver)
+        # the version is for grown-ups only (shown in Grown-ups, where 5 taps open diagnostics); #ver stays in the DOM as its source
+        vis_ver=await pg.evaluate("[...document.querySelectorAll('#home *')].filter(e=>e.offsetParent!==null && e.children.length===0 && /\\bv\\d+\\.\\d+/.test(e.textContent)).map(e=>e.id||e.className)")
+        check('no version text on the child home (#ver kept in the DOM, hidden)', not vis_ver and await pg.locator('#home #ver').count()==1 and not await pg.is_visible('#ver') and 'v' in (await pg.text_content('#ver')), vis_ver)
+        check('dead skill menu (#nodemenu) is gone', await pg.locator('#nodemenu, #nmLearn').count()==0)
 
         # ---------- the three doors ----------
         await pg.click('#doorPractice'); await pg.wait_for_timeout(400)
-        door = await pg.locator('#door.active').count()==1; menu = await pg.locator('#nodemenu.active').count()==1
-        check('Practice door -> the Practice door screen (or, before it exists, the current skill menu)', door or menu, 'door' if door else 'node menu')
-        if menu: await pg.click('#nmClose')
-        if door: await pg.evaluate("App.goHome()")
+        check('Practice door -> the Practice door screen', await pg.locator('#door.active').count()==1)
+        await pg.evaluate("App.goHome()")
         await pg.click('#doorPlay'); await pg.wait_for_selector('#play.active')
         check('Play door -> games', await pg.locator('#play.active').count()==1)
         await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
@@ -100,12 +100,20 @@ async def main():
         check('"Treats" (was "I wish for…") opens the treat list (Treats.wish hook)', 'Treats' in await pg.text_content('#roomWish') and await pg.locator('#shopCards .tcard').count()==6 and await pg.evaluate("typeof Treats.wish==='function'"))
         hi=await pg.eval_on_selector_all('#shopCards .tcard.hi .tname','els=>els.map(e=>e.textContent)')
         loud=await pg.locator('#shopCards .ws-btn:not(.maple)').count()
-        check('shop highlights one card (the saving goal); every other button is quiet maple', hi==['Park trip'] and loud<=1, f"{hi} loud={loud}")
+        check('shop highlights one card (the saving goal); at most one loud button', hi==['Park trip'] and loud<=1, f"{hi} loud={loud}")
+        first=await pg.evaluate("(()=>{ const c=document.querySelector('#shopCards > .tcard'), r=c.getBoundingClientRect(); return [c.classList.contains('hi'), c.classList.contains('goal'), c.querySelector('.tname').textContent, r.top, r.bottom, innerHeight]; })()")
+        check('shop: the saving-goal card comes first and is fully visible without scrolling', first[0] and first[1] and first[2]=='Park trip' and first[3]>=0 and first[4]<=first[5], first)
+        others=await pg.locator('#shopCards .tcard:not(.hi) .ws-btn, #shopCards .tcard:not(.hi) [data-get], #shopCards .tcard:not(.hi) [data-goal]').count()
+        check('shop: only the big card has buttons; the other treats are quiet tap-to-pick cards', others==0 and await pg.locator('#shopCards button.tcard.tpick[data-pick]').count()==5, others)
+        await pg.click('#shopCards .tcard.tpick:has-text("Choose dinner")'); await pg.wait_for_timeout(200)
+        first=await pg.evaluate("(()=>{ const c=document.querySelector('#shopCards > .tcard'); return [c.classList.contains('hi'), c.querySelector('.tname').textContent]; })()")
+        goal_still=await pg.evaluate("Treats.wallet().goal")
+        check('tapping a small card brings it up into the big card (nothing chosen or spent by that tap)', first==[True,'Choose dinner'] and goal_still=='t5' and await pg.locator('#shopCards .tcard.hi [data-goal]').count()==1 and await pg.locator('#shopCards .ws-btn:not(.maple)').count()<=1, f"{first} goal={goal_still}")
         bub=await pg.text_content('#bixShop .bubble')
         check('shop: Bix never says "Go get it"', 'get it' not in bub.lower(), bub)
         tg=await pg.eval_on_selector_all('#shop button, #room button','els=>els.filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.textContent.trim(), Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)')
         check('shop + room child targets are at least 60px tall', not tg, tg)
-        await pg.click('.tcard:has-text("Small snack") [data-get]'); await pg.click('#askYes'); await pg.wait_for_timeout(500)
+        await pg.click('#shopCards .tcard.tpick:has-text("Small snack")'); await pg.click('#shopCards .tcard.hi [data-get]'); await pg.click('#askYes'); await pg.wait_for_timeout(500)
         await pg.evaluate("Treats.wallet().goal=null; Treats.renderShop()")
         hi=await pg.eval_on_selector_all('#shopCards .tcard.hi .tname','els=>els.map(e=>e.textContent)')
         check('no goal: the cheapest treat she can get is the one highlighted', hi==['Small snack'] and await pg.locator('#shopCards .ws-btn:not(.maple)').count()==1, hi)
@@ -128,6 +136,13 @@ async def main():
             await pg.add_init_script(SEED); await pg.add_init_script(STATE); await pg.goto(URL); await pg.wait_for_timeout(700)
             bad=await no_overflow(pg); await pg.click('#doorRoom'); await pg.wait_for_timeout(300); bad+=await no_overflow(pg)
             check(f'{W}x{H}: home and My Room fit, nothing off-screen', not bad, bad)
+            await pg.click('#roomWish'); await pg.wait_for_selector('#shop.active'); await pg.wait_for_timeout(200)
+            gb=await pg.evaluate("(()=>{ const c=document.querySelector('#shopCards > .tcard.hi.goal'); if(!c) return null; const r=c.getBoundingClientRect(); return [r.top, r.bottom, innerHeight]; })()")
+            check(f'{W}x{H}: shop goal card first and fully on screen', gb and gb[0]>=0 and gb[1]<=gb[2], gb)
+            await pg.click('#exitShop'); await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
+            if W==1366:
+                gap=await pg.evaluate("(()=>{ const s=document.querySelector('#greetSub').getBoundingClientRect(), r=document.querySelector('.hm-rod').getBoundingClientRect(); return r.top-s.bottom; })()")
+                check('iPad Pro: "3 little steps" sits well clear of the rod (>= 16px)', gap>=16, gap)
             await ctx.close()
 
         # ---------- first-time setup: "abacus at home?" saved per child ----------
@@ -148,6 +163,46 @@ async def main():
         fam=json.loads(await pg.evaluate("localStorage.getItem('abacus.family')") or '{}')
         check('hasAbacus saved per child (true / false / null), not family-wide', got=={'Ava':True,'Ben':False,'Cy':None} and 'hasAbacus' not in fam, got)
         check('App.settings.hasAbacus is the active child\'s answer', await pg.evaluate("App.settings.hasAbacus")is None)
+
+        # ---------- setup: skill examples, the kit keypad, "Stop here", confetti behind the content ----------
+        c3=await b.new_context(viewport={'width':1180,'height':820}); p3=await c3.new_page(); p3.on('pageerror', lambda e: errs.append(str(e)))
+        await p3.goto(URL); await p3.wait_for_selector('#suName.on'); await p3.fill('#suNameIn','Kai'); await p3.click('#suNameGo'); await p3.click('[data-abacus=yes]'); await p3.wait_for_selector('#suLevel.on')
+        await p3.click('[data-lv=pick]'); await p3.wait_for_selector('#suPick.on')
+        ex=await p3.evaluate("Object.fromEntries([...document.querySelectorAll('#suPickList .su-skill')].map(b=>[b.dataset.id, b.querySelector('small').textContent]))")
+        mul=[k for k in ['times_a','times_b','mul_2x1','mul_3x1'] if k in ex]
+        check('setup skill list: multiplication examples use × (never +)', mul and all('×' in ex[k] and '+' not in ex[k] for k in mul), {k:ex[k] for k in mul})
+        check('setup skill list: times tables read "3 × 4", 2-digit × 1-digit reads "23 × 3"', ex.get('times_a','').startswith('3 × 4') and ex.get('mul_2x1','').startswith('23 × 3'), [ex.get('times_a'), ex.get('mul_2x1')])
+        lr=ex.get('long_rows','')
+        check('setup skill list: long rows read as one row ("9 + 7 − 8 + 6 …")', lr.startswith('9 + 7 − 8 + 6') and lr.endswith('…'), lr)
+        check('setup skill list: 3- and 4-digit examples', ex.get('three_digit','').startswith('125 + 341') and ex.get('four_digit','').startswith('1234 + 2345'), [ex.get('three_digit'), ex.get('four_digit')])
+        small=await p3.evaluate("[...document.querySelectorAll('#setup .su-step.on button')].filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.dataset.id, Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)")
+        check('setup skill list: every target at least 60px tall', not small, small)
+        await p3.click('#suPickBack'); await p3.click('[data-lv=check]'); await p3.wait_for_selector('#suCheck.on')
+        keys=await p3.eval_on_selector_all('#suPad .ws-keypad button','els=>els.map(e=>e.dataset.k)')
+        check('level check uses the kit keypad (WS.keypad), no local copy', keys==['7','8','9','4','5','6','1','2','3','del','0'] and await p3.locator('#suPad > button').count()==0, keys)
+        small=await p3.evaluate("[...document.querySelectorAll('#setup .su-step.on button')].filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.dataset.k, Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)")
+        check('level check: every target at least 60px tall', not small, small)
+        check('level check: the stop button says what it does ("Stop here")', (await p3.text_content('#suStop')).strip()=='Stop here' and 'Stop here' in (await p3.get_attribute('#suStop','aria-label')))
+        await p3.click('#suPad [data-k="9"]'); await p3.click('#suPad [data-k="9"]'); await p3.click('#suGo'); await p3.wait_for_timeout(300)
+        check('a wrong answer: Bix explains "Stop here"', 'Stop here' in await p3.text_content('#bixSetup .bubble'), await p3.text_content('#bixSetup .bubble'))
+        await p3.wait_for_timeout(500); await p3.click('#suStop')
+        await p3.wait_for_selector('#suDone.on', timeout=3000)
+        check('"Stop here" ends the check at once (no extra answer needed)', await p3.locator('#suDone.on').count()==1)
+        await p3.wait_for_timeout(2800)
+        cf=await p3.evaluate("(()=>{ const box=Fun.confetti(40); const host=box.parentElement, cs=getComputedStyle(box);"
+            " const xs=[...box.children].map(i=>parseFloat(i.style.left));"
+            " box.style.pointerEvents='auto'; box.querySelectorAll('i').forEach(i=>{i.style.pointerEvents='auto'; i.style.animation='none'; i.style.top='0'; i.style.left='0'; i.style.width='100vw'; i.style.height='100vh';});"
+            " const hit=t=>{ const r=document.querySelector(t).getBoundingClientRect(); const e=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2); return !!(e && e.closest(t)); };"
+            " const out=[host.matches('.screen.active'), cs.zIndex, getComputedStyle(host).isolation, hit('#suStart'), hit('#suDoneH'), xs.every(x=>x<=18||x>=82)];"
+            " box.remove(); return out; })()")
+        check('confetti: drawn behind the content of the active screen (buttons and text stay on top), edges only', cf==[True,'-1','isolate',True,True,True], cf)
+        await p3.evaluate("Fun.confetti(30)"); await p3.wait_for_timeout(2900)
+        check('confetti: a short burst (gone within 3 s)', await p3.locator('.ws-confetti').count()==0)
+        await p3.emulate_media(reduced_motion='reduce')
+        check('confetti: nothing with reduced motion', await p3.evaluate("Fun.confetti(30)===null && !document.querySelector('.ws-confetti')"))
+        await p3.emulate_media(reduced_motion='no-preference'); await p3.evaluate("document.body.classList.add('ws-calm')")
+        check('confetti: nothing in calm mode', await p3.evaluate("Fun.confetti(30)===null"))
+        await c3.close()
 
         # ---------- Home Screen advice only in a browser tab ----------
         for label, init in [('browser tab', None), ('Home Screen app (standalone)', "Object.defineProperty(navigator,'standalone',{get:()=>true})"), ('native wrapper', "window.Capacitor={isNativePlatform:()=>true}")]:

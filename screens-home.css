@@ -52,10 +52,11 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .hm-beam{position:absolute;left:0;right:0;top:19.5%;height:12px;background:var(--ws-rod)}
 .hm-rod{position:absolute;left:0;right:0;top:50%;height:10px;margin-top:-5px;background:var(--ws-rod)}
 /* "Today" sits as a label on the upper deck, wholly above the rod (the rod never runs through it) */
-.hm-today{position:relative;z-index:1;flex:none;width:190px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;transform:translateY(calc(-50% - 16px))}
+/* centred in the upper deck, between the beam and the rod, at every size (the rod never runs through or touches it) */
+.hm-today{position:absolute;z-index:1;left:56px;top:calc(19.5% + 12px);bottom:calc(50% + 5px);width:190px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px}
 .hm-title{margin:0;font-family:var(--ws-display);font-weight:700;font-size:46px;line-height:1;color:var(--ws-indigo);white-space:nowrap}
 .hm-sub{font-family:var(--ws-body);font-size:20px;line-height:1.2;color:var(--ws-wood-dk);white-space:nowrap}
-.hm-steps{position:relative;z-index:1;list-style:none;margin:0;padding:0;flex:1;min-width:0;display:flex;align-items:center;justify-content:space-around;gap:16px}
+.hm-steps{position:relative;z-index:1;list-style:none;margin:0 0 0 218px;padding:0;flex:1;min-width:0;display:flex;align-items:center;justify-content:space-around;gap:16px}
 .hm-step.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
 .hm-bead{position:relative;display:block;line-height:0}
 .hm-bead .ws-bead{display:block}
@@ -83,7 +84,8 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .hm-chip{position:absolute;right:22px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;
   background:var(--ws-white);border-radius:var(--ws-r-pill);padding:6px 14px;font-family:var(--ws-display);font-weight:600;font-size:20px;color:var(--ws-ink)}
 .hm-chip:empty{display:none}
-#home #ver.hm-ver{position:absolute!important;left:12px;bottom:6px;font-size:10px;line-height:1;opacity:.6;color:var(--ws-ink-2)}
+/* the version lives in Grown-ups (#guVer, 5 taps for diagnostics); #ver stays in the DOM as its source, never shown to the child */
+#home #ver.hm-ver{display:none!important}
 
 /* tall landscape (iPad Pro) */
 @media (min-width:1300px) and (min-height:960px){
@@ -100,8 +102,8 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
   .hm-inner{height:clamp(320px,36vh,440px);padding:64px 26px 0;gap:18px}
   .hm-beam{display:none}
   .hm-rod{top:calc(50% + 32px)}
-  .hm-today{position:absolute;left:34px;top:30px;transform:none;flex-direction:row;align-items:baseline;gap:16px;width:auto}
-  .hm-steps{gap:6px}
+  .hm-today{position:absolute;left:34px;top:30px;bottom:auto;transform:none;flex-direction:row;align-items:baseline;justify-content:flex-start;gap:16px;width:auto}
+  .hm-steps{gap:6px;margin-left:0}
   .hm-bead .ws-bead{width:126px;height:auto}
   .hm-step.now .hm-bead .ws-bead{width:140px}
   .hm-start{width:140px;height:140px;font-size:24px}
@@ -228,24 +230,41 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .sh-body.shop-body::before{display:none}
 .sh-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 #bixShop{--bix:84px}
-.sh .tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px 20px;padding-top:12px}
-.sh .tcard.ws-card{background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:22px 14px 16px;gap:8px}
+.sh .tcards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;padding-top:12px}
+.sh .tcard.ws-card{position:relative;background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:16px 10px 14px;gap:6px;border:0;margin:0}
 .sh .tcard.can{background:var(--ws-white)}
-.sh .tcard.hi{border:4px solid var(--ws-ochre);padding:18px 10px 12px;box-shadow:0 5px 0 var(--ws-ochre-dk)}
-.sh .tgoal{display:flex;align-items:center;gap:4px;top:-16px;background:var(--ws-ochre);color:#3D2412;font-family:var(--ws-display);font-weight:600;font-size:15px;padding:4px 12px;white-space:nowrap}
-.sh .temoji{font-size:60px}
-.sh .tname{font-family:var(--ws-display);font-weight:600;font-size:21px;color:var(--ws-ink)}
-.sh .tprice{display:inline-flex;align-items:center;gap:6px;background:none;padding:0;font-family:var(--ws-display);font-size:22px}
+.sh .tcard.goal:not(.hi){box-shadow:0 3px 0 var(--ws-line),inset 0 0 0 3px var(--ws-ochre)}
+/* the big card: first, full width, the only one with buttons */
+.sh .tcard.hi{grid-column:1/-1;min-height:204px;flex-direction:row;align-items:center;gap:28px;text-align:left;border:4px solid var(--ws-ochre);padding:24px 32px 22px;box-shadow:0 5px 0 var(--ws-ochre-dk)}
+.sh .tcard.hi .temoji{font-size:92px;line-height:1;flex:none}
+.sh .tcard.hi .tmain{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.sh .tcard.hi .tname{font-size:32px;line-height:1.1}
+.sh .tcard.hi .tprice{font-size:26px}
+.sh .tcard.hi .tbar{width:100%;max-width:420px;height:16px;border-radius:8px}
+.sh .tcard.hi .tneed{font-size:19px}
+.sh .tgoal{position:absolute;left:28px;top:-17px;display:flex;align-items:center;gap:4px;background:var(--ws-ochre);color:#3D2412;border-radius:var(--ws-r-pill);font-family:var(--ws-display);font-weight:600;font-size:16px;padding:4px 14px;white-space:nowrap}
+/* the small cards: tap to bring one up into the big card */
+.sh .tcard.tpick{cursor:pointer;min-height:150px;font:inherit;color:var(--ws-ink);transition:transform .08s ease, box-shadow .08s ease;-webkit-tap-highlight-color:transparent}
+.sh .tcard.tpick:active{transform:translateY(var(--ws-press));box-shadow:0 0 0 var(--ws-line)}
+.sh .temoji{font-size:48px;line-height:1.1}
+.sh .tname{font-family:var(--ws-display);font-weight:600;font-size:19px;line-height:1.15;color:var(--ws-ink)}
+.sh .tprice{display:inline-flex;align-items:center;gap:6px;background:none;padding:0;font-family:var(--ws-display);font-size:20px}
 .sh .tprice::before{display:none}
 .sh .tprice b{font-weight:700}
-.sh .tbar{width:80%;height:12px;background:var(--ws-ground);border-radius:6px}
+.sh .tbar{width:80%;height:10px;background:var(--ws-ground);border-radius:5px;margin-top:auto}
 .sh .tbar i{background:var(--ws-ochre)}
 .sh .tneed{font-size:16px;color:var(--ws-ink-2)}
-.sh .tbtns{flex-direction:row;gap:12px;margin-top:auto;padding-top:8px}
-.sh .tbtns .ws-btn{flex:1;width:auto;min-height:60px;padding:0 14px;white-space:nowrap}
+.sh .tcard.hi .tbtns{flex:none;display:flex;flex-direction:column;gap:14px;width:auto;margin:0;padding:0}
+.sh .tbtns .ws-btn{min-width:230px;min-height:68px;padding:0 24px;white-space:nowrap;gap:10px}
 .sh .ticket{display:inline-flex;align-items:center;gap:8px;border:3px dashed var(--ws-red);background:var(--ws-white);font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
 .sh .tk-head{font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
 .sh-how{font-size:15px;color:var(--ws-ink-2);text-align:center}
+@media (orientation:portrait){
+  .sh .tcards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sh .tcard.hi{flex-wrap:wrap;gap:18px 24px;padding:24px 26px 22px}
+  .sh .tcard.hi .tbtns{flex-direction:row;width:100%}
+  .sh .tcard.hi .tbtns .ws-btn{flex:1;min-width:0}
+}
 
 /* the "Get it?" box and the name box share one look: a maple card in a wooden frame */
 #shopAsk.askm,#nameAsk.askm{background:rgba(30,36,51,.55)}
@@ -317,12 +336,8 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 #setup .su-entry.entry{position:relative;width:340px;gap:14px}
 #setup .feedback{position:absolute;left:100%;top:0;margin-left:18px;width:150px;height:96px;display:flex;align-items:center;justify-content:flex-start;font-family:var(--ws-display);font-weight:600;font-size:24px;color:var(--ws-ink-2)}
 #setup .su-answer.answer{height:96px;border:0;border-radius:var(--ws-r-md);background:var(--ws-white);box-shadow:0 3px 0 var(--ws-line);font-family:var(--ws-display);font-weight:700;font-size:60px;color:var(--ws-ink);padding:0}
-#setup .su-pad.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-#setup .su-pad button{height:72px;border:0;border-radius:var(--ws-r-sm);background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:40px;color:var(--ws-ink);padding:0;display:flex;align-items:center;justify-content:center;
-  transition:transform .08s ease, box-shadow .08s ease}
-#setup .su-pad button:active{transform:translateY(var(--ws-press));box-shadow:0 0 0 var(--ws-maple-dk)}
-#setup .su-pad button.zero{grid-column:span 2}
-#setup .su-pad button.del{background:#D5DEE3;box-shadow:0 5px 0 var(--ws-line);color:var(--ws-ink-2)}
+/* the keypad is the kit's WS.keypad (.ws-keypad in workshop.css); only its size is set here */
+#setup .su-pad{display:flex;justify-content:center;background:none;box-shadow:none;padding:0;--ws-key-w:104px;--ws-key-h:72px;--ws-key-gap:14px;--ws-key-font:40px}
 #setup .su-go.ws-btn{align-self:center;margin-top:10px;min-width:220px;gap:12px}
 #setup .su-go-ic{display:flex;line-height:0}
 #setup .su-install.ws-panel{background:var(--ws-white);border:0;border-radius:20px;box-shadow:0 3px 0 var(--ws-line);max-width:660px;font-size:17px;line-height:1.45;text-align:center;color:var(--ws-ink)}
@@ -339,3 +354,10 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
   .hm-start,.who-card.ws-card,.rm-thing,#setup .su-card{transition:none}
 }
 body.ws-calm #jar.ready .jarsvg{animation:none}
+
+/* ---------- confetti (Fun.confetti): behind the content of the active screen, never over text or buttons ---------- */
+.ws-confetti-host{isolation:isolate}
+.ws-confetti-host > .confetti.ws-confetti{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+body > .confetti.ws-confetti{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+@media (prefers-reduced-motion: reduce){ .confetti.ws-confetti{display:none} }
+body.ws-calm .confetti.ws-confetti{display:none}

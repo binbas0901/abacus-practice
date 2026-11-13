@@ -73,9 +73,12 @@
   }
 
   /* ---------- the treat list ("Treats") ---------- */
-  // One card is highlighted: the saving goal, or (with no goal) the cheapest treat she can get now, or else the cheapest one.
-  // Every other card is quiet (maple buttons), so the screen never pushes her to spend.
+  // One big card comes first and is the only one with buttons: the saving goal, or (with no goal) the cheapest treat she can
+  // get now, or else the cheapest one. Every other treat is a small quiet card: tapping it brings it up into the big card
+  // (nothing is chosen or spent by that tap). So the screen has one obvious next step and never pushes her to spend.
+  let picked = null;   // the treat tapped into the big card (view state only)
   function featured() {
+    if (picked && byId(picked)) return byId(picked);
     const g = goal(); if (g) return g;
     const byPrice = list().slice().sort((a, b) => a.price - b.price), w = wallet();
     return byPrice.find(t => w.beads >= t.price) || byPrice[0] || null;
@@ -84,17 +87,31 @@
     const w = wallet(), g = goal(), W = root.WS, top = featured(); $('#shopBeads').textContent = w.beads;
     const bi = $('#shopBeadIc'); if (bi && !bi.firstChild) bi.innerHTML = W.bead('ochre', 30);
     const box = $('#shopCards'); box.innerHTML = '';
-    for (const t of list().slice().sort((a, b) => a.price - b.price)) {
-      const can = w.beads >= t.price, pct = Math.min(100, Math.round(100 * w.beads / t.price)), isGoal = g && g.id === t.id, hi = top && top.id === t.id;
-      const c = document.createElement('div'); c.className = 'tcard ws-card' + (can ? ' can' : '') + (isGoal ? ' goal' : '') + (hi ? ' hi' : '');
-      const btn = hi ? (can ? '' : ' maple') : ' maple';
-      c.innerHTML = `${isGoal ? `<div class="tgoal">${W.icon('star', 18, '#3D2412')}Saving for this</div>` : ''}<div class="temoji">${t.emoji}</div><div class="tname">${esc(t.name)}</div>
-        <div class="tprice">${W.bead('ochre', 28)}<b>${t.price}</b></div><div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div>
-        <div class="tneed">${can ? 'You have enough' : `${t.price - w.beads} more to go`}</div>
-        <div class="tbtns">${can ? `<button class="ws-btn small${btn}" data-get="${t.id}">Get it</button>` : ''}${isGoal ? '' : `<button class="ws-btn small maple" data-goal="${t.id}">Save for this</button>`}</div>`;
-      box.appendChild(c);
+    const rest = list().slice().sort((a, b) => a.price - b.price).filter(t => !top || t.id !== top.id);
+    for (const t of (top ? [top] : []).concat(rest)) {
+      const can = w.beads >= t.price, pct = Math.min(100, Math.round(100 * w.beads / t.price)), isGoal = !!(g && g.id === t.id), hi = top && top.id === t.id;
+      const need = can ? 'You have enough' : `${t.price - w.beads} more to go`;
+      if (hi) {
+        // The big card. One loud button at most: "Get it" when it is the goal and she has enough, else "Save for this".
+        const c = document.createElement('div'); c.className = 'tcard ws-card hi' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
+        const getBtn = can ? `<button class="ws-btn${isGoal ? '' : ' maple'}" data-get="${t.id}">Get it</button>` : '';
+        const goalBtn = isGoal ? '' : `<button class="ws-btn ochre" data-goal="${t.id}">${W.icon('star', 24, '#3D2412')}Save for this</button>`;
+        c.innerHTML = `${isGoal ? `<div class="tgoal">${W.icon('star', 18, '#3D2412')}Saving for this</div>` : ''}<div class="temoji">${t.emoji}</div>
+          <div class="tmain"><div class="tname">${esc(t.name)}</div><div class="tprice">${W.bead('ochre', 30)}<b>${t.price}</b></div>
+          <div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div><div class="tneed">${need}</div></div>
+          <div class="tbtns">${goalBtn}${getBtn}</div>`;
+        box.appendChild(c);
+      } else {
+        const c = document.createElement('button'); c.type = 'button'; c.className = 'tcard ws-card tpick' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
+        c.dataset.pick = t.id; c.setAttribute('aria-label', `${t.name}: ${t.price} golden beads. ${need}`);
+        c.innerHTML = `<div class="temoji">${t.emoji}</div><div class="tname">${esc(t.name)}</div><div class="tprice">${W.bead('ochre', 24)}<b>${t.price}</b></div>
+          <div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div>`;
+        box.appendChild(c);
+      }
     }
-    box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).name}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
+    box.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { picked = b.dataset.pick; App().Sfx.tap(); renderShop();
+      const t = byId(picked), more = t.price - wallet().beads; F().Mascot.say($('#bixShop'), more > 0 ? `${t.name}: ${more} more bead${more === 1 ? '' : 's'}.` : `${t.name}. You have enough beads.`, 0, null); const sb = $('#shop .sh-body'); if (sb && sb.scrollTo) sb.scrollTo({ top: 0, behavior: 'smooth' }); });
+    box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; picked = null; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).name}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
     box.querySelectorAll('[data-get]').forEach(b => b.onclick = () => ask(byId(b.dataset.get)));
     const open = w.tickets.filter(x => !x.given);
     $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${W.icon('star', 20, W.colors.red)}<span>${esc(x.name)}</span></div>`).join('') : '';
@@ -107,7 +124,7 @@
   function buy(t) {
     const w = wallet(); if (w.beads < t.price) return;
     w.beads -= t.price; w.tickets.push({ id: 'k' + Date.now(), tid: t.id, emoji: t.emoji, name: t.name, price: t.price, at: new Date().toISOString(), given: false });
-    if (w.goal === t.id) w.goal = null; F().save();
+    if (w.goal === t.id) w.goal = null; picked = null; F().save();
     F().confetti(110); App().Sfx.star();
     const bx = $('#bixShop'); F().Mascot.react(bx, 'cheer', 2200); F().Mascot.say(bx, `Yum! ${t.name}! Show your ticket to a grown-up!`, 0, 'shop_yum');
     renderShop(); renderJar();
@@ -118,7 +135,7 @@
     if (!g) F().Mascot.say(bx, 'Pick a treat to save for!', 0, 'shop_pick');
     else if (w.beads >= g.price) F().Mascot.say(bx, `You have enough for ${g.name}. Get it now, or keep saving. You choose!`, 0, null);
     else F().Mascot.say(bx, `${g.price - w.beads} more beads for ${g.name}. Keep practising to fill the jar. You can do it!`, 0, 'shop_saving');
-    renderShop(); App().show('shop');
+    picked = null; renderShop(); App().show('shop');
   }
   // The "Treats" button in My Room (it will become "I wish for…" when wishes exist). For now it opens the treat list, where the child picks what to save for or gets a treat.
   // Later milestone: a wish the child makes here goes to a grown-up for approval (replace this one function).

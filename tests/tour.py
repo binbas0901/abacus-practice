@@ -51,7 +51,7 @@ async def main():
         await pg.click('.gcard[data-game=reader]'); await pg.wait_for_timeout(600); await shot('reader'); await pg.wait_for_timeout(1800); await shot('reader_cover'); await pg.click('#exitGame'); await pg.wait_for_timeout(300)
         await pg.click('.gcard[data-game=build]'); await pg.wait_for_timeout(700); await shot('build'); await pg.click('#exitGame'); await pg.wait_for_timeout(300); await pg.click('#exitPlay')
         await pg.click('#doorRoom'); await pg.click('#jar'); await pg.wait_for_timeout(500); await shot('shop')
-        await pg.click('.tcard:has-text("bedtime story") [data-get]'); await pg.wait_for_timeout(400); await shot('ask'); await pg.click('#askNo'); await pg.click('#exitShop'); await pg.click('#exitRoom')
+        await pg.click('.tcard.tpick:has-text("bedtime story")'); await pg.click('.tcard.hi [data-get]'); await pg.wait_for_timeout(400); await shot('ask'); await pg.click('#askNo'); await pg.click('#exitShop'); await pg.click('#exitRoom')
         await pg.click('#grownups'); await shot('gate'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_timeout(700); await shot('parent')
         print('errors:', errs); await b.close()
 asyncio.run(main())

@@ -61,8 +61,14 @@
   function example(n) {
     if (n.kind === 'numbers') return 'Showing numbers on the abacus';
     if (n.kind === 'flash') return 'Numbers flash; answer in your head';
-    if (!n.demos) return '';
-    return n.demos.slice(0, 2).map(([t, d]) => `${t} ${d < 0 ? '−' : '+'} ${Math.abs(d)}`).join(',  ');
+    if (!n.demos || !n.demos.length) return '';
+    const D = n.demos, sign = d => `${d < 0 ? '−' : '+'} ${Math.abs(d)}`;
+    // Multiplication nodes keep their demos as [a, b] pairs: a × b.
+    if (n.drill && n.drill.op === 'mul') return D.slice(0, 2).map(([a, b]) => `${a} × ${b}`).join(',  ');
+    // Row nodes chain their demos (each start is the last total): show them as one row, "9 + 7 − 8 + 6 …".
+    const chained = D.length >= 3 && D.every(([t, d], i) => i === 0 || t === D[i - 1][0] + D[i - 1][1]);
+    if (chained) return `${D[0][0]} ${D.map(([, d]) => sign(d)).join(' ')}${(n.drill && n.drill.operands > D.length + 1) ? ' …' : ''}`;
+    return D.slice(0, 2).map(([t, d]) => `${t} ${sign(d)}`).join(',  ');
   }
 
   /* ---------- level check ---------- */
@@ -70,8 +76,9 @@
     const my = ++token; const E = root.SorobanEngine, C = root.Curriculum;
     step('suCheck'); say('Use your abacus for each one. No rush!', 0, 'intro_check');
     const pad = makePad($('#suPad'), $('#suAns'));
-    $('#suStop').onclick = () => { stopAt = true; };
-    let stopAt = false; const mastered = [];
+    // "Stop here": the check ends now and practice starts at this level (it does not wait for the next answer).
+    let stopAt = false, hinted = false; const mastered = [];
+    $('#suStop').onclick = () => { if (my !== token) return; App().Sfx.tap(); stopAt = true; pad.cancel(); };
     for (let li = 0; li < CHECK.length; li++) {
       const n = C.BY_ID[CHECK[li]];
       $('#suLevelName').textContent = n.title;
@@ -81,13 +88,15 @@
       let right = 0;
       for (let k = 0; k < probs.length; k++) {
         if (my !== token) return;
+        if (stopAt) break;
         const p = probs[k];
         $('#suProb').innerHTML = p.terms.map((t, i) => root.WS.tile(t, i === 0).replace('class="ws-tile', `class="term${t < 0 ? ' neg' : ''} ws-tile`)).join('');
         $('#suFb').textContent = ''; $('#suFb').className = 'feedback';
         const a = await pad.ask(); if (my !== token) return;
         if (stopAt) break;
         if (a === p.answer) { right++; $('#suFb').innerHTML = root.WS.bead('jade', 54); $('#suFb').className = 'feedback ok ws-pop'; App().Sfx.ok(); }
-        else { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'feedback'; App().Sfx.tap(); }
+        else { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'feedback'; App().Sfx.tap();
+          if (!hinted) { hinted = true; say('Too tricky? Tap “Stop here” and we’ll start with this one.'); } }
         await sleep(600);
       }
       if (my !== token) return;
@@ -101,15 +110,17 @@
     }
     finish('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
   }
-  // The keypad matches the practice keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ and a wide 0. The red Check button sits outside the grid.
+  // The kit's one keypad (WS.keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ and a wide 0). The red Check button sits outside the grid.
   function makePad(el, ansEl) {
-    const W = root.WS, go = $('#suGo');
-    el.innerHTML = [7, 8, 9, 4, 5, 6, 1, 2, 3].map(k => `<button data-k="${k}">${k}</button>`).join('') + `<button data-k="del" class="del" aria-label="Delete">${W.icon('back', 30, W.colors.ink, 3)}</button><button data-k="0" class="zero">0</button>`;
+    const go = $('#suGo');
     let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; go.disabled = !v; };
-    el.onclick = e => { const b = e.target.closest('button'); if (!b || !waiting) return; const k = b.dataset.k; App().Sfx.tap();
-      if (k === 'del') set(val.slice(0, -1)); else if (val.length < 4) set(val + k); };
+    el.innerHTML = '';
+    root.WS.keypad(el, { label: 'Number keys',
+      onKey(d) { if (!waiting) return; App().Sfx.tap(); if (val.length < 4) set(val + d); },
+      onBackspace() { if (!waiting) return; App().Sfx.tap(); set(val.slice(0, -1)); } });
     go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; go.disabled = true; w(parseInt(val, 10)); };
-    return { ask() { set(''); return new Promise(r => { waiting = r; }); } };
+    return { ask() { set(''); return new Promise(r => { waiting = r; }); },
+      cancel() { if (!waiting) return; const w = waiting; waiting = null; go.disabled = true; w(null); } };
   }
 
   /* ---------- finish ---------- */

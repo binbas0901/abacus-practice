@@ -230,16 +230,28 @@
   }
 
   /* ---------------- confetti ---------------- */
-  function confetti(n = 90) {
-    const box = document.createElement('div'); box.className = 'confetti';
+  // A short burst that never covers text or buttons: the layer is the first child of the active screen, made fixed with
+  // z-index:-1 while the screen is isolated (its own stacking context). It paints over the screen's ground colour but under
+  // every card, button and line of text, so pieces show only in the empty space;
+  // and they fall only down the outer edges, away from the middle. Nothing at all with reduced motion / ws-calm.
+  function confetti(n = 60) {
+    const calm = document.body.classList.contains('ws-calm') || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (calm) return null;
+    const host = document.querySelector('.screen.active') || document.body;
+    const box = document.createElement('div'); box.className = 'confetti ws-confetti'; box.setAttribute('aria-hidden', 'true');
     const K = root.WS ? root.WS.colors : {}, colors = [K.red, K.ochre, K.jade, K.indigo, K.bulb, '#F28FA6'].filter(Boolean);
+    n = Math.min(n, 60);
     for (let i = 0; i < n; i++) {
-      const p = document.createElement('i'); p.style.left = (Math.random() * 100) + '%'; p.style.background = colors[i % colors.length];
-      p.style.animationDelay = (Math.random() * 0.5) + 's'; p.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
-      p.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px'); p.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg');
+      // only the outer edges (left and right 18%), drifting outwards: the middle, where text and buttons live, stays clear
+      const left = i % 2 === 0, x = Math.random() * 18;
+      const p = document.createElement('i'); p.style.left = (left ? x : 100 - x) + '%'; p.style.background = colors[i % colors.length];
+      p.style.animationDelay = (Math.random() * 0.3) + 's'; p.style.animationDuration = (1.3 + Math.random() * 0.8) + 's';
+      p.style.setProperty('--dx', ((left ? -1 : 1) * Math.random() * 60) + 'px'); p.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
       if (i % 3 === 0) p.style.borderRadius = '50%'; box.appendChild(p);
     }
-    document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
+    host.classList.add('ws-confetti-host'); host.insertBefore(box, host.firstChild);
+    setTimeout(() => { box.remove(); if (!host.querySelector('.ws-confetti')) host.classList.remove('ws-confetti-host'); }, 2600);
+    return box;
   }
 
   // Small, non-interactive Bix (e.g. a "you are here" marker).

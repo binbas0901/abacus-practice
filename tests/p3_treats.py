@@ -31,7 +31,7 @@ async def main():
         names = await pg.eval_on_selector_all('.tcard .tname','els=>els.map(e=>e.textContent)')
         check('shop lists the six treats, cheapest first', names==['Small snack','Extra bedtime story','Game with a grown-up','Choose dinner','Park trip','Ice cream outing'], names)
         await pg.screenshot(path='/tmp/p3_shop0.png')
-        await pg.click('.tcard:has-text("Ice cream") [data-goal]'); await pg.wait_for_timeout(300)
+        await pg.click('.tcard.tpick:has-text("Ice cream")'); await pg.click('.tcard.hi:has-text("Ice cream") [data-goal]'); await pg.wait_for_timeout(300)
         check('save for the ice cream outing', await pg.locator('.tcard.goal:has-text("Ice cream")').count()==1, await pg.text_content('#bixShop .bubble'))
         await pg.click('#exitShop'); await pg.wait_for_selector('#room.active'); await pg.wait_for_timeout(300)
         check('jar shows the goal tag + Bix counts the beads still to go', 'Ice cream' in await pg.text_content('#jar .jar-sub') and await pg.locator('#jar .j-goal').count()==1 and 'more bead' in await pg.text_content('#bixRoom .bubble'), f"{await pg.text_content('#jar .jar-sub')} | {await pg.text_content('#bixRoom .bubble')}")
@@ -42,7 +42,7 @@ async def main():
         await pg.click('#parentDone'); await pg.click('#doorRoom'); await pg.click('#roomWish'); await pg.wait_for_selector('#shop.active')
         can = await pg.eval_on_selector_all('.tcard.can .tname','els=>els.map(e=>e.textContent)')
         check('with beads, cheap treats unlock', 'Extra bedtime story' in can and 'Park trip' not in can, f"beads={bead_txt} can={can}")
-        await pg.click('.tcard:has-text("bedtime story") [data-get]'); await pg.wait_for_selector('#shopAsk.active'); await pg.screenshot(path='/tmp/p3_ask.png')
+        await pg.click('.tcard.tpick:has-text("bedtime story")'); await pg.click('.tcard.hi:has-text("bedtime story") [data-get]'); await pg.wait_for_selector('#shopAsk.active'); await pg.screenshot(path='/tmp/p3_ask.png')
         await pg.click('#askYes'); await pg.wait_for_timeout(600)
         await pg.screenshot(path='/tmp/p3_shop_bought.png')
         w=json.loads(await pg.evaluate("window.__legacy('fun')"))['wallet']

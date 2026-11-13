@@ -52,11 +52,9 @@ async def main():
         check('Grown-ups shows "learned (level check)"', 'learned (level check)' in await pg.text_content('#nodeTable'))
         # 3. run the level check again from Grown-ups, stop at the first level -> back to Beads, name kept
         await pg.click('#levelAgain'); await pg.wait_for_selector('#suCheck.on'); await pg.wait_for_timeout(300)
-        await pg.click('#suStop'); terms=[int(t.replace('−','-')) for t in await pg.eval_on_selector_all('#suProb .term','els=>els.map(e=>e.textContent)')]
-        for ch in str(sum(terms)): await pg.click(f'#suPad [data-k="{ch}"]')
-        await pg.click('#suGo'); await pg.wait_for_selector('#suDone.on')
+        await pg.click('#suStop'); await pg.wait_for_selector('#suDone.on', timeout=3000)   # "Stop here" ends the check at once
         pr=json.loads(await pg.evaluate("window.__legacy('progress')")); st=json.loads(await pg.evaluate("window.__legacy('settings')"))
-        check('re-run level check + "Start here" -> resets to Beads, keeps name', pr['current']=='beads' and st['name']=='Ava' and not any(v.get('mastered') for v in pr['nodes'].values()), f"{pr['current']} {st['name']}")
+        check('re-run level check + "Stop here" -> resets to Beads, keeps name', pr['current']=='beads' and st['name']=='Ava' and not any(v.get('mastered') for v in pr['nodes'].values()), f"{pr['current']} {st['name']}")
         await pg.click('#suStart'); await pg.wait_for_selector('#home.active')
         # 4. start over for a new child
         await gate(pg); await pg.click('#kidAdd'); await pg.wait_for_timeout(1500)

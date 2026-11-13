@@ -431,7 +431,8 @@ $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
-const STEP_INFO = { lesson:['📖','Learn'], visual:['👀','Look'], listen:['👂','Listen'], flash:['⚡️','Flash'], game:['🎮','Game'] };
+// Each kind of Today step: [WS.icon name, label]. (The bead colour comes from STEP_LOOK.)
+const STEP_INFO = { lesson:['book','Learn'], visual:['eye','Look'], listen:['ear','Listen'], flash:['bolt','Flash'], game:['game','Game'] };
 // Three short steps a day: learn/practise, a game, then the other practice mode.
 // The plan is made once per child per day (Fun.data is per child) and then frozen: unlocking a skill or a grown-up
 // changing the skill mid-day never reshuffles it. Each step simply runs on whatever skill is current when tapped.
@@ -447,7 +448,7 @@ function todaySteps(){
     F.today = { day, celebrated:false, steps:[ {kind:s1}, {kind:'game', game:g}, {kind:s3} ].map(s=>Object.assign(s,{done:false})) };
     Fun.save();
   }
-  return F.today.steps.map((s,at)=>{ const [icon,label]=STEP_INFO[s.kind]; const g=s.game&&Games.GAMES[s.game]; return Object.assign({}, s, { at, icon: g?g.icon:icon, label: g?g.name:label }); });
+  return F.today.steps.map((s,at)=>{ const [icon,label]=STEP_INFO[s.kind]; const g=s.game&&Games.GAMES[s.game]; return Object.assign({}, s, { at, icon, label: g?g.name:label }); });
 }
 // Start a Today step. What actually runs is remembered (F.today.active), so finishing it ticks this step
 // even when the step had to run something else (e.g. a Look step that first teaches a newly unlocked skill).
@@ -483,12 +484,11 @@ function goPlay(){ Games.renderHub(); const bp=$('#bixPlay'); if (!bp.querySelec
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
-// The three doors. Practice opens the Practice door screen (#door) when it exists; until then, the current skill's menu.
+// The three doors. Practice opens the Practice door screen (#door).
 function openPractice(){
   Speaker.unlock();
   if (typeof window.App.openDoor==='function') return window.App.openDoor();
-  if ($('#door')) return show('door');
-  openNodeMenu(NODES[curIdx()]);
+  return show('door');
 }
 // Start a practice mode for the current skill (used by the Practice door and the tests).
 function startMode(m){
@@ -538,12 +538,6 @@ $('#jar').addEventListener('click', ()=>{ Sfx.tap(); Treats.open(); });
 $('#roomWish').addEventListener('click', ()=>{ Sfx.tap(); Treats.wish(); });
 $('#exitAlbum').addEventListener('click', ()=>goRoom());
 $('#exitShop').addEventListener('click', ()=>goRoom());
-let menuNode=null;
-function openNodeMenu(n){ menuNode=n; $('#nmTitle').textContent=n.icon+' '+n.title; $('#nmIntro').textContent=n.intro; $('#nmLearn').style.display=(n.demos||n.kind==='numbers')?'':'none'; $('#nmLook').style.display=(n.drill&&!n.drill.flash)?'':'none'; $('#nmListen').style.display=(n.drill&&!n.drill.flash)?'':'none'; $('#nodemenu').classList.add('active'); }
-$('#nmClose').onclick=()=>$('#nodemenu').classList.remove('active');
-$('#nmLearn').onclick=()=>{ $('#nodemenu').classList.remove('active'); startLesson(menuNode); };
-$('#nmLook').onclick=()=>{ $('#nodemenu').classList.remove('active'); startDrill('visual', menuNode); };
-$('#nmListen').onclick=()=>{ $('#nodemenu').classList.remove('active'); startDrill('listen', menuNode); };
 
 /* ---------------- lesson ---------------- */
 let lessonAb=null, L=null, lessonFrom='home';
