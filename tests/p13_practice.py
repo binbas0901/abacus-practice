@@ -52,7 +52,7 @@ async def main():
 
         # ===== 1. Look: beads with method feedback, keypad, end of set, fix =====
         ctx, pg = await newpage(base)
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_selector('#drill.active')
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         check('no timer on the child practice screen', await pg.evaluate("!document.querySelector('#timer') && document.querySelector('#testTime').hidden"))
         d = await drill(pg); check('physical abacus (default) -> keypad first, with a "Use the beads" switch', d['tool'] == 'keys' and 'Use the beads' in await pg.text_content('#toolSwitch'))
         check('problem shown as stacked tiles, first unsigned', await pg.evaluate("document.querySelectorAll('#problemArea .ws-tile.term').length") == len(d['terms'])
@@ -138,7 +138,7 @@ async def main():
         prog = {'current': 'bf_add_a', 'nodes': {k: {'lesson': True, 'mastered': 'parent', 'hist': []} for k in ['beads', 'add_direct', 'sub_direct', 'sf_add', 'sf_sub']}}
         prog['nodes']['bf_add_a'] = {'lesson': True, 'mastered': None, 'hist': [{'ok': True, 'day': '2026-11-11'}] * 12}
         ctx, pg = await newpage(base, prog)
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_selector('#drill.active')
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         for i in range(10):
             d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(800)
         await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(400)
@@ -173,20 +173,20 @@ async def main():
 
         # ===== 3. no abacus at home -> beads by default, last choice remembered =====
         ctx, pg = await newpage(dict(base, hasAbacus=False))
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_selector('#drill.active')
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         check('no physical abacus -> on-screen soroban by default, "Type it instead"', (await drill(pg))['tool'] == 'beads' and 'Type it instead' in await pg.text_content('#toolSwitch'))
         await pg.click('#toolSwitch'); await pg.click('#exitDrill'); await pg.reload(); await pg.wait_for_timeout(600)
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_selector('#drill.active')
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         check('...but her last choice wins next time', (await drill(pg))['tool'] == 'keys')
         await pg.click('#exitDrill')
         # listen + flash screens (layout)
-        await pg.click('.tile[data-mode=listen]'); await pg.wait_for_selector('#listenGo', state='visible')
+        await pg.evaluate("App.startMode('listen')"); await pg.wait_for_selector('#listenGo', state='visible')
         check('Listen: numbers hidden, listening card + Ready, speed behind a small control', await pg.evaluate("getComputedStyle(document.getElementById('problemArea')).display==='none'")
               and await pg.locator('#speedBtn').is_visible() and not await pg.locator('#speedPop').is_visible())
         await shot(pg, 'listen_ready')
         await pg.click('#listenGo'); await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000); await shot(pg, 'listen_answer')
         await pg.click('#speedBtn'); check('speed control opens the slider', await pg.locator('#gapSlider').is_visible()); await shot(pg, 'listen_speed'); await pg.click('#speedBtn')
-        await pg.click('#exitDrill'); await pg.click('.tile[data-mode=flash]'); await pg.wait_for_selector('#flashGo', state='visible'); await shot(pg, 'flash_ready')
+        await pg.click('#exitDrill'); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_selector('#flashGo', state='visible'); await shot(pg, 'flash_ready')
         await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=20000); await shot(pg, 'flash_ask')
         d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(900)
         check('Flash: Ready -> flash -> "= ?" -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
