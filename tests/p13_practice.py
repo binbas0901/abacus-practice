@@ -18,7 +18,7 @@ async def collect_all(pg):
 async def drill(pg): return await pg.evaluate("window.__drill()")
 # every visible child button on these screens is at least 60px (the grown-up speed control may be 44px)
 SMALL = "(sel)=>[...document.querySelectorAll(sel+' button')].filter(b=>b.getClientRects().length && getComputedStyle(b).visibility!=='hidden').map(b=>[b.id||b.dataset.k||b.textContent.trim(), b.getBoundingClientRect()]).filter(([n,r])=>Math.min(r.width,r.height)<(n==='speedBtn'?44:60)).map(([n,r])=>n+':'+Math.round(r.width)+'x'+Math.round(r.height))"
-async def bubble(pg): return (await pg.text_content('#bixDrill .pr-bubble')).strip()
+async def bubble(pg): return (await pg.text_content('#bixDrill .tp-bubble')).strip()
 async def keypad(pg, v):
     for ch in str(v): await pg.click(f'#pad [data-k="{ch}"]')
     await pg.click('#pad [data-k=go]')
@@ -56,12 +56,12 @@ async def main():
         ctx, pg = await newpage(base)
         await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
         check('no timer on the child practice screen', await pg.evaluate("!document.querySelector('#timer') && !document.querySelector('#testTime')"))
-        kp = await pg.evaluate("""()=>{ const r=k=>document.querySelector(`#pad [data-k="${k}"]`).getBoundingClientRect(); const c=document.querySelector('#checkBtn').getBoundingClientRect(), g=document.querySelector('#padKeys .ws-keypad').getBoundingClientRect();
+        kp = await pg.evaluate("""()=>{ const r=k=>document.querySelector(`#pad [data-k="${k}"]`).getBoundingClientRect(); const c=document.querySelector('#checkBtn').getBoundingClientRect(), g=document.querySelector('#padKeys .toy-keypad').getBoundingClientRect();
           return { rows: [r(7).top===r(8).top && r(8).top===r(9).top, r(4).top===r(5).top && r(1).top===r(3).top, r(7).top<r(4).top && r(4).top<r(1).top && r(1).top<r(0).top],
-                   delLeft: r('del').left<r(0).left && r('del').top===r(0).top && r(0).width>r(1).width*1.8, checkOutside: c.top>=g.bottom-1, kit: !!document.querySelector('#padKeys .ws-keypad') }; }""")
-        check('keypad is the kit keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ left + wide 0, red Check outside the grid', all(kp['rows']) and kp['delLeft'] and kp['checkOutside'] and kp['kit'], kp)
+                   delLeft: r('del').left<r(0).left && r('del').top===r(0).top && r(0).width>r(1).width*1.8, checkOutside: c.left>=g.right-1 || c.top>=g.bottom-1, kit: !!document.querySelector('#padKeys .toy-keypad') }; }""")
+        check('keypad is the kit keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ left + wide 0, the teal check dome outside the grid', all(kp['rows']) and kp['delLeft'] and kp['checkOutside'] and kp['kit'], kp)
         d = await drill(pg); check('physical abacus (default) -> keypad first, with a "Use the beads" switch', d['tool'] == 'keys' and 'Use the beads' in await pg.text_content('#toolSwitch'))
-        check('problem shown as stacked tiles, first unsigned', await pg.evaluate("document.querySelectorAll('#problemArea .ws-tile.term').length") == len(d['terms'])
+        check('problem shown as stacked tiles, first unsigned', await pg.evaluate("document.querySelectorAll('#problemArea .tp-term.term').length") == len(d['terms'])
               and not re.search(r'[+−]', await pg.text_content('#problemArea .term')))
         await pg.click('#toolSwitch'); await pg.wait_for_timeout(250)
         d = await drill(pg); check('"Use the beads" -> on-screen soroban, choice remembered', d['tool'] == 'beads' and await pg.evaluate("Fun.data.answerTool") == 'beads' and await pg.locator('#abHost .abx-svg').is_visible())
@@ -105,7 +105,7 @@ async def main():
         await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(500)
         head = await pg.text_content('#sumScore'); text = await pg.text_content('#summary')
         check('end of set: "8 green beads!" headline, no N/10 score', head.strip() == '8 green beads!' and not re.search(r'\d+\s*/\s*\d+', text), head)
-        check('end of set: 10 beads on the rod (8 green, 2 red)', await pg.evaluate("document.querySelectorAll('#sumStars .pr-b').length") == 10)
+        check('end of set: 10 beads (8 green dropped in the bowl, 2 red on the mat)', await pg.evaluate("document.querySelectorAll('#sumStars .tp-b:not(.tp-gold), #sumFix .tp-b').length") == 10 and await pg.evaluate("document.querySelectorAll('#sumStars .tp-b.in:not(.tp-gold)').length") == 8 and await pg.evaluate("document.querySelectorAll('#sumFix .tp-b').length") == 2)
         check('end of set: golden bead chip + "Fix the red ones" + "I\'m done"', await pg.locator('#sumGold').is_visible() and 'golden bead' in await pg.text_content('#sumGold')
               and await pg.locator('#fixBtn').is_visible() and await pg.locator('#homeBtn').is_visible())
         await shot(pg, 'end_of_set')
@@ -116,7 +116,7 @@ async def main():
         # fix the red ones
         await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(2500)
         d = await drill(pg)
-        check('fix: "Fixing" rod with only the red ones', await pg.locator('#fixLabel').is_visible() and await pg.evaluate("document.querySelectorAll('#strip .pr-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
+        check('fix: "Fixing" rod with only the red ones', await pg.locator('#fixLabel').is_visible() and await pg.evaluate("document.querySelectorAll('#strip .tp-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
         check('fix: Bix "This one was tricky. Want me to show you first?" + indigo Show me', 'tricky' in await bubble(pg) and await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'fix')
         check('child targets >= 60px on the practice screen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
@@ -163,7 +163,7 @@ async def main():
         await collect_all(pg)
         await pg.click('#testBtn'); await pg.wait_for_selector('#drill.active'); d = await drill(pg)
         check('level test runs in the practice layout with NO visible time beads or countdown (timing is silent)', d['levelTest'] and not await pg.locator('#testTime').count()
-              and await pg.evaluate("document.querySelectorAll('#drill .pr-top svg').length") == len(d['strip']) + 2
+              and await pg.evaluate("document.querySelectorAll('#drill .tp-top svg').length") == len(d['strip']) + 2
               and not re.search(r'second|time left|hurry', await pg.text_content('#drill'), re.I) and not await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'level_test')
         n = len(d['strip'])
@@ -209,9 +209,9 @@ async def main():
         for terms in ([7, 9, 9, -5, -1, -7, -7, -1, 2, 8], [6155, -3294, 4896, 8102, 1234, -2345, 3456, 4567, -1111, 2222]):
             for tool in ('keys', 'beads'):
                 await pg.evaluate("([t,tool])=>__drillSet(t,null,tool)", [terms, tool]); await pg.wait_for_timeout(250)
-                g = await pg.evaluate("""()=>{ const ts=[...document.querySelectorAll('#problemArea .ws-tile')].map(t=>t.getBoundingClientRect());
+                g = await pg.evaluate("""()=>{ const ts=[...document.querySelectorAll('#problemArea .tp-term')].map(t=>t.getBoundingClientRect());
                   return { n: ts.length, oneCol: ts.every(r=>Math.abs(r.left-ts[0].left)<1), down: ts.every((r,i)=>!i||r.top>=ts[i-1].bottom),
-                    inView: ts.every(r=>r.top>=0 && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth), digitsFit: [...document.querySelectorAll('#problemArea .ws-tile')].every(t=>t.scrollWidth<=t.clientWidth+1) }; }""")
+                    inView: ts.every(r=>r.top>=0 && r.bottom<=innerHeight && r.left>=0 && r.right<=innerWidth), digitsFit: [...document.querySelectorAll('#problemArea .tp-term')].every(t=>t.scrollWidth<=t.clientWidth+1) }; }""")
                 check(f'long row ({len(terms)} numbers, {len(str(abs(terms[0])))} digits, {tool}): one column, top to bottom, nothing clipped', g['n'] == 10 and g['oneCol'] and g['down'] and g['inView'] and g['digitsFit'], g)
         await shot(pg, 'long_row')
         await pg.click('#toolSwitch'); await pg.click('#exitDrill'); await pg.reload(); await pg.wait_for_timeout(600)
@@ -224,7 +224,7 @@ async def main():
               and await pg.locator('#speedBtn').is_visible() and not await pg.locator('#speedPop').is_visible())
         await shot(pg, 'listen_ready')
         check('child targets >= 60px on Listen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
-        fit = "(()=>{ const els=['#checkBtn','#toolSwitch','#listenStage','#flashStage'].map(q=>document.querySelector(q)).concat([...document.querySelectorAll('#answerTool .abx-svg, #padKeys .ws-keypad')]).filter(e=>e.getClientRects().length); return els.every(e=>{ const r=e.getBoundingClientRect(); return r.bottom<=innerHeight && r.right<=innerWidth && r.left>=0; }); })()"
+        fit = "(()=>{ const els=['#checkBtn','#toolSwitch','#listenStage','#flashStage'].map(q=>document.querySelector(q)).concat([...document.querySelectorAll('#answerTool .abx-svg, #padKeys .toy-keypad')]).filter(e=>e.getClientRects().length); return els.every(e=>{ const r=e.getBoundingClientRect(); return r.bottom<=innerHeight && r.right<=innerWidth && r.left>=0; }); })()"
         for k in range(2):
             ok = await pg.evaluate(fit); await pg.click('#toolSwitch'); await pg.wait_for_timeout(150)
             check(f'Listen ({(await drill(pg))["tool"]=="keys" and "beads" or "keys"}): card, answer tool and Check all fit on screen', ok)
@@ -246,12 +246,12 @@ async def main():
 
         # ===== 4. fix pass 2: every iPad size (landscape, portrait, 12.9" Pro) =====
         SETNODE = """(node)=>{ const p=Store.get('progress')||{nodes:{}}; p.nodes=p.nodes||{}; App.nodes().forEach(n=>{ if(App.idx(n.id)<App.idx(node)) p.nodes[n.id]={lesson:true,mastered:'parent',hist:[]}; }); p.current=node; p.nodes[node]={lesson:true,mastered:null,hist:[]}; Store.set('progress',p); }"""
-        FIT = """()=>{ const ts=[...document.querySelectorAll('#problemArea .ws-tile')], rs=ts.map(t=>t.getBoundingClientRect()), d=document.querySelector('#drill');
-          const tool=[...document.querySelectorAll('#checkBtn, #answerTool .abx-svg, #padKeys .ws-keypad')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect());
+        FIT = """()=>{ const ts=[...document.querySelectorAll('#problemArea .tp-term')], rs=ts.map(t=>t.getBoundingClientRect()), d=document.querySelector('#drill');
+          const tool=[...document.querySelectorAll('#checkBtn, #answerTool .abx-svg, #padKeys .toy-keypad')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect());
           return { n: ts.length, oneCol: rs.every(r=>Math.abs(r.left-rs[0].left)<1), down: rs.every((r,i)=>!i||r.top>=rs[i-1].bottom),
             inView: rs.concat(tool).every(r=>r.top>=0 && r.bottom<=innerHeight+0.5 && r.left>=0 && r.right<=innerWidth), digitsFit: ts.every(t=>t.scrollWidth<=t.clientWidth+1),
             noScroll: d.scrollHeight<=d.clientHeight && document.scrollingElement.scrollHeight<=innerHeight, h: Math.round(rs[0].height), font: parseFloat(getComputedStyle(ts[0]).fontSize) }; }"""
-        BUB = "(()=>{ const r=document.querySelector('#bixDrill .pr-bubble').getBoundingClientRect(), s=document.querySelector('#bixDrill .ws-say'); return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height), s.getClientRects().length>0 && getComputedStyle(s).visibility==='visible']; })()"
+        BUB = "(()=>{ const r=document.querySelector('#bixDrill .tp-bubble').getBoundingClientRect(), s=document.querySelector('#bixDrill .tp-say'); return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height), s.getClientRects().length>0 && getComputedStyle(s).visibility==='visible']; })()"
         for (vw, vh) in ((1180, 820), (820, 1180), (1366, 1024)):
             tag = f'{vw}x{vh}'
             ctx = await b.new_context(viewport={'width': vw, 'height': vh}); pg = await ctx.new_page()
@@ -278,18 +278,18 @@ async def main():
             await pg.evaluate("__drillSet([6155,-3294,4896,8102,1234,-2345,3456,4567,-1111,2222],null,'keys')"); await pg.wait_for_timeout(200)
             await pg.evaluate("t=>__drillSay(t)", 'Nice!'); await pg.wait_for_timeout(60); geo.append(await pg.evaluate(BUB))
             check(f'{tag}: Bix bubble keeps one place and size (short / long line, short / long row) and always shows the speaker mark',
-                  all(x[:4] == geo[0][:4] for x in geo) and all(x[4] for x in geo) and geo[0][2] >= 320, geo)
+                  all(x[:4] == geo[0][:4] for x in (geo[:3] if vw < vh else geo)) and all(x[4] and x[2] >= 320 and x[3] == geo[0][3] for x in geo), geo)   # portrait long rows: Bix sits beside the tall sheet
             # instant right / wrong on the answer box and the bead on the rod
             await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(200)
             await keypad(pg, 10); await pg.wait_for_timeout(220)
-            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .pr-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
-            check(f'{tag}: right answer -> answer box jade (is-right) + its rod bead jade with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'ws-pop' in st[1] and st[2] == 'rgb(31, 122, 95)', st)
+            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .tp-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
+            check(f'{tag}: right answer -> answer box teal (is-right) + its rod bead teal with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'tp-pop' in st[1] and 'is-wrong' not in st[0], st)
             await shot(pg, f'right_{tag}')
             await pg.wait_for_timeout(900); d = await drill(pg)
             check(f'{tag}: next problem -> answer box back to plain', not await pg.evaluate("document.querySelector('#readout').classList.contains('is-right')"))
             await keypad(pg, d['answer'] + 1); await pg.wait_for_timeout(220)
-            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .pr-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
-            check(f'{tag}: wrong answer -> answer box red (is-wrong) + its rod bead red with a gentle shake, instantly', 'is-wrong' in st[0] and 'bad' in st[1] and 'ws-shake' in st[1] and st[2] == 'rgb(169, 46, 28)', st)
+            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .tp-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
+            check(f'{tag}: wrong answer -> answer box red-rimmed (is-wrong) + its rod bead red with a gentle wobble, instantly', 'is-wrong' in st[0] and 'bad' in st[1] and 'tp-wob' in st[1] and st[2] == 'rgb(255, 231, 222)', st)
             await pg.wait_for_timeout(1000)
             await pg.evaluate("__drillSet([1,1],null,'beads')"); await pg.wait_for_timeout(200)
             await tap(pg, 0, 'e', 1); await pg.click('#checkBtn'); await pg.wait_for_timeout(120)
@@ -297,7 +297,7 @@ async def main():
             await pg.wait_for_timeout(900)
             if vw == 1366:
                 await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(250)
-                pro = await pg.evaluate("""()=>{ const k=document.querySelector('#padKeys .ws-keypad').getBoundingClientRect(), c=document.querySelector('#checkBtn').getBoundingClientRect(), t=document.querySelector('#problemArea .ws-tile').getBoundingClientRect(); return {keyH: Math.round(k.height), checkBottom: Math.round(c.bottom), tileH: Math.round(t.height), key: Math.round(document.querySelector('#pad [data-k="5"]').getBoundingClientRect().height)}; }""")
+                pro = await pg.evaluate("""()=>{ const k=document.querySelector('#padKeys .toy-keypad').getBoundingClientRect(), c=document.querySelector('#checkBtn').getBoundingClientRect(), t=document.querySelector('#problemArea .tp-term').getBoundingClientRect(); return {keyH: Math.round(k.height), checkBottom: Math.round(c.bottom), tileH: Math.round(t.height), key: Math.round(document.querySelector('#pad [data-k="5"]').getBoundingClientRect().height)}; }""")
                 check('iPad Pro: practice uses the height (bigger keys and tiles, no 250px band at the bottom)', pro['keyH'] >= 500 and pro['key'] >= 110 and pro['tileH'] >= 100 and pro['checkBottom'] >= vh - 160, pro)
                 await shot(pg, 'pro_keys')
             check(f'{tag}: child targets >= 60px on the practice screen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))

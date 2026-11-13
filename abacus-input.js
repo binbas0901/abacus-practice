@@ -221,7 +221,22 @@
   const SVGNS = 'http://www.w3.org/2000/svg';
   const G = { P: 34, BW: 58, ROD: 136, FR: 22, PADX: 14, HH: 74, BM: 14, EH: 176 };
   G.beamY = G.FR + G.HH; G.earthTop = G.beamY + G.BM; G.H = G.earthTop + G.EH + G.FR;
-  const LENS = 'M -58 0 Q 0 -32 58 0 Q 0 32 -58 0 Z';
+  // A lacquered bead seen from the side: a double cone with soft edges (116 x 32).
+  const LENS = 'M-15,-16 H15 Q23,-16 30,-13.2 L52,-4.4 Q59,0 52,4.4 L30,13.2 Q23,16 15,16 H-15 Q-23,16 -30,13.2 L-52,4.4 Q-59,0 -52,-4.4 L-30,-13.2 Q-23,-16 -15,-16Z';
+  const LENS_LOW = 'M-58,0 Q0,7 58,0 Q57,2.4 52,4.4 L30,13.2 Q23,16 15,16 H-15 Q-23,16 -30,13.2 L-52,4.4 Q-57,2.4 -58,0Z';
+  // Shared gradients (lacquer, walnut frame, tray, rods): one hidden <svg> per page, so every abacus reuses them.
+  function ensureDefs() {
+    if (typeof document === 'undefined' || document.getElementById('abx-defs') || !document.body) return;
+    const lac = (id, a, b, c, d) => `<radialGradient id="${id}" cx=".5" cy=".5" r=".75" fx=".3" fy=".2"><stop offset="0" stop-color="${a}"/><stop offset=".4" stop-color="${b}"/><stop offset=".8" stop-color="${c}"/><stop offset="1" stop-color="${d}"/></radialGradient>`;
+    const lin = (id, x2, y2, stops) => `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}">${stops.map(st => `<stop offset="${st[0]}" stop-color="${st[1]}"/>`).join('')}</linearGradient>`;
+    const holder = document.createElement('div');
+    holder.innerHTML = '<svg id="abx-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>'
+      + lac('abx-lac-red', '#FF8F70', '#E5402F', '#B52323', '#8A181D') + lac('abx-lac-gold', '#FFE9A6', '#F2B632', '#C98A16', '#9E690D') + lac('abx-lac-wood', '#FFF3DC', '#EFD2A4', '#D2A670', '#B08448')
+      + lin('abx-g-frame', 0, 1, [[0, '#93603A'], [.5, '#7A4A24'], [1, '#643A1A']]) + lin('abx-g-tray', 0, 1, [[0, '#E9D0A2'], [1, '#D3AE78']])
+      + lin('abx-g-rod', 1, 0, [[0, '#F8E2B4'], [.5, '#DDB678'], [1, '#A47840']]) + lin('abx-g-beam', 0, 1, [[0, '#8A5730'], [1, '#5C3618']])
+      + '</defs></svg>';
+    document.body.insertBefore(holder.firstChild, document.body.firstChild);
+  }
   function heavenY(on) { return on ? G.beamY - G.P / 2 - 1 : G.FR + 3 + G.P / 2; }
   function earthY(k, on) { return G.earthTop + 1 + G.P / 2 + k * G.P + (on ? 0 : G.P + 3); }
 
@@ -253,23 +268,38 @@
       if (svg) svg.remove();
       rodEls = [];
       const W = 2 * G.FR + 2 * G.PADX + model.rods * G.ROD;
+      ensureDefs();
       svg = el('svg', { viewBox: `0 -2 ${W} ${G.H + 8}`, class: 'abx-svg', width: W * scale, height: (G.H + 8) * scale, focusable: 'false' });
+      // a walnut frame lying on the table: soft contact shadow (down-right), a side face, the top face with a light bevel, a pale tray inside
+      el('rect', { x: 10, y: 16, width: W, height: G.H, rx: 18, class: 'abx-cast abx-cast2' }, svg);
+      el('rect', { x: 5, y: 10, width: W, height: G.H, rx: 16, class: 'abx-cast' }, svg);
       el('rect', { x: 0, y: 6, width: W, height: G.H, rx: 14, class: 'abx-frame-shadow' }, svg);
-      el('rect', { x: 0, y: 0, width: W, height: G.H, rx: 14, class: 'abx-frame' }, svg);
-      el('rect', { x: G.FR, y: G.FR, width: W - 2 * G.FR, height: G.H - 2 * G.FR, rx: 4, class: 'abx-inner' }, svg);
+      el('rect', { x: 0, y: 0, width: W, height: G.H, rx: 14, class: 'abx-frame', style: 'fill:url(#abx-g-frame) #7A4A24' }, svg);
+      el('rect', { x: 2, y: 2, width: W - 4, height: G.H - 4, rx: 12, class: 'abx-bevel' }, svg);
+      el('rect', { x: G.FR, y: G.FR, width: W - 2 * G.FR, height: G.H - 2 * G.FR, rx: 4, class: 'abx-inner', style: 'fill:url(#abx-g-tray) #DDBB86' }, svg);
+      el('rect', { x: G.FR, y: G.FR, width: W - 2 * G.FR, height: 9, class: 'abx-innershade' }, svg);
+      el('rect', { x: G.FR, y: G.FR, width: 7, height: G.H - 2 * G.FR, class: 'abx-innershade' }, svg);
       const rodsG = el('g', {}, svg);
-      el('rect', { x: G.FR, y: G.beamY, width: W - 2 * G.FR, height: G.BM, class: 'abx-beam' }, svg);
+      el('rect', { x: G.FR, y: G.beamY + 3, width: W - 2 * G.FR, height: G.BM, class: 'abx-innershade' }, svg);
+      el('rect', { x: G.FR, y: G.beamY, width: W - 2 * G.FR, height: G.BM, class: 'abx-beam', style: 'fill:url(#abx-g-beam) #6A3F1E' }, svg);
+      el('rect', { x: G.FR, y: G.beamY + 1, width: W - 2 * G.FR, height: 2, class: 'abx-beamlight' }, svg);
       for (let j = 0; j < model.rods; j++) {
         const r = model.rods - 1 - j;                 // leftmost drawn first; rod 0 = ones at the right
         const x = G.FR + G.PADX + G.ROD / 2 + j * G.ROD;
         const g = el('g', readOnly ? { class: 'abx-rod', role: 'group', 'data-rod': r } : { class: 'abx-rod', role: 'group', 'data-rod': r, tabindex: r === 0 ? 0 : -1 }, rodsG);
-        el('rect', { x: x - 4, y: G.FR, width: 8, height: G.H - 2 * G.FR, class: 'abx-rodline' }, g);
+        el('rect', { x: x - 4, y: G.FR, width: 8, height: G.H - 2 * G.FR, class: 'abx-rodline', style: 'fill:url(#abx-g-rod) #DDB678' }, g);
         const beads = [];
         const mk = (kind, k) => {
           const b = el('g', { class: 'abx-bead', 'data-kind': kind, 'data-k': k, 'aria-hidden': 'true' }, g);
           el('rect', { x: -G.ROD / 2 + 2, y: -G.P / 2, width: G.ROD - 4, height: G.P, class: 'abx-hit' }, b);
-          el('path', { d: LENS, class: 'abx-lens' }, b);
-          el('path', { d: 'M -46 -4 Q 0 -18 46 -4', class: 'abx-shine' }, b);
+          // lacquer: natural wood at rest; a red (earth) or golden (heaven) coat fades in when the bead counts
+          el('path', { d: LENS, class: 'abx-beadcast', transform: 'translate(3 4)' }, b);
+          el('path', { d: LENS, class: 'abx-lens', style: 'fill:url(#abx-lac-wood) #E3BE8A' }, b);
+          el('path', { d: LENS, class: 'abx-lac', style: kind === 'h' ? 'fill:url(#abx-lac-gold) #F2B632' : 'fill:url(#abx-lac-red) #E5402F' }, b);
+          el('path', { d: LENS_LOW, class: 'abx-shade' }, b);
+          el('path', { d: 'M-56,0 Q0,7 56,0', class: 'abx-shine' }, b);
+          el('ellipse', { cx: -14, cy: -9.5, rx: 17, ry: 3.2, transform: 'rotate(-5 -14 -9.5)', class: 'abx-spec' }, b);
+          el('ellipse', { cx: 0, cy: -15.4, rx: 7, ry: 1.7, class: 'abx-hole' }, b);
           beads.push(b); return b;
         };
         const h = mk('h', 0); const es = [0, 1, 2, 3].map(k => mk('e', k));

@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="screens-grownup.css?v=3.13">
 <link rel="stylesheet" href="toy.css?v=3.13">
 <link rel="stylesheet" href="toy-home.css?v=3.13">
+<link rel="stylesheet" href="toy-practice.css?v=3.13">
 </head>
 <body>
 <div id="app">
@@ -181,84 +182,104 @@
   </div>
 </section>
 
-<section id="drill" class="screen ws-screen pr">
-  <div class="pr-top">
-    <button class="ws-iconbtn" id="exitDrill" aria-label="Leave practice"><span class="pr-ic" data-ic="close"></span></button>
-    <span class="pr-fixlabel" id="fixLabel" hidden>Fixing</span>
-    <div class="pr-rodwrap">
-      <div class="pr-rod" id="strip" role="list" aria-label="Problems in this set"></div>
+<section id="drill" class="screen toy-scene toy-scene--calm tp">
+  <div class="tp-top">
+    <button class="toy-iconbtn" id="exitDrill" aria-label="Leave practice"><span class="pr-ic" data-ic="close" data-sz="30"></span></button>
+    <div class="tp-topright">
+      <span class="toy-chip tp-fixlabel" id="fixLabel" hidden>Fixing</span>
+      <div class="tp-rodwrap"><i class="tp-post"></i><div class="tp-rod" id="strip" role="list" aria-label="Problems in this set"></div><i class="tp-post"></i></div>
+      <button class="toy-iconbtn tp-speedbtn" id="speedBtn" aria-label="Speed (grown-ups)" aria-expanded="false" hidden><span class="pr-ic" data-ic="gear" data-sz="26"></span></button>
     </div>
-    <button class="ws-iconbtn quiet pr-speedbtn" id="speedBtn" aria-label="Speed (grown-ups)" aria-expanded="false" hidden><span class="pr-ic" data-ic="gear"></span></button>
-    <div class="pr-speed ws-card" id="speedPop" hidden>
-      <div class="speed" id="listenSpeed"><span>slow</span><input type="range" id="gapSlider" step="0.25" aria-label="Seconds between numbers"><span>fast</span><span class="pr-speedval" id="gapVal"></span></div>
-      <div class="speed" id="flashSpeed"><span>slow</span><input type="range" id="flashSlider" min="0.3" max="3" step="0.1" aria-label="Seconds each number shows"><span>fast</span><span class="pr-speedval" id="flashVal"></span></div>
+    <div class="tp-speed toy-paper" id="speedPop" hidden>
+      <div class="speed" id="listenSpeed"><span>slow</span><input type="range" id="gapSlider" step="0.25" aria-label="Seconds between numbers"><span>fast</span><span class="tp-speedval" id="gapVal"></span></div>
+      <div class="speed" id="flashSpeed"><span>slow</span><input type="range" id="flashSlider" min="0.3" max="3" step="0.1" aria-label="Seconds each number shows"><span>fast</span><span class="tp-speedval" id="flashVal"></span></div>
     </div>
   </div>
-  <div class="pr-body">
-    <div class="pr-left">
-      <div class="pr-bix" id="bixDrill"></div>
-      <div class="pr-problem" id="problemArea" aria-label="The problem"></div>
-      <div class="pr-listen" id="listenStage" style="display:none">
-        <div class="pr-ear" id="ear"><span class="pr-ic" data-ic="ear" data-sz="64"></span></div>
-        <div class="pr-msg" id="listenMsg" aria-live="polite">Listen…</div>
-        <button class="ws-btn ochre" id="listenGo" style="display:none"><span class="pr-ic" data-ic="play"></span>Ready</button>
-        <button class="ws-btn ghost" id="replayBtn"><span class="pr-ic" data-ic="retry"></span>Say it again</button>
+  <div class="tp-body">
+    <div class="tp-bixcol">
+      <div class="tp-props">
+        <button class="tp-switch" id="toolSwitch"></button>
+        <button class="toy-block toy-block--indigo toy-block--sm tp-showme" id="showMeBtn" style="display:none"><span class="pr-ic" data-ic="eye" data-sz="30"></span><span class="toy-block-label">Show me</span></button>
       </div>
-      <div class="pr-flash" id="flashStage" style="display:none">
-        <div class="pr-flashdots" id="flashDots" aria-hidden="true"></div>
+      <div class="tp-bix" id="bixDrill"></div>
+    </div>
+    <div class="toy-clipboard tp-board"><div class="toy-paper tp-sheet" id="sheet">
+      <div class="tp-problem" id="problemArea" aria-label="The problem"></div>
+      <div class="tp-listen" id="listenStage" style="display:none">
+        <div class="tp-ear toy-lac--mustard" id="ear"><span class="pr-ic" data-ic="ear" data-sz="60"></span></div>
+        <div class="tp-msg" id="listenMsg" aria-live="polite">Listen…</div>
+        <button class="toy-block toy-block--mustard toy-block--sm" id="listenGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
+        <button class="toy-block toy-block--wood toy-block--sm" id="replayBtn"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Say it again</span></button>
+      </div>
+      <div class="tp-flash" id="flashStage" style="display:none">
+        <div class="tp-flashdots" id="flashDots" aria-hidden="true"></div>
         <div class="flash-num" id="flashNum" aria-live="polite"></div>
-        <div class="pr-msg" id="flashMsg"></div>
-        <button class="ws-btn jade" id="flashGo" style="display:none"><span class="pr-ic" data-ic="play"></span>Ready</button>
-        <button class="ws-btn ghost" id="flashAgain" style="display:none"><span class="pr-ic" data-ic="retry"></span>Show again</button>
+        <div class="tp-msg" id="flashMsg"></div>
+        <button class="toy-block toy-block--teal toy-block--sm" id="flashGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
+        <button class="toy-block toy-block--wood toy-block--sm" id="flashAgain" style="display:none"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Show again</span></button>
       </div>
-      <button class="ws-btn indigo pr-showme" id="showMeBtn" style="display:none"><span class="pr-ic" data-ic="eye"></span>Show me</button>
-    </div>
-    <div class="pr-right" id="answerTool">
-      <div class="pr-readout" id="readout"><span class="pr-rolabel" id="readoutLabel">beads show</span><b id="answer">&nbsp;</b></div>
-      <div class="pr-abacus" id="abHost"></div>
-      <div class="pr-pad" id="pad">
-      <div class="pr-keys" id="padKeys"></div>
-      <div class="pr-foot">
-        <button class="ws-btn ghost pr-switch" id="toolSwitch"></button>
-        <button class="ws-btn pr-check" data-k="go" id="checkBtn"><span class="pr-ic" data-ic="check"></span>Check</button>
+      <div class="tp-rule" aria-hidden="true"></div>
+      <div class="tp-readout" id="readout"><span class="tp-rolabel" id="readoutLabel">beads show</span><b id="answer">&nbsp;</b></div>
+    </div></div>
+    <div class="tp-tool" id="answerTool">
+      <div class="tp-abacus" id="abHost"></div>
+      <div class="tp-pad" id="pad">
+      <div class="tp-keys" id="padKeys"></div>
+      <div class="tp-foot">
+        <span class="tp-bowl" id="drillBowl" aria-hidden="true"></span>
+        <button class="toy-start toy-start--sm tp-check" data-k="go" id="checkBtn" aria-label="Check"><span class="toy-start-dome"><span class="pr-ic" data-ic="check" data-sz="64" data-stroke="3"></span></span></button>
       </div>
       </div>
-      <div class="pr-sr" id="feedback" aria-live="polite"></div>
+      <div class="tp-sr" id="feedback" aria-live="polite"></div>
     </div>
   </div>
 </section>
 
-<section id="summary" class="screen ws-screen pr-sum">
-  <div class="pr-rewards" id="sumRewards" aria-live="polite"><div class="ws-chip pr-goldchip" id="sumGold" hidden></div><div class="ws-chip pr-newchip" id="sumNew" hidden></div></div>
-  <div class="pr-sumbix" id="bixSum"></div>
-  <div class="pr-sumhead"><h1 class="ws-h1" id="sumScore"></h1><button class="pr-say" id="sumSay" aria-label="Hear it again"><span class="pr-ic" data-ic="speaker"></span></button></div>
-  <div class="ws-frame pr-sumrod"><div class="ws-inner"><div class="pr-sumbeads" id="sumStars" role="list"></div></div></div>
-  <p class="bubble on pr-sumnote" id="sumNote"></p>
-  <div class="pr-sumbtns">
-    <button class="ws-btn ochre big" id="testBtn" style="display:none"><span class="pr-ic" data-ic="star"></span>Level test</button>
-    <button class="ws-btn big" id="fixBtn"><span class="pr-ic" data-ic="retry"></span>Fix the red ones</button>
-    <button class="ws-btn big jade" id="againBtn"><span class="pr-ic" data-ic="retry"></span>Play again</button>
-    <button class="ws-btn big maple" id="homeBtn">I’m done</button>
+<section id="summary" class="screen toy-scene tp tp-sum">
+  <div class="tp-sumwall">
+    <span class="tp-sky" id="sumSky" aria-hidden="true"></span>
+    <div class="tp-rewards" id="sumRewards" aria-live="polite"><div class="toy-chip tp-goldchip" id="sumGold" hidden></div><div class="toy-chip tp-newchip" id="sumNew" hidden></div></div>
+    <div class="tp-headslot"><div class="toy-plaque tp-sumhead"><h1 class="toy-h1" id="sumScore"></h1></div></div>
+    <div class="toy-plaque tp-moons" id="sumMoons"></div>
+  </div>
+  <div class="tp-sumstage">
+    <div class="tp-sumbixcol">
+      <div class="toy-bubble toy-bubble--left tp-sumbub"><p class="tp-sumnote" id="sumNote"></p><button class="toy-iconbtn tp-saybtn" id="sumSay" aria-label="Hear it again"><span class="pr-ic" data-ic="speaker" data-sz="30"></span></button></div>
+      <div class="tp-sumbix" id="bixSum"></div>
+    </div>
+    <div class="tp-catch" id="sumStars" role="list" aria-label="Your beads"></div>
+    <div class="tp-fixside"><div class="toy-felt tp-fixmat" id="sumFix" role="list" aria-label="Beads to fix"></div></div>
+  </div>
+  <div class="tp-sumbtns">
+    <button class="toy-block toy-block--mustard" id="testBtn" style="display:none"><span class="pr-ic" data-ic="star" data-sz="40"></span><span class="toy-block-label">Level test</span></button>
+    <button class="toy-block toy-block--red" id="fixBtn"><span class="pr-ic" data-ic="retry" data-sz="40"></span><span class="toy-block-label">Fix the red ones</span></button>
+    <button class="toy-block toy-block--teal" id="againBtn"></button>
+    <button class="toy-block toy-block--wood" id="homeBtn"><span class="toy-block-label">I’m done</span></button>
   </div>
 </section>
 
-<section id="certificate" class="screen ws-screen pr-cert">
-  <div class="ws-frame pr-certframe"><div class="ws-inner pr-certcard" id="certCard">
-    <div class="pr-certbix" id="certBix"></div>
-    <div class="pr-certkick">Certificate of mastery</div>
-    <div class="pr-certname" id="certName"></div>
-    <div class="pr-certline">has mastered</div>
-    <div class="pr-certskill" id="certSkill"></div>
-    <div class="pr-certbeads" id="certBeads" aria-hidden="true"></div>
-    <div class="pr-certmeta"><span id="certDate"></span><span class="dot">·</span><span>Bix Abacus</span></div>
-  </div></div>
-  <div class="pr-certbtns"><button class="ws-btn indigo big" id="certPrint"><span class="pr-ic" data-ic="print"></span>Print</button><button class="ws-btn jade big" id="certDone"><span class="pr-ic" data-ic="check"></span>Done</button></div>
+<section id="certificate" class="screen toy-scene tp tp-cert">
+  <span class="tp-sky" id="certSky" aria-hidden="true"></span>
+  <div class="tp-certstage">
+    <div class="tp-certbix" id="certBix"></div>
+    <div class="tp-certpaper"><div class="tp-certcard" id="certCard">
+      <div class="tp-certkick">Certificate of mastery</div>
+      <div class="tp-certname" id="certName"></div>
+      <div class="tp-certline">has mastered</div>
+      <div class="tp-certskill" id="certSkill"></div>
+      <div class="tp-certbeads" id="certBeads" aria-hidden="true"></div>
+      <div class="tp-certmeta"><span id="certDate"></span><span class="dot">·</span><span>Bix Abacus</span></div>
+      <div class="tp-certseal" id="certSeal" aria-hidden="true"></div>
+    </div></div>
+  </div>
+  <div class="tp-certbtns"><button class="toy-block toy-block--indigo" id="certPrint"></button><button class="toy-block toy-block--teal" id="certDone"><span class="pr-ic" data-ic="check" data-sz="40"></span><span class="toy-block-label">Done</span></button></div>
 </section>
 
-<div id="showme" role="dialog" aria-label="Show me"><div class="pr-showcard ws-card">
-  <div class="pr-showleft"><div class="pr-showbix" id="showmeBix"></div><div class="pr-showprob" id="showmeProb"></div><div class="pr-showtext" id="showmeText" aria-live="polite"></div>
-    <div class="pr-showbtns"><button class="ws-btn ghost" id="showmeReplay"><span class="pr-ic" data-ic="retry"></span>Again</button><button class="ws-btn jade" id="showmeClose"><span class="pr-ic" data-ic="check"></span>Got it</button></div></div>
-  <div class="pr-showab" id="showmeAbacus"></div>
+<div id="showme" class="tp-show" role="dialog" aria-label="Show me"><div class="tp-showcard toy-felt">
+  <div class="tp-showleft"><div class="tp-showbix" id="showmeBix"></div>
+    <div class="toy-paper tp-shownote"><div class="tp-showprob" id="showmeProb"></div><div class="tp-showtext" id="showmeText" aria-live="polite"></div></div>
+    <div class="tp-showbtns"><button class="toy-block toy-block--wood toy-block--sm" id="showmeReplay"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Again</span></button><button class="toy-block toy-block--teal toy-block--sm" id="showmeClose"><span class="pr-ic" data-ic="check" data-sz="30"></span><span class="toy-block-label">Got it</span></button></div></div>
+  <div class="tp-showab" id="showmeAbacus"></div>
 </div></div>
 
 <div id="stickerReveal" role="dialog" aria-label="A sticker for you"><div class="rv-card ws-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack" aria-label="Open the present"><span class="rv-wrap"><span class="bow"></span><small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="ws-btn jade" id="rvOk"><span class="pr-ic" data-ic="book"></span>Add to my album</button></div></div>

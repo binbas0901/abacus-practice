@@ -1,0 +1,353 @@
+/* toy-practice.css — Toy Table look for: practice (Look / Listen / Flash, keypad + on-screen soroban),
+   fix the red ones, show me, level test, end of set and the certificate. Built from toy.css tokens and TOY.* drawings.
+   Rules: design/BRIEF2.md. No filters; shadows are warm, down-right; every object sits on the table. */
+
+/* ============ shared bits ============ */
+.tp .pr-ic,.tp-show .pr-ic{display:inline-flex;line-height:0}
+.tp [hidden]{display:none!important}
+.tp button,.tp-show button{font-family:var(--toy-display);-webkit-tap-highlight-color:transparent}
+.tp .bix,.tp-show .bix{width:auto;height:auto;cursor:pointer}
+.tp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Bix talks: a small bob while a voice line plays (his idle breathing pauses) */
+.tp .bix.talking .toy-bix-breathe,.tp-show .bix.talking .toy-bix-breathe{animation:tp-talk .42s ease-in-out infinite}
+@keyframes tp-talk{0%,100%{transform:scale(1,1)}50%{transform:scale(1.02,.965)}}
+.tp-pop{animation:tp-pop .36s cubic-bezier(.3,1.5,.5,1) both}
+.tp-wob{animation:tp-wob .46s ease both}
+@keyframes tp-pop{0%{transform:scale(.6)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes tp-wob{0%,100%{transform:rotate(0)}22%{transform:rotate(-7deg)}48%{transform:rotate(6deg)}74%{transform:rotate(-3deg)}}
+#drill .tp-nudge{animation:tp-no .46s ease both}
+@keyframes tp-fadein{from{opacity:0}to{opacity:1}}
+
+/* ============ practice ============ */
+#drill.tp{--vh:100vh;--pad:24px;--gap:16px;--bixcol:320px;--board:262px;--bix:184px;--foot:138px;--th-max:98px;--tf-max:84px;--ans-h:92px;
+  --toy-window-x:clamp(96px,11vw,170px);
+  --toy-key-w:clamp(84px,7.8vw,108px);
+  --toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - 172px)/4),126px);
+  padding:0;gap:0;box-sizing:border-box}
+@supports (height:100dvh){ #drill.tp{--vh:100dvh} }
+
+/* --- on the wall: the wooden quit disc, the set as beads on a brass rod --- */
+#drill .tp-top{position:relative;flex:none;height:var(--toy-wall-h);box-sizing:border-box;display:flex;align-items:flex-start;padding:26px var(--pad) 0 30px}
+#drill #exitDrill{flex:none}
+#drill .tp-topright{margin-left:auto;align-self:center;display:flex;align-items:center;gap:14px;min-width:0;margin-top:-22px}
+#drill .tp-fixlabel{flex:none;font-size:22px;padding:4px 16px;min-height:40px}
+#drill .tp-rodwrap{position:relative;flex:none;width:min(560px,47vw);height:96px;display:flex;align-items:center}
+#drill .tp-post{position:relative;z-index:2;flex:none;width:20px;height:82px;border-radius:8px;background:linear-gradient(90deg,#F6DAAC,#E6BC82 45%,#B98448);
+  box-shadow:inset 0 0 0 1.5px rgba(255,243,216,.55),4px 8px 8px rgba(var(--toy-shade),.3)}
+#drill .tp-post::before{content:"";position:absolute;left:2px;right:2px;top:2px;height:7px;border-radius:50%;background:rgba(255,246,222,.85)}
+#drill .tp-rod{position:relative;flex:1;min-width:0;height:96px;margin:0 -6px;padding:0 12px;display:flex;align-items:center}
+#drill .tp-rod::before{content:"";position:absolute;left:0;right:0;top:50%;height:10px;margin-top:-5px;border-radius:5px;
+  background:linear-gradient(#FFF1B8,#E2B54A 35%,#9C7420 70%,#C99A38);box-shadow:3px 9px 7px rgba(var(--toy-shade),.26)}
+#drill .tp-b{position:relative;z-index:1;flex:none;display:inline-flex;line-height:0}
+#drill .tp-b svg{display:block}
+#drill .tp-b.cur{margin:0 auto}
+#drill .tp-b.cur::before{content:"";position:absolute;left:50%;top:50%;width:230%;height:150%;transform:translate(-50%,-50%);z-index:-1;
+  background:radial-gradient(closest-side,rgba(255,243,176,.95),rgba(255,226,138,.45) 55%,rgba(255,226,138,0))}
+#drill .tp-b.cur.ok::before,#drill .tp-b.cur.bad::before{opacity:.5}
+#drill .tp-speedbtn{flex:none;width:52px;height:52px}
+#drill .tp-speed{position:absolute;right:var(--pad);top:calc(50% + 34px);z-index:20;padding:14px 18px;border-radius:14px}
+#drill .tp-speed .speed{display:flex;align-items:center;gap:10px;font:400 18px/1 var(--toy-body);color:var(--toy-ink)}
+#drill .tp-speed input[type=range]{width:220px;height:44px;accent-color:var(--toy-indigo)}
+#drill .tp-speedval{min-width:44px;text-align:right;font:600 18px/1 var(--toy-display)}
+
+/* --- on the table --- */
+#drill .tp-body{flex:1;min-height:0;margin:16px var(--pad) 20px;display:grid;grid-template-columns:var(--bixcol) var(--board) minmax(0,1fr);gap:var(--gap);align-items:stretch}
+
+/* left: the answer-tool switch (a little soroban / keypad to pick up), Bix and his paper bubble */
+#drill .tp-bixcol{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0}
+#drill .tp-props{display:flex;align-items:flex-start;gap:14px;min-height:0}
+#drill .tp-switch{flex:none;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:132px;min-height:64px;padding:0;border:0;background:none;cursor:pointer;color:var(--toy-ink);touch-action:manipulation;transition:transform .09s ease-out}
+#drill .tp-switch:active{transform:translateY(4px)}
+#drill .tp-switch:focus-visible{outline:4px solid var(--toy-ink);outline-offset:4px;border-radius:16px}
+#drill .tp-switch svg{display:block;overflow:visible;width:var(--prop,176px);height:auto}
+#drill .tp-switch .toy-chip{font-size:19px;min-height:32px;padding:2px 14px;white-space:nowrap}
+#drill .tp-showme{align-self:flex-start;margin-top:6px;min-width:0;padding-left:14px;padding-right:16px;white-space:nowrap}
+#drill.fixing{--prop:128px}
+#drill .tp-bix{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:18px;cursor:pointer}
+#drill .tp-bixfig{flex:none;line-height:0;margin-left:8px}
+#drill .tp-bixfig svg{width:var(--bix);height:var(--bix)}
+/* one bubble: fixed place and a two-line height; only the words change */
+#drill .tp-bubble{display:flex;align-items:center;width:100%;max-width:none;height:88px;padding:10px 54px 10px 22px;border-radius:24px;
+  font:600 20px/1.25 var(--toy-display);color:var(--toy-ink)}
+#drill .tp-bubble.empty{visibility:hidden}
+#drill .tp-bubble .tp-btxt{flex:1;max-height:100%;overflow:hidden}
+#drill .tp-bubble .tp-btxt.tp-fresh{animation:tp-fresh .22s ease-out both}
+@keyframes tp-fresh{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+#drill .tp-say{position:absolute;right:14px;top:50%;margin-top:-15px;line-height:0;color:var(--toy-indigo)}
+#drill .tp-bubble.toy-bubble--left::after{left:34px}
+
+/* middle: the sum on a clipboard */
+#drill .tp-board{display:flex;flex-direction:column;box-sizing:border-box;min-height:0;padding:44px 16px 16px}
+#drill .tp-board::after{content:"";position:absolute;left:14px;right:13px;top:42px;bottom:12px;border-radius:8px;background:#F1E7D2;transform:rotate(-1.3deg);box-shadow:3px 6px 8px rgba(var(--toy-shade),.26)}
+#drill .tp-sheet{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:10px;box-sizing:border-box;padding:18px 20px 16px}
+#drill .tp-problem{display:flex;flex-direction:column;align-items:stretch;flex:0 1 auto;min-height:0}
+#drill .tp-term{flex:none;display:flex;align-items:center;justify-content:space-between;height:var(--th,var(--th-max));
+  font:700 var(--tf,var(--tf-max))/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;border-radius:10px;
+  transition:opacity .2s ease,background-color .2s ease}
+#drill .tp-term .op{flex:none;width:.72em;text-align:center;font-size:.82em;line-height:1}
+#drill .tp-term .op.plus{color:#A86F08} #drill .tp-term .op.minus{color:var(--toy-red)} #drill .tp-term .op.times{color:var(--toy-indigo)}
+#drill .tp-term .num{padding-right:.06em}
+#drill .tp-term.now{background:#FFF1C4;box-shadow:inset 0 0 0 3px var(--toy-mustard)}
+#drill .tp-term.done{opacity:.42}
+#drill .tp-problem.wide{--tf-max:62px} #drill .tp-problem.xwide{--tf-max:48px}
+#drill .tp-rule{flex:none;height:6px;border-radius:3px;background:var(--toy-ink)}
+#drill[data-mode=listen] .tp-rule,#drill[data-mode=flash] .tp-rule{opacity:.25}
+/* the answer box: a dashed mustard hollow on the paper */
+#drill .tp-readout{flex:none;align-self:flex-end;display:flex;align-items:center;justify-content:center;gap:10px;box-sizing:border-box;min-width:104px;max-width:100%;height:var(--ans-h);padding:0 14px;
+  border:4px dashed var(--toy-mustard-dk);border-radius:18px;background:#FFF4CF;transition:background-color .12s ease,border-color .12s ease,opacity .2s ease}
+#drill .tp-rolabel{font:400 17px/1.1 var(--toy-body);color:var(--toy-ink-soft)}
+#drill .tp-rolabel:empty{display:none}
+#drill .tp-readout b{font:700 60px/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums;min-width:.6em;text-align:center}
+#drill .tp-readout.empty b{color:#A86F08}
+#drill .tp-readout[data-len="4"] b{font-size:50px} #drill .tp-readout[data-len="5"] b{font-size:42px} #drill .tp-readout[data-len="6"] b{font-size:35px}
+#drill .tp-readout.is-right{border-style:solid;border-color:var(--toy-teal-dk);background:radial-gradient(circle at 30% 22%,#8FEBD9 0,#1FA595 46%,#137A70 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
+#drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(10,74,69,.45)}
+#drill .tp-readout.is-wrong{border-color:var(--toy-red);background:#FFE7DE;animation:tp-no .46s ease both}
+@keyframes tp-yes{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
+@keyframes tp-no{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
+#drill:has(#answerTool.waiting) .tp-readout{opacity:.45}
+
+/* Listen and Flash: the paper carries the listening ear / the flashing number */
+#drill .tp-listen,#drill .tp-flash{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+#drill .tp-ear{position:relative;flex:none;width:112px;height:112px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--toy-on-mustard);
+  box-shadow:0 5px 0 var(--toy-mustard-deep),4px 12px 10px rgba(var(--toy-shade),.34)}
+#drill .tp-ear::before{content:"";position:absolute;left:16%;top:10%;width:38%;height:20%;border-radius:50%;transform:rotate(-34deg);background:radial-gradient(closest-side,rgba(255,255,255,.9),rgba(255,255,255,0))}
+#drill .tp-ear::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:6px solid var(--toy-mustard);opacity:0;pointer-events:none}
+#drill .tp-ear.pulse::after{animation:tp-ring .9s ease-out}
+#drill .tp-listen.reading .tp-ear{animation:tp-listen 2.4s ease-in-out infinite}
+@keyframes tp-ring{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.45);opacity:0}}
+@keyframes tp-listen{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+#drill .tp-msg{font:600 22px/1.2 var(--toy-display);color:var(--toy-ink);min-height:27px}
+#drill .tp-listen .toy-block,#drill .tp-flash .toy-block{min-width:0;padding-left:16px;padding-right:18px;font-size:21px;white-space:nowrap}
+#drill .tp-flashdots{display:flex;gap:5px;min-height:20px;align-items:center;justify-content:center;flex-wrap:wrap;line-height:0}
+#drill .flash-num{font:700 calc(min(92px, var(--board) * 1.05 / var(--len, 2)))/1 var(--toy-display);color:var(--toy-ink);min-height:100px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+#drill .flash-num b{font-weight:700;margin-right:.08em;font-size:.82em}
+#drill .flash-num b.plus{color:#A86F08} #drill .flash-num b.minus{color:var(--toy-red)} #drill .flash-num b.times{color:var(--toy-indigo)}
+#drill .flash-num.pop{animation:tp-pop .3s cubic-bezier(.3,1.5,.5,1) both}
+#drill .flash-num.hint{opacity:.9}
+#drill .flash-num.ask{color:var(--toy-indigo);font-size:72px}
+
+/* right: the answer tool — wooden keys on felt + the teal check dome, or the lacquered soroban */
+#drill .tp-tool{display:flex;gap:16px;min-width:0;min-height:0;align-items:stretch;justify-content:flex-end}
+#drill .tp-pad{display:contents}
+#drill .tp-keys{display:none;align-self:center}
+#drill .tp-tool.keys .tp-keys{display:block}
+#drill .tp-keys .toy-keypad-wrap{display:block}
+/* same key order as before: 7-8-9 / 4-5-6 / 1-2-3, then delete on the left of a wide 0 */
+#drill .tp-keys .toy-key--del{grid-column:1;grid-row:4}
+#drill .tp-keys .toy-key--zero{grid-column:2 / span 2;grid-row:4}
+#drill .tp-abacus{display:none;line-height:0;flex:1;min-height:0;min-width:0;align-items:center;justify-content:center}
+#drill .tp-tool.beads{flex-direction:column;justify-content:center}
+#drill .tp-tool.beads .tp-abacus{display:flex}
+#drill .tp-abacus .abx{display:flex;width:100%}
+#drill .tp-abacus .abx-svg{width:100%;height:auto;max-height:calc(var(--vh) - var(--toy-wall-h) - 214px)}
+#drill .tp-tool.demo .tp-abacus{pointer-events:none}
+#drill .tp-tool.demo .tp-foot{opacity:.45;pointer-events:none}
+#drill .tp-tool.waiting .tp-abacus{opacity:.45;pointer-events:none;transition:opacity .2s ease}
+#drill .tp-foot{flex:none;width:var(--foot);display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+#drill .tp-tool.beads .tp-foot{width:auto;flex-direction:row;align-items:flex-end;justify-content:flex-end;gap:26px;padding-right:6px}
+#drill .tp-bowl{line-height:0;margin-top:26px}
+#drill .tp-tool.beads .tp-bowl{margin:0 0 12px}
+#drill .tp-check{--d:var(--foot)}
+#drill .tp-check .pr-ic{display:contents}
+
+/* level test: a small gold star stamped on the sheet */
+#drill.lt .tp-sheet::before{content:"";position:absolute;left:12px;top:12px;width:40px;height:40px;
+  background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 3.4l2.6 5.4 5.9.8-4.3 4.1 1.05 5.9L12 16.8 6.75 19.6 7.8 13.7 3.5 9.6l5.9-.8z' fill='%23F2B632' stroke='%23C98A16' stroke-width='1.6' stroke-linejoin='round'/></svg>") center/contain no-repeat}
+
+/* long rows (5-10 numbers): a low wall, so the sheet gets the whole table */
+#drill.tp.long{--toy-wall-h:106px;--ans-h:66px;--th-max:70px;--tf-max:60px}
+#drill.long .tp-top{padding-top:16px}
+#drill.long .tp-topright{margin-top:-6px}
+#drill.long .tp-rodwrap,#drill.long .tp-rod{height:76px}
+#drill.long .tp-post{height:66px}
+#drill.long .tp-sheet{gap:6px;padding:12px 20px 12px}
+#drill.long .tp-readout b{font-size:46px}
+#drill.long .tp-readout[data-len="5"] b{font-size:40px} #drill.long .tp-readout[data-len="6"] b{font-size:34px}
+#drill.long .tp-term{border-radius:6px}
+
+/* ============ show me (the bead moves, on a felt mat) ============ */
+#showme.tp-show{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;background:rgba(58,30,6,.55)}
+#showme.tp-show.active{display:flex}
+#showme .tp-showcard{display:flex;gap:30px;align-items:center;padding:30px 34px;max-width:96vw;box-sizing:border-box;animation:tp-pop .3s cubic-bezier(.3,1.3,.5,1) both;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 4px 0 var(--toy-felt-edge),10px 24px 30px rgba(30,14,2,.45)}
+#showme .tp-showleft{width:320px;display:flex;flex-direction:column;gap:14px}
+#showme .tp-showbix{line-height:0}
+#showme .tp-shownote{padding:16px 20px;display:flex;flex-direction:column;gap:10px}
+#showme .tp-showprob{font:700 38px/1.15 var(--toy-display);color:var(--toy-ink)}
+#showme .tp-showprob span{padding:0 4px;border-radius:10px}
+#showme .tp-showprob span.cur{background:#FFF1C4;box-shadow:0 0 0 3px var(--toy-mustard)}
+#showme .tp-showprob i{font-style:normal;color:var(--toy-indigo);margin:0 .12em} #showme .tp-showprob i.plus{color:#A86F08} #showme .tp-showprob i.minus{color:var(--toy-red)}
+#showme .tp-showtext{font:600 23px/1.3 var(--toy-display);min-height:90px;color:var(--toy-ink)}
+#showme .tp-showtext b{color:var(--toy-indigo)}
+#showme .tp-showbtns{display:flex;gap:16px;align-items:center;padding-bottom:8px}
+#showme .tp-showbtns .toy-block{min-width:0}
+#showme .tp-showab{line-height:0}
+#showme .abx-svg{width:auto;height:min(400px,62vh);max-width:54vw}
+
+/* ============ end of set ============ */
+#summary.tp-sum{--pad:28px;--bw:clamp(320px,38vw,520px);--sbix:clamp(200px,22vw,290px);--toy-window-x:clamp(40px,5vw,90px);padding:0;gap:0;box-sizing:border-box;align-items:stretch;text-align:left}
+body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:none}
+#summary .tp-sumwall{position:relative;flex:none;height:var(--toy-wall-h);box-sizing:border-box}
+#summary .tp-sumwall{--win-w:calc((var(--toy-wall-h) - 16px)*2.15)}
+#summary .tp-headslot{position:absolute;left:calc(var(--toy-window-x) + var(--win-w));right:236px;bottom:30px;display:flex;justify-content:center;z-index:1}
+#summary .tp-sumhead{white-space:nowrap;padding:16px 34px 18px}
+#summary .tp-sumhead .toy-h1{font-size:clamp(34px,3.9vw,52px)}
+/* rewards hang at the top right of the wall */
+#summary .tp-rewards{position:absolute;right:var(--pad);top:22px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;z-index:2}
+#summary .tp-rewards .toy-chip{min-height:44px;padding:4px 18px 4px 8px;gap:10px;font-size:22px;box-shadow:0 2px 0 rgba(138,90,38,.5),4px 8px 10px rgba(var(--toy-shade),.28)}
+#summary .tp-rewards .toy-chip svg{display:block}
+#summary .tp-goldchip{animation:tp-pop .38s cubic-bezier(.3,1.5,.5,1) 1.3s both}
+#summary .tp-newchip{animation:tp-pop .38s cubic-bezier(.3,1.5,.5,1) 1.7s both}
+/* the moon gains a phase for the step just finished */
+#summary .tp-sky{display:contents}
+#summary .tp-sky .toy-sky-moon{opacity:.9}
+#summary .tp-sky .toy-sky-moon + .toy-sky-moon{opacity:0;animation:tp-moonin .9s ease 1.6s both}
+@keyframes tp-moonin{from{opacity:0}to{opacity:.9}}
+#summary .tp-moons{position:absolute;right:var(--pad);bottom:26px;z-index:2;padding:8px 14px 10px;line-height:0}
+#summary .tp-moons .tp-moonstack{position:relative;display:block}
+#summary .tp-moons svg{display:block;width:158px}
+#summary .tp-moons .after{position:absolute;left:0;top:0;animation:tp-fadein .8s ease 1.6s both}
+
+#summary .tp-sumstage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;align-content:center;gap:20px;padding:18px var(--pad) 0}
+#summary .tp-sumbixcol{position:relative;justify-self:end;align-self:end;display:flex;flex-direction:column;align-items:flex-start;gap:22px;max-width:360px}
+#summary .tp-sumbub{display:flex;align-items:center;gap:12px;padding:16px 16px 18px 24px;max-width:100%;min-width:0}
+#summary .tp-sumnote{margin:0;font:600 clamp(19px,2vw,22px)/1.3 var(--toy-display);color:var(--toy-ink)}
+#summary .tp-saybtn{flex:none;width:60px;height:60px;margin-right:-4px}
+#summary .tp-sumbix{line-height:0;cursor:pointer;margin-left:22px}
+#summary .tp-sumbix svg{width:var(--sbix);height:var(--sbix)}
+/* the beads she earned drop into a wooden bowl; the red ones wait on a little felt mat */
+#summary .tp-catch{position:relative;align-self:end;width:var(--bw);height:calc(var(--bw)*.66);margin-bottom:6px}
+#summary .tp-bowlback,#summary .tp-bowlfront{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#summary .tp-bowlfront{z-index:3}
+#summary .tp-catch .tp-b{position:absolute;z-index:2;line-height:0;margin:calc(var(--bw)*var(--bs,.19)*-.27) 0 0 calc(var(--bw)*var(--bs,.19)*-.5);transform:rotate(var(--r,0deg))}
+#summary .tp-catch .tp-b svg{display:block;width:calc(var(--bw)*var(--bs,.19));height:auto}
+#summary .tp-catch .tp-b.in{animation:tp-drop .62s cubic-bezier(.45,.05,.7,.6) both}
+@keyframes tp-drop{0%{transform:translate(var(--dx,0px),calc(var(--bw)*-.9)) rotate(var(--r0,0deg));opacity:0}14%{opacity:1}
+  72%{transform:translate(0,0) rotate(var(--r,0deg))}84%{transform:translate(0,-7px) rotate(var(--r,0deg))}100%{transform:translate(0,0) rotate(var(--r,0deg));opacity:1}}
+#summary .tp-fixside{align-self:end;justify-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:14px;margin-bottom:14px}
+#summary .tp-fixmat{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;justify-content:center;max-width:250px;padding:18px 20px;border-radius:24px;animation:tp-pop .4s cubic-bezier(.3,1.4,.5,1) .9s both}
+#summary .tp-fixmat::before{inset:7px;border-radius:17px}
+#summary .tp-fixmat:empty{display:none}
+#summary .tp-fixmat .tp-b{line-height:0}
+#summary .tp-fixmat .tp-b svg{display:block}
+/* one row: the one next step (Fix / Level test / Play again) and "I'm done" beside it */
+#summary .tp-sumbtns{flex:none;display:flex;gap:26px;align-items:center;justify-content:center;flex-wrap:nowrap;padding:22px var(--pad) 34px}
+#summary .tp-sumbtns .toy-block{min-height:84px;min-width:0;padding-left:30px;padding-right:34px;white-space:nowrap}
+
+/* ============ certificate: a keepsake on paper ============ */
+#certificate.tp-cert{--pad:28px;padding:0;gap:0;box-sizing:border-box;align-items:center;justify-content:flex-start}
+body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform:none}
+#certificate .tp-certstage{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;gap:26px;padding:calc(var(--toy-wall-h) + 22px) var(--pad) 0;box-sizing:border-box}
+#certificate .tp-certpaper{position:relative;flex:0 1 760px;min-width:0;box-sizing:border-box;padding:16px;border-radius:10px;transform:rotate(-1.2deg);
+  background:linear-gradient(#FFFDF6,#F8F0DD);box-shadow:inset 0 1px 0 #fff,0 2px 0 #D9CEB8,10px 22px 26px rgba(var(--toy-shade),.38)}
+#certificate .tp-certcard{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:clamp(26px,4.4vh,54px) 40px clamp(28px,4.6vh,56px);border-radius:6px;
+  border:3px solid var(--toy-indigo);outline:2px solid var(--toy-mustard-dk);outline-offset:-10px}
+#certificate .tp-certkick{font:600 24px/1.2 var(--toy-display);color:#8A5A1C}
+#certificate .tp-certname{font:700 clamp(46px,6vw,66px)/1.05 var(--toy-display);color:var(--toy-indigo);overflow-wrap:anywhere}
+#certificate .tp-certline{font:400 21px/1.3 var(--toy-body);color:var(--toy-ink-soft)}
+#certificate .tp-certskill{font:700 clamp(28px,3.4vw,36px)/1.15 var(--toy-display);color:var(--toy-ink)}
+#certificate .tp-certbeads{position:relative;display:flex;gap:6px;align-items:center;margin:12px 0 6px;padding:0 26px;line-height:0}
+#certificate .tp-certbeads::before{content:"";position:absolute;left:0;right:0;top:50%;height:7px;margin-top:-4px;border-radius:4px;background:linear-gradient(#FFF1B8,#E2B54A 35%,#9C7420 70%,#C99A38)}
+#certificate .tp-certbeads svg{position:relative;display:block}
+#certificate .tp-certmeta{display:flex;gap:10px;font:400 18px/1.3 var(--toy-body);color:var(--toy-ink-soft)}
+#certificate .tp-certseal{position:absolute;right:30px;bottom:18px;line-height:0;transform:rotate(8deg)}
+#certificate .tp-certbix{flex:none;align-self:flex-end;line-height:0;margin-bottom:-8px}
+#certificate .tp-certbix svg{width:clamp(150px,16vw,220px);height:clamp(150px,16vw,220px)}
+#certificate .tp-certbtns{flex:none;display:flex;gap:26px;align-items:center;justify-content:center;padding:20px var(--pad) 32px}
+#certificate .tp-certbtns .toy-block{min-height:84px;min-width:0;padding-left:30px;padding-right:34px;white-space:nowrap}
+/* "Save picture" in the Home Screen app when sharing is not available: the picture to press and hold */
+#certificate .tp-certpic{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(58,30,6,.55)}
+#certificate .tp-certpic.on{display:flex}
+#certificate .tp-certpiccard{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 28px 30px;max-width:90vw;box-sizing:border-box;border-radius:16px}
+#certificate .tp-certpiccard img{width:min(760px,80vw);height:auto;border-radius:8px;-webkit-touch-callout:default;user-select:auto}
+#certificate .tp-certpiccard p{margin:0}
+
+@media print{
+  @page{size:landscape;margin:12mm}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+  #app{position:static!important;padding:0!important}
+  #app > :not(#certificate), body > :not(#app):not(#toy-defs):not(#abx-defs){display:none!important}
+  body > #toy-defs,body > #abx-defs{display:block!important}
+  #certificate{display:flex!important;min-height:0!important;background:#fff!important;padding:0!important}
+  #certificate::before,#certificate::after,#certificate .tp-certbtns,#certificate .tp-certbix,#certificate .toy-sky-moon{display:none!important}
+  #certificate .tp-certstage{padding:0}
+  #certificate .tp-certpaper{width:100%;transform:none;box-shadow:none}
+  #certificate *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+/* ============ portrait iPad ============ */
+@media (orientation:portrait){
+  #drill.tp{--toy-wall-h:176px;--row1:clamp(340px,38vh,460px);--bixcol:minmax(0,1fr);--board:310px;--bix:150px;--prop:128px;--foot:150px;--th-max:86px;--tf-max:74px;--ans-h:84px;
+    --toy-window-x:84px;--toy-key-w:clamp(96px,14.6vw,124px);--toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - var(--row1) - 186px)/4),112px)}
+  #drill .tp-top{padding-top:22px}
+  #drill .tp-rodwrap{width:min(300px,37vw)}
+  #drill[data-mode=listen],#drill[data-mode=flash]{--ans-h:70px}
+  #drill .tp-msg{font-size:19px;min-height:23px}
+  #drill .flash-num.hint svg{width:52px;height:52px}
+  #drill .tp-body{grid-template-columns:minmax(0,1fr) var(--board);grid-template-rows:var(--row1) minmax(0,1fr);gap:20px 22px}
+  #drill .tp-tool{grid-column:1 / -1;justify-content:center;align-items:center;gap:26px}
+  #drill .tp-foot{align-self:stretch;padding:8px 0 4px}
+  #drill .tp-tool.beads .tp-foot{align-self:auto;padding:0}
+  #drill .tp-abacus .abx-svg{max-height:calc(var(--vh) - var(--toy-wall-h) - var(--row1) - 236px)}
+  #drill .tp-readout b{font-size:52px}
+  #drill .flash-num{min-height:66px}
+  #drill .tp-ear{width:92px;height:92px}
+  #drill .tp-ear svg{width:50px;height:50px}
+  #drill .tp-listen,#drill .tp-flash{gap:8px}
+  /* long rows: the sheet takes the whole left side; Bix, the keys and the check dome stack on the right */
+  #drill.tp.long{--toy-wall-h:120px;--board:270px;--th-max:76px;--tf-max:62px;--toy-key-w:clamp(88px,13vw,112px);--bix:112px;--prop:110px}
+  #drill.long .tp-body{grid-template-columns:var(--board) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+  #drill.long .tp-board{grid-column:1;grid-row:1 / 3}
+  #drill.long .tp-body{grid-template-rows:auto minmax(0,1fr)}
+  #drill.long .tp-bixcol{grid-column:2;grid-row:1;flex-direction:column-reverse;gap:10px}
+  #drill.long .tp-bix{flex-direction:row-reverse;align-items:flex-end;gap:10px}
+  #drill.long .tp-bubble.toy-bubble--left::after{left:auto;right:-20px;bottom:18px;width:34px;height:36px;clip-path:polygon(0 0,0 70%,100% 100%)}
+  #drill.long .tp-bixfig{margin:0}
+  #drill.long .tp-tool{grid-column:2;grid-row:2;flex-direction:column;justify-content:flex-start;gap:14px}
+  #drill.long .tp-foot{align-self:auto;width:auto;flex-direction:row;align-items:center;justify-content:center;gap:30px;padding:0}
+  #drill.long .tp-bowl{margin:0}
+  #drill.long .tp-abacus .abx-svg{max-height:calc(var(--vh) - 620px)}
+  #showme .tp-showcard{flex-direction:column;gap:18px;padding:24px}
+  #showme .tp-showleft{width:min(560px,84vw)}
+  #showme .tp-showtext{min-height:60px}
+  #showme .abx-svg{height:auto;width:min(620px,84vw);max-width:none;max-height:38vh}
+  #summary.tp-sum{--bw:clamp(360px,56vw,520px);--sbix:clamp(210px,30vw,280px);--toy-window-x:40px}
+  #summary .tp-headslot{left:0;right:0;bottom:auto;top:calc(100% + 34px)}
+  #summary .tp-sumstage{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto auto;gap:34px 16px;padding-top:120px}
+  #summary .tp-sumbixcol{grid-column:1 / -1;justify-self:center;flex-direction:row-reverse;align-items:flex-end;max-width:100%;gap:26px}
+  #summary .tp-sumbub.toy-bubble--left::after{left:-22px;bottom:26px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
+  #summary .tp-sumbub{margin-bottom:40px}
+  #summary .tp-sumbix{margin:0}
+  #summary .tp-catch{grid-column:2}
+  #summary .tp-sumbtns{gap:18px;padding-bottom:44px}
+  #summary .tp-sumbtns .toy-block{padding-left:22px;padding-right:24px}
+  #certificate .tp-certstage{flex-direction:column-reverse;gap:30px}
+  #certificate .tp-certpaper{flex:none;width:calc(100% - 24px)}
+  #certificate .tp-certbix{align-self:center;margin:0}
+  #certificate .tp-certbix svg{width:230px;height:230px}
+}
+/* ============ big iPad (12.9" Pro, 1366x1024): everything grows into the room ============ */
+@media (min-width:1300px) and (min-height:960px){
+  #drill.tp{--prop:210px;--pad:34px;--gap:26px;--bixcol:348px;--board:330px;--bix:214px;--foot:156px;--th-max:122px;--tf-max:102px;--ans-h:112px}
+  #drill .tp-rodwrap{width:600px}
+  #drill .tp-bubble{height:98px;font-size:23px}
+  #drill .tp-sheet{padding:24px 28px 22px;gap:14px}
+  #drill .tp-problem.wide{--tf-max:78px} #drill .tp-problem.xwide{--tf-max:62px}
+  #drill .tp-readout b{font-size:72px}
+  #drill .tp-readout[data-len="4"] b{font-size:62px} #drill .tp-readout[data-len="5"] b{font-size:52px} #drill .tp-readout[data-len="6"] b{font-size:44px}
+  #drill .tp-ear{width:140px;height:140px}
+  #drill .tp-msg{font-size:26px}
+  #drill.tp.long{--th-max:84px;--tf-max:70px;--ans-h:76px}
+  #summary .tp-sumbixcol{max-width:420px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .tp-pop,.tp-wob,.tp .bix.talking .toy-bix-breathe,.tp-show .bix.talking .toy-bix-breathe{animation:none}
+  #drill .tp-ear.pulse::after,#drill .tp-listen.reading .tp-ear,#drill .flash-num.pop,#drill .tp-readout.is-right,#drill .tp-readout.is-wrong,#drill .tp-bubble .tp-btxt.tp-fresh,#showme .tp-showcard{animation:none}
+  #drill .tp-term,#drill .tp-switch,#drill .tp-readout{transition:none}
+  #summary .tp-goldchip,#summary .tp-newchip,#summary .tp-fixmat,#summary .tp-catch .tp-b.in{animation:none}
+  #summary .tp-sky .toy-sky-moon + .toy-sky-moon{animation:none;opacity:.9}
+  #summary .tp-moons .after{animation:none}
+}
+body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wrong,body.ws-calm #drill .tp-listen.reading .tp-ear,body.ws-calm #summary .tp-catch .tp-b.in{animation:none}
