@@ -1,5 +1,5 @@
 // Mini-games. Each one drills a real soroban skill:
-//   Friend Pop     - instant recall of the friend pairs (make 5 / make 10)
+//   Friend Pop     - instant recall of the friend pairs (make 5 / make 10): the number friends find their partner
 //   Bead Detective - reading bead patterns at a glance (the basis of mental abacus)
 //   Bead Builder   - setting numbers on the abacus correctly
 (function (root) {
@@ -9,21 +9,69 @@
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
-  // icon: legacy emoji (other screens may still read it); art: the Workshop drawing; block: the block colour (meaning, see BRIEF).
+  /* ---------- Toy Table helpers shared by My Room, the shop, the Play menu and the games (window.ToyRoom) ---------- */
+  const T = () => root.TOY;
+  const TI = (n, sz, c, o) => T() ? T().icon(n, sz, c, o) : '';
+  // A soroban bead lying flat (the kit's wide bead), for local drawings: the treat jar, the mini soroban.
+  const WB = 'M-8,-13 H8 Q12,-13 15,-10.5 L22.5,-2.5 Q25,0 22.5,2.5 L15,10.5 Q12,13 8,13 H-8 Q-12,13 -15,10.5 L-22.5,2.5 Q-25,0 -22.5,-2.5 L-15,-10.5 Q-12,-13 -8,-13Z';
+  const wideBead = c => `<path d="${WB}" fill="url(#toy-lac-${c})"/>`
+    + `<path d="M-24.5,0 Q0,3.5 24.5,0 Q25,1 22.5,2.5 L15,10.5 Q12,13 8,13 H-8 Q-12,13 -15,10.5 L-22.5,2.5 Q-25,1 -24.5,0Z" fill="#1A0606" opacity="${c === 'wood' ? .14 : .28}"/>`
+    + `<path d="M-23,0 Q0,3.5 23,0" fill="none" stroke="#fff" stroke-width="1.2" opacity=".5"/><ellipse cx="-6" cy="-7.5" rx="8" ry="2.4" transform="rotate(-8 -6 -7.5)" fill="#fff" opacity=".8"/>`;
+  const shadowE = (cx, cy, rx, ry, op) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#toy-g-shadow)" opacity="${op}"/>`;
+  // A little soroban showing a number: walnut frame, brass rods, mustard heaven beads, red earth beads (unused beads are bare wood).
+  function miniSoroban(n, h) {
+    const d = String(n).split('').map(Number), step = 62, W = d.length * step + 24, H = 236, beam = 70;
+    let g = '';
+    d.forEach((v, i) => {
+      const x = 12 + step / 2 + i * step, five = v >= 5, e = v % 5;
+      g += `<rect x="${x - 2.5}" y="12" width="5" height="${H - 24}" fill="url(#toy-g-brass)"/>`;
+      g += `<g transform="translate(${x},${five ? beam - 15 : 28})">${wideBead(five ? 'mustard' : 'wood')}</g>`;
+      for (let k = 0; k < 4; k++) { const on = k < e, y = on ? beam + 23 + k * 27 : H - 26 - (3 - k) * 27; g += `<g transform="translate(${x},${y})">${wideBead(on ? 'red' : 'wood')}</g>`; }
+    });
+    return `<svg class="tr-soroban" height="${h}" width="${Math.round(h * (W + 14) / (H + 18))}" viewBox="-2 -2 ${W + 14} ${H + 18}" aria-hidden="true">${shadowE(W / 2 + 10, H + 6, W / 2 + 2, 9, .7)}`
+      + `<rect x="0" y="6" width="${W}" height="${H}" rx="12" fill="#5A3416"/><rect x="0" y="0" width="${W}" height="${H}" rx="12" fill="#7A4A24"/><rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="10" fill="none" stroke="#B98448" stroke-width="2" opacity=".6"/>`
+      + `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="5" fill="#F3DFBA"/><rect x="10" y="10" width="${W - 20}" height="7" fill="#3A1E06" opacity=".16"/>${g}`
+      + `<rect x="10" y="${beam - 4}" width="${W - 20}" height="9" fill="#5A3416"/><rect x="10" y="${beam - 4}" width="${W - 20}" height="3" fill="#9A6A3A"/></svg>`;
+  }
+  // Bix in these screens: Fun.Mascot still mounts and drives him (moods, voice, bubble); here his drawing becomes the Toy Table
+  // figurine. The observer swaps in TOY.bix whenever Mascot draws the old one, so mount / react / mood keep working unchanged.
+  const MOOD = { happy: 'happy', cheer: 'cheer', think: 'think', concerned: 'oops', wow: 'wow', sleepy: 'sleepy' };
+  function toyBix(el) {
+    if (!el || !T()) return;
+    el.classList.add('tr-bixhost');
+    const swap = () => {
+      const s = el.querySelector('.bix'); if (!s) return;
+      const svg = s.querySelector('svg');
+      if (svg && svg.getAttribute('viewBox') !== '-160 -190 320 320') {
+        const mood = MOOD[s.dataset.mood || (s.className.match(/ws-bix-(\w+)/) || [])[1]] || 'happy';
+        const t = document.createElement('div'); t.innerHTML = T().bix(mood, 120);
+        const n = t.querySelector('svg'); n.removeAttribute('width'); n.removeAttribute('height'); svg.replaceWith(n);
+      }
+      const say = el.querySelector('.ws-say'); if (say && !say.dataset.toy) { say.dataset.toy = '1'; say.innerHTML = TI('speaker', 24, '#2B3674'); }
+    };
+    if (!el._toyBix) { el._toyBix = new MutationObserver(swap); el._toyBix.observe(el, { childList: true, subtree: true }); }
+    swap();
+  }
+  root.ToyRoom = { bix: toyBix, wideBead, miniSoroban, shadowE };
+
+  // art(size): the picture on the game's toy box, built from kit parts; mark(): the small one beside its title; block: its lacquer colour.
   const ART = {
-    pop: `<svg class="g-art" width="150" height="120" viewBox="0 0 150 120" aria-hidden="true"><circle class="a-bubble" cx="48" cy="66" r="38"/><circle class="a-bubble" cx="112" cy="42" r="28"/><circle class="a-bubble" cx="118" cy="98" r="16"/><text class="a-num" x="48" y="82" text-anchor="middle" font-size="44">7</text><text class="a-num" x="112" y="54" text-anchor="middle" font-size="34">3</text><path class="a-white-s" d="M24 50 q6-14 20-18" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/><g class="a-ochre-s" stroke-width="5" stroke-linecap="round"><line x1="132" y1="10" x2="138" y2="4"/><line x1="140" y1="22" x2="148" y2="20"/></g></svg>`,
-    reader: `<svg class="g-art" width="150" height="120" viewBox="0 0 150 120" aria-hidden="true"><rect class="a-wood" x="8" y="10" width="104" height="96" rx="14"/><rect class="a-maple" x="16" y="18" width="88" height="80" rx="9"/><rect class="a-rod" x="16" y="44" width="88" height="6"/><g class="a-rod"><rect x="39" y="18" width="4" height="80"/><rect x="77" y="18" width="4" height="80"/></g><g class="a-red"><path d="M27 37 Q41 27 55 37 Q41 47 27 37Z"/><path d="M65 58 Q79 48 93 58 Q79 68 65 58Z"/><path d="M65 72 Q79 62 93 72 Q79 82 65 72Z"/></g><g class="a-walnut"><path d="M65 26 Q79 16 93 26 Q79 36 65 26Z"/><path d="M27 82 Q41 72 55 82 Q41 92 27 82Z"/></g><circle class="a-glass" cx="104" cy="74" r="26" stroke-width="9"/><path class="a-ochre-s" d="M123 93 L140 110" stroke-width="12" stroke-linecap="round"/></svg>`,
-    build: `<svg class="g-art" width="150" height="120" viewBox="0 0 150 120" aria-hidden="true"><rect class="a-maple" x="40" y="2" width="70" height="42" rx="10"/><text class="a-num" x="75" y="34" text-anchor="middle" font-size="28">47</text><rect class="a-wood" x="22" y="52" width="106" height="64" rx="12"/><rect class="a-maple" x="29" y="59" width="92" height="50" rx="7"/><rect class="a-rod" x="29" y="74" width="92" height="5"/><g class="a-rod"><rect x="55" y="59" width="4" height="50"/><rect x="91" y="59" width="4" height="50"/></g><g class="a-red"><path d="M44 84 Q57 76 70 84 Q57 92 44 84Z"/><path d="M44 96 Q57 88 70 96 Q57 104 44 96Z"/><path d="M80 70 Q93 62 106 70 Q93 78 80 70Z" class="a-red"/><path d="M80 84 Q93 76 106 84 Q93 92 80 84Z"/><path d="M80 96 Q93 88 106 96 Q93 104 80 96Z"/></g></svg>`,
+    pop: h => T().pair(family() === 5 ? 2 : 3, family() === 5 ? 3 : 7, h),
+    reader: h => `<span class="ga-row">${miniSoroban(8, Math.round(h * .84))}${T().buddy(8, h, 'happy', { prop: 'magnifier' })}</span>`,
+    build: h => `<span class="ga-row"><span class="ga-tile" style="font-size:${Math.round(h * .36)}px">47</span>${miniSoroban(47, Math.round(h * .9))}</span>`,
   };
-  // block: the game's own kit colour (Friend Pop red, Bead Detective indigo, Bead Builder ochre), used on its hub card,
-  // its title chip and its results card. The Play family itself stays jade (home block, Today step).
+  const MARK = {
+    pop: () => T().pair(3, 7, 50, { sum: false }),
+    reader: () => T().buddy(8, 54, 'happy', { prop: 'magnifier' }),
+    build: () => miniSoroban(47, 46),
+  };
+  // block: the game's own lacquer colour (Friend Pop red, Bead Detective indigo, Bead Builder mustard), on its toy box.
   const GAMES = {
-    pop: { name: 'Friend Pop', icon: '🫧', art: ART.pop, block: 'red', desc: 'Pop the friend that makes 10 (or 5)!', unit: 'friends' },
-    reader: { name: 'Bead Detective', icon: '🔍', art: ART.reader, block: 'indigo', desc: 'Peek at the beads. What number was it?', unit: 'right' },
-    build: { name: 'Bead Builder', icon: '🧱', art: ART.build, block: 'ochre', desc: 'Make each number on the abacus!', unit: 'numbers' },
+    pop: { name: 'Friend Pop', art: ART.pop, mark: MARK.pop, block: 'red', desc: 'Pop the friend that makes 10 (or 5)!', unit: 'friends' },
+    reader: { name: 'Bead Detective', art: ART.reader, mark: MARK.reader, block: 'indigo', desc: 'Peek at the beads. What number was it?', unit: 'right' },
+    build: { name: 'Bead Builder', art: ART.build, mark: MARK.build, block: 'mustard', desc: 'Make each number on the abacus!', unit: 'numbers' },
   };
   const POPS = 12;   // friends per Friend Pop round (no clock: the round ends when they are all found)
-  const WSI = (n, sz, c, w) => root.WS ? root.WS.icon(n, sz, c, w) : '';
   // Bix says a line (main or extra voice pack; app.js provides BixSay), else just the bubble.
   // quiet: show the caption without speaking (the bubble's speaker mark says it on tap).
   function bixLine(text, id, ms, quiet) {
@@ -80,20 +128,20 @@
     return api;
   }
 
-  /* ---------- number pad: the ONE kit keypad (WS.keypad, kit.js) + a red Check button outside the grid ----------
+  /* ---------- number pad: the ONE kit keypad (TOY.keypad, toykit.js) with the round teal Check beside the felt mat ----------
      Keys and Check stay dimmed until the question is asked. */
   function pad(el, ansEl, maxLen = 3) {
     el.innerHTML = '';
     let val = '', waiting = null;
-    const kp = root.WS.keypad(el, {
-      onKey(d) { if (!waiting) return; App().Sfx.tap(); if (val.length < maxLen) set(val + d); },
+    const kp = T().keypad(el, {
+      onKey(d) { if (!waiting || !/^\d$/.test(d)) return; App().Sfx.tap(); if (val.length < maxLen) set(val + d); },
       onBackspace() { if (!waiting) return; App().Sfx.tap(); set(val.slice(0, -1)); },
+      onCheck() {},
     });
-    const go = document.createElement('button');
-    go.type = 'button'; go.className = 'ws-btn g-check'; go.dataset.k = 'go'; go.disabled = true;
-    go.innerHTML = `${WSI('check', 30, 'currentColor', 3)}Check`; el.appendChild(go);
+    const go = kp.el.querySelector('[data-k="check"]');
+    go.classList.add('g-check'); go.dataset.k = 'go'; go.setAttribute('aria-label', 'Check'); go.disabled = true;
     const set = v => { val = v; ansEl.textContent = v || '?'; ansEl.classList.toggle('empty', !v); go.disabled = !waiting || v === ''; };
-    const idle = on => { el.classList.toggle('idle', on); kp.setEnabled(!on); };
+    const idle = on => { el.classList.toggle('idle', on); kp.setEnabled(!on); go.disabled = on || val === ''; };
     go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; idle(true); go.disabled = true; w(parseInt(val, 10)); };
     idle(true); set('');
     return {
@@ -106,28 +154,31 @@
   function results(r, block) {
     return new Promise(res => {
       const scrim = document.createElement('div'); scrim.className = 'gscrim';
-      const div = document.createElement('div'); div.className = 'gresult ws-pop';
+      const div = document.createElement('div'); div.className = 'gresult toy-paper';
       div.setAttribute('role', 'dialog'); div.setAttribute('aria-label', r.big);
-      div.innerHTML = `<div class="gr-icon g-${block}">${r.icon}</div><div class="gr-big">${r.big}</div>${r.dots ? `<div class="gr-dots" aria-hidden="true">${r.dots}</div>` : ''}<div class="gr-sub">${r.sub}</div>${r.best ? `<div class="gr-best">${WSI('star', 26, '#E8A93A')}${r.bestLine || 'New personal best!'}</div>` : r.bestText ? `<div class="gr-sub2">${r.bestText}</div>` : ''}
-        <div class="row"><button class="ws-btn jade ws-nudge" data-a="again">${WSI('retry', 28, 'currentColor', 2.8)}Play again</button><button class="ws-btn maple" data-a="done">${WSI('check', 28, 'currentColor', 3)}Done</button></div>`;
+      div.innerHTML = `<div class="gr-icon g-${block}">${r.icon}</div><div class="gr-big">${r.big}</div>${r.dots ? `<div class="gr-dots" aria-hidden="true">${r.dots}</div>` : ''}<div class="gr-sub">${r.sub}</div>${r.best ? `<div class="gr-best">${TI('star', 26, '#C98A16')}${r.bestLine || 'New personal best!'}</div>` : r.bestText ? `<div class="gr-sub2">${r.bestText}</div>` : ''}
+        <div class="gr-row"><button type="button" class="toy-block toy-block--teal toy-block--sm" data-a="again">${TI('retry', 28, 'currentColor', { stroke: 2.8 })}Play again</button><button type="button" class="toy-block toy-block--wood toy-block--sm" data-a="done">${TI('check', 28, 'currentColor', { stroke: 3 })}Done</button></div>`;
+      scrim.innerHTML = `<span class="gr-prop" aria-hidden="true">${T().prop('bowl', 170)}</span>`;
       scrim.appendChild(div); $('#game').appendChild(scrim);
       div.onclick = e => { const b = e.target.closest('button'); if (b) res(b.dataset.a); };
     });
   }
 
   /* =========================================================
-     Friend Pop: a number shows, bubbles float up; pop its friend.
+     Friend Pop: a number friend waits for its partner; friends float up in bubbles.
+     Pop the right bubble and the two hold hands again (they make 5 or 10).
      No clock: a round is a fixed number of friends found.
      ========================================================= */
   function pop(tok) {
     const st = $('#gameStage'), fam = family(), N = App().gamePops || POPS;
     st.innerHTML = `<div class="pop-head"><div class="pop-q" id="popQ"></div><div class="pop-hint" id="popHint"></div></div><div class="pop-field" id="popField"></div>`;
+    const calm = !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
     const field = $('#popField');
-    let score = 0, wrong = 0, target = null, bubbles = [], spawnIn = 0.2, ended = false, last = performance.now(), back = 0;
+    let score = 0, wrong = 0, target = null, bubbles = [], spawnIn = 0.2, ended = false, last = performance.now(), back = 0, busy = false;
     const GO = 'Find the friend and pop it!';
     // Bubbles rise in lanes, so they never overlap: one speed per round, a new bubble enters a lane only once the
     // last one in it has risen clear, and the sway stays inside the lane. They appear and fade INSIDE the frame.
-    const PAD = 10, SWAY = 8, GAP = 10, SPEED = 70;
+    const PAD = 20, SWAY = 8, GAP = 10, SPEED = 70;
     let lanes = [], size = 100, W = 0, H = 0;
     function layout() {
       W = field.clientWidth; H = field.clientHeight; if (!W) return false;
@@ -142,8 +193,18 @@
       const F = fam === 'mix' ? (Math.random() < 0.5 ? 5 : 10) : fam;
       let a; do { a = rnd(1, F - 1); } while (target && target.a === a && F > 2);
       target = { F, a, ans: F - a };
-      $('#popQ').innerHTML = `<span class="pq-a">${a}</span><span class="pq-op">+</span><span class="pq-q">?</span><span class="pq-op">=</span><span class="pq-f">${F}</span>`;
+      // The waiting friend (with its number on a little wooden disc), an empty place for its partner, and what they make together.
+      $('#popQ').className = 'pop-q';
+      $('#popQ').innerHTML = `<span class="pq-who">${T().buddy(a, 150, 'wave')}<b class="pq-a tr-disc">${a}</b></span><span class="pq-op">+</span><span class="pq-q" aria-label="who?">?</span><span class="pq-op">=</span><span class="pq-f tr-disc">${F}</span>`;
       $('#popHint').textContent = F === 10 ? `Find ${a}'s big friend (makes 10)` : `Find ${a}'s small friend (makes 5)`;
+    }
+    // Found: the two friends hold hands (TOY.pair shows what they make) for a moment before the next friend arrives.
+    function reunite(v) {
+      const t = target; busy = true;
+      $('#popQ').className = 'pop-q together';
+      $('#popQ').innerHTML = `<span class="pq-pair">${T().pair(t.a, v, 150, { mood: 'cheer' })}</span>`;
+      $('#popHint').textContent = `${t.a} and ${v} make ${t.F}!`;
+      setTimeout(() => { busy = false; if (!ended && tok === token) newTarget(); }, calm ? 700 : 950);
     }
     function freeLanes(y) { return lanes.filter(l => !l.last || l.last.gone || l.last.y <= y - size - GAP); }
     function spawn(y) {
@@ -154,7 +215,8 @@
       const onScreen = bubbles.some(b => !b.gone && b.v === target.ans);
       // Always one answer on screen; after that mostly other numbers, so she has to look for it.
       let v; if (!onScreen || Math.random() < 0.18) v = target.ans; else { do { v = rnd(1, target.F - 1); } while (v === target.ans && target.F > 2); }
-      const el = document.createElement('button'); el.className = 'bub in'; el.textContent = v; el.dataset.v = v;
+      const el = document.createElement('button'); el.className = 'bub in'; el.dataset.v = v; el.setAttribute('aria-label', String(v));
+      el.innerHTML = `${T().buddy(v, 96, 'happy')}<b class="bub-n tr-disc">${v}</b>`;
       el.addEventListener('animationend', () => el.classList.remove('in'), { once: true });
       const b = { el, v, lane, y, ph: Math.random() * 6, gone: false };
       el.addEventListener('pointerdown', e => { e.preventDefault(); tap(b); });
@@ -165,13 +227,12 @@
     function place(b) { b.el.style.translate = `${(b.lane.x + Math.sin(b.ph) * SWAY).toFixed(1)}px ${b.y.toFixed(1)}px`; }
     function leave(b) { b.gone = true; b.el.classList.add('out'); setTimeout(() => b.el.remove(), 320); }
     function tap(b) {
-      if (ended || b.gone) return;
+      if (ended || busy || b.gone) return;
       if (b.v === target.ans) {
         b.gone = true; b.el.classList.add('popped'); setTimeout(() => b.el.remove(), 320);
-        App().Sfx.pop(); score++; setScore(beadDots(N, score));
+        App().Sfx.pop(); score++; setScore(beadDots(N, score)); reunite(b.v);
         if (score >= N) { ended = true; return; }
         if (score % 4 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); const c = pick([['Great popping!', 'pop_cheer'], [`${score} friends!`, null], ['Friend finder!', null]]); bixLine(c[0], c[1], 0); clearTimeout(back); back = setTimeout(() => { if (!ended && tok === token) bixLine(GO, 'pop_go', 0, true); }, 2200); }
-        newTarget();
       } else { wrong++; b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore(beadDots(N, 0));
@@ -181,7 +242,7 @@
       function frame(now) {
         if (tok !== token) return res(null);
         const dt = Math.min(0.05, (now - last) / 1000); last = now;
-        if (ended) { setTimeout(() => { field.querySelectorAll('.bub').forEach(e => e.remove()); $('#popQ').innerHTML = ''; $('#popHint').textContent = ''; res(tok === token ? { score, wrong, of: N } : null); }, 450); return; }
+        if (ended) { setTimeout(() => { field.querySelectorAll('.bub').forEach(e => e.remove()); $('#popQ').innerHTML = ''; $('#popHint').textContent = ''; res(tok === token ? { score, wrong, of: N } : null); }, 900); return; }
         if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H)) layout_keep();
         spawnIn -= dt;
         if (spawnIn <= 0) { const need = !bubbles.some(b => !b.gone && b.v === target.ans); spawnIn = spawn() ? 0.75 + Math.random() * 0.45 : (need ? 0.05 : 0.3); }
@@ -207,8 +268,8 @@
     const a = App(), st = $('#gameStage');
     const maxR = a.nodeIndex() >= a.idx('bf_add_a') ? 3 : 2; const N = 10;
     let rods = 1, show = 2.0, streak = 0, misses = 0, score = 0; const marks = [];
-    st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${WSI('eye', 72, '#F4E3C3', 2.4)}<b>?</b></span></div></div></div>
-      <div class="rd-right"><div class="feedback" id="rdFb" aria-live="polite"></div><div class="answer empty" id="rdAns">?</div><div class="pad g-pad" id="rdPad"></div></div></div>`;
+    st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${TI('eye', 76, '#7A4A24', { stroke: 2.2, accent: '#FFFDF6' })}<b>?</b></span></div></div></div>
+      <div class="rd-right"><div class="rd-slip"><div class="answer empty" id="rdAns">?</div><div class="feedback" id="rdFb" aria-live="polite"></div></div><div class="g-pad" id="rdPad"></div></div></div>`;
     const P = pad($('#rdPad'), $('#rdAns'));
     let ab = null, abRods = 0;
     for (let i = 0; i < N; i++) {
@@ -225,7 +286,7 @@
       $('#rdCover').classList.remove('on');
       if (ans === v) {
         score++; streak++; misses = 0; show = Math.max(0.6, show * 0.85); marks[i] = true; setScore(beadDots(N, i + 1, marks));
-        $('#rdFb').textContent = 'Yes!'; $('#rdFb').className = 'feedback ok'; $('#rdAns').classList.add('is-right'); a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
+        $('#rdFb').innerHTML = `${TI('check', 26, '#fff', { stroke: 3.4 })}Yes!`; $('#rdFb').className = 'feedback ok'; $('#rdAns').classList.add('is-right'); a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
         if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; bixLine('Super detective! More beads now!', 'reader_more', 0); await sleep(1500); }
         else await sleep(900);
       } else {
@@ -234,6 +295,7 @@
         if (misses >= 2 && rods > 1) { rods--; misses = 0; }
         await sleep(1800);
       }
+      if (tok !== token) return null;
       P.clear(); $('#rdAns').classList.remove('is-right', 'is-wrong');
     }
     return { score, of: N, rods: abRods, marks };
@@ -245,7 +307,7 @@
   async function build(tok) {
     const a = App(), st = $('#gameStage'), i = a.nodeIndex();
     const rods = i >= a.idx('two_digit') ? 3 : i >= a.idx('add_direct') ? 2 : 1; const N = a.gameNumbers || 8;
-    st.innerHTML = `<div class="bd-wrap"><div class="bd-q"><div class="bd-k">Make</div><div class="bd-num" id="bdNum" aria-live="polite"></div><div class="bd-tools"><button class="ws-btn maple small" id="bdSay" aria-label="Say the number again">${WSI('speaker', 26, 'currentColor')}Again</button><button class="ws-btn maple small" id="bdClear" aria-label="Clear the abacus">${WSI('retry', 24, 'currentColor')}Clear</button></div></div><div class="bd-ab" id="bdAb"></div></div>`;
+    st.innerHTML = `<div class="bd-wrap"><div class="bd-q"><div class="toy-clipboard bd-board"><div class="toy-paper"><div class="bd-k">Make</div><div class="bd-num" id="bdNum" aria-live="polite"></div></div></div><div class="bd-tools"><button type="button" class="toy-block toy-block--wood toy-block--sm" id="bdSay" aria-label="Say the number again">${TI('speaker', 30, 'currentColor')}Again</button><button type="button" class="toy-block toy-block--wood toy-block--sm" id="bdClear" aria-label="Clear the abacus">${TI('retry', 28, 'currentColor')}Clear</button></div></div><div class="bd-ab" id="bdAb"></div></div>`;
     let want = null, hit = null;
     const ab = demoAbacus($('#bdAb'), { rods: Math.max(2, rods), scale: 1.6, onBead: () => a.Sfx.tap(), onChange: v => { if (want !== null && v === want && hit) { const h = hit; hit = null; h(); } } });
     $('#bdClear').onclick = () => { ab.reset(); a.Sfx.tap(); };
@@ -272,21 +334,21 @@
   /* ---------- runner ---------- */
   async function open(id) {
     const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim();
-    const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.art}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
-    root.Fun.Mascot.mount(bix(), { size: 76 });
+    const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
+    root.Fun.Mascot.mount(bix(), { size: 76 }); toyBix(bix()); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
     a.show('game');
     const r = id === 'pop' ? await pop(my) : id === 'reader' ? await reader(my) : await build(my);
     if (!r || my !== token) return;
     const best = root.Fun.data.best; let isBest = false, card;
     if (id === 'pop') {
       best.popTotal = popTotal(best) + r.score; isBest = r.wrong === 0;
-      card = { icon: GAMES.pop.art, big: `${r.score} friends found!`, sub: isBest ? 'Every pop was a friend.' : 'popped in one round', best: isBest, bestLine: 'Perfect popping!', bestText: `${best.popTotal} friends popped so far` };
+      card = { icon: T().pair(family() === 5 ? 2 : 3, family() === 5 ? 3 : 7, 130, { mood: 'cheer' }), big: `${r.score} friend${r.score === 1 ? '' : 's'} found!`, sub: isBest ? 'Every pop was a friend.' : 'popped in one round', best: isBest, bestLine: 'Perfect popping!', bestText: `${best.popTotal} friends popped so far` };
     } else if (id === 'reader') {
       isBest = r.score > (best.reader || 0); if (isBest) best.reader = r.score;
-      card = { icon: GAMES.reader.art, big: `${r.score} green bead${r.score === 1 ? '' : 's'}!`, dots: beadDots(r.of, r.of, r.marks), sub: `numbers read · up to ${r.rods} rod${r.rods > 1 ? 's' : ''}`, best: isBest && r.score > 0, bestText: `Your best: ${best.reader}` };
+      card = { icon: GAMES.reader.art(130), big: `${r.score} green bead${r.score === 1 ? '' : 's'}!`, dots: beadDots(r.of, r.of, r.marks), sub: `numbers read · up to ${r.rods} rod${r.rods > 1 ? 's' : ''}`, best: isBest && r.score > 0, bestText: `Your best: ${best.reader}` };
     } else {
       best.buildTotal = (best.buildTotal || 0) + r.n;
-      card = { icon: GAMES.build.art, big: `${r.n} numbers made!`, sub: 'all on the abacus', best: false, bestText: `${best.buildTotal} numbers built so far` };
+      card = { icon: GAMES.build.art(130), big: `${r.n} numbers made!`, sub: 'all on the abacus', best: false, bestText: `${best.buildTotal} numbers built so far` };
     }
     root.Fun.save();
     root.Fun.Mascot.react(bix(), 'cheer', 2000); const newBest = isBest && id === 'reader'; bixLine(newBest ? 'A new best! Wow!' : 'Great playing!', newBest ? 'game_best' : 'game_good', 0);
@@ -303,13 +365,15 @@
   function popTotal(best) { return best.popTotal || best.pop || 0; }
   function renderHub() {
     const best = root.Fun.data.best; const box = $('#playCards'); box.innerHTML = '';
-    const ic = $('#playIc'); if (ic && !ic.innerHTML) ic.innerHTML = WSI('game', 34, 'currentColor', 2.6);
+    const ic = $('#playIc'); if (ic && !ic.innerHTML) ic.innerHTML = TI('play', 30, '#4A2C06');
     for (const [id, g] of Object.entries(GAMES)) {
       const chip = id === 'pop' ? (popTotal(best) ? `${popTotal(best)} friends popped` : '')
         : id === 'reader' ? (best.reader ? `Best: ${best.reader} green beads` : '')
         : (best.buildTotal ? `${best.buildTotal} numbers built` : '');
-      const el = document.createElement('button'); el.className = `gcard ws-block tall ${g.block}`; el.dataset.game = id; el.setAttribute('aria-label', `${g.name}: ${g.desc}`);
-      el.innerHTML = `<span class="gc-icon">${g.art}</span><span class="gc-name">${g.name}</span><span class="gc-desc">${g.desc}</span><span class="gc-best">${chip ? WSI('star', 20, '#E8A93A') + chip : 'New!'}</span>`;
+      // A toy box with its lid: the picture on the front is the game. A game never played says "New!" (Bead Builder stays plain).
+      const el = document.createElement('button'); el.type = 'button'; el.className = `gcard toy-box ${g.block}`; el.dataset.game = id; el.setAttribute('aria-label', `${g.name}: ${g.desc}`);
+      const tagChip = chip ? `<span class="gc-best">${TI('star', 20, '#C98A16')}${chip}</span>` : id === 'build' ? '' : `<span class="gc-best is-new">New!</span>`;
+      el.innerHTML = `<span class="gc-lid" aria-hidden="true"><i></i></span><span class="gc-box"><span class="gc-icon">${g.art(132)}</span><span class="gc-name">${g.name}</span><span class="gc-desc">${g.desc}</span>${tagChip}</span>`;
       el.onclick = () => open(id); box.appendChild(el);
     }
   }

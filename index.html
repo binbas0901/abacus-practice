@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="toy-home.css?v=3.13">
 <link rel="stylesheet" href="toy-practice.css?v=3.13">
 <link rel="stylesheet" href="toy-door.css?v=3.13">
+<link rel="stylesheet" href="toy-room.css?v=3.13">
 </head>
 <body>
 <div id="app">
@@ -68,19 +69,18 @@
     <div class="toy-felt tw-mat"><div class="tw-list" id="whoList"></div></div>
   </div>
 </section>
-<section id="room" class="screen ws-screen rm">
-  <header class="a-top rm-top"><button class="ws-iconbtn" id="exitRoom" aria-label="Back home"></button><h1 class="ws-h1">My Room</h1></header>
-  <div class="rm-wall">
-    <div class="rm-items">
-      <div class="rm-item rm-item-book"><button class="rm-thing" id="roomStickers" aria-label="Sticker book"><span class="rm-art" id="roomBookArt"></span><span class="ws-badge rm-new" id="albumBadge"></span></button><span class="rm-label">Stickers</span></div>
-      <div class="rm-item rm-item-pot"><button class="rm-thing" id="roomGarden" aria-label="My garden"><span class="rm-art garden" id="garden"></span></button><span class="rm-label">My garden</span><span class="rm-sr" id="gardenLabel"></span></div>
-      <div class="rm-item rm-item-jar"><button class="rm-thing" id="jar" aria-label="Treat jar"></button><span class="rm-label">Treat jar</span></div>
-    </div>
-    <div class="rm-shelf" aria-hidden="true"></div>
+<section id="room" class="screen toy-scene toy-scene--evening tr-room">
+  <div id="roomSky"></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitRoom" aria-label="Back home"></button><h1 class="toy-plaque tr-title">My room</h1></header>
+  <div class="tr-shelfwrap" aria-hidden="true"><div class="tr-shelf-things" id="roomShelfArt"></div><div class="rm-shelf"></div></div>
+  <div class="tr-things">
+    <div class="tr-col tr-col-book"><button class="tr-thing" id="roomStickers" aria-label="Sticker book"><span class="tr-art" id="roomBookArt"></span><span class="tr-new" id="albumBadge"></span></button><span class="toy-chip tr-label">Stickers</span></div>
+    <div class="tr-col tr-col-pot"><button class="tr-thing" id="roomGarden" aria-label="My garden"><span class="tr-art" id="garden"></span></button><span class="toy-chip tr-label">My garden</span><span class="tr-sr" id="gardenLabel"></span></div>
+    <div class="tr-col tr-col-jar"><button class="tr-thing" id="jar" aria-label="Treat jar"></button><span class="toy-chip tr-label">Treat jar</span></div>
   </div>
-  <footer class="rm-floor">
-    <div id="bixRoom" class="rm-bix"></div>
-    <button class="ws-btn ochre rm-wish" id="roomWish" aria-label="Treats: pick a treat to save for"><span id="roomWishIc"></span>Treats</button>
+  <footer class="tr-foot">
+    <div id="bixRoom" class="tr-bix"></div>
+    <button class="toy-block toy-block--mustard toy-block--sm tr-wish" id="roomWish" aria-label="Treats: pick a treat to save for"><span id="roomWishIc"></span>Treats</button>
   </footer>
 </section>
 <section id="setup" class="screen toy-scene to">
@@ -132,9 +132,11 @@
   </div>
 </section>
 
-<section id="play" class="screen ws-screen ws-play">
-  <header class="c-top"><button class="ws-iconbtn exit" id="exitPlay" aria-label="Back home"></button><span class="play-ic" id="playIc" aria-hidden="true"></span><h1 class="ws-h1">Play</h1><div class="c-topbix" id="bixPlay"></div></header>
-  <div class="play-body"><div class="gcards" id="playCards"></div></div>
+<section id="play" class="screen toy-scene tr-play">
+  <div id="playSky"></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitPlay" aria-label="Back home"></button><h1 class="toy-plaque tr-title"><span class="tr-title-ic toy-lac--mustard" id="playIc" aria-hidden="true"></span>Play</h1></header>
+  <div class="tr-play-body"><div class="tr-boxes" id="playCards"></div></div>
+  <div class="tr-play-bix" id="bixPlay"></div>
 </section>
 
 <section id="door" class="screen toy-scene td-door">
@@ -155,25 +157,27 @@
   </div>
 </section>
 
-<section id="game" class="screen ws-screen ws-game">
-  <header class="c-top"><button class="ws-iconbtn exit" id="exitGame" aria-label="Back to the games"></button><div class="lvl gtitle" id="gameTitle"></div><div class="gscore" id="gameScore" aria-live="polite"></div></header>
-  <div class="game-stage" id="gameStage"></div>
-  <div class="gmascot" id="bixGame"></div>
+<section id="game" class="screen toy-scene toy-scene--calm tr-game">
+  <div id="gameSky"></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitGame" aria-label="Back to the games"></button><div class="toy-plaque tr-title tr-gtitle" id="gameTitle"></div><div class="tr-gscore" id="gameScore" aria-live="polite"></div></header>
+  <div class="tr-stage" id="gameStage"></div>
+  <div class="tr-gbix" id="bixGame"></div>
 </section>
 
-<section id="shop" class="screen ws-screen sh">
-  <header class="a-top"><button class="ws-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="ws-h1">Treats</h1><span class="a-gap"></span><span class="ws-chip sh-wallet" id="shopWallet"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
-  <div class="shop-body sh-body">
-    <div class="shop-top sh-top"><div id="bixShop" class="sh-bix"></div><div id="shopTickets" class="shop-tickets"></div></div>
-    <div class="tcards" id="shopCards"></div>
-    <div class="note shop-how sh-how">Golden beads come from finishing things: a lesson, drill or game +1 · gold sticker +1 · all of Today +3 · a new skill +5</div>
+<section id="shop" class="screen toy-scene toy-scene--table tr-shop">
+  <div class="tr-awning" aria-hidden="true"></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">Treats</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="shopWallet" aria-label="golden beads"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
+  <div class="tr-shop-body sh-body">
+    <div class="tr-shop-top"><div id="bixShop" class="tr-shop-bix"></div><div id="shopTickets" class="tr-tickets"></div></div>
+    <div class="tr-stall" id="shopCards"></div>
+    <div class="tr-how">Golden beads come from finishing things: a lesson, drill or game +1 · gold sticker +1 · all of Today +3 · a new skill +5</div>
   </div>
-  <div id="shopAsk" class="askm"><div class="ask-card"><div class="ask-t" id="askText"></div><div class="row"><button class="ws-btn" id="askYes">Yes please!</button><button class="ws-btn maple" id="askNo">Not yet</button></div></div></div>
+  <div id="shopAsk" class="tr-ask"><div class="toy-paper tr-ask-card"><div class="tr-ask-t" id="askText"></div><div class="tr-ask-row"><button type="button" class="toy-block toy-block--teal toy-block--sm" id="askYes">Yes please!</button><button type="button" class="toy-block toy-block--wood toy-block--sm" id="askNo">Not yet</button></div></div></div>
 </section>
 
-<section id="album" class="screen ws-screen ab">
-  <header class="a-top"><button class="ws-iconbtn" id="exitAlbum" aria-label="Back to My Room"></button><h1 class="ws-h1">My stickers</h1><span class="a-gap"></span><span class="ws-chip" id="albumCount"></span></header>
-  <div class="album-body ab-body" id="albumPages"></div>
+<section id="album" class="screen toy-scene toy-scene--table tr-album">
+  <header class="tr-top"><button class="toy-iconbtn" id="exitAlbum" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">My stickers</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="albumCount"></span></header>
+  <div class="tr-album-body" id="albumPages"></div>
 </section>
 
 <section id="lesson" class="screen toy-scene toy-scene--calm td-lesson">

@@ -173,8 +173,7 @@
   }
   // The sticker book: one page per pack. Stickers are content, so they stay emoji; empty spots are soft maple circles.
   function renderAlbum() {
-    const W = root.WS;
-    $('#albumCount').innerHTML = `${W.icon('star', 22, W.colors.ochre)}<b>${count()}</b><span class="ab-of">of ${ALL.length}</span>`;
+    $('#albumCount').innerHTML = `${root.TOY.icon('star', 26, '#C98A16')}<b>${count()}</b><span class="ab-of">of ${ALL.length}</span>`;
     const box = $('#albumPages'); box.innerHTML = '';
     for (const p of PACKS) {
       const got = p.items.filter((_, i) => data.stickers[p.id + ':' + i]).length;
@@ -186,7 +185,7 @@
   }
 
   /* ---------------- garden: a flower pot on the My Room shelf (one flower per practice day this month; never wilts) ---------------- */
-  const PETALS = ['red', 'ochre', 'indigo', 'pink', 'white', 'red', 'ochre', 'pink', 'indigo'];
+  const PETALS = ['red', 'mustard', 'indigo', 'plum', 'moon', 'red', 'mustard', 'plum', 'indigo'];   // lacquer petals (Toy Table kit gradients)
   // Flower spots above the pot, in the order they fill: each new flower goes where there is most room
   // (farthest from the others), so 3 flowers or 30 both look like a bouquet.
   const SPOTS = (() => {
@@ -203,17 +202,30 @@
     }
     return out;
   })();
+  // A glazed pot on its saucer; the plant grows a lacquer flower for every practice day. Classes are test / style hooks.
   function potSVG(flowers, sprout) {
     let stems = '', heads = '';
+    const sh = (cx, cy, rx, ry, op) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#toy-g-shadow)" opacity="${op}"/>`;
     flowers.forEach((f, i) => {
       const s = SPOTS[i % SPOTS.length], cx = 115 + (s.x - 115) * 0.35;
-      stems += `<path class="g-stem" d="M115 206 Q ${cx.toFixed(1)} ${((206 + s.y) / 2 + 12).toFixed(1)} ${s.x.toFixed(1)} ${s.y.toFixed(1)}"/>`;
-      const r = flowers.length <= 9 ? 16 : flowers.length <= 18 ? 13 : 11, c = PETALS[(f.d * 7) % PETALS.length];
-      heads += `<g class="plot bloom${f.full ? ' full' : ''}${f.today ? ' today' : ''}" transform="translate(${s.x.toFixed(1)} ${s.y.toFixed(1)})">${f.full ? `<circle r="${r + 6}" class="g-ring"/>` : ''}<circle r="${r}" class="g-${c}"/><circle r="${Math.round(r / 3)}" class="g-eye"/></g>`;
+      const d = `M115 206 Q ${cx.toFixed(1)} ${((206 + s.y) / 2 + 12).toFixed(1)} ${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
+      stems += `<path class="g-stem" d="${d}"/><path class="g-stem-hi" d="${d}"/>`;
+      const r = flowers.length <= 9 ? 17 : flowers.length <= 18 ? 14 : 12, c = PETALS[(f.d * 7) % PETALS.length], eye = c === 'mustard' ? 'red' : 'mustard';
+      let petals = '';
+      for (let k = 0; k < 5; k++) { const a = (k * 72 - 90 + (f.d * 13) % 40) * Math.PI / 180; petals += `<circle cx="${(Math.cos(a) * r * .62).toFixed(1)}" cy="${(Math.sin(a) * r * .62).toFixed(1)}" r="${(r * .52).toFixed(1)}" fill="url(#toy-lac-${c})"/>`; }
+      heads += `<g class="plot bloom${f.full ? ' full' : ''}${f.today ? ' today' : ''}" transform="translate(${s.x.toFixed(1)} ${s.y.toFixed(1)})"><g class="g-in">${f.full ? `<circle r="${r + 13}" class="g-ring" fill="url(#toy-g-glow)"/>` : ''}`
+        + `<circle cx="2" cy="3" r="${r}" fill="#3A1E06" opacity=".16"/>${petals}<circle r="${(r * .4).toFixed(1)}" class="g-eye" fill="url(#toy-lac-${eye})"/><ellipse cx="${(-r * .5).toFixed(1)}" cy="${(-r * .62).toFixed(1)}" rx="${(r * .24).toFixed(1)}" ry="${(r * .1).toFixed(1)}" transform="rotate(-35 ${(-r * .5).toFixed(1)} ${(-r * .62).toFixed(1)})" fill="#fff" opacity=".85"/></g></g>`;
     });
-    const leaves = flowers.length ? '<path class="g-leaf" d="M104 186 C 88 180, 82 166, 86 158 C 100 162, 106 172, 104 186Z"/><path class="g-leaf" d="M126 182 C 142 176, 148 162, 144 154 C 130 158, 124 168, 126 182Z"/>' : '';
-    const sp = sprout ? `<g class="plot sprout"><path class="g-stem" d="M115 206 V 176"/><path class="g-leaf" d="M115 186 C 104 184, 98 176, 100 170 C 110 172, 115 178, 115 186Z"/><path class="g-leaf" d="M115 180 C 126 176, 132 168, 130 162 C 120 164, 115 172, 115 180Z"/></g>` : '';
-    return `<svg viewBox="0 0 230 300" width="230" height="300" aria-hidden="true">${stems}${leaves}${sp}${heads}<path class="g-pot" d="M58 212 H172 L160 296 H70Z"/><rect class="g-rim" x="50" y="200" width="130" height="22" rx="8"/></svg>`;
+    const leaf = d => `<path class="g-leaf" d="${d}" fill="url(#toy-g-leaf)"/>`;
+    const leaves = flowers.length ? leaf('M104 190 C 84 184, 74 166, 80 152 C 98 158, 108 172, 104 190Z') + leaf('M126 186 C 146 180, 156 162, 150 148 C 132 154, 122 168, 126 186Z') + leaf('M112 196 C 96 196, 84 204, 70 200 C 80 188, 98 186, 112 196Z') + leaf('M118 196 C 134 196, 146 204, 160 200 C 150 188, 132 186, 118 196Z') : '';
+    const sp = sprout ? `<g class="plot sprout"><path class="g-stem" d="M115 206 V 172"/><path class="g-stem-hi" d="M115 206 V 172"/>${leaf('M115 186 C 102 184, 94 174, 97 166 C 109 168, 115 176, 115 186Z')}${leaf('M115 178 C 128 174, 135 164, 133 156 C 121 158, 115 168, 115 178Z')}</g>` : '';
+    const pot = `<ellipse cx="115" cy="289" rx="66" ry="9" fill="#B9AA90"/><ellipse cx="115" cy="285.5" rx="66" ry="8.4" fill="#FFF9EE"/>`
+      + `<path class="g-pot" d="M56 214 H174 L163 280 Q115 291 67 280Z" fill="url(#toy-g-pot)"/>`
+      + `<path d="M59.5 234 H170.5 L166.8 256 Q115 265 63.2 256Z" fill="url(#toy-lac-mustard)"/><path d="M59.5 234 H170.5 L170 237 H60Z" fill="#fff" opacity=".35"/>`
+      + `<path d="M138 214 H174 L163 280 Q150 284 132 286Z" fill="#3A1E06" opacity=".1"/>`
+      + `<ellipse cx="76" cy="246" rx="5" ry="24" transform="rotate(7 76 246)" fill="#fff" opacity=".7"/><ellipse cx="87" cy="232" rx="2.4" ry="9" transform="rotate(7 87 232)" fill="#fff" opacity=".5"/>`
+      + `<rect x="48" y="206" width="134" height="16" rx="8" fill="#C9BBA0"/><rect class="g-rim" x="48" y="198" width="134" height="18" rx="9" fill="#FFF9EE"/><rect x="58" y="201" width="60" height="4" rx="2" fill="#fff"/>`;
+    return `<svg viewBox="0 0 230 300" width="230" height="300" aria-hidden="true">${sh(132, 291, 96, 12, .5)}${sh(120, 290, 70, 9, .95)}${stems}${leaves}${sp}${heads}${pot}</svg>`;
   }
   function renderGarden(el, labelEl, days) {
     if (!el) return;

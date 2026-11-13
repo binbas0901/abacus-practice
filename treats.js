@@ -29,36 +29,40 @@
   }
   // A golden bead pops up with "+n" (and why, as a caption).
   function float(n, sub) {
-    const W = root.WS, el = document.createElement('div'); el.className = 'beadfloat ws-pop';
-    el.innerHTML = `<div class="bf-row">${W ? W.bead('ochre', 76) : ''}<span>+${typeof n === 'number' ? n : String(n).replace(/[^0-9]/g, '')}</span></div>${sub ? `<small>${esc(sub)}</small>` : ''}`;
+    const el = document.createElement('div'); el.className = 'beadfloat tr-float';
+    el.innerHTML = `<div class="bf-row">${root.TOY ? root.TOY.bead('mustard', 76) : ''}<span>+${typeof n === 'number' ? n : String(n).replace(/[^0-9]/g, '')}</span></div>${sub ? `<small>${esc(sub)}</small>` : ''}`;
     document.body.appendChild(el); try { App().Sfx.sparkle(); } catch (e) {}
     setTimeout(() => el.remove(), 2200);
   }
 
   /* ---------- the treat jar on the My Room shelf ---------- */
   const JAR_ROWS = 7, JAR_PER = 3, JAR_FULL = JAR_ROWS * JAR_PER;
+  // A glass jar with a wooden lid: golden beads pile up inside; the dashed line is how many the saved-for treat needs.
   function jarSVG(shown, goalLine) {
-    let beads = '';
+    const R = root.ToyRoom; let beads = '';
     for (let k = 0; k < shown; k++) {
-      const r = Math.floor(k / JAR_PER), c = k % JAR_PER, off = r % 2 ? 16 : 0;
-      const x = 46 + c * 46 + off - (r % 2 ? 8 : 0), y = 250 - r * 26;
-      beads += `<path class="j-bead${k === shown - 1 ? ' j-last' : ''}" d="M${x} ${y} Q${x + 24} ${y - 18} ${x + 48} ${y} Q${x + 24} ${y + 18} ${x} ${y}Z"/>`;
+      const r = Math.floor(k / JAR_PER), c = k % JAR_PER;
+      const x = 69 + c * 46 + (r % 2 ? 7 : -3) + ((k * 53) % 7) - 3, y = 256 - r * 25, rot = ((k * 37) % 23) - 11;
+      beads += `<g class="j-bead${k === shown - 1 ? ' j-last' : ''}" transform="translate(${x} ${y}) rotate(${rot}) scale(1.02)">${R.wideBead('mustard')}</g>`;
     }
-    const lineY = 250 - JAR_ROWS * 26 + 8;
-    return `<svg class="jarsvg" viewBox="0 0 230 280" width="230" height="280" aria-hidden="true">
-      <rect class="j-lid" x="58" y="14" width="114" height="34" rx="10"/>
-      <path class="j-glass" d="M50 52 H180 Q200 52 200 76 V250 Q200 276 174 276 H56 Q30 276 30 250 V76 Q30 52 50 52Z"/>
-      ${beads}${goalLine ? `<path class="j-goal" d="M44 ${lineY} H186"/>` : ''}
-      <path class="j-edge" d="M50 52 H180 Q200 52 200 76 V250 Q200 276 174 276 H56 Q30 276 30 250 V76 Q30 52 50 52Z"/>
-      <rect class="j-shine" x="44" y="70" width="18" height="150" rx="9"/></svg>`;
+    const lineY = 256 - JAR_ROWS * 25 + 10, body = 'M52 58 H178 Q200 58 200 82 V248 Q200 274 174 274 H56 Q30 274 30 248 V82 Q30 58 52 58Z';
+    return `<svg class="jarsvg" viewBox="0 0 230 290" width="230" height="290" aria-hidden="true">
+      ${R.shadowE(134, 280, 100, 12, .5)}${R.shadowE(120, 278, 76, 9, .95)}
+      <path class="j-glass" d="${body}"/><ellipse cx="115" cy="266" rx="74" ry="7" fill="#7FA9BC" opacity=".3"/>
+      ${beads}${goalLine ? `<path class="j-goal" d="M40 ${lineY} H190"/>` : ''}
+      <path class="j-edge" d="${body}"/><path class="j-edge-hi" d="${body}"/>
+      <rect class="j-shine" x="43" y="80" width="13" height="150" rx="6.5"/><rect class="j-shine" x="60" y="86" width="5" height="60" rx="2.5" opacity=".5"/><rect class="j-shine" x="186" y="96" width="5" height="70" rx="2.5" opacity=".55"/>
+      <rect x="50" y="46" width="130" height="18" rx="9" fill="#DCEEF3" stroke="#8FB7C8" stroke-width="2"/><rect x="58" y="49" width="70" height="4" rx="2" fill="#fff" opacity=".9"/>
+      <rect x="54" y="24" width="122" height="26" rx="9" fill="url(#toy-g-maple-side)"/><rect x="54" y="19" width="122" height="24" rx="9" fill="url(#toy-g-maple)"/><rect x="62" y="22" width="60" height="4" rx="2" fill="#fff" opacity=".55"/>
+      <circle cx="116" cy="13" r="11" fill="url(#toy-g-maple-side)"/><circle cx="115" cy="11" r="10" fill="url(#toy-g-maple)"/><ellipse cx="111" cy="7" rx="4" ry="2.2" fill="#fff" opacity=".7"/></svg>`;
   }
   function renderJar() {
-    const el = $('#jar'); if (!el) return; const w = wallet(), g = goal(), W = root.WS;
+    const el = $('#jar'); if (!el) return; const w = wallet(), g = goal(), W = root.WS, K = root.TOY;
     const cap = g ? g.price : 30, frac = Math.max(0, Math.min(1, w.beads / cap));
     const shown = w.beads > 0 ? Math.max(1, Math.round(frac * JAR_FULL)) : 0, ready = !!(g && w.beads >= g.price);
     el.innerHTML = jarSVG(shown, !!g)
-      + `<span class="jar-n ws-chip">${W.bead('ochre', 30)}<b>${w.beads}</b></span>`
-      + `<span class="jar-sub jar-tag${ready ? ' ready' : ''}${g ? '' : ' none'}">${g ? `<span class="jt-ic">${W.bead('ochre', 44)}</span><span>${esc(g.name)}</span>` : `${W.icon('star', 30, W.colors.ochre)}<span>Pick a treat</span>`}</span>`;
+      + `<span class="jar-n">${K.bead('mustard', 34)}<b>${w.beads}</b></span>`
+      + `<span class="jar-sub jar-tag${ready ? ' ready' : ''}${g ? '' : ' none'}">${g ? `<span class="jt-ic">${treatArt(g, 44)}</span><span class="jt-name">${esc(g.name)}</span>` : `<span class="jt-ic">${K.icon('star', 30, '#C98A16')}</span><span class="jt-name">Pick a treat</span>`}</span>`;
     el.classList.toggle('ready', ready);
     el.setAttribute('aria-label', `Treat jar: ${w.beads} golden beads` + (g ? `, saving for ${g.name}` : ''));
     const chip = $('#roomBeads'); if (chip) chip.innerHTML = `${W.bead('ochre', 26)}<b>${w.beads}</b>`;
@@ -72,6 +76,32 @@
     return [`Just ${more} more bead${more === 1 ? '' : 's'} for ${g.name}! You can do it!`, 'shop_saving'];
   }
 
+  /* ---------- treat pictures: small toys drawn from kit materials (lacquer, wood, paper). The family's own treats get the present. ---------- */
+  const sh2 = (rx) => `<ellipse cx="56" cy="92" rx="${rx + 8}" ry="6" fill="url(#toy-g-shadow)" opacity=".45"/><ellipse cx="51" cy="91" rx="${rx}" ry="5" fill="url(#toy-g-shadow)" opacity=".95"/>`;
+  const hi = (x, y, rx, ry, rot) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" transform="rotate(${rot} ${x} ${y})" fill="#fff" opacity=".8"/>`;
+  const PICS = {
+    cookie: () => sh2(34) + `<ellipse cx="50" cy="56" rx="38" ry="36" fill="#9E690D"/><ellipse cx="50" cy="52" rx="38" ry="35" fill="url(#toy-lac-wood)"/><ellipse cx="50" cy="52" rx="38" ry="35" fill="#C98A16" opacity=".42"/>`
+      + [[34, 40, 6], [58, 34, 5], [66, 56, 6.5], [44, 62, 5.5], [28, 58, 4], [52, 48, 4]].map(c => `<circle cx="${c[0] + 1}" cy="${c[1] + 1.5}" r="${c[2]}" fill="#4A2C06"/><circle cx="${c[0]}" cy="${c[1]}" r="${c[2]}" fill="#7A4A24"/><circle cx="${c[0] - 1.5}" cy="${c[1] - 1.5}" r="${c[2] * .3}" fill="#fff" opacity=".4"/>`).join('') + hi(30, 30, 10, 3.6, -38),
+    book: () => sh2(34) + `<rect x="18" y="16" width="64" height="76" rx="8" fill="#1B2557"/><rect x="24" y="20" width="60" height="70" rx="4" fill="#FFFDF6"/><path d="M26 86 H84 M26 82 H84" stroke="#D9CEB8" stroke-width="1.6"/>`
+      + `<rect x="14" y="12" width="64" height="74" rx="8" fill="url(#toy-lac-indigo)"/><rect x="14" y="12" width="12" height="74" rx="6" fill="#1B2557" opacity=".55"/>`
+      + `<path d="M58 34 a16 16 0 1 0 6 26 a13 13 0 0 1 -6 -26Z" fill="url(#toy-lac-moon)"/><circle cx="38" cy="38" r="2.4" fill="#FBEFC2"/><circle cx="34" cy="60" r="1.8" fill="#FBEFC2"/><circle cx="62" cy="70" r="2" fill="#FBEFC2"/>` + hi(36, 22, 10, 3, -20),
+    dice: () => sh2(32) + `<rect x="16" y="24" width="68" height="68" rx="16" fill="#8A181D"/><rect x="16" y="18" width="68" height="68" rx="16" fill="url(#toy-lac-red)"/>`
+      + [[34, 36], [66, 36], [50, 52], [34, 68], [66, 68]].map(c => `<circle cx="${c[0]}" cy="${c[1] + 1.5}" r="6.5" fill="#8A181D"/><circle cx="${c[0]}" cy="${c[1]}" r="6.5" fill="#FFFDF6"/>`).join('') + hi(34, 25, 12, 3.4, -18),
+    plate: () => sh2(38) + `<ellipse cx="50" cy="60" rx="42" ry="30" fill="#CDBFA8"/><ellipse cx="50" cy="55" rx="42" ry="30" fill="#FFFDF6"/><ellipse cx="50" cy="55" rx="29" ry="20" fill="#EFE6D2"/><ellipse cx="50" cy="57" rx="26" ry="17" fill="#FFFDF6"/>`
+      + `<path d="M22 60 a30 12 0 0 0 56 0 a30 26 0 0 0 -56 0Z" fill="#8A181D"/><path d="M22 56 a28 26 0 0 1 56 0Z" fill="url(#toy-lac-red)"/><rect x="20" y="54" width="60" height="7" rx="3.5" fill="url(#toy-g-brass)"/><circle cx="50" cy="28" r="6" fill="url(#toy-g-brass)"/>` + hi(36, 38, 9, 3, -30),
+    park: () => sh2(30) + `<rect x="44" y="52" width="13" height="40" rx="5" fill="url(#toy-g-post)"/><circle cx="34" cy="48" r="22" fill="url(#toy-g-leaf)"/><circle cx="66" cy="46" r="21" fill="url(#toy-g-leaf)"/><circle cx="50" cy="30" r="25" fill="url(#toy-g-leaf)"/>`
+      + `<circle cx="50" cy="30" r="25" fill="#fff" opacity=".1"/><circle cx="62" cy="42" r="5" fill="url(#toy-lac-red)"/><circle cx="36" cy="50" r="4.5" fill="url(#toy-lac-red)"/><circle cx="46" cy="22" r="4.5" fill="url(#toy-lac-red)"/>` + hi(38, 16, 10, 3.4, -30),
+    icecream: () => sh2(22) + `<path d="M31 46 H69 L52 92 Q50 95 48 92Z" fill="url(#toy-g-maple-side)"/><path d="M33 44 H67 L51 88 Q50 90 49 88Z" fill="url(#toy-g-maple)"/><path d="M38 52 L58 70 M48 46 L63 58 M62 52 L44 70 M52 46 L38 58" stroke="#B98448" stroke-width="2" opacity=".7"/>`
+      + `<circle cx="50" cy="30" r="25" fill="url(#toy-lac-plum)"/><path d="M26 36 q6 12 14 4 q6 10 12 2 q8 10 22 -6 q-4 16 -24 17 q-20 0 -24 -17Z" fill="url(#toy-lac-plum)"/><circle cx="60" cy="9" r="7" fill="url(#toy-lac-red)"/>` + hi(38, 17, 10, 3.6, -34) + hi(57, 6, 2.6, 1.2, -30),
+    gift: () => sh2(34) + `<rect x="16" y="46" width="68" height="46" rx="8" fill="#9E690D"/><rect x="16" y="42" width="68" height="46" rx="8" fill="url(#toy-lac-mustard)"/><rect x="12" y="30" width="76" height="20" rx="7" fill="#C98A16"/><rect x="12" y="26" width="76" height="20" rx="7" fill="url(#toy-lac-mustard)"/>`
+      + `<rect x="43" y="26" width="14" height="62" fill="url(#toy-lac-red)"/><path d="M50 26 C36 4 16 10 28 22 Q38 28 50 26Z M50 26 C64 4 84 10 72 22 Q62 28 50 26Z" fill="url(#toy-lac-red)"/><circle cx="50" cy="25" r="6" fill="#B52323"/>` + hi(28, 31, 10, 2.6, -8),
+  };
+  const PIC_OF = { '\u{1F36A}': 'cookie', '\u{1F4D6}': 'book', '\u{1F4DA}': 'book', '\u{1F3B2}': 'dice', '\u{1F37D}': 'plate', '\u{1F6DD}': 'park', '\u{1F333}': 'park', '\u{1F366}': 'icecream', '\u{1F368}': 'icecream' };
+  function treatArt(t, size) {
+    const key = PIC_OF[String(t && t.emoji || '').replace(/️/g, '')] || 'gift';
+    return `<svg class="tr-pic" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">${PICS[key]()}</svg>`;
+  }
+
   /* ---------- the treat list ("Treats") ---------- */
   // One big card comes first and is the only one with buttons: the saving goal, or (with no goal) the cheapest treat she can
   // get now, or else the cheapest one. Every other treat is a small quiet card: tapping it brings it up into the big card
@@ -83,28 +113,36 @@
     const byPrice = list().slice().sort((a, b) => a.price - b.price), w = wallet();
     return byPrice.find(t => w.beads >= t.price) || byPrice[0] || null;
   }
+  // The price as beads on a brass rod: the golden beads she has are slid to the left, the ones still to earn are bare wood.
+  // Long prices (more than 30) show a plain rod that fills.
+  function priceRod(t, have) {
+    if (t.price > 30) return `<div class="tbar" aria-hidden="true"><i style="width:${Math.min(100, Math.round(100 * have / t.price))}%"></i></div>`;
+    let b = ''; for (let k = 0; k < t.price; k++) b += `<i${k < have ? ' class="on"' : ''}></i>`;
+    return `<div class="trod${t.price > 16 ? ' many' : ''}" aria-hidden="true">${b}</div>`;
+  }
+  const lenClass = n => { n = String(n).length; return n > 26 ? ' xlong' : n > 16 ? ' long' : ''; };
   function renderShop() {
-    const w = wallet(), g = goal(), W = root.WS, top = featured(); $('#shopBeads').textContent = w.beads;
-    const bi = $('#shopBeadIc'); if (bi && !bi.firstChild) bi.innerHTML = W.bead('ochre', 30);
+    const w = wallet(), g = goal(), K = root.TOY, top = featured(); $('#shopBeads').textContent = w.beads;
+    const bi = $('#shopBeadIc'); if (bi && !bi.firstChild) bi.innerHTML = K.bead('mustard', 40);
     const box = $('#shopCards'); box.innerHTML = '';
     const rest = list().slice().sort((a, b) => a.price - b.price).filter(t => !top || t.id !== top.id);
     for (const t of (top ? [top] : []).concat(rest)) {
       const can = w.beads >= t.price, pct = Math.min(100, Math.round(100 * w.beads / t.price)), isGoal = !!(g && g.id === t.id), hi = top && top.id === t.id;
       const need = can ? 'You have enough' : `${t.price - w.beads} more to go`;
       if (hi) {
-        // The big card. One loud button at most: "Get it" when it is the goal and she has enough, else "Save for this".
-        const c = document.createElement('div'); c.className = 'tcard ws-card hi' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
-        const getBtn = can ? `<button class="ws-btn${isGoal ? '' : ' maple'}" data-get="${t.id}">Get it</button>` : '';
-        const goalBtn = isGoal ? '' : `<button class="ws-btn ochre" data-goal="${t.id}">${W.icon('star', 24, '#3D2412')}Save for this</button>`;
-        c.innerHTML = `${isGoal ? `<div class="tgoal">${W.icon('star', 18, '#3D2412')}Saving for this</div>` : ''}<div class="temoji">${t.emoji}</div>
-          <div class="tmain"><div class="tname">${esc(t.name)}</div><div class="tprice">${W.bead('ochre', 30)}<b>${t.price}</b></div>
-          <div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div><div class="tneed">${need}</div></div>
+        // The big card: the treat on the stall's counter. One loud button at most: "Get it" (teal) when it is the goal and she has enough, else "Save for this".
+        const c = document.createElement('div'); c.className = 'tcard hi' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
+        const getBtn = can ? `<button type="button" class="toy-block toy-block--sm ${isGoal ? 'toy-block--teal' : 'toy-block--wood'}" data-get="${t.id}">Get it</button>` : '';
+        const goalBtn = isGoal ? '' : `<button type="button" class="toy-block toy-block--sm toy-block--mustard" data-goal="${t.id}">${K.icon('star', 26, '#4A2C06')}Save for this</button>`;
+        c.innerHTML = `${isGoal ? `<div class="tgoal">${K.icon('star', 18, '#4A2C06')}Saving for this</div>` : ''}<div class="tart">${treatArt(t, 132)}</div>
+          <div class="tmain"><div class="tname${lenClass(t.name)}">${esc(t.name)}</div><div class="tprice">${K.bead('mustard', 34)}<b>${t.price}</b></div>
+          ${priceRod(t, w.beads)}<div class="tneed">${need}</div></div>
           <div class="tbtns">${goalBtn}${getBtn}</div>`;
         box.appendChild(c);
       } else {
-        const c = document.createElement('button'); c.type = 'button'; c.className = 'tcard ws-card tpick' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
+        const c = document.createElement('button'); c.type = 'button'; c.className = 'tcard tpick' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
         c.dataset.pick = t.id; c.setAttribute('aria-label', `${t.name}: ${t.price} golden beads. ${need}`);
-        c.innerHTML = `<div class="temoji">${t.emoji}</div><div class="tname">${esc(t.name)}</div><div class="tprice">${W.bead('ochre', 24)}<b>${t.price}</b></div>
+        c.innerHTML = `<div class="tart">${treatArt(t, 92)}</div><div class="tname${lenClass(t.name)}">${esc(t.name)}</div><div class="tprice">${K.bead('mustard', 26)}<b>${t.price}</b></div>
           <div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div>`;
         box.appendChild(c);
       }
@@ -114,10 +152,10 @@
     box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; picked = null; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).name}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
     box.querySelectorAll('[data-get]').forEach(b => b.onclick = () => ask(byId(b.dataset.get)));
     const open = w.tickets.filter(x => !x.given);
-    $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${W.icon('star', 20, W.colors.red)}<span>${esc(x.name)}</span></div>`).join('') : '';
+    $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${K.icon('star', 22, '#C98A16')}<span>${esc(x.name)}</span></div>`).join('') : '';
   }
   function ask(t) {
-    const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${esc(t.name)}</b> for <b class="ask-price">${root.WS.bead('ochre', 34)}${t.price}</b>?`; m.classList.add('active');
+    const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${esc(t.name)}</b> for <b class="ask-price">${root.TOY.bead('mustard', 38)}${t.price}</b>?`; m.classList.add('active');
     $('#askNo').onclick = () => m.classList.remove('active');
     $('#askYes').onclick = () => { m.classList.remove('active'); buy(t); };
   }
@@ -130,7 +168,7 @@
     renderShop(); renderJar();
   }
   function open() {
-    const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 84 });
+    const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 84 }); root.ToyRoom.bix(bx);
     const g = goal(), w = wallet();
     if (!g) F().Mascot.say(bx, 'Pick a treat to save for!', 0, 'shop_pick');
     else if (w.beads >= g.price) F().Mascot.say(bx, `You have enough for ${g.name}. Get it now, or keep saving. You choose!`, 0, null);
