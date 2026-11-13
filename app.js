@@ -747,7 +747,13 @@ async function showMe(p){
 
 /* ---------------- parent gate ---------------- */
 let gateAnswer=0; $('#grownups').addEventListener('click', openGate);
-function openGate(){ const a=10+Math.floor(Math.random()*80), b=3+Math.floor(Math.random()*7); gateAnswer=a*b; $('#gateQ').textContent=a+' × '+b+' = ?'; $('#gateA').value=''; show('gate'); setTimeout(()=>$('#gateA').focus(),50); }
+// Grown-ups gate: a 3-digit number written in words, typed as digits. Soroban kids can multiply,
+// so a sum is too easy; reading and converting "seven hundred forty-two" is an adult-level task (Apple guideline 1.3).
+const GATE_ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const GATE_TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function numberWords(n){ const h=Math.floor(n/100), r=n%100; let s=h?GATE_ONES[h]+' hundred':''; if(r){ s+=(s?' ':'')+(r<20?GATE_ONES[r]:GATE_TENS[Math.floor(r/10)]+(r%10?'-'+GATE_ONES[r%10]:'')); } return s; }
+function openGate(){ gateAnswer=100+Math.floor(Math.random()*900); window.__gateAnswer=gateAnswer;
+  $('#gateQ').innerHTML='<small>Grown-ups: type this number in digits</small>'+numberWords(gateAnswer); $('#gateA').value=''; show('gate'); setTimeout(()=>$('#gateA').focus(),50); }
 $('#gateCancel').addEventListener('click', ()=>show('home'));
 $('#gateOk').addEventListener('click', ()=>{ if(parseInt($('#gateA').value,10)===gateAnswer){ renderParent(); show('parent'); } else { openGate(); } });
 $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
@@ -769,7 +775,7 @@ async function renderChecklist(){
     ['ok', 'Current skill', `${n.icon} ${n.title} (${learned} skill${learned===1?'':'s'} learned). Check this matches their class.`, '<button class="btn small ghost" data-go="skill">Change</button> <button class="btn small ghost" data-go="check">Level check</button>'],
     [standalone?'ok':'todo', 'Home Screen app', standalone ? 'Installed. Safari will keep the data.' : 'Running in a browser tab. Safari can delete data after about a week without use. In Safari: Share ⬆︎ → Add to Home Screen, then open it from the icon.', ''],
     [persisted===false && !standalone ? 'todo':'ok', 'Storage', persisted ? 'Protected by the browser.' : standalone ? 'Home Screen app storage.' : 'Not protected yet (install to the Home Screen).', ''],
-    [isDefault?'warn':'ok', 'Treats', isDefault ? 'Starter list: candy, lollipop, mac n cheese, cake, Chick-fil-A, McDonald’s. Edit it if this child likes other treats.' : `${treats.length} treats set.`, '<button class="btn small ghost" data-go="treats">Edit treats</button>'],
+    [isDefault?'warn':'ok', 'Treats', isDefault ? 'Starter list: a snack, a story, a game together, choosing dinner, a park trip, an ice cream outing. Change it to what motivates this child.' : `${treats.length} treats set.`, '<button class="btn small ghost" data-go="treats">Edit treats</button>'],
     ['ok', 'Listening voice', voice+'.', '<button class="btn small ghost" data-go="voice">Change</button>'],
     [lb ? (days_>30?'warn':'ok') : 'warn', 'Backup', lb ? `Last saved ${days_===0?'today':days_===1?'yesterday':days_+' days ago'}.` : 'Never saved. Save one so progress can be restored if the device is lost or reset.', '<button class="btn small ghost" data-go="backup">Back up</button>'],
   ];

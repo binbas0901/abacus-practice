@@ -14,7 +14,7 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=3.9">
+<link rel="stylesheet" href="styles.css?v=3.10">
 </head>
 <body>
 <div id="app">
@@ -37,7 +37,7 @@
     <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
     <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
   </div>
-  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.9</div><button id="grownups">⚙️ Grown-ups</button></div>
+  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.10</div><button id="grownups">⚙️ Grown-ups</button></div>
 </section>
 
 <section id="setup" class="screen">
@@ -158,7 +158,7 @@
 <div id="nodemenu"><div class="menu-card"><h3 id="nmTitle"></h3><div class="intro" id="nmIntro"></div><button class="btn" id="nmLearn">📖 Learn</button><button class="btn ghost" id="nmLook">👀 Look &amp; solve</button><button class="btn ghost" id="nmListen">👂 Listen &amp; solve</button><button class="btn ghost small" id="nmClose">Close</button></div></div>
 
 <section id="gate" class="screen gate">
-  <div class="q" id="gateQ"></div><input id="gateA" type="number" inputmode="numeric" placeholder="?">
+  <div class="q" id="gateQ"></div><input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="?">
   <div class="row"><button class="btn small ghost" id="gateCancel">Back</button><button class="btn small" id="gateOk">Open</button></div>
 </section>
 
@@ -169,7 +169,7 @@
   <div class="checkl" id="setupList"></div>
 
   <h3>Where they are</h3>
-  <div class="field"><label>Current skill<span class="hint">Everything before it counts as learned. Change this if their class is further along.</span></label><select id="sNode"></select></div>
+  <div class="field"><label>Current skill<span class="hint">Everything before it counts as learned. Change this if your child already knows more.</span></label><select id="sNode"></select></div>
   <div class="field"><label>Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" style="font:inherit;font-size:17px;padding:8px 12px;border-radius:10px;border:1px solid #D9CDB6"></div>
   <div class="row" style="justify-content:flex-start;margin:6px 0 10px"><button class="btn small ghost" id="levelAgain">🔍 Run the level check again</button></div>
   <table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table>
@@ -240,14 +240,14 @@
 </section>
 
 </div>
-<script src="engine.js?v=3.9"></script>
-<script src="soroban.js?v=3.9"></script>
-<script src="curriculum.js?v=3.9"></script>
-<script src="audio/bix-lines.js?v=3.9"></script>
-<script src="fun.js?v=3.9"></script>
-<script src="games.js?v=3.9"></script>
-<script src="treats.js?v=3.9"></script>
-<script src="onboarding.js?v=3.9"></script>
-<script src="app.js?v=3.9"></script>
+<script src="engine.js?v=3.10"></script>
+<script src="soroban.js?v=3.10"></script>
+<script src="curriculum.js?v=3.10"></script>
+<script src="audio/bix-lines.js?v=3.10"></script>
+<script src="fun.js?v=3.10"></script>
+<script src="games.js?v=3.10"></script>
+<script src="treats.js?v=3.10"></script>
+<script src="onboarding.js?v=3.10"></script>
+<script src="app.js?v=3.10"></script>
 </body>
 </html>

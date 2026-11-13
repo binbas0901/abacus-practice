@@ -1,0 +1,1 @@
+(()=>{ try{ if (!localStorage.getItem('abacus.progress')){ const pr={current:'bf_add_a',nodes:{}}; ['beads','add_direct','sub_direct','sf_add','sf_sub'].forEach(id=>pr.nodes[id]={lesson:true,mastered:'parent',hist:[]}); localStorage.setItem('abacus.progress', JSON.stringify(pr)); } }catch(e){} })();

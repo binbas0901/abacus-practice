@@ -1,5 +1,5 @@
 // Golden beads and the Treat Shop: real-world rewards the family chooses.
-// She earns beads for finishing things; treats cost beads; tickets go to a grown-up to hand over.
+// The child earns beads for finishing things; treats cost beads; tickets go to a grown-up to hand over.
 (function (root) {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -7,12 +7,12 @@
   const F = () => root.Fun;
 
   const DEFAULT_TREATS = [
-    { id: 't1', emoji: '🍬', name: 'Piece of candy', price: 3 },
-    { id: 't2', emoji: '🍭', name: 'Lollipop', price: 5 },
-    { id: 't3', emoji: '🧀', name: 'Mac n cheese', price: 12 },
-    { id: 't4', emoji: '🍰', name: 'Cake dessert', price: 20 },
-    { id: 't5', emoji: '🐔', name: 'Chick-fil-A', price: 30 },
-    { id: 't6', emoji: '🍟', name: "McDonald's", price: 30 },
+    { id: 't1', emoji: '🍪', name: 'Small snack', price: 3 },
+    { id: 't2', emoji: '📖', name: 'Extra bedtime story', price: 5 },
+    { id: 't3', emoji: '🎲', name: 'Game with a grown-up', price: 8 },
+    { id: 't4', emoji: '🍽️', name: 'Choose dinner', price: 12 },
+    { id: 't5', emoji: '🛝', name: 'Park trip', price: 20 },
+    { id: 't6', emoji: '🍦', name: 'Ice cream outing', price: 30 },
   ];
   // How beads are earned (shown to grown-ups too)
   const EARN = { activity: 1, gold: 1, today: 3, skill: 5 };

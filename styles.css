@@ -395,7 +395,8 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
    GROWN-UPS — calm and plain on purpose
    ===================================================================== */
 .gate{align-items:center;justify-content:center;gap:20px;text-align:center}
-.gate .q{font-family:var(--display);font-weight:800;font-size:48px}
+.gate .q{font-family:var(--display);font-weight:800;font-size:clamp(30px,5vw,44px);max-width:640px;line-height:1.15}
+.gate .q small{display:block;font-family:var(--body);font-weight:400;font-size:18px;color:var(--ink-2,#56607f);margin-bottom:10px}
 .gate input{font-family:var(--display);font-weight:800;font-size:40px;width:180px;text-align:center;padding:10px;border-radius:18px;border:4px solid var(--line);background:#fff;color:var(--ink)}
 .parent{padding:18px 30px 40px;overflow:auto;-webkit-user-select:text;user-select:text;font-size:16px;touch-action:pan-y;background:#F6F9FF;font-family:-apple-system,system-ui,"Segoe UI",sans-serif;color:var(--ink)}
 .parent h2{margin:6px 0 10px;font-family:var(--display);font-weight:800;font-size:32px}
