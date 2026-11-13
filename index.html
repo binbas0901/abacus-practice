@@ -22,6 +22,7 @@
 <!-- stream C --><link rel="stylesheet" href="screens-door.css?v=3.13">
 <link rel="stylesheet" href="screens-grownup.css?v=3.13">
 <link rel="stylesheet" href="toy.css?v=3.13">
+<link rel="stylesheet" href="toy-door.css?v=3.13">
 </head>
 <body>
 <div id="app">
@@ -117,16 +118,21 @@
   <div class="play-body"><div class="gcards" id="playCards"></div></div>
 </section>
 
-<section id="door" class="screen ws-screen ws-door">
-  <header class="c-top"><button class="ws-iconbtn exit" id="exitDoor" aria-label="Back home"></button><h1 class="ws-h1">Practice</h1><div class="c-topbix" id="bixDoor"></div></header>
-  <div class="door-blocks" role="group" aria-label="How do you want to practise?">
-    <button class="ws-block tall door-block" id="doorLook" data-door="visual" aria-label="Look: read the numbers"></button>
-    <button class="ws-block tall ochre door-block" id="doorListen" data-door="listen" aria-label="Listen: hear the numbers"></button>
-    <button class="ws-block tall jade door-block" id="doorFlash" data-door="flash" aria-label="Flash: numbers pop up fast"></button>
+<section id="door" class="screen toy-scene td-door">
+  <header class="td-top"><button class="toy-iconbtn exit" id="exitDoor" aria-label="Back home"></button><h1 class="td-sign">Practice</h1></header>
+  <div class="td-sky" id="doorSky" aria-hidden="true"></div>
+  <div class="td-shelf" id="doorProps" aria-hidden="true"></div>
+  <div class="td-stage">
+    <div class="c-topbix td-bixspot" id="bixDoor"></div>
+    <div class="door-blocks" role="group" aria-label="How do you want to practise?">
+      <button class="td-toy td-toy--indigo door-block" id="doorLook" data-door="visual" aria-label="Look: read the numbers"></button>
+      <button class="td-toy td-toy--mustard door-block" id="doorListen" data-door="listen" aria-label="Listen: hear the numbers"></button>
+      <button class="td-toy td-toy--red door-block" id="doorFlash" data-door="flash" aria-label="Flash: numbers pop up fast"></button>
+    </div>
   </div>
   <div class="door-pathwrap">
-    <div class="door-pathhead"><h2 class="ws-h2">My path</h2><button class="door-all" id="doorAll" aria-label="See all skills (for grown-ups)"></button></div>
-    <div class="ws-frame door-frame"><div class="ws-inner door-rod" id="doorPath"></div></div>
+    <div class="door-pathhead"><h2 class="td-pathtitle">My path</h2><button class="door-all" id="doorAll" aria-label="See all skills (for grown-ups)"></button></div>
+    <div class="td-path" id="doorPath"></div>
   </div>
 </section>
 
@@ -151,14 +157,18 @@
   <div class="album-body ab-body" id="albumPages"></div>
 </section>
 
-<section id="lesson" class="screen ws-screen ws-lesson">
-  <header class="c-top"><button class="ws-iconbtn exit" id="exitLesson" aria-label="Stop the lesson"></button><div class="lvl" id="lessonTitle"></div><div class="lesson-steps" id="lessonSteps" role="img" aria-label=""></div></header>
+<section id="lesson" class="screen toy-scene toy-scene--calm td-lesson">
+  <header class="td-top"><button class="toy-iconbtn exit" id="exitLesson" aria-label="Stop the lesson"></button>
+    <div class="td-board"><div class="lvl" id="lessonTitle"></div><div class="lesson-steps" id="lessonSteps" role="img" aria-label=""></div></div></header>
+  <div class="td-sky" id="lessonSky" aria-hidden="true"></div>
   <div class="lesson-body">
-    <div class="lesson-ab" id="lessonAbacus"></div>
+    <div class="lesson-left"><div class="lesson-ab" id="lessonAbacus"></div><div class="lesson-pair" id="lessonPair"></div></div>
     <div class="lesson-side">
-      <div class="lesson-bix" id="bixLesson"></div>
-      <div class="caption" aria-live="polite"><div class="k" id="capKind"></div><div class="prob" id="capProb"></div><div class="ctext" id="capText"></div><div class="friends" id="capFriends"></div></div>
-      <div class="lesson-nav"><button class="ws-btn maple small" id="lessonHint" style="display:none"></button><span class="sp"></span><button class="ws-btn big" id="lessonNext">Next</button></div>
+      <div class="caption toy-bubble toy-bubble--left" id="lessonCap" aria-live="polite"><div class="k" id="capKind"></div><span class="ws-say td-say" id="capSay" hidden></span><div class="prob" id="capProb"></div><div class="ctext" id="capText"></div><div class="friends" id="capFriends"></div></div>
+      <div class="lesson-floor">
+        <div class="lesson-bix" id="bixLesson"></div>
+        <div class="lesson-nav"><button class="toy-block toy-block--wood toy-block--sm" id="lessonHint" style="display:none"></button><button class="toy-block toy-block--teal td-next" id="lessonNext">Next</button></div>
+      </div>
     </div>
   </div>
 </section>

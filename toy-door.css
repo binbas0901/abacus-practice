@@ -1,0 +1,274 @@
+/* toy-door.css — Toy Table look for the Practice door, My path and lessons (agent "door").
+   Built from toy.css tokens and TOY.* drawings; rules in design/BRIEF2.md. Everything is scoped under #door / #lesson
+   so it never touches other screens (the lesson soroban is restyled here only, not in abacus-input.css). */
+
+#door.td-door,#lesson.td-lesson{--pad:clamp(24px,3.4vw,46px);padding:0;gap:0;min-height:0;font-family:var(--toy-body);color:var(--toy-ink)}
+#door .td-sky,#lesson .td-sky{display:contents}
+
+/* things on the wall: the back button, a hanging sign / board */
+#door .td-top,#lesson .td-top{position:absolute;z-index:3;left:0;right:0;top:0;height:var(--toy-wall-h);box-sizing:border-box;padding:22px var(--pad) 0;
+  display:flex;align-items:flex-start;gap:18px;pointer-events:none;min-height:0}
+#door .td-top > *,#lesson .td-top > *{pointer-events:auto;flex:none}
+#door .exit.toy-iconbtn,#lesson .exit.toy-iconbtn{width:68px;height:68px;color:var(--toy-walnut)}
+
+/* small local motions (tap feedback only; nothing idles) */
+@keyframes td-pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes td-bounce{0%,100%{transform:scale(1)}40%{transform:scale(1.14)}}
+@keyframes td-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes td-hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-9%)}}
+@keyframes td-wob{0%,100%{transform:rotate(0)}30%{transform:rotate(-5deg)}70%{transform:rotate(4deg)}}
+@keyframes td-talk{0%,100%{transform:scale(1,1)}50%{transform:scale(1.02,.975)}}
+.td-pop{animation:td-bounce .34s ease-out both}
+.td-shake{animation:td-shake .3s ease}
+
+/* ---------- Bix on the table (Fun.Mascot keeps the behaviour; the figurine is TOY.bix) ---------- */
+#door .bix.td-bixed,#lesson .bix.td-bixed{width:auto;height:auto;line-height:0;cursor:pointer;flex:none;-webkit-tap-highlight-color:transparent}
+#door .bix.td-bixed > svg,#lesson .bix.td-bixed > svg{display:none}
+.td-bixfig{display:block;line-height:0;transform-origin:50% 86%}
+.td-bixfig svg{display:block;width:var(--td-bix,180px);height:var(--td-bix,180px);overflow:visible}
+.bix.td-bixed.happy .td-bixfig{animation:td-hop .42s ease-out 2}
+.bix.td-bixed.cheer .td-bixfig{animation:td-hop .5s ease-out 3}
+.bix.td-bixed.oops .td-bixfig{animation:td-wob .55s ease-in-out 1}
+.bix.td-bixed.talking .td-bixfig{animation:td-talk .46s ease-in-out infinite}
+
+/* =====================================================================
+   Practice door
+   ===================================================================== */
+#door.td-door{--toy-window-x:clamp(300px,29.5vw,420px)}
+/* the "Practice" sign hangs on the wall by a string */
+#door .td-sign{position:relative;margin:26px 0 0;display:inline-flex;align-items:center;gap:12px;padding:9px 26px 12px;border-radius:18px;
+  font:700 clamp(28px,3vw,36px)/1.1 var(--toy-display);color:var(--toy-ink);white-space:nowrap;
+  background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),inset 0 10px 0 rgba(255,244,220,.35),0 5px 0 var(--toy-wood-deep),5px 12px 12px rgba(81,104,63,.34)}
+#door .td-sign::before{content:"";position:absolute;left:50%;top:-34px;width:96px;height:38px;margin-left:-48px;
+  background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 38'><path d='M8 37 L48 9 L88 37' fill='none' stroke='%23B48C54' stroke-width='3' stroke-linejoin='round'/><circle cx='49.5' cy='10.5' r='8' fill='%234A2E12' opacity='.25'/><circle cx='48' cy='8.5' r='8' fill='%23B98448'/><circle cx='46' cy='6.5' r='3' fill='%23FCE4B8' opacity='.7'/></svg>") center/contain no-repeat}
+/* rainbow and plant stand at the back of the table, against the wall */
+#door .td-shelf{position:absolute;z-index:1;right:calc(var(--pad) - 8px);top:var(--toy-wall-h);height:0;display:flex;align-items:flex-end;gap:14px;pointer-events:none}
+#door .td-shelf .toy-prop{display:block;flex:none;margin-bottom:-14px}
+#door .td-shelf .toy-prop:first-child{margin-bottom:-8px}
+
+#door .td-stage{position:relative;z-index:2;flex:1 1 auto;min-height:0;box-sizing:border-box;display:grid;grid-template-columns:minmax(236px,23%) minmax(0,1fr);
+  gap:clamp(16px,2.4vw,34px);align-items:end;padding:calc(var(--toy-wall-h) + 34px) var(--pad) 0}
+
+/* Bix and his paper bubble (bubble above, Bix on the table under it) */
+#door .td-bixspot.bixwrap{--td-bix:clamp(210px,21vw,270px);position:relative;display:flex;flex-direction:column-reverse;align-items:flex-start;gap:14px;
+  margin:-104px 0 0;min-width:0;align-self:end}
+#door .td-bixspot .bix{margin:calc(var(--td-bix)*-.2) 0 calc(var(--td-bix)*-.07) calc(var(--td-bix)*-.04)}
+#door .td-bixspot .bubble{visibility:hidden;position:relative;display:flex;align-items:center;gap:10px;box-sizing:border-box;width:100%;max-width:none;min-height:0;
+  margin:0;padding:15px 16px 17px 20px;border:0;border-radius:24px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:600 clamp(20px,1.95vw,24px)/1.22 var(--toy-display);
+  box-shadow:inset 0 2px 0 #fff,6px 11px 16px rgba(var(--toy-shade),.3)}
+#door .td-bixspot .bubble.on{visibility:visible}
+#door .td-bixspot .bubble.pop{animation:td-pop .3s ease-out both}
+#door .td-bixspot .bubble::before{display:none}
+#door .td-bixspot .bubble::after{content:"";position:absolute;left:34px;bottom:-22px;width:50px;height:32px;background:var(--toy-paper-dk);clip-path:polygon(22% 0,100% 0,0 100%)}
+#door .td-bixspot .bubble .ws-text{flex:1;min-width:0}
+#door .td-bixspot .bubble .ws-say{flex:none;display:inline-flex;align-self:flex-start;line-height:0;opacity:1;color:var(--toy-indigo);margin-top:2px}
+
+/* the three toys: a maple block with a lacquer dome on it */
+#door .door-blocks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.3vw,32px);align-self:stretch;height:auto;min-height:0;max-height:340px;
+  padding:0 4px 16px;box-sizing:border-box;align-items:stretch}
+#door .td-toy{--lac1:#96A5EA;--lac2:#3F52A8;--lac3:#28357A;--lac4:#1B2557;
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,1.6vh,18px);box-sizing:border-box;min-width:0;min-height:176px;
+  padding:14px 12px 16px;border:0;border-radius:32px;cursor:pointer;color:var(--toy-ink);
+  background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;background-position:var(--toy-gx,0) var(--toy-gy,0),0 0;
+  box-shadow:inset 0 0 0 2.5px rgba(255,243,216,.75),inset 0 16px 0 rgba(255,246,226,.34),inset 0 -4px 0 rgba(154,106,52,.18),0 13px 0 var(--toy-wood-deep),
+    0 15px 0 #94642F,11px 30px 24px rgba(var(--toy-shade),.42);
+  transition:transform .09s ease-out,box-shadow .09s ease-out;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#door .td-toy:nth-child(1){rotate:-1.3deg}
+#door .td-toy:nth-child(2){--toy-gx:-170px;--toy-gy:-70px;translate:0 5px}
+#door .td-toy:nth-child(3){--toy-gx:-330px;--toy-gy:-150px;rotate:1.1deg}
+#door .td-toy:active{transform:translateY(9px);box-shadow:inset 0 0 0 2.5px rgba(255,243,216,.75),inset 0 16px 0 rgba(255,246,226,.34),inset 0 -4px 0 rgba(154,106,52,.18),
+  0 4px 0 var(--toy-wood-deep),0 5px 0 #94642F,4px 9px 8px rgba(var(--toy-shade),.42)}
+#door .td-toy:focus-visible{outline:4px solid var(--toy-ink);outline-offset:5px}
+#door .td-toy--mustard{--lac1:#FFE9A6;--lac2:#F2B632;--lac3:#C98A16;--lac4:#9E690D}
+#door .td-toy--red{--lac1:#FF8F70;--lac2:#E5402F;--lac3:#B52323;--lac4:#8A181D}
+#door .td-toy-face{position:relative;flex:none;display:flex;align-items:center;justify-content:center;height:min(62%,168px);aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 30% 22%,var(--lac1) 0,var(--lac2) 42%,var(--lac3) 82%,var(--lac4) 100%);
+  box-shadow:inset 0 0 0 5px rgba(255,255,255,.13),inset 0 -8px 10px rgba(26,6,6,.2),0 7px 0 var(--lac4),5px 13px 9px rgba(var(--toy-shade),.46)}
+#door .td-toy-face::before{content:"";position:absolute;left:11%;top:9%;width:40%;height:19%;border-radius:50%;transform:rotate(-34deg);pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,255,255,.92) 0,rgba(255,255,255,.7) 28%,rgba(255,255,255,.2) 62%,rgba(255,255,255,0) 100%)}
+#door .td-toy-face .toy-icon{position:relative;width:60%;height:60%;overflow:visible}
+#door .door-label{display:block;font:700 clamp(30px,3.3vw,42px)/1 var(--toy-display);color:var(--toy-ink);text-shadow:0 1.5px 0 rgba(255,244,220,.9)}
+#door.intro .td-toy{animation:td-pop .36s ease-out both}
+#door.intro .td-toy:nth-child(2){animation-delay:.06s} #door.intro .td-toy:nth-child(3){animation-delay:.12s}
+
+/* ---------- My path ---------- */
+#door .door-pathwrap{position:relative;z-index:2;flex:none;display:block;min-height:0;margin-top:clamp(2px,.8vh,14px);padding-bottom:clamp(18px,2.6vh,30px)}
+#door .door-pathhead{display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:0 var(--pad)}
+#door .td-pathtitle{margin:0;padding:6px 20px 9px;border-radius:14px;font:600 24px/1.1 var(--toy-display);color:var(--toy-ink);
+  background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;background-position:-90px -40px,0 0;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 4px 0 var(--toy-wood-deep),4px 9px 9px rgba(var(--toy-shade),.34)}
+#door .door-all{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 18px 2px 14px;border:0;border-radius:999px;cursor:pointer;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:400 17px/1 var(--toy-body);
+  box-shadow:inset 0 1px 0 #fff,0 2px 0 #D9CEB8,3px 6px 8px rgba(var(--toy-shade),.26);-webkit-tap-highlight-color:transparent}
+#door .door-all .toy-icon{color:var(--toy-walnut)}
+#door .door-all:active{transform:translateY(2px)}
+/* the rod winds from one edge of the table to the other; slide it sideways to see every skill */
+#door .td-path{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x;
+  margin-top:2px;line-height:1.2}
+#door .td-path::-webkit-scrollbar{display:none}
+#door .dp-row{position:relative;display:block;flex:none;padding:0}
+#door .dp-cord{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+#door .dp-flag{position:absolute;display:block;line-height:0;pointer-events:none}
+#door .dp-flag svg{display:block;width:100%;height:auto;overflow:visible}
+#door .dp-node{position:absolute;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;box-sizing:border-box;transform:translateX(-50%);pointer-events:none}
+#door .dp-node > *{pointer-events:auto}
+#door .dp-bead{position:relative;display:flex;align-items:center;justify-content:center;min-width:76px;min-height:76px;height:auto;padding:0;border:0;background:none;
+  color:var(--toy-walnut);cursor:pointer;line-height:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .08s ease}
+#door .dp-bead:active{transform:translateY(3px) scale(.97)}
+#door .dp-bead:focus-visible{outline:4px solid var(--toy-ink);outline-offset:2px;border-radius:20px}
+#door .dp-bead .toy-bead{position:relative;display:block}
+#door .dp-mark{position:absolute;left:0;right:0;top:0;bottom:7%;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#door .dp-node.done .dp-mark .toy-icon{margin-left:-4%}
+#door .dp-glow{position:absolute;left:50%;top:46.5%;width:250%;height:150%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,246,190,.95) 0,rgba(255,228,140,.55) 48%,rgba(255,226,138,0) 100%)}
+#door .dp-name span{white-space:nowrap}
+#door .dp-name{display:block;max-width:140px;text-wrap:balance;font:600 19px/1.14 var(--toy-display);color:var(--toy-ink);text-align:center;white-space:normal;text-shadow:0 1px 0 rgba(255,240,208,.75)}
+#door .dp-node.done .dp-name{color:var(--toy-ink)}
+#door .dp-node.locked .dp-name{color:#5E3A18;font-weight:500}
+#door .dp-node.cur{gap:6px}
+#door .dp-node.cur .dp-name{max-width:none;white-space:nowrap;padding:5px 16px 6px;border-radius:999px;background:var(--toy-paper);color:var(--toy-ink);font-weight:700;font-size:23px;line-height:1.1;
+  text-shadow:none;box-shadow:0 2px 0 rgba(138,90,38,.5),3px 6px 7px rgba(var(--toy-shade),.26)}
+#door .dp-learn.toy-block{min-width:0;min-height:66px;margin-top:5px;padding:4px 24px 2px 18px;font-size:22px;white-space:nowrap}
+
+/* =====================================================================
+   Lessons
+   ===================================================================== */
+#lesson.td-lesson{--toy-wall-h:clamp(136px,19.5vh,196px);--toy-window-x:clamp(104px,10.4vw,150px);--win-w:calc((var(--toy-wall-h) - 16px)*2.15)}
+/* title and progress share one wooden board fixed to the wall */
+#lesson .td-top{justify-content:space-between}
+#lesson .td-board{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;box-sizing:border-box;min-width:0;flex:0 1 auto;
+  max-width:calc(100vw - var(--pad) - var(--toy-window-x) - var(--win-w) - 22px);padding:9px 22px 8px;border-radius:20px;
+  background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;background-position:-60px -30px,0 0;
+  box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),inset 0 10px 0 rgba(255,244,220,.32),0 6px 0 var(--toy-wood-deep),5px 13px 12px rgba(81,104,63,.36)}
+#lesson .td-board .lvl{max-width:100%;font:700 clamp(22px,2.4vw,28px)/1.15 var(--toy-display);color:var(--toy-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lesson .lesson-steps{position:relative;display:flex;align-items:center;gap:1px;margin:0;padding:3px 14px 1px;flex:none;max-width:100%;box-sizing:border-box}
+#lesson .lesson-steps::before{content:"";position:absolute;left:0;right:0;top:calc(50% - 3px);height:7px;border-radius:4px;
+  background:linear-gradient(#FFF1B8,#E2B54A 35%,#9C7420 72%,#C99A38);box-shadow:1.5px 3px 2px rgba(var(--toy-shade),.3)}
+#lesson .ls-dot{position:relative;display:block;width:auto;height:auto;background:none;-webkit-mask:none;mask:none;line-height:0;transition:none}
+#lesson .ls-dot .toy-bead{position:relative;display:block;width:clamp(21px,2.35vw,30px);height:auto}
+#lesson .ls-dot.cur{margin:0 9px}
+#lesson .ls-dot.cur::before{content:"";position:absolute;left:50%;top:47%;width:240%;height:130%;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,246,190,.95) 0,rgba(255,228,140,.5) 50%,rgba(255,226,138,0) 100%)}
+
+#lesson .lesson-body{position:relative;z-index:2;flex:1;min-height:0;box-sizing:border-box;display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:clamp(24px,3.4vw,52px);padding:calc(var(--toy-wall-h) + 22px) var(--pad) clamp(16px,2.6vh,30px)}
+
+/* the soroban: walnut frame, lacquer beads (scoped here; abacus-input.css is not touched) */
+#lesson .lesson-left{position:relative;flex:0 1 auto;min-width:0;display:flex;flex-direction:column;align-self:center}
+#lesson .lesson-ab{flex:none;min-width:0;max-width:none;line-height:0}
+#lesson .lesson-ab .abx{display:flex;gap:14px}
+#lesson .lesson-ab .abx-svg{width:auto;height:auto;max-width:100%;max-height:calc(100vh - var(--toy-wall-h) - 150px);border-radius:16px;
+  box-shadow:10px 20px 22px rgba(var(--toy-shade),.4)}
+#lesson .abx-frame-shadow{fill:#4A2A12}
+#lesson .abx-frame{fill:#7A4A24;stroke:#9C6436;stroke-width:2.5}
+#lesson .abx-inner{fill:#F3E0B8;stroke:#4A2A12;stroke-opacity:.35;stroke-width:3}
+#lesson .abx-beam{fill:#6A3E1E}
+#lesson .abx-rodline{fill:url(#toy-g-post)}
+#lesson .abx-dot{fill:#FFF3D8}
+#lesson .abx-lens{fill:url(#toy-g-maple-side);stroke:rgba(74,42,18,.55);stroke-width:1.6;transition:none}
+#lesson .abx-bead.on .abx-lens{fill:url(#toy-lac-red);stroke:rgba(90,10,16,.55)}
+#lesson .abx-bead[data-kind="h"].on .abx-lens{fill:url(#toy-lac-mustard);stroke:rgba(122,78,8,.6)}
+#lesson .abx-shine{stroke:rgba(255,255,255,.5);stroke-width:4}
+#lesson .abx-bead.on .abx-shine{stroke:rgba(255,255,255,.75)}
+#lesson .abx-rod.hl .abx-rodline{fill:#F2B632;stroke:#F2B632;stroke-width:8}
+#lesson .abx-rod:focus-visible .abx-rodline{fill:var(--toy-indigo)}
+#lesson .abx-readout{display:inline-flex;align-items:center;gap:10px;align-self:center;margin:6px 0 0;padding:5px 22px 6px;border-radius:999px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink-soft);font:400 18px/1.2 var(--toy-body);letter-spacing:0;
+  box-shadow:inset 0 1px 0 #fff,0 2px 0 #D9CEB8,3px 6px 8px rgba(var(--toy-shade),.28)}
+#lesson .abx-readout[hidden]{display:none}
+#lesson .abx-readout b{font:700 30px/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums}
+
+/* Bix's paper bubble above; on the table under it: Bix, the number friends, the next step */
+#lesson .lesson-side{flex:0 1 620px;width:auto;min-width:0;display:flex;flex-direction:column;gap:clamp(22px,3.4vh,34px);align-self:center}
+#lesson .caption{position:relative;display:block;box-sizing:border-box;width:100%;max-width:none;min-height:clamp(236px,31vh,290px);margin:0;padding:18px 26px 20px;border-radius:28px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:500 clamp(21px,2vw,25px)/1.36 var(--toy-display);
+  box-shadow:inset 0 2px 0 #fff,7px 12px 18px rgba(var(--toy-shade),.3)}
+#lesson .caption::before{display:none}
+#lesson .caption.toy-bubble--left::after{left:58px}
+#lesson .caption.has-voice{cursor:pointer}
+#lesson .caption .k{display:inline-flex;align-items:center;min-height:30px;margin:0 0 6px;padding:2px 16px 3px;border-radius:999px;background:var(--toy-indigo);color:#fff;
+  font:600 18px/1.2 var(--toy-display)}
+#lesson[data-phase=done] .caption .k{background:var(--toy-teal-dk)}
+#lesson[data-phase=guided] .caption .k,#lesson[data-phase=numbers] .caption .k{background:#F2B632;color:var(--toy-on-mustard)}
+#lesson .td-say{position:absolute;right:20px;top:18px;line-height:0;color:var(--toy-indigo)}
+#lesson .td-say[hidden]{display:none}
+#lesson .caption .prob{margin:2px 0 4px;font:700 clamp(50px,6.6vh,62px)/1.05 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums}
+#lesson .caption .prob:empty{display:none}
+#lesson .caption .prob .toy-icon{display:block}
+#lesson .caption .plus{color:#B77B0C;font-style:normal} #lesson .caption .minus{color:var(--toy-red);font-style:normal} #lesson .caption .times{color:var(--toy-indigo);font-style:normal}
+#lesson .caption .ctext.tight{font-size:.88em}
+#lesson .caption b{color:var(--toy-red-dk);font-family:var(--toy-display);font-weight:700}
+#lesson .caption ol.method{margin:4px 0 0;padding-left:30px}
+#lesson .caption ol.method li{margin:4px 0}
+/* the family of friends as pairs of little lacquer beads */
+#lesson .friends{display:flex;flex-wrap:nowrap;gap:clamp(6px,1vw,12px);margin-top:12px}
+#lesson .friends:empty{display:none}
+#lesson .friends span{display:inline-flex;align-items:center;gap:0;padding:3px;border-radius:999px;background:var(--toy-felt-dk);box-shadow:inset 0 1px 2px rgba(var(--toy-shade),.28);flex:none;white-space:nowrap;font-size:0}
+#lesson .friends span b{display:inline-flex;align-items:center;justify-content:center;width:clamp(34px,3.4vw,40px);height:clamp(34px,3.4vw,40px);border-radius:50%;color:#fff;
+  font:700 22px/1 var(--toy-display);box-shadow:1px 2px 2px rgba(var(--toy-shade),.4)}
+#lesson .friends span b.toy-lac--mustard{color:var(--toy-on-mustard)}
+#lesson .friends span b + b{margin-left:-5px}
+#lesson .friends span.on{background:#F2B632;box-shadow:0 0 0 3px #F2B632,2px 4px 5px rgba(var(--toy-shade),.35)}
+
+#lesson .lesson-floor{display:flex;align-items:flex-end;justify-content:space-between;gap:clamp(8px,1.4vw,20px);min-height:190px}
+#lesson .lesson-bix{--td-bix:clamp(200px,26vh,250px);padding:0;margin:calc(var(--td-bix)*-.22) 0 calc(var(--td-bix)*-.07) calc(var(--td-bix)*-.03);flex:none}
+#lesson .lesson-left{--pair-h:clamp(140px,20.5vh,200px)}
+#lesson .lesson-pair{position:absolute;right:0;bottom:0;width:calc(100% - 176px);display:flex;align-items:flex-end;justify-content:flex-end;line-height:0}
+#lesson .lesson-pair .toy-pair{display:block;flex:none;width:min(100%,calc(var(--pair-h)*1.88))}
+#lesson .lesson-pair .toy-pair svg{display:block;width:100%;height:auto}
+#lesson.may-pair .lesson-ab .abx-svg{max-height:calc(100vh - var(--toy-wall-h) - 270px)}
+#lesson.may-pair .abx-readout{align-self:flex-start;margin:calc(var(--pair-h)*.5 - 8px) 0 calc(var(--pair-h)*.5 - 26px) 8px}
+#lesson.may-pair:not(.with-pair) .abx-readout{align-self:center;margin-left:0}
+#lesson .lesson-pair.has-pair .toy-pair{animation:td-pop .34s ease-out both}
+#lesson .lesson-nav{flex:none;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:16px;margin:0 0 12px}
+#lesson #lessonNext.td-next{min-width:clamp(180px,17vw,220px);min-height:92px;padding:6px 24px 4px;font-size:clamp(28px,2.9vw,34px);justify-content:center}
+#lesson #lessonHint{justify-content:center;min-height:66px}
+
+/* =====================================================================
+   other iPad sizes
+   ===================================================================== */
+@media (max-height:780px) and (orientation:landscape){
+  #door .td-toy{min-height:150px}
+  #lesson .caption{min-height:220px}
+}
+@media (orientation:portrait){
+  #door.td-door{--toy-window-x:clamp(250px,37vw,330px);--toy-wall-h:clamp(150px,17vh,210px)}
+  #door .td-shelf .toy-prop:first-child{display:none}
+  #door .td-stage{grid-template-columns:minmax(0,1fr);gap:clamp(20px,3vh,40px);align-content:center;align-items:center}
+  #door .td-bixspot.bixwrap{flex-direction:row;align-items:center;gap:26px;margin:0;--td-bix:clamp(170px,24vw,210px)}
+  #door .td-bixspot .bubble{width:auto;flex:0 1 420px;min-height:0;padding:18px 18px 20px 24px;font-size:24px}
+  #door .td-bixspot .bubble::after{left:-24px;bottom:24px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
+  #door .door-blocks{height:clamp(250px,30vh,360px);max-height:none;gap:clamp(14px,2.4vw,22px)}
+  #door .door-pathwrap{margin-top:clamp(10px,3vh,40px);padding-bottom:clamp(14px,3vh,44px)}
+
+  #lesson.td-lesson{--toy-wall-h:clamp(130px,14.5vh,176px);--toy-window-x:clamp(96px,13.5vw,120px)}
+  #lesson .lesson-body{flex-direction:column;justify-content:center;gap:clamp(18px,2.6vh,34px)}
+  #lesson .lesson-ab{flex:none;width:auto;max-width:100%}
+  #lesson .lesson-left{align-self:center;max-width:100%}
+  #lesson .lesson-ab .abx-svg{max-height:calc(100vh - var(--toy-wall-h) - 580px)}
+  /* three rods: the friends stand beside the soroban; wider sorobans keep them underneath, as in landscape */
+  #lesson[data-rods="3"] .lesson-left{flex-direction:row;align-items:flex-end;justify-content:center;gap:14px}
+  #lesson[data-rods="3"] .lesson-ab{flex:0 1 auto;min-width:0}
+  #lesson[data-rods="3"] .abx-readout{align-self:center;margin:0}
+  #lesson[data-rods="3"] .lesson-pair{position:static;width:auto;flex:0 0 clamp(200px,31vw,300px);min-width:0;margin-bottom:34px}
+  #lesson[data-rods="3"] .lesson-pair:empty{display:none}
+  #lesson[data-rods="3"] .lesson-pair .toy-pair{width:100%;max-width:calc(var(--pair-h)*1.88)}
+  #lesson.may-pair:not([data-rods="3"]) .lesson-left{--pair-h:150px}
+  #lesson.may-pair:not([data-rods="3"]) .lesson-ab .abx-svg{max-height:calc(100vh - var(--toy-wall-h) - 690px)}
+  #lesson .lesson-side{flex:none;width:100%;max-width:700px;gap:clamp(20px,2.4vh,30px)}
+  #lesson .caption{min-height:clamp(214px,20vh,250px)}
+}
+@media (min-width:1300px) and (min-height:960px){
+  #door .door-blocks{max-height:400px}
+  #door .td-pathtitle{font-size:27px} #door .door-all{font-size:19px;min-height:50px}
+  #door .dp-name{font-size:21px;max-width:170px} #door .dp-node.cur .dp-name{font-size:26px}
+  #door .dp-learn.toy-block{font-size:24px;min-height:72px}
+  #lesson .lesson-side{flex-basis:700px}
+}
+@media (prefers-reduced-motion:reduce){
+  #door.intro .td-toy,#door .td-bixspot .bubble.pop,#lesson .lesson-pair.has-pair .toy-pair,.td-pop,.td-shake,
+  .bix.td-bixed.happy .td-bixfig,.bix.td-bixed.cheer .td-bixfig,.bix.td-bixed.oops .td-bixfig,.bix.td-bixed.talking .td-bixfig{animation:none}
+  #door .td-toy,#door .dp-bead{transition:none}
+}
