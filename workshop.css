@@ -189,3 +189,19 @@ body.ws-calm .ws-nudge::after{animation:none}
 .ws-dialog-btn:focus-visible{outline:3px solid var(--ws-ochre);outline-offset:2px}
 @keyframes ws-dialog-in{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion: reduce){ .ws-dialog,.ws-dialog-panel.ws-panel{animation:none} }
+
+/* =====================================================================
+   keypad (added in the practice fix pass) — the ONE number pad, built by WS.keypad(container, {onKey, onBackspace}).
+   3×3 grid 7-8-9 / 4-5-6 / 1-2-3, bottom row ⌫ (left) + wide 0. The action button (red .ws-btn) sits outside the grid.
+   Size it per screen with --ws-key-w / --ws-key-h / --ws-key-gap / --ws-key-font.
+   ===================================================================== */
+.ws-keypad{display:grid;grid-template-columns:repeat(3,var(--ws-key-w,104px));gap:var(--ws-key-gap,14px)}
+.ws-keypad button{height:var(--ws-key-h,82px);min-height:60px;border:0;border-radius:var(--ws-r-sm);background:var(--ws-maple);color:var(--ws-ink);
+  box-shadow:0 5px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:var(--ws-key-font,44px);line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;transition:transform .08s ease, box-shadow .08s ease, opacity .2s ease;
+  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.ws-keypad button:active{transform:translateY(var(--ws-press));box-shadow:0 0 0 var(--ws-maple-dk)}
+.ws-keypad .ws-key-zero{grid-column:span 2}
+.ws-keypad .ws-key-del{background:#D5DEE3;box-shadow:0 5px 0 var(--ws-line);color:var(--ws-ink-2)}
+.ws-keypad button:disabled{opacity:.4;pointer-events:none}
+@media (prefers-reduced-motion: reduce){ .ws-keypad button{transition:none} }

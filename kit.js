@@ -74,6 +74,7 @@
     sprout: '<path d="M12 21v-9"/><path d="M12 12C12 8 9 5 4 5c0 5 3 7 8 7z"/><path d="M12 14c0-3 2.5-6 8-6 0 4-3 6-8 6z"/>',
     jar: '<path d="M8 3h8v3H8z"/><path d="M7 6h10a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M5 13h14"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    print: '<path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/>',
   };
   const FILLED = {
     play: '<path d="M8 5.5v13l10.5-6.5z"/>',
@@ -134,4 +135,32 @@
     });
   }
   window.WS.confirm = confirm;
+})();
+
+// ---------- keypad: the one number pad (added in the practice fix pass) ----------
+// 7-8-9 / 4-5-6 / 1-2-3, then ⌫ (left) and a wide 0. The action button (a red .ws-btn "Check") lives OUTSIDE the grid.
+// Usage:  const pad = WS.keypad(el, { onKey(d){}, onBackspace(){} });  pad.setEnabled(false);  pad.destroy();
+// Keys carry data-k="0".."9" / data-k="del" so tests and old hooks can find them. Styles: .ws-keypad in workshop.css.
+(function () {
+  'use strict';
+  function keypad(container, opts) {
+    opts = opts || {};
+    const el = document.createElement('div');
+    el.className = 'ws-keypad';
+    el.setAttribute('role', 'group'); el.setAttribute('aria-label', opts.label || 'Number keys');
+    el.innerHTML = [7, 8, 9, 4, 5, 6, 1, 2, 3].map(d => `<button type="button" data-k="${d}">${d}</button>`).join('')
+      + `<button type="button" class="ws-key-del" data-k="del" aria-label="Delete">${window.WS.icon('back', 34, 'currentColor', 2.8)}</button>`
+      + '<button type="button" class="ws-key-zero" data-k="0">0</button>';
+    el.addEventListener('click', e => {
+      const b = e.target.closest('button[data-k]'); if (!b || b.disabled) return;
+      if (b.dataset.k === 'del') { if (opts.onBackspace) opts.onBackspace(); } else if (opts.onKey) opts.onKey(b.dataset.k);
+    });
+    container.appendChild(el);
+    return {
+      el,
+      setEnabled(on) { el.classList.toggle('off', !on); el.querySelectorAll('button').forEach(b => { b.disabled = !on; }); },
+      destroy() { el.remove(); },
+    };
+  }
+  window.WS.keypad = keypad;
 })();

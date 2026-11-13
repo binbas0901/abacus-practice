@@ -26,3 +26,7 @@
 @media (prefers-reduced-motion: reduce) {
   .abx-bead, .abx-lens { transition: none; }
 }
+
+/* readOnly: a demo abacus (Show me, lessons) — the same drawing, not touchable */
+.abx-readonly .abx-svg { touch-action: auto; }
+.abx-readonly .abx-bead { cursor: default; }
