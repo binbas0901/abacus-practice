@@ -1,1 +1,331 @@
-/* screens-home.css — see design/BRIEF.md */
+/* =====================================================================
+   Stream A — Home, Who's practising, My Room, sticker book, treat list,
+   first-time setup, name box, and Bix (the shared mascot from fun.js).
+   Built only from workshop.css tokens and classes.
+   ===================================================================== */
+
+/* ---------- shared bits for these screens ---------- */
+.screen.ws-screen{background:var(--ws-ground);color:var(--ws-ink);font-family:var(--ws-body)}
+.a-top{display:flex;align-items:center;gap:20px;padding:24px 40px 18px;flex:none}
+.a-gap{flex:1}
+.a-top .ws-iconbtn svg{flex:none}
+
+/* ---------- Bix (Fun.Mascot): kit drawing + speech bubble. :where() keeps these easy for other screens to resize ---------- */
+:where(.bixwrap){position:relative;display:flex;align-items:center;gap:14px}
+:where(.bixwrap) > .bix{width:var(--bix,92px);height:var(--bix,92px);cursor:pointer;flex:none;line-height:0;-webkit-tap-highlight-color:transparent}
+:where(.bixwrap) > .bix svg{width:100%;height:100%;overflow:visible;transform-origin:50% 92%}
+:where(.bixwrap) .bubble.ws-bubble{visibility:hidden;border-radius:var(--ws-r-md);padding:14px 22px;box-shadow:0 3px 0 var(--ws-line);
+  font-family:var(--ws-display);font-weight:600;font-size:24px;line-height:1.25;color:var(--ws-ink);max-width:620px;cursor:default}
+:where(.bixwrap) .bubble.ws-bubble::before{display:none}
+:where(.bixwrap) .bubble.on{visibility:visible}
+:where(.bixwrap) .bubble.pop{animation:ws-pop .38s var(--ws-ease) both}
+:where(.bixwrap) .bubble .ws-say{display:none;line-height:0}
+:where(.bixwrap) .bubble.has-voice{cursor:pointer}
+:where(.bixwrap) .bubble.has-voice .ws-say{display:inline-flex}
+.bix.happy svg{animation:a-hop .45s ease-out 2}
+.bix.cheer svg{animation:a-cheer .8s ease-in-out 2}
+.bix.oops svg{animation:a-wob .55s ease-in-out 1}
+@keyframes a-hop{30%{transform:translateY(-14px) scale(.95,1.06)}65%{transform:translateY(0) scale(1.06,.94)}}
+@keyframes a-cheer{25%{transform:rotate(-10deg) translateY(-8px)}75%{transform:rotate(10deg) translateY(-8px)}}
+@keyframes a-wob{25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.bixmini{display:inline-block;line-height:0}
+/* idle bob lives on his body (the feet stay put), so the tappable box never moves */
+:where(.bixwrap) .bix .ws-bix-body{animation:a-bob 3s ease-in-out infinite;transform-box:view-box;transform-origin:50% 90%}
+@keyframes a-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) scale(1.01,.99)}}
+body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
+
+/* =====================================================================
+   HOME
+   ===================================================================== */
+#home.hm{padding:28px 40px 36px;gap:26px;overflow:hidden;justify-content:flex-start;position:relative}
+.hm-top{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:92px;flex:none}
+#bixHome{--bix:92px;min-width:0}
+.hm-tools{display:flex;align-items:center;gap:10px;flex:none}
+#home #grownups.ws-iconbtn{padding:0;font-size:0;border-radius:var(--ws-r-sm);background:#D5DEE3;color:var(--ws-ink-2)}
+.hm-switch{white-space:nowrap}
+
+.hm-frame{flex:none;border-radius:34px;padding:18px}
+.hm-inner{position:relative;height:clamp(280px,44vh,420px);display:flex;align-items:center;gap:28px;padding:0 44px 0 56px;border-radius:22px;overflow:hidden}
+.hm-beam{position:absolute;left:0;right:0;top:19.5%;height:12px;background:var(--ws-rod)}
+.hm-rod{position:absolute;left:0;right:0;top:50%;height:10px;margin-top:-5px;background:var(--ws-rod)}
+.hm-today{position:relative;z-index:1;flex:none;width:190px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;transform:translateY(-16px)}
+.hm-title{margin:0;font-family:var(--ws-display);font-weight:700;font-size:46px;line-height:1;color:var(--ws-indigo);background:var(--ws-maple);padding-right:10px;white-space:nowrap}
+.hm-sub{font-family:var(--ws-body);font-size:20px;line-height:1.2;color:var(--ws-rod);background:var(--ws-maple);padding-right:10px;white-space:nowrap}
+.hm-steps{position:relative;z-index:1;list-style:none;margin:0;padding:0;flex:1;min-width:0;display:flex;align-items:center;justify-content:space-around;gap:16px}
+.hm-step.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
+.hm-bead{position:relative;display:block;line-height:0}
+.hm-bead .ws-bead{display:block}
+.hm-bead-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.hm-step.later .hm-bead{opacity:.55}
+.hm-step.just .hm-bead{animation:ws-pop .38s var(--ws-ease) both}
+.hm-step .hm-step-l.sl{position:absolute;top:100%;margin-top:14px;white-space:nowrap;font-family:var(--ws-display);font-weight:600;font-size:22px;line-height:1.1;color:var(--ws-ink-2)}
+.hm-step.now .hm-step-l.sl{color:var(--ws-indigo);font-size:24px}
+.hm-step.done .hm-step-l.sl{color:var(--ws-jade-dk)}
+
+.hm-start{position:relative;z-index:1;flex:none;width:168px;height:168px;border:0;border-radius:50%;cursor:pointer;
+  background:var(--ws-red);box-shadow:0 8px 0 var(--ws-red-dk);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  font-family:var(--ws-display);font-weight:700;font-size:28px;line-height:1;
+  transition:transform .08s ease, box-shadow .08s ease;-webkit-tap-highlight-color:transparent}
+.hm-start:active{transform:translateY(var(--ws-press));box-shadow:0 3px 0 var(--ws-red-dk)}
+.hm-start.play{background:var(--ws-jade);box-shadow:0 8px 0 var(--ws-jade-dk)}
+.hm-start.play:active{box-shadow:0 3px 0 var(--ws-jade-dk)}
+.hm-start-ic{display:flex;line-height:0;margin-left:4px}
+.hm-start.play .hm-start-ic{margin-left:0}
+
+.hm-doors{flex:1;min-height:120px;max-height:250px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;padding-bottom:7px}
+.hm-door{position:relative;min-height:0;height:100%;white-space:nowrap}
+.hm-door-ic{display:flex;line-height:0;flex:none}
+.hm-chip{position:absolute;right:22px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;
+  background:var(--ws-white);border-radius:var(--ws-r-pill);padding:6px 14px;font-family:var(--ws-display);font-weight:600;font-size:20px;color:var(--ws-ink)}
+.hm-chip:empty{display:none}
+#home #ver.hm-ver{position:absolute!important;right:44px;bottom:9px;font-size:12px;line-height:1;opacity:1}
+
+/* tall landscape (iPad Pro) */
+@media (min-width:1300px) and (min-height:960px){
+  #home.hm{padding:40px 56px 48px;gap:34px}
+  #bixHome{--bix:110px} #bixHome .bubble.ws-bubble{font-size:27px;max-width:820px}
+  .hm-inner{height:clamp(300px,44vh,470px)}
+  .hm-title{font-size:54px}
+  .hm-door{font-size:34px}
+}
+/* portrait */
+@media (orientation:portrait){
+  #home.hm{padding:32px 36px 40px;gap:30px}
+  #bixHome .bubble.ws-bubble{font-size:22px;max-width:520px}
+  .hm-inner{height:clamp(320px,36vh,440px);padding:64px 26px 0;gap:18px}
+  .hm-beam{display:none}
+  .hm-rod{top:calc(50% + 32px)}
+  .hm-today{position:absolute;left:34px;top:30px;transform:none;flex-direction:row;align-items:baseline;gap:16px;width:auto}
+  .hm-steps{gap:6px}
+  .hm-bead .ws-bead{width:126px;height:auto}
+  .hm-step.now .hm-bead .ws-bead{width:140px}
+  .hm-start{width:140px;height:140px;font-size:24px}
+  .hm-doors{max-height:none;min-height:200px}
+  .hm-door{flex-direction:column;justify-content:center;gap:14px;padding:0 12px}
+  .hm-chip{position:static;transform:none}
+}
+
+/* =====================================================================
+   WHO'S PRACTISING
+   ===================================================================== */
+#who.wh{align-items:center;justify-content:center;gap:44px;padding:40px}
+#bixWho{--bix:110px}
+.wh-list{display:flex;flex-wrap:wrap;gap:30px;justify-content:center;max-width:1040px}
+.who-card.ws-card{width:240px;height:260px;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+  box-shadow:0 7px 0 var(--ws-line);transition:transform .08s ease, box-shadow .08s ease;-webkit-tap-highlight-color:transparent}
+.who-card.ws-card:active{transform:translateY(var(--ws-press));box-shadow:0 2px 0 var(--ws-line)}
+.who-card .who-bead.wh-bead{width:auto;height:auto;background:none;clip-path:none;line-height:0}
+.who-card:nth-child(n) .who-bead.wh-bead{background:none}
+.wh-name{font-family:var(--ws-display);font-weight:600;font-size:30px;line-height:1.1;color:var(--ws-ink);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* =====================================================================
+   MY ROOM
+   ===================================================================== */
+#room.rm{position:relative;overflow:hidden;padding:0}
+.rm-top{padding-bottom:0}
+.rm-wall{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto auto auto;align-content:center;padding:0 60px 26px}
+.rm-items,.rm-item{display:contents}
+.rm-item-book > *{grid-column:1} .rm-item-pot > *{grid-column:2} .rm-item-jar > *{grid-column:3}
+.rm-thing{grid-row:1;align-self:end;justify-self:center;position:relative;border:0;background:transparent;padding:0;cursor:pointer;line-height:0;
+  display:flex;align-items:flex-end;justify-content:center;transition:transform .08s ease;-webkit-tap-highlight-color:transparent}
+.rm-thing:active{transform:translateY(4px) scale(.98)}
+.rm-shelf{grid-row:2;grid-column:1/-1;height:22px;background:var(--ws-wood);border-radius:6px;box-shadow:0 8px 0 var(--ws-wood-dk)}
+.rm-label{grid-row:3;justify-self:center;padding-top:22px;font-family:var(--ws-display);font-weight:600;font-size:26px;line-height:1.1;color:var(--ws-wood-dk)}
+.rm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rm-art{display:block;line-height:0}
+.rm-art svg{display:block}
+.rm-new{position:absolute;right:-6px;top:-10px;line-height:1.2;display:none;white-space:nowrap}
+.rm-new.on{display:inline-block;animation:ws-pop .38s var(--ws-ease) both}
+
+/* the flower pot (garden) — reset the old home-garden styles first */
+#garden.garden{display:block;max-width:none;font-size:0;gap:0}
+#garden .plot{width:auto;height:auto;display:inline;animation:none;filter:none;opacity:1}
+.garden .g-stem{fill:none;stroke:var(--ws-stem);stroke-width:5;stroke-linecap:round}
+.garden .g-leaf{fill:var(--ws-leaf)}
+.garden .g-red{fill:var(--ws-red)} .garden .g-ochre{fill:var(--ws-ochre)} .garden .g-indigo{fill:var(--ws-indigo)}
+.garden .g-pink{fill:var(--ws-petal)} .garden .g-white{fill:var(--ws-white)} .garden .g-eye{fill:var(--ws-maple)}
+.garden .g-ring{fill:var(--ws-white);stroke:var(--ws-ochre);stroke-width:4}
+.garden .g-pot{fill:var(--ws-pot)} .garden .g-rim{fill:var(--ws-pot-dk)}
+.garden .plot.bloom.today{animation:ws-pop .5s var(--ws-ease) .2s both;transform-box:fill-box;transform-origin:center}
+.garden .plot.today > *{transform-box:fill-box}
+.garden.wiggle svg{animation:a-wiggle .5s ease;transform-origin:50% 100%}
+@keyframes a-wiggle{25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+
+/* the treat jar */
+#jar{width:250px;height:290px;align-items:flex-end}
+#jar .jarsvg{display:block;width:230px;height:280px}
+#jar .j-lid{fill:var(--ws-wood)}
+#jar .j-glass{fill:var(--ws-glass)}
+#jar .j-edge{fill:none;stroke:var(--ws-glass-dk);stroke-width:5}
+#jar .j-bead{fill:var(--ws-ochre);stroke:var(--ws-ochre-dk);stroke-width:2}
+#jar .j-goal{stroke:var(--ws-glass-dk);stroke-width:3;stroke-dasharray:8 8}
+#jar .j-shine{fill:var(--ws-white);opacity:.5}
+#jar.ready .jarsvg{animation:ws-pulse 2.4s ease-in-out infinite;transform-origin:50% 100%}
+#jar .jar-n{position:absolute;left:-14px;top:20px;line-height:1;gap:4px;padding:5px 12px}
+#jar .jar-n b{font-weight:700}
+#jar .jar-tag{position:absolute;right:-56px;top:8px;transform:rotate(6deg);display:flex;flex-direction:column;align-items:center;gap:4px;max-width:132px;
+  background:var(--ws-white);border-radius:14px;padding:10px 14px;box-shadow:0 3px 0 var(--ws-line);
+  font-family:var(--ws-display);font-weight:600;font-size:18px;line-height:1.15;color:var(--ws-ink);text-align:center}
+#jar .jar-tag .jt-emoji{font-size:34px;line-height:1}
+#jar .jar-tag.ready{border:4px solid var(--ws-jade);padding:6px 10px}
+
+/* floor, Bix and "I wish for…" */
+.rm-floor{flex:none;height:190px;border-top:14px solid var(--ws-wood);display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 60px;
+  background:linear-gradient(var(--ws-floor-line),var(--ws-floor-line)) 0 54px/100% 3px no-repeat,linear-gradient(var(--ws-floor-line),var(--ws-floor-line)) 0 118px/100% 3px no-repeat,var(--ws-floor)}
+#bixRoom{--bix:110px;align-items:flex-end;min-width:0}
+#bixRoom .bubble.ws-bubble{margin-bottom:40px;box-shadow:0 3px 0 var(--ws-floor-dk);max-width:600px}
+.rm-wish{flex:none;white-space:nowrap}
+.rm-wish span{display:flex;line-height:0}
+
+@media (orientation:portrait){
+  .rm-wall{padding:0 24px 26px}
+  #jar .jar-tag{right:-18px;top:-14px;font-size:16px;max-width:110px}
+  .rm-floor{height:auto;min-height:220px;flex-wrap:wrap;padding:22px 36px 30px;align-content:center}
+  #bixRoom .bubble.ws-bubble{max-width:520px}
+  .rm-wish{margin-left:auto}
+}
+/* iPad Pro: the shelf things grow with the room */
+@media (min-width:1300px) and (min-height:960px){
+  .rm-thing{zoom:1.2}
+  .rm-label{font-size:30px}
+  .rm-floor{height:210px;padding:0 72px}
+  #bixRoom{--bix:124px}
+  #bixRoom .bubble.ws-bubble{font-size:27px;max-width:760px}
+}
+
+/* =====================================================================
+   STICKER BOOK
+   ===================================================================== */
+#album.ab{gap:0}
+#albumCount b{font-size:24px}
+#albumCount .ab-of{color:var(--ws-ink-2);font-size:17px;font-weight:500}
+.ab-body.album-body{flex:1;overflow:auto;padding:4px 40px 36px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:22px;align-content:start;touch-action:pan-y}
+.ab .apage.ab-page{background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:18px 20px 20px}
+.ab .ahead.ab-head{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}
+.ab-head h2{margin:0;font-family:var(--ws-display);font-weight:600;font-size:26px;color:var(--ws-wood-dk)}
+.ab .ab-got{font-family:var(--ws-display);font-weight:600;font-size:17px;color:var(--ws-ink-2);background:var(--ws-ground);border-radius:var(--ws-r-pill);padding:4px 12px}
+.ab .ab-page.full .ab-got{background:var(--ws-jade);color:var(--ws-white)}
+.ab .agrid.ab-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ab .slot{width:100%;min-width:0;max-width:76px;justify-self:center}
+.ab .slot{border:3px dashed var(--ws-maple-dk);background:var(--ws-maple);color:transparent}
+.ab .slot.has{border:0;background:none;font-size:46px;color:var(--ws-ink)}
+.ab .slot.gold{background:var(--ws-white);border:4px solid var(--ws-ochre)}
+.ab .slot b{background:var(--ws-indigo);font-family:var(--ws-display);font-weight:600;font-size:13px}
+
+/* =====================================================================
+   TREAT LIST ("I wish for…")
+   ===================================================================== */
+#shop.sh{gap:0}
+.sh-wallet{line-height:1}
+.sh-wallet span{display:flex;line-height:0}
+.sh-wallet b{font-size:26px;font-weight:700}
+.sh-body.shop-body{flex:1;overflow:auto;padding:0 40px 30px;display:flex;flex-direction:column;gap:20px;touch-action:pan-y}
+.sh-body.shop-body::before{display:none}
+.sh-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+#bixShop{--bix:84px}
+.sh .tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px 20px;padding-top:12px}
+.sh .tcard.ws-card{background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:22px 14px 16px;gap:8px}
+.sh .tcard.can{background:var(--ws-white)}
+.sh .tcard.goal{border:4px solid var(--ws-ochre);padding:18px 10px 12px}
+.sh .tgoal{display:flex;align-items:center;gap:4px;top:-16px;background:var(--ws-ochre);color:#3D2412;font-family:var(--ws-display);font-weight:600;font-size:15px;padding:4px 12px;white-space:nowrap}
+.sh .temoji{font-size:60px}
+.sh .tname{font-family:var(--ws-display);font-weight:600;font-size:21px;color:var(--ws-ink)}
+.sh .tprice{display:inline-flex;align-items:center;gap:6px;background:none;padding:0;font-family:var(--ws-display);font-size:22px}
+.sh .tprice::before{display:none}
+.sh .tprice b{font-weight:700}
+.sh .tbar{width:80%;height:12px;background:var(--ws-ground);border-radius:6px}
+.sh .tbar i{background:var(--ws-ochre)}
+.sh .tneed{font-size:16px;color:var(--ws-ink-2)}
+.sh .tbtns{flex-direction:row;gap:12px;margin-top:auto;padding-top:8px}
+.sh .tbtns .ws-btn{flex:1;width:auto;padding:0 14px;white-space:nowrap}
+.sh .ticket{border:3px dashed var(--ws-red);background:var(--ws-white);font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
+.sh .tk-head{font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
+.sh-how{font-size:15px;color:var(--ws-ink-2);text-align:center}
+
+/* the "Get it?" box and the name box share one look: a maple card in a wooden frame */
+#shopAsk.askm,#nameAsk.askm{background:rgba(30,36,51,.55)}
+#shopAsk .ask-card,#nameAsk .ask-card{background:var(--ws-maple);border:16px solid var(--ws-wood);border-radius:var(--ws-r-lg);box-shadow:0 8px 0 var(--ws-wood-dk);padding:28px 40px 32px;gap:22px;animation:ws-pop .38s var(--ws-ease) both}
+#shopAsk .ask-t,#nameAsk .ask-t{font-family:var(--ws-display);font-weight:600;font-size:32px;line-height:1.2;color:var(--ws-ink)}
+#shopAsk .ask-t b{font-weight:700}
+#shopAsk .ask-price{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+#nameAsk .na-bix{--bix:96px;margin-top:-6px}
+#nameAsk .row,#shopAsk .row{gap:18px}
+
+/* golden bead pop-up when beads are earned */
+.beadfloat{position:fixed;left:50%;top:38%;z-index:95;pointer-events:none;transform:translateX(-50%);text-align:center;font-family:var(--ws-display);font-weight:700;color:var(--ws-ink);text-shadow:none}
+.beadfloat .bf-row{display:flex;align-items:center;justify-content:center;gap:10px;font-size:58px;line-height:1;background:var(--ws-white);border-radius:var(--ws-r-pill);padding:10px 28px 10px 18px;box-shadow:0 3px 0 var(--ws-line)}
+.beadfloat small{display:inline-block;margin-top:10px;font-family:var(--ws-body);font-weight:400;font-size:20px;color:var(--ws-ink);background:var(--ws-white);border-radius:var(--ws-r-pill);padding:4px 14px;text-shadow:none}
+.beadfloat.ws-pop{animation:ws-pop .38s var(--ws-ease) both, a-floatup 2.2s ease-in .2s both}
+@keyframes a-floatup{0%,70%{opacity:1;translate:0 0}100%{opacity:0;translate:0 -40px}}
+
+/* =====================================================================
+   FIRST-TIME SETUP
+   ===================================================================== */
+#setup.su{overflow-y:auto}
+#setup .su-body{gap:22px;padding:28px 40px}
+#bixSetup{--bix:104px}
+#setup .su-h{font-family:var(--ws-display);font-weight:700;font-size:40px;line-height:1.1;color:var(--ws-indigo);text-align:center;margin:0}
+#setup .su-p{font-family:var(--ws-body);font-size:20px;color:var(--ws-ink-2);max-width:660px}
+#setup .su-note{font-size:16px}
+.su-input{font-family:var(--ws-display);font-weight:600;font-size:40px;text-align:center;width:min(460px,90%);padding:14px 18px;border-radius:var(--ws-r-md);border:4px solid var(--ws-maple-dk);background:var(--ws-white);color:var(--ws-ink)}
+.su-input:focus{outline:none;border-color:var(--ws-indigo)}
+.su-input::placeholder{color:#8C95A6}
+.su-ic-next{display:flex;line-height:0}
+
+#setup .su-cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+#setup .su-card,#setup .su-card[data-lv]{width:280px;min-height:244px;border:0;border-radius:var(--ws-r-lg);background:var(--ws-white);box-shadow:0 7px 0 var(--ws-line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:22px 18px;text-align:center;color:var(--ws-ink);cursor:pointer;
+  transition:transform .08s ease, box-shadow .08s ease}
+#setup .su-card:active{transform:translateY(var(--ws-press));box-shadow:0 2px 0 var(--ws-line)}
+#setup .su-cards-3 .su-card{width:230px;min-height:220px}
+#setup .su-card b{font-family:var(--ws-display);font-weight:600;font-size:26px;line-height:1.15}
+#setup .su-card small{font-family:var(--ws-body);font-size:17px;color:var(--ws-ink-2)}
+.su-art{display:flex;align-items:center;justify-content:center;height:96px;line-height:0}
+.su-cross{position:relative;display:inline-flex}
+.su-cross svg + svg{position:absolute;right:-12px;bottom:-8px}
+.su-q{font-family:var(--ws-display);font-weight:700;font-size:88px;line-height:1;color:var(--ws-ochre-dk)}
+
+.su-pickhead{display:flex;align-items:center;gap:20px;width:min(1000px,100%)}
+.su-pickhead .su-h{flex:1;text-align:left}
+#setup .su-skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;width:min(1000px,100%)}
+#setup .su-skill{display:flex;align-items:center;gap:14px;background:var(--ws-white);border-radius:var(--ws-r-sm);box-shadow:0 3px 0 var(--ws-line);padding:12px 16px;min-height:78px;text-align:left;color:var(--ws-ink);transition:transform .08s ease}
+#setup .su-skill:active{transform:translateY(3px);box-shadow:none}
+#setup .su-skill .ic.su-skill-bead{position:relative;width:64px;height:44px;border-radius:0;background:none;font-size:0;display:flex;align-items:center;justify-content:center;flex:none}
+.su-skill-bead i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-family:var(--ws-display);font-weight:700;font-size:19px;color:var(--ws-white)}
+.su-skill-bead.c-ochre i{color:#3D2412}
+#setup .su-skill b{font-family:var(--ws-display);font-weight:600;font-size:19px;line-height:1.15}
+#setup .su-skill small{font-family:var(--ws-body);font-size:15px;color:var(--ws-ink-2)}
+
+/* level check: tiles + keypad */
+#setup .su-checkhead{display:flex;align-items:center;gap:18px;width:min(1000px,100%)}
+#setup .su-lname{font-family:var(--ws-display);font-weight:600;font-size:26px;color:var(--ws-indigo);white-space:nowrap}
+#setup .su-dots{flex:1;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+#setup .su-dots i{width:auto;height:auto;background:none;border-radius:0;transform:none;line-height:0}
+#setup .su-checkbody{display:flex;gap:40px;width:min(1000px,100%);height:auto;align-items:center;justify-content:center}
+#setup .su-prob.problem{flex:none;background:none;box-shadow:none;border-radius:0;margin:0;display:flex;flex-direction:column;align-items:flex-end;gap:14px;padding:10px 0}
+#setup .su-prob .term.ws-tile{width:200px;font-size:56px;line-height:1;text-align:initial}
+#setup .su-prob .term.neg{color:var(--ws-ink)}
+#setup .su-entry.entry{width:340px;gap:14px}
+#setup .feedback{height:54px;display:flex;align-items:center;justify-content:center;font-family:var(--ws-display);font-weight:600;font-size:24px;color:var(--ws-ink-2)}
+#setup .su-answer.answer{height:96px;border:0;border-radius:var(--ws-r-md);background:var(--ws-white);box-shadow:0 3px 0 var(--ws-line);font-family:var(--ws-display);font-weight:700;font-size:60px;color:var(--ws-ink);padding:0}
+#setup .su-pad.pad{gap:12px}
+#setup .su-pad button{height:72px;border-radius:var(--ws-r-sm);background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:34px;color:var(--ws-ink);padding:0;display:flex;align-items:center;justify-content:center}
+#setup .su-pad button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ws-maple-dk)}
+#setup .su-pad button.go{background:var(--ws-jade);box-shadow:0 5px 0 var(--ws-jade-dk)}
+#setup .su-pad button.go:active{box-shadow:0 1px 0 var(--ws-jade-dk)}
+#setup .su-pad button.del{background:var(--ws-maple)}
+#setup .su-install.ws-panel{background:var(--ws-white);border:0;border-radius:20px;box-shadow:0 3px 0 var(--ws-line);max-width:660px;font-size:17px;line-height:1.45;text-align:center;color:var(--ws-ink)}
+#setup .su-install .share{display:inline-flex;vertical-align:-3px;background:none;padding:0}
+@media (orientation:portrait){
+  #setup .su-checkbody{flex-direction:column;gap:20px}
+  #setup .su-prob.problem{flex-direction:row;align-items:center;flex-wrap:wrap;justify-content:center}
+}
+
+/* ---------- reduced motion / calm mode ---------- */
+@media (prefers-reduced-motion: reduce){
+  :where(.bixwrap) .bix .ws-bix-body,.bix.happy svg,.bix.cheer svg,.bix.oops svg,.garden.wiggle svg,#jar.ready .jarsvg,.garden .plot.today,.hm-step.done .hm-bead,
+  :where(.bixwrap) .bubble.pop,.rm-new.on,#shopAsk .ask-card,#nameAsk .ask-card,.beadfloat.ws-pop{animation:none}
+  .hm-start,.who-card.ws-card,.rm-thing,#setup .su-card{transition:none}
+}
+body.ws-calm #jar.ready .jarsvg{animation:none}

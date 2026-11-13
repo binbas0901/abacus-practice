@@ -21,7 +21,7 @@ async def main():
           await new Promise(r=>{const t=db.transaction('clips','readwrite'); words.forEach(w=>t.objectStore('clips').put(blob,w)); t.oncomplete=r;});
           const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice='mine'; st.gap=1; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st));
         })()"""); await pg.reload(); await pg.wait_for_timeout(500)
-        await pg.click('.tile[data-mode=listen]'); await pg.click('#listenGo')
+        await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo')
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000)
         log = await pg.evaluate("window.__diag.lines.join('\\n')")
         print('A) old-format recordings:', 'PASS' if 'audio clock' in log and '33/33' in log else 'FAIL'); print('   ', [l for l in log.split('\n') if 'my voice' in l or 'clips ready' in l][:2])
@@ -37,7 +37,7 @@ async def main():
             await pg.wait_for_function(f"!document.querySelector('#recBtn').classList.contains('on')"); await pg.wait_for_timeout(700)
         status = await pg.text_content('#recStatus'); sel = await pg.eval_on_selector('#sVoice','e=>e.value')
         print('B) after 33 words:', status[:70], '| voice selected =', sel)
-        await pg.click('#parentDone'); await pg.click('.tile[data-mode=listen]'); await pg.click('#listenGo')
+        await pg.click('#parentDone'); await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo')
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000)
         log = await pg.evaluate("window.__diag.lines.join('\\n')")
         print('B) listen uses my voice:', 'PASS' if 'kind=rec' in log and 'audio clock' in log else 'FAIL')

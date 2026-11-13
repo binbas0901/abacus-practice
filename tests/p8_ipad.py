@@ -39,7 +39,7 @@ async def main():
         check('new device: first tap -> "Hi, I\'m Bix" then "What\'s your name?"', ids[:2]==['intro_hi','intro_name'], ids)
         check('  ...the two lines do not cut each other off (slow tablet)', not overlaps(r) and all(x['t1']-x['t0']>1 for x in r), [(x['id'],round(x['t1']-x['t0'],1)) for x in r])
         check('  ...sound really on when he talks', all(x['state']=='running' for x in r))
-        await pg.fill('#suNameIn','Mia'); await pg.tap('#suNameGo'); await pg.wait_for_timeout(4500)
+        await pg.fill('#suNameIn','Mia'); await pg.tap('#suNameGo'); await pg.wait_for_timeout(1500); await pg.tap('[data-abacus=unsure]'); await pg.wait_for_timeout(4500)
         await pg.tap('[data-lv=pick]'); await pg.wait_for_timeout(3500); await pg.tap('.su-skill[data-id=bf_add_a]'); await pg.wait_for_timeout(800)
         await pg.tap('#suStart'); await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r; ids=[x['id'] for x in r]
         check('setup talk-through + home hello, no overlaps', 'intro_meet' in ids and 'intro_done' in ids and not overlaps(r), ids)
@@ -48,7 +48,8 @@ async def main():
         ctx,pg = await newpage(True); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(1500)
         check('returning: silent until she taps', len(await take(pg))==0)
-        await pg.touchscreen.tap(600, 790); await pg.wait_for_timeout(5500); r=await take(pg); allrecs+=r
+        # tap an empty spot (the top margin), not a button
+        await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(5500); r=await take(pg); allrecs+=r
         check('returning: first tap anywhere -> Bix says hello', len(r)==1 and r[0]['id'].startswith('hello_'), [x['id'] for x in r])
         for i in range(5): await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(250)
         await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r
@@ -57,7 +58,7 @@ async def main():
         check('single tap on Bix -> joke', len(r)==1 and r[0]['id'].startswith('tap_'), [x['id'] for x in r])
         # listen drill silent
         await pg.wait_for_timeout(4000); await take(pg)
-        await pg.tap('.tile[data-mode=listen]'); await pg.wait_for_timeout(600); await pg.tap('#listenGo')
+        await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(600); await pg.tap('#listenGo')
         for i in range(3):
             await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000)
             d=await pg.evaluate("window.__drill()")
@@ -65,7 +66,7 @@ async def main():
             await pg.tap('#pad [data-k=go]'); await pg.wait_for_timeout(1200)
         r=await take(pg); check('Listen drill: Bix completely quiet', len(r)==0, [x['id'] for x in r])
         await pg.tap('#exitDrill'); await pg.wait_for_timeout(500); await take(pg)
-        await pg.tap('.tile[data-mode=visual]'); await pg.wait_for_timeout(900)
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_timeout(900)
         for i in range(10):
             d=await pg.evaluate("window.__drill()")
             if not d: break

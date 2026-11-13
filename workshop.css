@@ -143,3 +143,11 @@ body.ws-calm .ws-pulse, body.ws-calm .ws-bob{animation:none}  /* grown-ups "Calm
 .ws-bix.talking .ws-bix-body{animation:ws-talkbob .48s ease-in-out infinite;transform-origin:50% 90%}
 @keyframes ws-talkbob{50%{transform:translateY(-2px) scale(1.01,.99)}}
 @media (prefers-reduced-motion: reduce){ .ws-bix.talking .ws-bix-body{animation:none} }
+
+/* ---------- added by stream A (My Room): wall, floor and the things on the shelf ---------- */
+:root{
+  --ws-floor:#C99A64; --ws-floor-line:#B3844F; --ws-floor-dk:#9E7347;   /* wooden floor in My Room */
+  --ws-glass:#DDEFF6; --ws-glass-dk:#9CC3D6;                            /* the treat jar */
+  --ws-pot:#C9744A;   --ws-pot-dk:#B0603A;                              /* the flower pot */
+  --ws-stem:#3B8C4E;  --ws-leaf:#5DB36B;  --ws-petal:#F28FA6;           /* garden flowers (with the lacquer colours) */
+}

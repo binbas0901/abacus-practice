@@ -25,7 +25,10 @@ async def main():
         pg = await b.new_page(viewport={'width':1180,'height':820}); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(600)
         steps = await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.textContent)')
-        check('home: Bix, greeting, garden, 3 steps, 6 tiles', await pg.locator('#bixHome .bix').count()==1 and len(steps)==3 and await pg.locator('.tile').count()==6 and await pg.locator('#garden .plot').count()>0, f"{await pg.text_content('#bixHome .bubble')} | {steps} | {await pg.text_content('#gardenLabel')}")
+        check('home: Bix, greeting, 3 steps, 3 doors; My Room has the garden pot', await pg.locator('#bixHome .bix').count()==1 and len(steps)==3 and await pg.locator('.hm-doors > button').count()==3, f"{await pg.text_content('#bixHome .bubble')} | {steps}")
+        await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active')
+        check('My Room: garden pot drawn (sprout today, nothing wilts)', await pg.locator('#garden .plot').count()>0 and await pg.locator('#garden .g-pot').count()==1, await pg.text_content('#gardenLabel'))
+        await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
         await pg.screenshot(path='/tmp/p3_home.png')
 
         # Step 1: lesson
@@ -64,7 +67,7 @@ async def main():
         await pg.click('#todayGo'); await pg.wait_for_selector('#drill.active')
         mode = 'listen' if await pg.locator('#listenStage').is_visible() else 'visual'
         if mode=='listen':
-            await pg.click('#exitDrill'); await pg.click('.tile[data-mode=visual]')  # (headless can't type spoken answers easily)
+            await pg.click('#exitDrill'); await pg.evaluate("App.startMode('visual')")  # (headless can't type spoken answers easily)
         await solve_drill(pg); await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(300)
         await pg.screenshot(path='/tmp/p3_summary.png')
         t = await collect_all(pg)
@@ -81,14 +84,16 @@ async def main():
         await pg.wait_for_timeout(300); await pg.evaluate("document.querySelector('#exitAlbum') && 0"); 
         await pg.click('#exitPlay') if await pg.locator('#play.active').count() else None
         await pg.evaluate("(()=>{})()"); await pg.reload(); await pg.wait_for_timeout(600)
-        check('home shows done + full flower + album badge', 'done' in await pg.text_content('#todayTitle') and await pg.locator('#garden .full').count()==1 and await pg.locator('#albumBadge.on').count()==1, f"{await pg.text_content('#todayTitle')} | badge {await pg.text_content('#albumBadge')}")
+        done_title = await pg.text_content('#todayTitle'); all_done_beads = await pg.locator('#todaySteps .step.done').count()
         await pg.screenshot(path='/tmp/p3_home_done.png')
-        await pg.click('.tile[data-mode=album]'); await pg.wait_for_selector('#album.active')
+        await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active')
+        check('home shows done + My Room has the full flower + sticker badge', 'done' in done_title and all_done_beads==3 and await pg.locator('#garden .full').count()==1 and await pg.locator('#albumBadge.on').count()==1, f"{done_title} | badge {await pg.text_content('#albumBadge')}")
+        await pg.click('#roomStickers'); await pg.wait_for_selector('#album.active')
         check('album shows collected stickers', await pg.locator('.slot.has').count()>=4, await pg.text_content('#albumCount'))
-        await pg.screenshot(path='/tmp/p3_album.png'); await pg.click('#exitAlbum')
+        await pg.screenshot(path='/tmp/p3_album.png'); await pg.click('#exitAlbum'); await pg.wait_for_selector('#room.active'); await pg.click('#exitRoom')
 
         # Bead Detective
-        await pg.click('.tile[data-mode=play]'); await pg.click('.gcard[data-game=reader]'); await pg.wait_for_selector('#rdPad button')
+        await pg.click('#doorPlay'); await pg.click('.gcard[data-game=reader]'); await pg.wait_for_selector('#rdPad button')
         await pg.screenshot(path='/tmp/p3_reader.png')
         right=0
         for i in range(10):

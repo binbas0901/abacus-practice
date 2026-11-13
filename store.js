@@ -6,7 +6,7 @@
   'use strict';
   const P = 'abacus.';
   // Settings that belong to one child; every other setting is family-wide.
-  const CHILD_KEYS = ['name', 'count', 'operands', 'gap', 'gapMin', 'gapMax', 'flashSec', 'flashN', 'treats'];
+  const CHILD_KEYS = ['name', 'count', 'operands', 'gap', 'gapMin', 'gapMax', 'flashSec', 'flashN', 'treats', 'hasAbacus'];
   const PER_CHILD = ['progress', 'history', 'days', 'fun'];
   const LEGACY = ['settings', 'progress', 'history', 'days', 'fun'];   // single-child keys from v3.x and earlier
 
