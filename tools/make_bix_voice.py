@@ -131,8 +131,17 @@ def best_take(tts, asr, text, sid, semis, speed):
 def build(tag, out_dir, tts, asr, lines):
     label, sid, semis, speed = VOICES[tag]
     parts, sprite, report, t, sr = [], {}, [], 0.0, None
+    cache_dir = os.path.join('/tmp', f'bixcache-{tag}'); os.makedirs(cache_dir, exist_ok=True)   # survive restarts
     for key, text in lines.items():
-        c, _, x, sr, heard, how = best_take(tts, asr, text, sid, semis, speed)
+        cf = os.path.join(cache_dir, key + '.npz')
+        if os.path.exists(cf):
+            z = np.load(cf, allow_pickle=True)
+            if str(z['text']) == text: c, x, sr, heard, how = float(z['c']), z['x'], int(z['sr']), str(z['heard']), str(z['how'])
+            else: z = None
+        else: z = None
+        if z is None:
+            c, _, x, sr, heard, how = best_take(tts, asr, text, sid, semis, speed)
+            np.savez(cf, c=c, x=x, sr=sr, heard=heard, how=how, text=text); print('  done', key, round(c, 2), flush=True)
         dur = len(x) / sr
         report.append({'id': key, 'text': text, 'heard': heard, 'clarity': round(c, 3), 'take': how, 'pitch': round(f0(x, sr)), 'sec': round(dur, 2), 'wpm': round(len(words(text)) / dur * 60)})
         sprite[key] = [round(t, 3), round(dur, 3)]

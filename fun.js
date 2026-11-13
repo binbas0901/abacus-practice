@@ -38,7 +38,7 @@
   const BixVoice = {
     buf: {}, map: {}, loading: {}, src: null, talkingEl: null, spokenIntro: false, queued: 0, seq: 0,
     busy() { return !!this.src || this.queued > 0; },
-    voices: { sweet:'Sweet' },
+    voices: { sweet:'Sweet', boy:'Boy' },
     tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] ? t : 'sweet'; },
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
     load(tag) {
