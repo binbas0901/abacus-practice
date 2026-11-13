@@ -241,5 +241,91 @@ async def main():
         d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(900)
         check('Flash: Ready -> flash -> "= ?" -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
         await ctx.close()
+
+        # ===== 4. fix pass 2: every iPad size (landscape, portrait, 12.9" Pro) =====
+        SETNODE = """(node)=>{ const p=Store.get('progress')||{nodes:{}}; p.nodes=p.nodes||{}; App.nodes().forEach(n=>{ if(App.idx(n.id)<App.idx(node)) p.nodes[n.id]={lesson:true,mastered:'parent',hist:[]}; }); p.current=node; p.nodes[node]={lesson:true,mastered:null,hist:[]}; Store.set('progress',p); }"""
+        FIT = """()=>{ const ts=[...document.querySelectorAll('#problemArea .ws-tile')], rs=ts.map(t=>t.getBoundingClientRect()), d=document.querySelector('#drill');
+          const tool=[...document.querySelectorAll('#checkBtn, #answerTool .abx-svg, #padKeys .ws-keypad')].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect());
+          return { n: ts.length, oneCol: rs.every(r=>Math.abs(r.left-rs[0].left)<1), down: rs.every((r,i)=>!i||r.top>=rs[i-1].bottom),
+            inView: rs.concat(tool).every(r=>r.top>=0 && r.bottom<=innerHeight+0.5 && r.left>=0 && r.right<=innerWidth), digitsFit: ts.every(t=>t.scrollWidth<=t.clientWidth+1),
+            noScroll: d.scrollHeight<=d.clientHeight && document.scrollingElement.scrollHeight<=innerHeight, h: Math.round(rs[0].height), font: parseFloat(getComputedStyle(ts[0]).fontSize) }; }"""
+        BUB = "(()=>{ const r=document.querySelector('#bixDrill .pr-bubble').getBoundingClientRect(), s=document.querySelector('#bixDrill .ws-say'); return [Math.round(r.left),Math.round(r.top),Math.round(r.width),Math.round(r.height), s.getClientRects().length>0 && getComputedStyle(s).visibility==='visible']; })()"
+        for (vw, vh) in ((1180, 820), (820, 1180), (1366, 1024)):
+            tag = f'{vw}x{vh}'
+            ctx = await b.new_context(viewport={'width': vw, 'height': vh}); pg = await ctx.new_page()
+            pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(SEED)
+            await pg.goto(f'http://localhost:{PORT}/index.html'); await pg.wait_for_timeout(500)
+            await pg.evaluate("s=>localStorage.setItem('abacus.settings', JSON.stringify(s))", base); await pg.reload(); await pg.wait_for_timeout(500)
+            # the real level-4 path: the FIRST problem of a long-rows set (the bubble is not yet on screen when the set starts)
+            await pg.evaluate(f"({SETNODE})('long_rows')"); await pg.reload(); await pg.wait_for_timeout(600)
+            await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(400)
+            g = await pg.evaluate(FIT)
+            check(f'{tag}: first problem of a long-rows set fits, one column, no scrolling', g['n'] >= 5 and g['oneCol'] and g['down'] and g['inView'] and g['noScroll'], g)
+            for terms in ([7, 9, 9, -5, -1, -7, -7, -1, 2, 8], [6155, -3294, 4896, 8102, 1234, -2345, 3456, 4567, -1111, 2222]):
+                for tool in ('keys', 'beads'):
+                    await pg.evaluate("([t,tool])=>__drillSet(t,null,tool)", [terms, tool]); await pg.wait_for_timeout(250)
+                    g = await pg.evaluate(FIT)
+                    check(f'{tag}: 10 numbers, {len(str(abs(terms[0])))} digits, {tool}: one column top to bottom, all on screen, readable (tile >= 48px, digits >= 30px)',
+                          g['n'] == 10 and g['oneCol'] and g['down'] and g['inView'] and g['digitsFit'] and g['noScroll'] and g['h'] >= 48 and g['font'] >= 30, g)
+                    if tool == 'keys' and len(str(abs(terms[0]))) == 4: await shot(pg, f'long_row_4digit_{tag}')
+            # one bubble: same place and size for short and long lines, always the speaker mark
+            await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(200)
+            geo = []
+            for t in ['Yes!', 'Move the beads for each number, then tap Check.', 'This one was tricky. Want me to show you first?']:
+                await pg.evaluate("t=>__drillSay(t)", t); await pg.wait_for_timeout(60); geo.append(await pg.evaluate(BUB))
+            await pg.evaluate("__drillSet([6155,-3294,4896,8102,1234,-2345,3456,4567,-1111,2222],null,'keys')"); await pg.wait_for_timeout(200)
+            await pg.evaluate("t=>__drillSay(t)", 'Nice!'); await pg.wait_for_timeout(60); geo.append(await pg.evaluate(BUB))
+            check(f'{tag}: Bix bubble keeps one place and size (short / long line, short / long row) and always shows the speaker mark',
+                  all(x[:4] == geo[0][:4] for x in geo) and all(x[4] for x in geo) and geo[0][2] >= 320, geo)
+            # instant right / wrong on the answer box and the bead on the rod
+            await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(200)
+            await keypad(pg, 10); await pg.wait_for_timeout(220)
+            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .pr-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
+            check(f'{tag}: right answer -> answer box jade (is-right) + its rod bead jade with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'ws-pop' in st[1] and st[2] == 'rgb(31, 122, 95)', st)
+            await shot(pg, f'right_{tag}')
+            await pg.wait_for_timeout(900); d = await drill(pg)
+            check(f'{tag}: next problem -> answer box back to plain', not await pg.evaluate("document.querySelector('#readout').classList.contains('is-right')"))
+            await keypad(pg, d['answer'] + 1); await pg.wait_for_timeout(220)
+            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .pr-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
+            check(f'{tag}: wrong answer -> answer box red (is-wrong) + its rod bead red with a gentle shake, instantly', 'is-wrong' in st[0] and 'bad' in st[1] and 'ws-shake' in st[1] and st[2] == 'rgb(169, 46, 28)', st)
+            await pg.wait_for_timeout(1000)
+            await pg.evaluate("__drillSet([1,1],null,'beads')"); await pg.wait_for_timeout(200)
+            await tap(pg, 0, 'e', 1); await pg.click('#checkBtn'); await pg.wait_for_timeout(120)
+            check(f'{tag}: beads, right -> the "beads show" box turns jade too', 'is-right' in await pg.evaluate("document.querySelector('#readout').className"))
+            await pg.wait_for_timeout(900)
+            if vw == 1366:
+                await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(250)
+                pro = await pg.evaluate("""()=>{ const k=document.querySelector('#padKeys .ws-keypad').getBoundingClientRect(), c=document.querySelector('#checkBtn').getBoundingClientRect(), t=document.querySelector('#problemArea .ws-tile').getBoundingClientRect(); return {keyH: Math.round(k.height), checkBottom: Math.round(c.bottom), tileH: Math.round(t.height), key: Math.round(document.querySelector('#pad [data-k="5"]').getBoundingClientRect().height)}; }""")
+                check('iPad Pro: practice uses the height (bigger keys and tiles, no 250px band at the bottom)', pro['keyH'] >= 500 and pro['key'] >= 110 and pro['tileH'] >= 100 and pro['checkBottom'] >= vh - 160, pro)
+                await shot(pg, 'pro_keys')
+            check(f'{tag}: child targets >= 60px on the practice screen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
+            # sticker reveal: the card hugs the present (no empty band under it)
+            await pg.evaluate("()=>{ Fun.give({}); }"); await pg.wait_for_selector('#stickerReveal.active'); await pg.wait_for_timeout(500)
+            gap = await pg.evaluate("(()=>{ const c=document.querySelector('#stickerReveal .rv-card').getBoundingClientRect(), k=document.querySelector('#rvPack').getBoundingClientRect(); return Math.round(c.bottom-k.bottom); })()")
+            check(f'{tag}: sticker reveal has no empty band under the present', gap <= 60, gap)
+            await collect_all(pg)
+            await ctx.close()
+
+        # ===== 5. certificate in the Home Screen app: "Save picture" (PNG via share sheet, else download); Print stays in browsers =====
+        STAND = "Object.defineProperty(navigator,'standalone',{get:()=>true}); window.__shared=[];"
+        SHARE = "navigator.canShare=d=>!!(d&&d.files&&d.files.length); navigator.share=async d=>{ for (const f of d.files){ const bm=await createImageBitmap(f); window.__shared.push({name:f.name,type:f.type,size:f.size,w:bm.width,h:bm.height}); } };"
+        for share in (True, False):
+            ctx = await b.new_context(viewport={'width': W, 'height': H}, accept_downloads=True); pg = await ctx.new_page()
+            pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(SEED); await pg.add_init_script(STAND + SHARE if share else "window.__shared=[]; navigator.canShare=undefined; navigator.share=undefined; window.matchMedia=(q=>{ const m=window.matchMedia; return x=>/display-mode: standalone/.test(x)?{matches:true,addListener(){},removeListener(){}}:m.call(window,x); })();")
+            await pg.goto(f'http://localhost:{PORT}/index.html'); await pg.wait_for_timeout(500)
+            await pg.evaluate("s=>localStorage.setItem('abacus.settings', JSON.stringify(s))", base); await pg.reload(); await pg.wait_for_timeout(500)
+            await pg.evaluate("()=>{ window.print=()=>{ window.__printed=1; }; LevelTest.show({nodeId:'bf_add_a',title:'Big friends: adding',date:'2026-11-13',accuracy:1}); }"); await pg.wait_for_selector('#certificate.active')
+            label = (await pg.inner_text('#certPrint')).strip()
+            if share:
+                await pg.click('#certPrint'); await pg.wait_for_function("window.__shared.length>0", timeout=6000); sh = await pg.evaluate("window.__shared")
+                check('standalone app: certificate button says "Save picture" and shares a PNG of the certificate (no window.print)',
+                      label == 'Save picture' and sh[0]['type'] == 'image/png' and sh[0]['w'] == 1600 and sh[0]['h'] == 1130 and sh[0]['size'] > 20000 and not await pg.evaluate("window.__printed"), (label, sh))
+                await shot(pg, 'certificate_standalone')
+            else:
+                async with pg.expect_download(timeout=6000) as dl: await pg.click('#certPrint')
+                f = await dl.value
+                check('standalone app without a share sheet: the PNG is downloaded instead', label == 'Save picture' and f.suggested_filename.endswith('.png') and not await pg.evaluate("window.__printed"), (label, f.suggested_filename))
+            check('child targets >= 60px on the certificate', not await pg.evaluate(SMALL, '#certificate'), await pg.evaluate(SMALL, '#certificate'))
+            await ctx.close()
         print('errors:', errs); print('RESULT', sum(res), '/', len(res)); await b.close()
 asyncio.run(main())
