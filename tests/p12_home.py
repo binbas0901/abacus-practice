@@ -48,6 +48,25 @@ async def main():
         check('all done: "All done!", big button turns into Play', 'done' in await pg.text_content('#todayTitle') and (await pg.text_content('#todayGoT'))=='Play' and await pg.locator('#todayGo.play').count()==1)
         await pg.click('#todayGo'); await pg.wait_for_selector('#play.active'); await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
 
+        # ---------- Today's plan is frozen for the day; finished steps first; "Next" mid-day ----------
+        await pg.evaluate("Fun.data.today=null; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(150)
+        plan=await pg.evaluate("Fun.data.today.steps.map(s=>s.kind+(s.game?':'+s.game:''))")
+        await pg.evaluate("Fun.data.today.steps[1].done=true; Fun.save()")
+        # mid-day unlock: today's lesson got learned elsewhere and the next skill opened (the old code reshuffled the plan here)
+        await pg.evaluate("(()=>{ const p=Store.get('progress'); p.nodes[p.current]=Object.assign(p.nodes[p.current]||{hist:[]},{lesson:true,mastered:'auto'}); p.current='bf_add_b'; p.nodes.bf_add_b={lesson:true,hist:[]}; Store.set('progress',p); })()")
+        await pg.reload(); await pg.wait_for_timeout(900)
+        after=await pg.evaluate("Fun.data.today.steps.map(s=>s.kind+(s.game?':'+s.game:''))")
+        cur=await pg.evaluate("App.currentNode().id")
+        check('plan frozen after a mid-day unlock (same steps, same order)', after==plan and cur=='bf_add_b', f"{plan} -> {after} (now {cur})")
+        steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
+        check('finished step shown first (jade + check), the next one after it', 'done' in steps[0] and 'next' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.done .hm-bead path[fill="#2F9E7E"]').count()==1, steps)
+        check('main button reads "Next" mid-day', (await pg.text_content('#todayGoT'))=='Next' and 'Next' in await pg.get_attribute('#todayGo','aria-label'))
+        await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(150)
+        check('end of the day: Play', (await pg.text_content('#todayGoT'))=='Play')
+        # the Switch child button and the version stay out of the child's way
+        ver=await pg.eval_on_selector('#ver','e=>{const r=e.getBoundingClientRect(), s=getComputedStyle(e); return [r.left, innerHeight-r.bottom, parseFloat(s.fontSize)]}')
+        check('version is tiny and tucked in the bottom-left corner', ver[0]<30 and ver[1]<20 and ver[2]<=11, ver)
+
         # ---------- the three doors ----------
         await pg.click('#doorPractice'); await pg.wait_for_timeout(400)
         door = await pg.locator('#door.active').count()==1; menu = await pg.locator('#nodemenu.active').count()==1
@@ -78,8 +97,19 @@ async def main():
         await pg.click('#exitAlbum'); await pg.wait_for_selector('#room.active')
         check('back from stickers -> My Room, badge gone', await pg.locator('#albumBadge.on').count()==0)
         await pg.click('#roomWish'); await pg.wait_for_selector('#shop.active')
-        check('"I wish for…" opens the treat list (Treats.wish hook)', await pg.locator('#shopCards .tcard').count()==6 and await pg.evaluate("typeof Treats.wish==='function'"))
+        check('"Treats" (was "I wish for…") opens the treat list (Treats.wish hook)', 'Treats' in await pg.text_content('#roomWish') and await pg.locator('#shopCards .tcard').count()==6 and await pg.evaluate("typeof Treats.wish==='function'"))
+        hi=await pg.eval_on_selector_all('#shopCards .tcard.hi .tname','els=>els.map(e=>e.textContent)')
+        loud=await pg.locator('#shopCards .ws-btn:not(.maple)').count()
+        check('shop highlights one card (the saving goal); every other button is quiet maple', hi==['Park trip'] and loud<=1, f"{hi} loud={loud}")
+        bub=await pg.text_content('#bixShop .bubble')
+        check('shop: Bix never says "Go get it"', 'get it' not in bub.lower(), bub)
+        tg=await pg.eval_on_selector_all('#shop button, #room button','els=>els.filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.textContent.trim(), Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)')
+        check('shop + room child targets are at least 60px tall', not tg, tg)
         await pg.click('.tcard:has-text("Small snack") [data-get]'); await pg.click('#askYes'); await pg.wait_for_timeout(500)
+        await pg.evaluate("Treats.wallet().goal=null; Treats.renderShop()")
+        hi=await pg.eval_on_selector_all('#shopCards .tcard.hi .tname','els=>els.map(e=>e.textContent)')
+        check('no goal: the cheapest treat she can get is the one highlighted', hi==['Small snack'] and await pg.locator('#shopCards .ws-btn:not(.maple)').count()==1, hi)
+        await pg.evaluate("Treats.wallet().goal='t5'; Fun.save()")
         await pg.click('#exitShop'); await pg.wait_for_selector('#room.active')
         check('after getting a treat, the jar and chip show the new count', (await pg.text_content('#jar .jar-n')).strip()=='9')
         await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
@@ -119,6 +149,15 @@ async def main():
         check('hasAbacus saved per child (true / false / null), not family-wide', got=={'Ava':True,'Ben':False,'Cy':None} and 'hasAbacus' not in fam, got)
         check('App.settings.hasAbacus is the active child\'s answer', await pg.evaluate("App.settings.hasAbacus")is None)
 
+        # ---------- Home Screen advice only in a browser tab ----------
+        for label, init in [('browser tab', None), ('Home Screen app (standalone)', "Object.defineProperty(navigator,'standalone',{get:()=>true})"), ('native wrapper', "window.Capacitor={isNativePlatform:()=>true}")]:
+            c2=await b.new_context(viewport={'width':1180,'height':820}); p2=await c2.new_page(); p2.on('pageerror', lambda e: errs.append(str(e)))
+            if init: await p2.add_init_script(init)
+            await p2.goto(URL); await p2.wait_for_selector('#suName.on'); await p2.fill('#suNameIn','Zoe'); await p2.click('#suNameGo'); await p2.click('[data-abacus=yes]'); await p2.click('[data-lv=new]'); await p2.wait_for_selector('#suDone.on')
+            vis=await p2.is_visible('#suInstall')
+            check(f'setup finish, {label}: Home Screen advice {"shown" if not init else "hidden"}', vis == (init is None) and await p2.is_visible('#suStart'))
+            await c2.close()
+
         # ---------- who's practising + switch child ----------
         await pg.evaluate("sessionStorage.removeItem('abacus.who')"); await pg.reload(); await pg.wait_for_timeout(900)
         cards=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.textContent.trim())')
@@ -127,6 +166,8 @@ async def main():
         await pg.screenshot(path='/tmp/p12_who.png')
         await pg.click('#whoList .who-card:has-text("Ben")'); await pg.wait_for_timeout(1200)
         check('picking Ben opens his home; Switch child shows quietly', await pg.locator('#home.active').count()==1 and await pg.is_visible('#switchKid') and await pg.evaluate("App.settings.hasAbacus")==False)
+        sk=await pg.eval_on_selector('#switchKid','e=>{const r=e.getBoundingClientRect(); return [r.width,r.height]}')
+        check('Switch child is a real quiet button, at least 60px tall', sk[1]>=60 and sk[0]>=120, sk)
         await pg.click('#switchKid'); await pg.wait_for_selector('#who.active')
         check('Switch child -> back to the picker', True)
         await ctx.close()

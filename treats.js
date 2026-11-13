@@ -58,7 +58,7 @@
     const shown = w.beads > 0 ? Math.max(1, Math.round(frac * JAR_FULL)) : 0, ready = !!(g && w.beads >= g.price);
     el.innerHTML = jarSVG(shown, !!g)
       + `<span class="jar-n ws-chip">${W.bead('ochre', 30)}<b>${w.beads}</b></span>`
-      + `<span class="jar-sub jar-tag${ready ? ' ready' : ''}${g ? '' : ' none'}">${g ? `<span class="jt-emoji">${g.emoji}</span><span>${esc(g.name)}</span>` : `${W.icon('star', 30, W.colors.ochre)}<span>Pick a treat</span>`}</span>`;
+      + `<span class="jar-sub jar-tag${ready ? ' ready' : ''}${g ? '' : ' none'}">${g ? `<span class="jt-ic">${W.bead('ochre', 44)}</span><span>${esc(g.name)}</span>` : `${W.icon('star', 30, W.colors.ochre)}<span>Pick a treat</span>`}</span>`;
     el.classList.toggle('ready', ready);
     el.setAttribute('aria-label', `Treat jar: ${w.beads} golden beads` + (g ? `, saving for ${g.name}` : ''));
     const chip = $('#roomBeads'); if (chip) chip.innerHTML = `${W.bead('ochre', 26)}<b>${w.beads}</b>`;
@@ -66,33 +66,41 @@
   // What Bix says in My Room about the jar: [caption, voice line id]. The caption always contains the spoken line.
   function jarLine() {
     const w = wallet(), g = goal();
-    if (!g) return ['Pick a treat to save for! Tap “I wish for”.', 'shop_pick'];
+    if (!g) return ['Pick a treat to save for! Tap “Treats”.', 'shop_pick'];
     const more = g.price - w.beads;
-    if (more <= 0) return [`You have enough for ${g.name}! Go get it!`, 'shop_ready'];
+    if (more <= 0) return [`Your jar is full enough for ${g.name}!`, null];   // no "go get it": the child decides, without a push
     return [`Just ${more} more bead${more === 1 ? '' : 's'} for ${g.name}! You can do it!`, 'shop_saving'];
   }
 
-  /* ---------- the treat list ("I wish for…") ---------- */
+  /* ---------- the treat list ("Treats") ---------- */
+  // One card is highlighted: the saving goal, or (with no goal) the cheapest treat she can get now, or else the cheapest one.
+  // Every other card is quiet (maple buttons), so the screen never pushes her to spend.
+  function featured() {
+    const g = goal(); if (g) return g;
+    const byPrice = list().slice().sort((a, b) => a.price - b.price), w = wallet();
+    return byPrice.find(t => w.beads >= t.price) || byPrice[0] || null;
+  }
   function renderShop() {
-    const w = wallet(), g = goal(), W = root.WS; $('#shopBeads').textContent = w.beads;
+    const w = wallet(), g = goal(), W = root.WS, top = featured(); $('#shopBeads').textContent = w.beads;
     const bi = $('#shopBeadIc'); if (bi && !bi.firstChild) bi.innerHTML = W.bead('ochre', 30);
     const box = $('#shopCards'); box.innerHTML = '';
     for (const t of list().slice().sort((a, b) => a.price - b.price)) {
-      const can = w.beads >= t.price, pct = Math.min(100, Math.round(100 * w.beads / t.price)), isGoal = g && g.id === t.id;
-      const c = document.createElement('div'); c.className = 'tcard ws-card' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
+      const can = w.beads >= t.price, pct = Math.min(100, Math.round(100 * w.beads / t.price)), isGoal = g && g.id === t.id, hi = top && top.id === t.id;
+      const c = document.createElement('div'); c.className = 'tcard ws-card' + (can ? ' can' : '') + (isGoal ? ' goal' : '') + (hi ? ' hi' : '');
+      const btn = hi ? (can ? '' : ' maple') : ' maple';
       c.innerHTML = `${isGoal ? `<div class="tgoal">${W.icon('star', 18, '#3D2412')}Saving for this</div>` : ''}<div class="temoji">${t.emoji}</div><div class="tname">${esc(t.name)}</div>
         <div class="tprice">${W.bead('ochre', 28)}<b>${t.price}</b></div><div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div>
-        <div class="tneed">${can ? 'You have enough!' : `${t.price - w.beads} more to go`}</div>
-        <div class="tbtns">${can ? `<button class="ws-btn small" data-get="${t.id}">Get it!</button>` : ''}${isGoal ? '' : `<button class="ws-btn small maple" data-goal="${t.id}">Save for this</button>`}</div>`;
+        <div class="tneed">${can ? 'You have enough' : `${t.price - w.beads} more to go`}</div>
+        <div class="tbtns">${can ? `<button class="ws-btn small${btn}" data-get="${t.id}">Get it</button>` : ''}${isGoal ? '' : `<button class="ws-btn small maple" data-goal="${t.id}">Save for this</button>`}</div>`;
       box.appendChild(c);
     }
     box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).name}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
     box.querySelectorAll('[data-get]').forEach(b => b.onclick = () => ask(byId(b.dataset.get)));
     const open = w.tickets.filter(x => !x.given);
-    $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${x.emoji} ${esc(x.name)}</div>`).join('') : '';
+    $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${W.icon('star', 20, W.colors.red)}<span>${esc(x.name)}</span></div>`).join('') : '';
   }
   function ask(t) {
-    const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${t.emoji} ${esc(t.name)}</b> for <b class="ask-price">${root.WS.bead('ochre', 34)}${t.price}</b>?`; m.classList.add('active');
+    const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${esc(t.name)}</b> for <b class="ask-price">${root.WS.bead('ochre', 34)}${t.price}</b>?`; m.classList.add('active');
     $('#askNo').onclick = () => m.classList.remove('active');
     $('#askYes').onclick = () => { m.classList.remove('active'); buy(t); };
   }
@@ -107,10 +115,12 @@
   function open() {
     const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 84 });
     const g = goal(), w = wallet();
-    F().Mascot.say(bx, g ? (w.beads >= g.price ? `You have enough for ${g.name}! Go get it!` : `${g.price - w.beads} more beads for ${g.name}. Keep practising to fill the jar. You can do it!`) : 'Pick a treat to save for!', 0, g ? (w.beads >= g.price ? 'shop_ready' : 'shop_saving') : 'shop_pick');
+    if (!g) F().Mascot.say(bx, 'Pick a treat to save for!', 0, 'shop_pick');
+    else if (w.beads >= g.price) F().Mascot.say(bx, `You have enough for ${g.name}. Get it now, or keep saving. You choose!`, 0, null);
+    else F().Mascot.say(bx, `${g.price - w.beads} more beads for ${g.name}. Keep practising to fill the jar. You can do it!`, 0, 'shop_saving');
     renderShop(); App().show('shop');
   }
-  // "I wish for…" in My Room. For now it opens the treat list, where the child picks what to save for or gets a treat.
+  // The "Treats" button in My Room (it will become "I wish for…" when wishes exist). For now it opens the treat list, where the child picks what to save for or gets a treat.
   // Later milestone: a wish the child makes here goes to a grown-up for approval (replace this one function).
   function wish() { open(); }
 
@@ -121,7 +131,7 @@
     const tb = $('#tpList'); tb.innerHTML = '';
     list().forEach((t, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><input class="txt" style="width:58px;min-width:0;text-align:center;font-size:22px" value="${t.emoji}" data-f="emoji"></td><td><input class="txt" value="${esc(t.name)}" data-f="name"></td><td><input class="txt" type="number" min="1" style="width:80px;min-width:0" value="${t.price}" data-f="price"> 🟡</td><td><button class="btn small ghost" data-del style="padding:4px 10px;min-height:30px;font-size:13px">Remove</button></td>`;
+      tr.innerHTML = `<td><input class="txt" style="width:58px;min-width:0;text-align:center;font-size:22px" value="${t.emoji}" data-f="emoji"></td><td><input class="txt" value="${esc(t.name)}" data-f="name"></td><td><input class="txt" type="number" min="1" style="width:80px;min-width:0" value="${t.price}" data-f="price"> ${root.WS.bead('ochre', 26, { label: 'golden beads' })}</td><td><button class="btn small ghost" data-del style="padding:4px 10px;min-height:30px;font-size:13px">Remove</button></td>`;
       tr.querySelectorAll('input').forEach(inp => inp.onchange = () => { const f = inp.dataset.f; t[f] = f === 'price' ? Math.max(1, parseInt(inp.value, 10) || 1) : (inp.value.trim() || t[f]); App().saveSettings(); renderJar(); if (App().renderChecklist) App().renderChecklist(); });
       tr.querySelector('[data-del]').onclick = () => { if (!confirm(`Remove ${t.emoji} ${t.name}?`)) return; list().splice(i, 1); if (w.goal === t.id) w.goal = null; App().saveSettings(); F().save(); renderParent(); renderJar(); };
       tb.appendChild(tr);

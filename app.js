@@ -379,8 +379,8 @@ document.addEventListener('click', e=>{
 }, true);
 // Each kind of step is a lacquered bead whose colour means something: red = learn (the main new thing), indigo = Look, ochre = Listen, jade = Flash / Play.
 const STEP_LOOK = { lesson:['book','red'], visual:['eye','indigo'], listen:['ear','ochre'], flash:['bolt','jade'], game:['game','jade'] };
-function stepBead(s, i, nextI){
-  const [ic, col] = STEP_LOOK[s.kind] || ['star','indigo'], cur = i===nextI, w = cur ? 170 : s.done ? 136 : 150;
+function stepBead(s, nextI){
+  const i = s.at, [ic, col] = STEP_LOOK[s.kind] || ['star','indigo'], cur = i===nextI, w = cur ? 170 : s.done ? 136 : 150;
   const bead = s.done ? WS.bead('jade', w) : WS.bead(col, w);
   const icon = s.done ? WS.icon('check', 40, '#fff', 3.2) : WS.icon(ic, cur ? 40 : 34, cur ? (col==='ochre' ? '#3D2412' : '#fff') : '#6E4126', 2.4);
   const state = s.done ? 'done' : cur ? 'now' : 'later', just = s.done && stepBead.seen && !stepBead.seen[i];
@@ -401,16 +401,17 @@ function renderHome(){
   Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null, line[1]);
   if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; }
   Fun.save();
-  // Today: three beads on the soroban rod
-  const nextI = steps.findIndex(s=>!s.done), left = steps.filter(s=>!s.done).length;
+  // Today: three beads on the soroban rod, finished ones first (slid to the left like counted beads)
+  const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
   $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
   $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
-  $('#todaySteps').innerHTML = steps.map((s,i)=>stepBead(s,i,nextI)).join('');
-  stepBead.seen = steps.map(s=>s.done);   // a step that turns done since the last visit pops
+  const shown = steps.filter(s=>s.done).concat(steps.filter(s=>!s.done));
+  $('#todaySteps').innerHTML = shown.map(s=>stepBead(s,nextI)).join('');
+  stepBead.seen = steps.map(s=>s.done);   // a step that turns done since the last visit pops (by its place in the plan)
   const go=$('#todayGo'); go.classList.toggle('play', allDone);
   $('#todayGoIc').innerHTML = allDone ? WS.icon('game', 44, '#fff', 2.2) : WS.icon('play', 44, '#fff');
-  $('#todayGoT').textContent = allDone ? 'Play' : (nextI===0 ? 'Start' : 'Next');
-  go.setAttribute('aria-label', allDone ? 'Play a game' : `${nextI===0?'Start':'Next'}: ${steps[nextI].label}`);
+  $('#todayGoT').textContent = allDone ? 'Play' : (started ? 'Next' : 'Start');
+  go.setAttribute('aria-label', allDone ? 'Play a game' : `${started?'Next':'Start'}: ${nextS.label}`);
   Treats.renderJar();
 }
 // Icons for the home screen (kit drawings, no emoji).
@@ -431,7 +432,9 @@ $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedNa
 $('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
 const STEP_INFO = { lesson:['📖','Learn'], visual:['👀','Look'], listen:['👂','Listen'], flash:['⚡️','Flash'], game:['🎮','Game'] };
-// Three short steps a day: learn/practise, a game, then the other practice mode. Regenerated each day.
+// Three short steps a day: learn/practise, a game, then the other practice mode.
+// The plan is made once per child per day (Fun.data is per child) and then frozen: unlocking a skill or a grown-up
+// changing the skill mid-day never reshuffles it. Each step simply runs on whatever skill is current when tapped.
 function todaySteps(){
   const F=Fun.data, day=todayKey(), n=NODES[curIdx()];
   if (!F.today || F.today.day!==day){
@@ -444,29 +447,25 @@ function todaySteps(){
     F.today = { day, celebrated:false, steps:[ {kind:s1}, {kind:'game', game:g}, {kind:s3} ].map(s=>Object.assign(s,{done:false})) };
     Fun.save();
   }
-  // Keep the plan in step with the current skill (it can change mid-day: unlocked, or set by a grown-up).
-  const needLesson = hasLesson(n) && !node(n.id).lesson; let changed=false;
-  for (const s of F.today.steps){
-    if (s.done) continue;
-    if (s.kind==='lesson' && !needLesson){ const used=F.today.steps.map(x=>x.kind); s.kind = n.kind==='flash' ? 'flash' : (used.includes('visual') ? 'listen' : 'visual'); changed=true; }
-  }
-  const first=F.today.steps[0];
-  if (needLesson && !first.done && first.kind!=='lesson' && !F.today.steps.some(x=>x.kind==='lesson')){ first.kind='lesson'; changed=true; }
-  if (changed) Fun.save();
-  return F.today.steps.map(s=>{ const [icon,label]=STEP_INFO[s.kind]; const g=s.game&&Games.GAMES[s.game]; return Object.assign({}, s, { icon: g?g.icon:icon, label: g?g.name:label }); });
+  return F.today.steps.map((s,at)=>{ const [icon,label]=STEP_INFO[s.kind]; const g=s.game&&Games.GAMES[s.game]; return Object.assign({}, s, { at, icon: g?g.icon:icon, label: g?g.name:label }); });
 }
+// Start a Today step. What actually runs is remembered (F.today.active), so finishing it ticks this step
+// even when the step had to run something else (e.g. a Look step that first teaches a newly unlocked skill).
 function startStep(s){
-  const n=NODES[curIdx()];
-  if (s.kind==='lesson') return startLesson(n);
-  if (s.kind==='game') return Games.open(s.game);
-  if ((s.kind==='visual'||s.kind==='listen') && hasLesson(n) && !node(n.id).lesson) return startLesson(n);   // learn a new skill before drilling it
-  if (s.kind==='flash') return startDrill('flash', n);
-  return startDrill(s.kind, n.kind==='flash' ? C.BY_ID.combined : n);
+  const n=NODES[curIdx()], F=Fun.data;
+  const ran = (kind)=>{ if (F.today) { F.today.active={ at:s.at, kind }; Fun.save(); } };
+  if (s.kind==='lesson'){ ran('lesson'); return startMode('learn'); }
+  if (s.kind==='game'){ ran('game'); return Games.open(s.game); }
+  if ((s.kind==='visual'||s.kind==='listen') && hasLesson(n) && !node(n.id).lesson){ ran('lesson'); return startLesson(n); }   // learn a new skill before drilling it
+  if (s.kind==='flash'){ ran('flash'); return startDrill('flash', n); }
+  ran(s.kind); return startDrill(s.kind, n.kind==='flash' ? C.BY_ID.combined : n);
 }
 // Called whenever she finishes something: plants today's flower, gives a sticker, ticks today's step.
 async function activityDone(kind, info={}){
   days[todayKey()]=true; save('days',days);
-  const F=Fun.data; if (F.today && F.today.day===todayKey()){ const st=F.today.steps.find(s=>!s.done && s.kind===kind); if (st) st.done=true; }
+  const F=Fun.data; if (F.today && F.today.day===todayKey()){
+    const a=F.today.active, own = a && a.kind===kind && F.today.steps[a.at] && !F.today.steps[a.at].done ? F.today.steps[a.at] : null;
+    const st = own || F.today.steps.find(s=>!s.done && s.kind===kind); if (st) st.done=true; F.today.active=null; }
   Fun.save();
   await Fun.give({gold: !!info.gold});
   Treats.earn(Treats.EARN.activity + (info.gold ? Treats.EARN.gold : 0), info.gold ? 'finished + gold sticker' : 'for finishing');
@@ -511,7 +510,7 @@ $('#roomBookArt').innerHTML = BOOK_SVG;
 $('#exitRoom').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
 $('#exitAlbum').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
 $('#exitShop').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
-$('#roomWishIc').innerHTML = WS.icon('star', 26, '#3D2412');
+$('#roomWishIc').innerHTML = WS.icon('jar', 28, '#3D2412', 2.4);
 function renderRoom(){
   const unseen = Fun.count() - (Fun.data.albumSeen||0), bd=$('#albumBadge');
   bd.textContent = unseen>0 ? `${unseen} new` : ''; bd.classList.toggle('on', unseen>0);
@@ -519,8 +518,7 @@ function renderRoom(){
   const n = Fun.renderGarden($('#garden'), $('#gardenLabel'), days);
   $('#roomGarden').setAttribute('aria-label', `My garden: ${$('#gardenLabel').textContent}`);
   Treats.renderJar();
-  const ready = $('#jar').classList.contains('ready'), noGoal = !Treats.goal();
-  $('#roomWish').classList.toggle('ws-pulse', noGoal || ready);
+  $('#roomWish').classList.toggle('ws-pulse', !Treats.goal());   // nudge only to pick a goal, never to spend
   return n;
 }
 function goRoom(){

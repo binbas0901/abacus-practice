@@ -19,7 +19,7 @@ async def answer_check(pg, wrong_at_level):
         lname=await pg.text_content('#suLevelName')
         v=sum(terms)+(1 if wrong_at_level and wrong_at_level in lname else 0)
         for ch in str(v): await pg.click(f'#suPad [data-k="{ch}"]')
-        await pg.click('#suPad [data-k=go]'); await pg.wait_for_timeout(700)
+        await pg.click('#suGo'); await pg.wait_for_timeout(700)
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
@@ -54,7 +54,7 @@ async def main():
         await pg.click('#levelAgain'); await pg.wait_for_selector('#suCheck.on'); await pg.wait_for_timeout(300)
         await pg.click('#suStop'); terms=[int(t.replace('−','-')) for t in await pg.eval_on_selector_all('#suProb .term','els=>els.map(e=>e.textContent)')]
         for ch in str(sum(terms)): await pg.click(f'#suPad [data-k="{ch}"]')
-        await pg.click('#suPad [data-k=go]'); await pg.wait_for_selector('#suDone.on')
+        await pg.click('#suGo'); await pg.wait_for_selector('#suDone.on')
         pr=json.loads(await pg.evaluate("window.__legacy('progress')")); st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         check('re-run level check + "Start here" -> resets to Beads, keeps name', pr['current']=='beads' and st['name']=='Ava' and not any(v.get('mastered') for v in pr['nodes'].values()), f"{pr['current']} {st['name']}")
         await pg.click('#suStart'); await pg.wait_for_selector('#home.active')

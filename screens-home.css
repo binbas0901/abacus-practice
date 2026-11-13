@@ -9,6 +9,7 @@
 .a-top{display:flex;align-items:center;gap:20px;padding:24px 40px 18px;flex:none}
 .a-gap{flex:1}
 .a-top .ws-iconbtn svg{flex:none}
+.a-top .ws-iconbtn,#suPickBack.ws-iconbtn{width:64px;height:64px}   /* child targets >= 60px */
 
 /* ---------- Bix (Fun.Mascot): kit drawing + speech bubble. :where() keeps these easy for other screens to resize ---------- */
 :where(.bixwrap){position:relative;display:flex;align-items:center;gap:14px}
@@ -42,15 +43,18 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 #bixHome{--bix:92px;min-width:0}
 .hm-tools{display:flex;align-items:center;gap:10px;flex:none}
 #home #grownups.ws-iconbtn{padding:0;font-size:0;border-radius:var(--ws-r-sm);background:#D5DEE3;color:var(--ws-ink-2)}
-.hm-switch{white-space:nowrap}
+.hm-switch.ws-btn.ghost{white-space:nowrap;min-height:60px;padding:0 22px;border-radius:var(--ws-r-sm);background:#D5DEE3;color:var(--ws-ink-2);
+  font-family:var(--ws-display);font-weight:600;font-size:20px}
+#home #grownups.ws-iconbtn.quiet{width:60px;height:60px}
 
 .hm-frame{flex:none;border-radius:34px;padding:18px}
 .hm-inner{position:relative;height:clamp(280px,44vh,420px);display:flex;align-items:center;gap:28px;padding:0 44px 0 56px;border-radius:22px;overflow:hidden}
 .hm-beam{position:absolute;left:0;right:0;top:19.5%;height:12px;background:var(--ws-rod)}
 .hm-rod{position:absolute;left:0;right:0;top:50%;height:10px;margin-top:-5px;background:var(--ws-rod)}
-.hm-today{position:relative;z-index:1;flex:none;width:190px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;transform:translateY(-16px)}
-.hm-title{margin:0;font-family:var(--ws-display);font-weight:700;font-size:46px;line-height:1;color:var(--ws-indigo);background:var(--ws-maple);padding-right:10px;white-space:nowrap}
-.hm-sub{font-family:var(--ws-body);font-size:20px;line-height:1.2;color:var(--ws-rod);background:var(--ws-maple);padding-right:10px;white-space:nowrap}
+/* "Today" sits as a label on the upper deck, wholly above the rod (the rod never runs through it) */
+.hm-today{position:relative;z-index:1;flex:none;width:190px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;transform:translateY(calc(-50% - 16px))}
+.hm-title{margin:0;font-family:var(--ws-display);font-weight:700;font-size:46px;line-height:1;color:var(--ws-indigo);white-space:nowrap}
+.hm-sub{font-family:var(--ws-body);font-size:20px;line-height:1.2;color:var(--ws-wood-dk);white-space:nowrap}
 .hm-steps{position:relative;z-index:1;list-style:none;margin:0;padding:0;flex:1;min-width:0;display:flex;align-items:center;justify-content:space-around;gap:16px}
 .hm-step.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}
 .hm-bead{position:relative;display:block;line-height:0}
@@ -79,7 +83,7 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .hm-chip{position:absolute;right:22px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;
   background:var(--ws-white);border-radius:var(--ws-r-pill);padding:6px 14px;font-family:var(--ws-display);font-weight:600;font-size:20px;color:var(--ws-ink)}
 .hm-chip:empty{display:none}
-#home #ver.hm-ver{position:absolute!important;right:44px;bottom:9px;font-size:12px;line-height:1;opacity:1}
+#home #ver.hm-ver{position:absolute!important;left:12px;bottom:6px;font-size:10px;line-height:1;opacity:.6;color:var(--ws-ink-2)}
 
 /* tall landscape (iPad Pro) */
 @media (min-width:1300px) and (min-height:960px){
@@ -167,10 +171,10 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 #jar .jar-tag{position:absolute;right:-56px;top:8px;transform:rotate(6deg);display:flex;flex-direction:column;align-items:center;gap:4px;max-width:132px;
   background:var(--ws-white);border-radius:14px;padding:10px 14px;box-shadow:0 3px 0 var(--ws-line);
   font-family:var(--ws-display);font-weight:600;font-size:18px;line-height:1.15;color:var(--ws-ink);text-align:center}
-#jar .jar-tag .jt-emoji{font-size:34px;line-height:1}
+#jar .jar-tag .jt-ic{display:flex;line-height:0}
 #jar .jar-tag.ready{border:4px solid var(--ws-jade);padding:6px 10px}
 
-/* floor, Bix and "I wish for…" */
+/* floor, Bix and "Treats" */
 .rm-floor{flex:none;height:190px;border-top:14px solid var(--ws-wood);display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 60px;
   background:linear-gradient(var(--ws-floor-line),var(--ws-floor-line)) 0 54px/100% 3px no-repeat,linear-gradient(var(--ws-floor-line),var(--ws-floor-line)) 0 118px/100% 3px no-repeat,var(--ws-floor)}
 #bixRoom{--bix:110px;align-items:flex-end;min-width:0}
@@ -214,7 +218,7 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .ab .slot b{background:var(--ws-indigo);font-family:var(--ws-display);font-weight:600;font-size:13px}
 
 /* =====================================================================
-   TREAT LIST ("I wish for…")
+   TREAT LIST ("Treats")
    ===================================================================== */
 #shop.sh{gap:0}
 .sh-wallet{line-height:1}
@@ -227,7 +231,7 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .sh .tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px 20px;padding-top:12px}
 .sh .tcard.ws-card{background:var(--ws-white);border-radius:var(--ws-r-md);box-shadow:0 3px 0 var(--ws-line);padding:22px 14px 16px;gap:8px}
 .sh .tcard.can{background:var(--ws-white)}
-.sh .tcard.goal{border:4px solid var(--ws-ochre);padding:18px 10px 12px}
+.sh .tcard.hi{border:4px solid var(--ws-ochre);padding:18px 10px 12px;box-shadow:0 5px 0 var(--ws-ochre-dk)}
 .sh .tgoal{display:flex;align-items:center;gap:4px;top:-16px;background:var(--ws-ochre);color:#3D2412;font-family:var(--ws-display);font-weight:600;font-size:15px;padding:4px 12px;white-space:nowrap}
 .sh .temoji{font-size:60px}
 .sh .tname{font-family:var(--ws-display);font-weight:600;font-size:21px;color:var(--ws-ink)}
@@ -238,8 +242,8 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 .sh .tbar i{background:var(--ws-ochre)}
 .sh .tneed{font-size:16px;color:var(--ws-ink-2)}
 .sh .tbtns{flex-direction:row;gap:12px;margin-top:auto;padding-top:8px}
-.sh .tbtns .ws-btn{flex:1;width:auto;padding:0 14px;white-space:nowrap}
-.sh .ticket{border:3px dashed var(--ws-red);background:var(--ws-white);font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
+.sh .tbtns .ws-btn{flex:1;width:auto;min-height:60px;padding:0 14px;white-space:nowrap}
+.sh .ticket{display:inline-flex;align-items:center;gap:8px;border:3px dashed var(--ws-red);background:var(--ws-white);font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
 .sh .tk-head{font-family:var(--ws-display);font-weight:600;color:var(--ws-ink)}
 .sh-how{font-size:15px;color:var(--ws-ink-2);text-align:center}
 
@@ -266,6 +270,8 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 #setup .su-body{gap:22px;padding:28px 40px}
 #bixSetup{--bix:104px}
 #setup .su-h{font-family:var(--ws-display);font-weight:700;font-size:40px;line-height:1.1;color:var(--ws-indigo);text-align:center;margin:0}
+#setup .su-h.su-label{font-size:28px;color:var(--ws-indigo);opacity:.85}
+#setup .su-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #setup .su-p{font-family:var(--ws-body);font-size:20px;color:var(--ws-ink-2);max-width:660px}
 #setup .su-note{font-size:16px}
 .su-input{font-family:var(--ws-display);font-weight:600;font-size:40px;text-align:center;width:min(460px,90%);padding:14px 18px;border-radius:var(--ws-r-md);border:4px solid var(--ws-maple-dk);background:var(--ws-white);color:var(--ws-ink)}
@@ -299,6 +305,7 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 
 /* level check: tiles + keypad */
 #setup .su-checkhead{display:flex;align-items:center;gap:18px;width:min(1000px,100%)}
+#setup #suStop.ws-btn{min-height:60px}
 #setup .su-lname{font-family:var(--ws-display);font-weight:600;font-size:26px;color:var(--ws-indigo);white-space:nowrap}
 #setup .su-dots{flex:1;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 #setup .su-dots i{width:auto;height:auto;background:none;border-radius:0;transform:none;line-height:0}
@@ -306,15 +313,17 @@ body.ws-calm :where(.bixwrap) .bix:not(.talking) .ws-bix-body{animation:none}
 #setup .su-prob.problem{flex:none;background:none;box-shadow:none;border-radius:0;margin:0;display:flex;flex-direction:column;align-items:flex-end;gap:14px;padding:10px 0}
 #setup .su-prob .term.ws-tile{width:200px;font-size:56px;line-height:1;text-align:initial}
 #setup .su-prob .term.neg{color:var(--ws-ink)}
-#setup .su-entry.entry{width:340px;gap:14px}
-#setup .feedback{height:54px;display:flex;align-items:center;justify-content:center;font-family:var(--ws-display);font-weight:600;font-size:24px;color:var(--ws-ink-2)}
+#setup .su-entry.entry{position:relative;width:340px;gap:14px}
+#setup .feedback{position:absolute;left:100%;top:0;margin-left:18px;width:150px;height:96px;display:flex;align-items:center;justify-content:flex-start;font-family:var(--ws-display);font-weight:600;font-size:24px;color:var(--ws-ink-2)}
 #setup .su-answer.answer{height:96px;border:0;border-radius:var(--ws-r-md);background:var(--ws-white);box-shadow:0 3px 0 var(--ws-line);font-family:var(--ws-display);font-weight:700;font-size:60px;color:var(--ws-ink);padding:0}
-#setup .su-pad.pad{gap:12px}
-#setup .su-pad button{height:72px;border-radius:var(--ws-r-sm);background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:34px;color:var(--ws-ink);padding:0;display:flex;align-items:center;justify-content:center}
-#setup .su-pad button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ws-maple-dk)}
-#setup .su-pad button.go{background:var(--ws-jade);box-shadow:0 5px 0 var(--ws-jade-dk)}
-#setup .su-pad button.go:active{box-shadow:0 1px 0 var(--ws-jade-dk)}
-#setup .su-pad button.del{background:var(--ws-maple)}
+#setup .su-pad.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+#setup .su-pad button{height:72px;border:0;border-radius:var(--ws-r-sm);background:var(--ws-maple);box-shadow:0 5px 0 var(--ws-maple-dk);font-family:var(--ws-display);font-weight:700;font-size:40px;color:var(--ws-ink);padding:0;display:flex;align-items:center;justify-content:center;
+  transition:transform .08s ease, box-shadow .08s ease}
+#setup .su-pad button:active{transform:translateY(var(--ws-press));box-shadow:0 0 0 var(--ws-maple-dk)}
+#setup .su-pad button.zero{grid-column:span 2}
+#setup .su-pad button.del{background:#D5DEE3;box-shadow:0 5px 0 var(--ws-line);color:var(--ws-ink-2)}
+#setup .su-go.ws-btn{align-self:center;margin-top:10px;min-width:220px;gap:12px}
+#setup .su-go-ic{display:flex;line-height:0}
 #setup .su-install.ws-panel{background:var(--ws-white);border:0;border-radius:20px;box-shadow:0 3px 0 var(--ws-line);max-width:660px;font-size:17px;line-height:1.45;text-align:center;color:var(--ws-ink)}
 #setup .su-install .share{display:inline-flex;vertical-align:-3px;background:none;padding:0}
 @media (orientation:portrait){

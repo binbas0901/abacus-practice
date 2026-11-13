@@ -1,5 +1,5 @@
 // First-time setup for a new child on a new device: name, whether there is an abacus at home, where to start
-// (new / level check / grown-up picks), and a reminder to add the app to the Home Screen so Safari keeps the data.
+// (new / level check / grown-up picks). Only when it runs in a browser tab, a reminder to add it to the Home Screen.
 (function (root) {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -13,14 +13,14 @@
 
   function step(id) { $$('#setup .su-step').forEach(s => s.classList.toggle('on', s.id === id)); }
   function bix() { return $('#bixSetup'); }
-  function say(t, ms = 0, vid) { root.Fun.Mascot.say(bix(), t, ms, vid); }
+  function say(t, ms = 0, vid, replay) { root.Fun.Mascot.say(bix(), t, ms, vid, replay); }
 
   function open(from) {
     const my = ++token; App().show('setup');
     if (!bix().querySelector('.bix')) root.Fun.Mascot.mount(bix(), { size: 104 });
     if (from === 'level' || from === 'check') { state.name = App().settings.name || ''; state.keepName = true; if (from === 'check') check(); else toLevel(); return; }
     state = { name: '', keepName: false };
-    $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! Tap me to say hello!");
+    $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! What's your name?");
     // iPads only allow sound after a tap, so Bix introduces himself on the first touch.
     const hello = () => { if (my !== token || state.introDone || !$('#suName').classList.contains('on')) return; state.introDone = true; say("Hi there! I'm Bix! I'm a little bead from an abacus, and I love numbers!", 0, 'intro_hi');
       root.Fun.Mascot.react(bix(), 'happy'); setTimeout(async () => { await root.Fun.BixVoice.load(); }, 0);
@@ -37,7 +37,7 @@
 
   /* ---------- is there a real abacus at home? (decides the default answer tool in practice) ---------- */
   function toAbacus() {
-    $('#suAbacusH').textContent = `Does ${state.name} have an abacus at home?`;
+    $('#suAbacusH').textContent = `${state.name}’s abacus`;   // a short label: Bix asks the question out loud
     step('suAbacus'); say('Do you have an abacus at home?', 0, 'ask_abacus');
   }
   function abacusAnswer(v) {
@@ -101,23 +101,32 @@
     }
     finish('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
   }
+  // The keypad matches the practice keypad: 7-8-9 / 4-5-6 / 1-2-3, then ⌫ and a wide 0. The red Check button sits outside the grid.
   function makePad(el, ansEl) {
-    const W = root.WS;
-    el.innerHTML = [7, 8, 9, 4, 5, 6, 1, 2, 3].map(k => `<button data-k="${k}">${k}</button>`).join('') + `<button data-k="del" class="del" aria-label="Delete">${W.icon('back', 30, '#5E3519', 3)}</button><button data-k="0">0</button><button data-k="go" class="go" aria-label="Done">${W.icon('check', 36, '#fff', 3.4)}</button>`;
-    let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; };
+    const W = root.WS, go = $('#suGo');
+    el.innerHTML = [7, 8, 9, 4, 5, 6, 1, 2, 3].map(k => `<button data-k="${k}">${k}</button>`).join('') + `<button data-k="del" class="del" aria-label="Delete">${W.icon('back', 30, W.colors.ink, 3)}</button><button data-k="0" class="zero">0</button>`;
+    let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; go.disabled = !v; };
     el.onclick = e => { const b = e.target.closest('button'); if (!b || !waiting) return; const k = b.dataset.k; App().Sfx.tap();
-      if (k === 'del') set(val.slice(0, -1)); else if (k === 'go') { if (val !== '') { const w = waiting; waiting = null; w(parseInt(val, 10)); } } else if (val.length < 4) set(val + k); };
+      if (k === 'del') set(val.slice(0, -1)); else if (val.length < 4) set(val + k); };
+    go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; go.disabled = true; w(parseInt(val, 10)); };
     return { ask() { set(''); return new Promise(r => { waiting = r; }); } };
   }
 
   /* ---------- finish ---------- */
+  // Home Screen advice only makes sense in a plain browser tab: not when opened from the Home Screen icon, and never inside the App Store app.
+  function inBrowserTab() {
+    const nav = window.navigator || {}, mm = q => !!(window.matchMedia && window.matchMedia(q).matches);
+    if (nav.standalone === true || mm('(display-mode: standalone)') || mm('(display-mode: fullscreen)') || mm('(display-mode: minimal-ui)')) return false;
+    if (window.Capacitor || window.cordova || window.__TAURI__ || window.ReactNativeWebView) return false;
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bix) return false;
+    return true;
+  }
   function finish(current, how, headline, masteredIds) {
     token++;
     App().applySetup({ name: state.name, current, how, mastered: masteredIds });
     $('#suDoneH').textContent = headline;
     $('#suDoneP').textContent = `${state.name}, your first stop is ${App().nodeTitle(current)}. Tap Start each day for a short practice.`;
-    const standalone = (window.navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-    $('#suInstall').style.display = standalone ? 'none' : '';
+    $('#suInstall').style.display = inBrowserTab() ? '' : 'none';
     step('suDone'); root.Fun.Mascot.react(bix(), 'cheer', 2000); say(null, 0, 'intro_done'); root.Fun.confetti(70); App().Sfx.star();
   }
 
@@ -140,7 +149,8 @@
     $$('#setup .su-ic-next').forEach(el => { el.innerHTML = W.icon('play', 30, '#fff'); });
     $('#suPickBack').innerHTML = W.icon('back', 28, '#F4E3C3', 3);
     $('#suShareIc').innerHTML = W.icon('share', 20, K.indigo);
+    $('#suGoIc').innerHTML = W.icon('check', 30, '#fff', 3.2);
     $('#suStart').onclick = () => App().goHome();
   }
-  root.Setup = { open, bind };
+  root.Setup = { open, bind, inBrowserTab };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -65,19 +65,19 @@
   </div>
   <footer class="rm-floor">
     <div id="bixRoom" class="rm-bix"></div>
-    <button class="ws-btn ochre rm-wish" id="roomWish"><span id="roomWishIc"></span>I wish for…</button>
+    <button class="ws-btn ochre rm-wish" id="roomWish" aria-label="Treats: pick a treat to save for"><span id="roomWishIc"></span>Treats</button>
   </footer>
 </section>
 <section id="setup" class="screen ws-screen su">
   <div class="su-body">
     <div id="bixSetup" class="su-bix"></div>
     <div class="su-step" id="suName">
-      <h2 class="su-h">What’s your name?</h2>
+      <h2 class="su-h su-sr">What’s your name?</h2>
       <input id="suNameIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" aria-label="Your name">
       <button class="ws-btn big" id="suNameGo">Next<span class="su-ic-next"></span></button>
     </div>
     <div class="su-step" id="suAbacus">
-      <h2 class="su-h" id="suAbacusH">Is there an abacus at home?</h2>
+      <h2 class="su-h su-label" id="suAbacusH">Abacus</h2>
       <div class="su-cards su-cards-3">
         <button class="su-card" data-abacus="yes"><span class="su-art" data-art="yes"></span><b>Yes</b></button>
         <button class="su-card" data-abacus="no"><span class="su-art" data-art="no"></span><b>No</b></button>
@@ -85,7 +85,7 @@
       </div>
     </div>
     <div class="su-step" id="suLevel">
-      <h2 class="su-h">Where should we start?</h2>
+      <h2 class="su-h su-label">Starting point</h2>
       <div class="su-cards">
         <button class="su-card" data-lv="new"><span class="su-art" data-art="new"></span><b>I’m new to the abacus</b><small>Start from the very beginning</small></button>
         <button class="su-card" data-lv="check"><span class="su-art" data-art="check"></span><b>Find my level</b><small>A few quick problems on your abacus</small></button>
@@ -93,19 +93,19 @@
       </div>
     </div>
     <div class="su-step" id="suPick">
-      <div class="su-pickhead"><button class="ws-iconbtn" id="suPickBack" aria-label="Back"></button><h2 class="su-h">Which skill are they working on?</h2></div>
+      <div class="su-pickhead"><button class="ws-iconbtn" id="suPickBack" aria-label="Back"></button><h2 class="su-h su-label">Skills</h2></div>
       <div class="su-skills" id="suPickList"></div>
     </div>
     <div class="su-step" id="suCheck">
       <div class="su-checkhead"><div class="su-lname" id="suLevelName"></div><div class="su-dots" id="suDots"></div><button class="ws-btn maple small" id="suStop">Start here</button></div>
       <div class="su-checkbody"><div class="problem su-prob" id="suProb"></div>
-        <div class="entry su-entry"><div class="feedback" id="suFb"></div><div class="answer su-answer" id="suAns">&nbsp;</div><div class="pad su-pad" id="suPad"></div></div></div>
+        <div class="entry su-entry"><div class="feedback" id="suFb"></div><div class="answer su-answer" id="suAns">&nbsp;</div><div class="pad su-pad" id="suPad"></div><button class="ws-btn su-go" id="suGo" disabled><span class="su-go-ic" id="suGoIc"></span>Check</button></div></div>
     </div>
     <div class="su-step" id="suDone">
       <h2 class="su-h" id="suDoneH"></h2>
       <p class="su-p" id="suDoneP"></p>
-      <div class="su-install ws-panel" id="suInstall"><b>Grown-up: add this to the Home Screen</b> so progress is kept safe. In Safari tap the Share button <span class="share" id="suShareIc"></span> then <b>Add to Home Screen</b>, and open it from the new icon.</div>
-      <p class="su-p su-note">Grown-ups can set treats, record voices and see progress behind the lock on the home screen.</p>
+      <div class="su-install ws-panel" id="suInstall"><b>Grown-up: add this to the Home Screen</b> so progress is kept safe. Tap the Share button <span class="share" id="suShareIc"></span> then <b>Add to Home Screen</b>, and open it from the new icon.</div>
+      <p class="su-p su-note">Treats, voices and progress for grown-ups are behind the lock on the home screen.</p>
       <button class="ws-btn big" id="suStart">Let’s go!<span class="su-ic-next"></span></button>
     </div>
   </div>
@@ -136,7 +136,7 @@
 </section>
 
 <section id="shop" class="screen ws-screen sh">
-  <header class="a-top"><button class="ws-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="ws-h1">I wish for…</h1><span class="a-gap"></span><span class="ws-chip sh-wallet" id="shopWallet"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
+  <header class="a-top"><button class="ws-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="ws-h1">Treats</h1><span class="a-gap"></span><span class="ws-chip sh-wallet" id="shopWallet"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
   <div class="shop-body sh-body">
     <div class="shop-top sh-top"><div id="bixShop" class="sh-bix"></div><div id="shopTickets" class="shop-tickets"></div></div>
     <div class="tcards" id="shopCards"></div>
