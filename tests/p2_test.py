@@ -29,7 +29,7 @@ async def main():
         await pg.click('#lessonHint'); await pg.wait_for_timeout(3000); await pg.screenshot(path='/tmp/p2_hint.png')
         await pg.click('#exitLesson'); await pg.wait_for_timeout(300)
         # Look drill on current node
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_timeout(300); await pg.screenshot(path='/tmp/p2_drill.png')
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_timeout(300); await pg.screenshot(path='/tmp/p2_drill.png')
         for i in range(10):
             terms = await pg.eval_on_selector_all('#problemArea .term', 'els=>els.map(e=>e.textContent.replace("−","-"))')
             ans = sum(int(t) for t in terms) + (1 if i in (1,4) else 0)
@@ -48,7 +48,7 @@ async def main():
         await pg.click('#homeBtn'); await pg.wait_for_timeout(300); await pg.screenshot(path='/tmp/p2_home2.png')
         # flash
         await pg.evaluate("(()=>{const s=JSON.parse(window.__legacy('settings')||'{}');s.flashSec=0.3;s.settingsVersion=5;localStorage.setItem('abacus.settings',JSON.stringify(s));})()"); await pg.reload(); await pg.wait_for_timeout(300)
-        await pg.click('.tile[data-mode=flash]'); await pg.wait_for_timeout(900); await pg.screenshot(path='/tmp/p2_flash.png')
+        await pg.evaluate("App.startMode('flash')"); await pg.wait_for_timeout(900); await pg.screenshot(path='/tmp/p2_flash.png')
         await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=10000); print('flash ok')
         await pg.click('#exitDrill')
         # parent

@@ -14,7 +14,7 @@ async def main():
         await pg.tap('#parentDone'); await pg.wait_for_timeout(5000); await pg.evaluate("window.__bix.splice(0)")
         await pg.evaluate("Fun.Mascot.say(document.querySelector('#bixHome'), null, 0, 'yes_5')"); await pg.wait_for_timeout(800)
         r=await pg.evaluate("window.__bix.splice(0)"); print('quiet line yes_5 -> sound:', len(r), '| bubble:', await pg.text_content('#bixHome .bubble'))
-        await pg.reload(); await pg.wait_for_timeout(1200); await pg.touchscreen.tap(600,790); await pg.wait_for_timeout(4000)
+        await pg.reload(); await pg.wait_for_timeout(1200); await pg.touchscreen.tap(600,12); await pg.wait_for_timeout(4000)
         r=await pg.evaluate("window.__bix.splice(0)"); print('after reload, greeting in boy voice:', [x['id'] for x in r], await pg.evaluate("Fun.BixVoice.tag()"))
         print('errors', errs); await b.close()
 asyncio.run(main())

@@ -6,7 +6,7 @@ async def fresh(b):
     pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
     await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800); return ctx, pg
 async def name(pg, n):
-    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', n); await pg.click('#suNameGo'); await pg.wait_for_selector('#suLevel.on')
+    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', n); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
 async def gate(pg):
     await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
     await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(400)

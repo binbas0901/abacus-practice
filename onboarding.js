@@ -1,5 +1,5 @@
-// First-time setup for a new child on a new device: name, where to start (new / level check / grown-up picks),
-// and a reminder to add the app to the Home Screen so Safari keeps the data.
+// First-time setup for a new child on a new device: name, whether there is an abacus at home, where to start
+// (new / level check / grown-up picks), and a reminder to add the app to the Home Screen so Safari keeps the data.
 (function (root) {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -20,9 +20,9 @@
     if (!bix().querySelector('.bix')) root.Fun.Mascot.mount(bix(), { size: 104 });
     if (from === 'level' || from === 'check') { state.name = App().settings.name || ''; state.keepName = true; if (from === 'check') check(); else toLevel(); return; }
     state = { name: '', keepName: false };
-    $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! Tap me to say hello! 👋");
+    $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! Tap me to say hello!");
     // iPads only allow sound after a tap, so Bix introduces himself on the first touch.
-    const hello = () => { if (my !== token || state.introDone) return; state.introDone = true; say("Hi there! I'm Bix! I'm a little bead from an abacus, and I love numbers!", 0, 'intro_hi');
+    const hello = () => { if (my !== token || state.introDone || !$('#suName').classList.contains('on')) return; state.introDone = true; say("Hi there! I'm Bix! I'm a little bead from an abacus, and I love numbers!", 0, 'intro_hi');
       root.Fun.Mascot.react(bix(), 'happy'); setTimeout(async () => { await root.Fun.BixVoice.load(); }, 0);
       const wait = () => root.Fun.BixVoice.busy() ? setTimeout(wait, 200) : (my === token && $('#suName').classList.contains('on') && say("What's your name? Type it in for me!", 0, 'intro_name'));
       setTimeout(wait, 900); };
@@ -31,17 +31,28 @@
   }
   function nameGo() {
     const n = $('#suNameIn').value.trim().replace(/\s+/g, ' ').slice(0, 20);
-    if (!n) { say('Type your name first! 😊', 2500); $('#suNameIn').focus(); return; }
-    state.name = n; App().Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy'); toLevel();
+    if (!n) { say('Type your name first!', 2500); root.Fun.Mascot.react(bix(), 'oops'); $('#suNameIn').focus(); return; }
+    state.name = n; App().Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy'); toAbacus();
+  }
+
+  /* ---------- is there a real abacus at home? (decides the default answer tool in practice) ---------- */
+  function toAbacus() {
+    $('#suAbacusH').textContent = `Does ${state.name} have an abacus at home?`;
+    step('suAbacus'); say('Do you have an abacus at home?', 0, 'ask_abacus');
+  }
+  function abacusAnswer(v) {
+    App().settings.hasAbacus = v === 'yes' ? true : v === 'no' ? false : null; App().saveSettings();
+    App().Sfx.tap(); toLevel();
   }
   function toLevel() { step('suLevel'); say(`Nice to meet you, ${state.name}! Where should we start?`, 0, 'intro_meet'); }
 
   /* ---------- grown-up picks the skill ---------- */
   function toPick() {
     const box = $('#suPickList'); box.innerHTML = '';
-    App().nodes().forEach(n => {
+    const W = root.WS, fam = n => n.kind === 'flash' ? 'jade' : n.family === 10 ? 'red' : n.family === 5 ? 'ochre' : 'indigo';
+    App().nodes().forEach((n, i) => {
       const b = document.createElement('button'); b.className = 'su-skill'; b.dataset.id = n.id;
-      b.innerHTML = `<span class="ic">${n.icon}</span><span><b>${n.title}</b><small>${example(n)}</small></span>`;
+      b.innerHTML = `<span class="ic su-skill-bead c-${fam(n)}">${W.bead(fam(n), 64)}<i>${i + 1}</i></span><span><b>${n.title}</b><small>${example(n)}</small></span>`;
       b.onclick = () => finish(n.id, 'parent', `We'll start with ${n.title}.`);
       box.appendChild(b);
     });
@@ -63,19 +74,19 @@
     let stopAt = false; const mastered = [];
     for (let li = 0; li < CHECK.length; li++) {
       const n = C.BY_ID[CHECK[li]];
-      $('#suLevelName').textContent = `${n.icon} ${n.title}`;
-      $('#suDots').innerHTML = CHECK.map((id, k) => `<i class="${k < li ? 'ok' : k === li ? 'cur' : ''}"></i>`).join('');
+      $('#suLevelName').textContent = n.title;
+      $('#suDots').innerHTML = CHECK.map((id, k) => `<i class="${k < li ? 'ok' : k === li ? 'cur' : ''}">${root.WS.bead(k < li ? 'jade' : k === li ? 'indigo' : 'pale', k === li ? 40 : 30)}</i>`).join('');
       const cfg = Object.assign({}, n.drill, { operands: 3 });
       let probs; try { probs = E.generateSet2(cfg, PER); } catch (e) { probs = []; }
       let right = 0;
       for (let k = 0; k < probs.length; k++) {
         if (my !== token) return;
         const p = probs[k];
-        $('#suProb').innerHTML = p.terms.map(t => `<div class="term${t < 0 ? ' neg' : ''}">${t < 0 ? '−' + Math.abs(t) : t}</div>`).join('');
+        $('#suProb').innerHTML = p.terms.map((t, i) => root.WS.tile(t, i === 0).replace('class="ws-tile', `class="term${t < 0 ? ' neg' : ''} ws-tile`)).join('');
         $('#suFb').textContent = ''; $('#suFb').className = 'feedback';
         const a = await pad.ask(); if (my !== token) return;
         if (stopAt) break;
-        if (a === p.answer) { right++; $('#suFb').textContent = '✓'; $('#suFb').className = 'feedback ok'; App().Sfx.ok(); }
+        if (a === p.answer) { right++; $('#suFb').innerHTML = root.WS.bead('jade', 54); $('#suFb').className = 'feedback ok ws-pop'; App().Sfx.ok(); }
         else { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'feedback'; App().Sfx.tap(); }
         await sleep(600);
       }
@@ -91,7 +102,8 @@
     finish('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
   }
   function makePad(el, ansEl) {
-    el.innerHTML = [7, 8, 9, 4, 5, 6, 1, 2, 3].map(k => `<button data-k="${k}">${k}</button>`).join('') + '<button data-k="del" class="del">⌫</button><button data-k="0">0</button><button data-k="go" class="go">GO</button>';
+    const W = root.WS;
+    el.innerHTML = [7, 8, 9, 4, 5, 6, 1, 2, 3].map(k => `<button data-k="${k}">${k}</button>`).join('') + `<button data-k="del" class="del" aria-label="Delete">${W.icon('back', 30, '#5E3519', 3)}</button><button data-k="0">0</button><button data-k="go" class="go" aria-label="Done">${W.icon('check', 36, '#fff', 3.4)}</button>`;
     let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; };
     el.onclick = e => { const b = e.target.closest('button'); if (!b || !waiting) return; const k = b.dataset.k; App().Sfx.tap();
       if (k === 'del') set(val.slice(0, -1)); else if (k === 'go') { if (val !== '') { const w = waiting; waiting = null; w(parseInt(val, 10)); } } else if (val.length < 4) set(val + k); };
@@ -119,6 +131,15 @@
       else toPick();
     });
     $('#suPickBack').onclick = toLevel;
+    $$('#suAbacus [data-abacus]').forEach(b => b.onclick = () => { App().unlock(); abacusAnswer(b.dataset.abacus); });
+    // Kit drawings for the choices (no emoji).
+    const W = root.WS, K = W.colors;
+    const art = { yes: W.icon('abacus', 84, '#5E3519'), no: `<span class="su-cross">${W.icon('abacus', 84, '#B3BEC7')}${W.icon('close', 46, K.red, 3.4)}</span>`, unsure: `<span class="su-q">?</span>`,
+      new: W.icon('sprout', 76, K.jade, 2.2), check: W.icon('abacus', 80, '#5E3519'), pick: W.icon('lock', 70, K.indigo, 2.2) };
+    $$('#setup .su-art').forEach(el => { el.innerHTML = art[el.dataset.art] || ''; });
+    $$('#setup .su-ic-next').forEach(el => { el.innerHTML = W.icon('play', 30, '#fff'); });
+    $('#suPickBack').innerHTML = W.icon('back', 28, '#F4E3C3', 3);
+    $('#suShareIc').innerHTML = W.icon('share', 20, K.indigo);
     $('#suStart').onclick = () => App().goHome();
   }
   root.Setup = { open, bind };

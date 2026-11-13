@@ -1,4 +1,4 @@
-// Fun layer: Bix the bead mascot, sticker album, practice garden, confetti.
+// Fun layer: Bix the bead mascot (drawn by the Workshop kit), sticker album, the garden flower pot, confetti.
 // Reads the app through window.App at call time (app.js defines it before boot).
 (function (root) {
   'use strict';
@@ -12,26 +12,17 @@
   function save() { Store.set('fun', data); }
   function replace(d) { Object.keys(data).forEach(k => delete data[k]); Object.assign(data, { stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, d || {}); save(); }
 
-  /* ---------------- Bix, the bead mascot (original character) ---------------- */
-  let uid = 0;
-  function bixSVG() {
-    const u = 'bx' + (uid++);
-    return `<svg class="bix" viewBox="0 0 120 120" role="img" aria-label="Bix">
-<defs><radialGradient id="${u}" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#FFE0D4"/><stop offset=".5" stop-color="#F06449"/><stop offset="1" stop-color="#A9361F"/></radialGradient></defs>
-<g class="b-body">
-  <rect x="56.5" y="6" width="7" height="24" rx="3.5" fill="#7A4A22"/><circle cx="60" cy="8" r="6.5" fill="#FFC83D"/><circle cx="58" cy="6" r="2" fill="#fff" opacity=".7"/>
-  <path class="b-arm b-armL" d="M16 70 Q4 62 8 48" stroke="#A9361F" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <path class="b-arm b-armR" d="M104 70 Q116 62 112 48" stroke="#A9361F" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <ellipse cx="45" cy="103" rx="11" ry="6" fill="#7A4A22"/><ellipse cx="75" cy="103" rx="11" ry="6" fill="#7A4A22"/>
-  <path d="M6 63 C 27 24, 93 24, 114 63 C 93 102, 27 102, 6 63 Z" fill="url(#${u})"/>
-  <path d="M12 63 L108 63" stroke="#fff" stroke-opacity=".16" stroke-width="3"/>
-  <g class="b-eyes"><ellipse cx="45" cy="56" rx="9.5" ry="10.5" fill="#fff"/><ellipse cx="75" cy="56" rx="9.5" ry="10.5" fill="#fff"/>
-    <circle cx="46.5" cy="58" r="5.2" fill="#2A2118"/><circle cx="76.5" cy="58" r="5.2" fill="#2A2118"/><circle cx="48.5" cy="55.5" r="1.9" fill="#fff"/><circle cx="78.5" cy="55.5" r="1.9" fill="#fff"/></g>
-  <ellipse cx="32" cy="71" rx="6.5" ry="3.6" fill="#FF9AA2" opacity=".85"/><ellipse cx="88" cy="71" rx="6.5" ry="3.6" fill="#FF9AA2" opacity=".85"/>
-  <path class="b-smile" d="M51 72 Q60 81 69 72" stroke="#2A2118" stroke-width="3.6" fill="none" stroke-linecap="round"/>
-  <path class="b-grin" d="M49 71 Q60 88 71 71 Z" fill="#2A2118"/><path class="b-grin" d="M53 76 Q60 84 67 76 Z" fill="#FF7F8E"/>
-  <path class="b-oh" d="M56 75 a4 5 0 1 0 8 0 a4 5 0 1 0 -8 0" fill="#2A2118"/>
-</g></svg>`;
+  /* ---------------- Bix, the bead mascot: drawn by the Workshop kit (WS.bix) ---------------- */
+  // Moods come from kit.js: happy | cheer | think | concerned | wow | sleepy. The older reaction names map onto them.
+  const MOODS = ['happy', 'cheer', 'think', 'concerned', 'wow', 'sleepy'];
+  const REACT = { happy: 'happy', cheer: 'cheer', oops: 'concerned' };
+  function bixSVG(mood, size) { return root.WS.bix(MOODS.includes(mood) ? mood : 'happy', size || 96).replace('class="ws-bix ', 'class="bix ws-bix '); }
+  // Swap the drawing inside an existing Bix (keeps the element, its click handler and the .talking class).
+  function setMood(s, mood) {
+    if (!s || !MOODS.includes(mood)) return;
+    const t = document.createElement('div'); t.innerHTML = root.WS.bix(mood, 96);
+    const svg = t.querySelector('svg'), old = s.querySelector('svg'); if (!svg || !old) return;
+    old.replaceWith(svg); MOODS.forEach(m => s.classList.remove('ws-bix-' + m)); s.classList.add('ws-bix-' + mood); s.dataset.mood = mood;
   }
   /* ---------------- Bix's voice (pre-recorded lines, see tools/make_bix_voice.py) ---------------- */
   const LINES = () => root.BIX_LINES || {};
@@ -41,19 +32,32 @@
     voices: { sweet:'Sweet', boy:'Boy' },
     tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] ? t : 'sweet'; },
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
+    // Extra line packs recorded after the main set (audio/bix-<voice>-<pack>.js, see tools/make_bix_pack.py).
+    PACKS: ['home'],
     load(tag) {
-      tag = tag || this.tag(); if (this.buf[tag]) return Promise.resolve(); if (this.loading[tag]) return this.loading[tag];
-      this.loading[tag] = new Promise((res) => {
+      tag = tag || this.tag();
+      return Promise.all([this.loadKey(tag, `audio/bix-${tag}.js`)].concat(this.PACKS.map(p => this.loadKey(tag + '-' + p, `audio/bix-${tag}-${p}.js`))));
+    },
+    loadKey(key, src) {
+      if (this.buf[key]) return Promise.resolve(); if (this.loading[key]) return this.loading[key];
+      this.loading[key] = new Promise((res) => {
         const prev = root.__BIX_LOADED;
         root.__BIX_LOADED = async (t, meta, b64) => {
-          if (t !== tag) { if (prev) prev(t, meta, b64); return; }
+          if (t !== key) { if (prev) prev(t, meta, b64); return; }
           try { const ctx = App().Speaker.ensureCtx(); const raw = atob(b64), u = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i);
-            this.buf[tag] = await new Promise((ok, no) => { const p = ctx.decodeAudioData(u.buffer, ok, no); if (p && p.then) p.then(ok, no); }); this.map[tag] = meta.sprite; } catch (e) {}
-          delete this.loading[tag]; res();
+            this.buf[key] = await new Promise((ok, no) => { const p = ctx.decodeAudioData(u.buffer, ok, no); if (p && p.then) p.then(ok, no); }); this.map[key] = meta.sprite;
+            if (meta.lines && root.BIX_LINES) Object.keys(meta.lines).forEach(k => { if (!root.BIX_LINES[k]) root.BIX_LINES[k] = meta.lines[k]; }); } catch (e) {}
+          delete this.loading[key]; res();
         };
-        const s = document.createElement('script'); s.src = `audio/bix-${tag}.js`; s.onerror = () => { delete this.loading[tag]; res(); }; document.head.appendChild(s);
+        const s = document.createElement('script'); s.src = src; s.onerror = () => { delete this.loading[key]; res(); }; document.head.appendChild(s);
       });
-      return this.loading[tag];
+      return this.loading[key];
+    },
+    // Where a line lives: the main recording first, then the extra packs.
+    find(id) {
+      const tag = this.tag(); if (this.map[tag] && this.map[tag][id]) return [this.buf[tag], this.map[tag][id]];
+      for (const p of this.PACKS) { const k = tag + '-' + p; if (this.map[k] && this.map[k][id]) return [this.buf[k], this.map[k][id]]; }
+      return [null, null];
     },
     // Play a line by id. Returns a promise that resolves when it ends (or right away if Bix can't talk now).
     async play(id, el) {
@@ -67,8 +71,7 @@
         await this.load(this.tag());
       } finally { this.queued--; }
       if (my !== this.seq || ctx.state !== 'running') return;                    // a newer line was asked for, or sound is still off
-      const tag = this.tag();
-      const buf = this.buf[tag], sp = this.map[tag] && this.map[tag][id]; if (!buf || !sp) return;
+      const [buf, sp] = this.find(id); if (!buf || !sp) return;
       this.stop();
       const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start(ctx.currentTime + 0.02, sp[0], sp[1]); this.src = s;
       const bx = el && el.querySelector('.bix'); if (bx) { bx.classList.add('talking'); this.talkingEl = bx; }
@@ -83,29 +86,44 @@
     'Thumb pushes beads up. Pointer finger pushes them down!', '7 needs 3 to make 10!', '9 needs 1 to make 10!', '1 and 4 make 5. Small friends!',
     'Hee hee, that tickles!', 'Beads are my cousins 😄', 'Work left to right, like reading!', 'Close your eyes and picture the beads. That is mental math!', '5 and 5 are friends with each other!',
   ];
+  const NO_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;   // bubbles are captions: no emoji
+  const caption = t => String(t == null ? '' : t).replace(NO_EMOJI, '').replace(/\s+([!?.,])/g, '$1').replace(/\s{2,}/g, ' ').trim();
   const Mascot = {
+    // mount(el, {size, keep, bubble:false, mood, onTap}): Bix (and his speech bubble) inside el.
     mount(el, opts = {}) {
       if (!el) return;
       el.classList.add('bixwrap'); if (opts.size) el.style.setProperty('--bix', opts.size + 'px');
-      el.innerHTML = bixSVG() + (opts.bubble === false ? '' : '<div class="bubble"></div>');
-      el.querySelector('.bix').addEventListener('click', () => {
+      const say = root.WS.icon('speaker', 22, root.WS.colors.indigo);
+      el.innerHTML = bixSVG(opts.mood || 'happy', opts.size) + (opts.bubble === false ? '' : `<div class="bubble ws-bubble" aria-live="polite"><span class="ws-text"></span><span class="ws-say">${say}</span></div>`);
+      const bx = el.querySelector('.bix'); bx.dataset.base = opts.mood || 'happy';
+      bx.setAttribute('role', 'button'); bx.setAttribute('aria-label', 'Bix'); bx.tabIndex = 0;
+      bx.addEventListener('click', () => {
         Mascot.react(el, 'happy'); const a = App(); if (a) a.Sfx.boing();
         if (opts.onTap && opts.onTap() === false) return;
         const id = 'tap_' + (1 + Math.floor(Math.random() * 16)); const text = LINES()[id] || pick(TAP_LINES);
         Mascot.say(el, text, opts.keep ? 0 : 3500, id);
       });
+      // Tapping the bubble says the line again (children who can't read yet hear it twice).
+      const b = el.querySelector('.bubble'); if (b) b.addEventListener('click', () => { if (b._vid) BixVoice.play(b._vid, el); });
     },
+    // react(el, state, ms): a short reaction (hop, cheer, wobble) with the matching face; then back to his resting mood.
     react(el, state, ms = 1300) {
       const s = el && el.querySelector('.bix'); if (!s) return;
-      s.classList.remove('happy', 'cheer', 'oops'); void s.getBoundingClientRect(); s.classList.add(state);
-      clearTimeout(s._t); s._t = setTimeout(() => s.classList.remove(state), ms);
+      const mood = REACT[state] || (MOODS.includes(state) ? state : 'happy'), anim = REACT[state] ? state : (state === 'concerned' ? 'oops' : 'happy');
+      s.classList.remove('happy', 'cheer', 'oops'); setMood(s, mood); void s.getBoundingClientRect(); s.classList.add(anim);
+      clearTimeout(s._t); s._t = setTimeout(() => { s.classList.remove(anim); setMood(s, s.dataset.base || 'happy'); }, ms);
     },
-    // say(el, text, ms, voiceId): show the speech bubble; if a voice line id is given, Bix says it out loud too.
-    say(el, text, ms = 3500, vid) {
+    // mood(el, mood): change his resting face (e.g. 'think' while waiting, 'sleepy' at night).
+    mood(el, mood) { const s = el && el.querySelector('.bix'); if (!s || !MOODS.includes(mood)) return; s.dataset.base = mood; setMood(s, mood); },
+    // say(el, text, ms, voiceId, replayId): show the speech bubble; if a voice line id is given, Bix says it out loud too.
+    // replayId: the line that goes with this caption when it is not spoken right now (the bubble's speaker plays it on tap).
+    say(el, text, ms = 3500, vid, replayId) {
       if (vid && (text === null || text === undefined)) text = LINES()[vid] || '';
       if (vid) BixVoice.play(vid, el);
       const b = el && el.querySelector('.bubble'); if (!b) return;
-      b.textContent = text; b.classList.add('on'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+      const t = b.querySelector('.ws-text') || b; t.textContent = caption(text); b._vid = vid || replayId || null;
+      b.classList.toggle('has-voice', !!(b._vid && LINES()[b._vid]));
+      b.classList.add('on'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
       clearTimeout(b._t); if (ms) b._t = setTimeout(() => b.classList.remove('on'), ms);
     },
     quiet(el) { const b = el && el.querySelector('.bubble'); if (b) b.classList.remove('on'); },
@@ -153,38 +171,68 @@
     };
     pack.onclick = open; $('#rvOk').onclick = () => { ov.classList.remove('active'); item.res(s); setTimeout(next, 250); };
   }
+  // The sticker book: one page per pack. Stickers are content, so they stay emoji; empty spots are soft maple circles.
   function renderAlbum() {
-    $('#albumCount').textContent = `${count()} / ${ALL.length}`;
+    const W = root.WS;
+    $('#albumCount').innerHTML = `${W.icon('star', 22, W.colors.ochre)}<b>${count()}</b><span class="ab-of">of ${ALL.length}</span>`;
     const box = $('#albumPages'); box.innerHTML = '';
     for (const p of PACKS) {
       const got = p.items.filter((_, i) => data.stickers[p.id + ':' + i]).length;
-      const pg = document.createElement('div'); pg.className = 'apage';
-      pg.innerHTML = `<div class="ahead">${p.name} <span>${got}/${p.items.length}</span></div><div class="agrid">` +
-        p.items.map((e, i) => { const id = p.id + ':' + i, n = data.stickers[id]; return n ? `<div class="slot has${data.gold[id] ? ' gold' : ''}"><span>${e}</span>${n > 1 ? `<b>×${n}</b>` : ''}</div>` : `<div class="slot"><span>?</span></div>`; }).join('') + '</div>';
+      const pg = document.createElement('div'); pg.className = 'apage ab-page' + (got === p.items.length ? ' full' : '');
+      pg.innerHTML = `<div class="ahead ab-head"><h2>${p.name}</h2><span class="ab-got">${got} of ${p.items.length}</span></div><div class="agrid ab-grid">` +
+        p.items.map((e, i) => { const id = p.id + ':' + i, n = data.stickers[id]; return n ? `<div class="slot has${data.gold[id] ? ' gold' : ''}"><span>${e}</span>${n > 1 ? `<b>×${n}</b>` : ''}</div>` : `<div class="slot" aria-label="not found yet"></div>`; }).join('') + '</div>';
       box.appendChild(pg);
     }
   }
 
-  /* ---------------- garden (replaces calendar dots; no wilting) ---------------- */
-  const FLOWERS = ['🌷', '🌻', '🌼', '🌸', '🌺', '🪻', '🌹', '💐'];
+  /* ---------------- garden: a flower pot on the My Room shelf (one flower per practice day this month; never wilts) ---------------- */
+  const PETALS = ['red', 'ochre', 'indigo', 'pink', 'white', 'red', 'ochre', 'pink', 'indigo'];
+  // Flower spots above the pot, in the order they fill: each new flower goes where there is most room
+  // (farthest from the others), so 3 flowers or 30 both look like a bouquet.
+  const SPOTS = (() => {
+    const cand = [];
+    for (let y = 24; y <= 168; y += 6) for (let x = 22; x <= 208; x += 6) {
+      const dx = (x - 115) / 100, dy = (y - 206) / 182;
+      if (dx * dx + dy * dy <= 1) cand.push({ x, y });
+    }
+    const out = [{ x: 115, y: 40 }];
+    while (out.length < 31) {
+      let best = null, bd = -1;
+      for (const c of cand) { let m = Infinity; for (const o of out) m = Math.min(m, Math.hypot(c.x - o.x, c.y - o.y) - (c.y > 150 ? 6 : 0)); if (m > bd) { bd = m; best = c; } }
+      out.push(best);
+    }
+    return out;
+  })();
+  function potSVG(flowers, sprout) {
+    let stems = '', heads = '';
+    flowers.forEach((f, i) => {
+      const s = SPOTS[i % SPOTS.length], cx = 115 + (s.x - 115) * 0.35;
+      stems += `<path class="g-stem" d="M115 206 Q ${cx.toFixed(1)} ${((206 + s.y) / 2 + 12).toFixed(1)} ${s.x.toFixed(1)} ${s.y.toFixed(1)}"/>`;
+      const r = flowers.length <= 9 ? 16 : flowers.length <= 18 ? 13 : 11, c = PETALS[(f.d * 7) % PETALS.length];
+      heads += `<g class="plot bloom${f.full ? ' full' : ''}${f.today ? ' today' : ''}" transform="translate(${s.x.toFixed(1)} ${s.y.toFixed(1)})">${f.full ? `<circle r="${r + 6}" class="g-ring"/>` : ''}<circle r="${r}" class="g-${c}"/><circle r="${Math.round(r / 3)}" class="g-eye"/></g>`;
+    });
+    const leaves = flowers.length ? '<path class="g-leaf" d="M104 186 C 88 180, 82 166, 86 158 C 100 162, 106 172, 104 186Z"/><path class="g-leaf" d="M126 182 C 142 176, 148 162, 144 154 C 130 158, 124 168, 126 182Z"/>' : '';
+    const sp = sprout ? `<g class="plot sprout"><path class="g-stem" d="M115 206 V 176"/><path class="g-leaf" d="M115 186 C 104 184, 98 176, 100 170 C 110 172, 115 178, 115 186Z"/><path class="g-leaf" d="M115 180 C 126 176, 132 168, 130 162 C 120 164, 115 172, 115 180Z"/></g>` : '';
+    return `<svg viewBox="0 0 230 300" width="230" height="300" aria-hidden="true">${stems}${leaves}${sp}${heads}<path class="g-pot" d="M58 212 H172 L160 296 H70Z"/><rect class="g-rim" x="50" y="200" width="130" height="22" rx="8"/></svg>`;
+  }
   function renderGarden(el, labelEl, days) {
-    const now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
-    el.innerHTML = ''; let n = 0;
+    if (!el) return;
+    const now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate(), fl = [];
+    let practisedToday = false;
     for (let d = 1; d <= today; d++) {
       const key = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-      const c = document.createElement('span'); c.className = 'plot';
-      if (days[key]) { n++; c.textContent = FLOWERS[(d * 7 + m) % FLOWERS.length]; c.classList.add('bloom'); if (data.garden[key] === 'full') c.classList.add('full'); }
-      else if (d === today) { c.textContent = '🌱'; c.classList.add('sprout'); }
-      else c.classList.add('soil');
-      el.appendChild(c);
+      if (days[key]) { fl.push({ d, full: data.garden[key] === 'full', today: d === today }); if (d === today) practisedToday = true; }
     }
-    labelEl.textContent = n === 0 ? 'Practise to grow a flower!' : `${n} flower${n === 1 ? '' : 's'} this month`;
+    el.innerHTML = potSVG(fl, !practisedToday);
+    const n = fl.length;
+    if (labelEl) labelEl.textContent = n === 0 ? 'Practise to grow a flower!' : `${n} flower${n === 1 ? '' : 's'} this month`;
+    return n;
   }
 
   /* ---------------- confetti ---------------- */
   function confetti(n = 90) {
     const box = document.createElement('div'); box.className = 'confetti';
-    const colors = ['#F06449', '#FFC83D', '#1F8A7A', '#4A90E2', '#38B26A', '#C86DD7'];
+    const K = root.WS ? root.WS.colors : {}, colors = [K.red, K.ochre, K.jade, K.indigo, K.bulb, '#F28FA6'].filter(Boolean);
     for (let i = 0; i < n; i++) {
       const p = document.createElement('i'); p.style.left = (Math.random() * 100) + '%'; p.style.background = colors[i % colors.length];
       p.style.animationDelay = (Math.random() * 0.5) + 's'; p.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
@@ -194,7 +242,7 @@
     document.body.appendChild(box); setTimeout(() => box.remove(), 4200);
   }
 
-  // Small, non-interactive Bix used as the "you are here" marker on the skill path.
-  function bixMini() { return bixSVG().replace('class="bix"', 'class="bixmini"'); }
-  root.Fun = { data, save, replace, Mascot, give, renderAlbum, renderGarden, confetti, ALL, PACKS, count, bixMini, BixVoice };
+  // Small, non-interactive Bix (e.g. a "you are here" marker).
+  function bixMini(mood) { return root.WS.bix(mood || 'happy', 46).replace('class="ws-bix ', 'class="bixmini ws-bix '); }
+  root.Fun = { data, save, replace, Mascot, give, potSVG, renderAlbum, renderGarden, confetti, ALL, PACKS, count, bixMini, BixVoice };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

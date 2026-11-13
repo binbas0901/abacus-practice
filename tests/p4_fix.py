@@ -18,7 +18,7 @@ async def answer(pg, v):
     for ch in str(v): await pg.click(f'#pad [data-k="{ch}"]')
     await pg.click('#pad [data-k=go]')
 async def run(pg, m):
-    await pg.click(f'.tile[data-mode={m}]'); await pg.wait_for_selector('#drill.active')
+    await pg.evaluate(f"App.startMode('{m}')"); await pg.wait_for_selector('#drill.active')
     WRONG={1,4,7}; seen={}
     for i in range(10):
         await ready(pg, m); d=await pg.evaluate("window.__drill()"); seen[d['idx']]=d['terms']

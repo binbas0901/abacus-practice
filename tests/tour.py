@@ -17,10 +17,10 @@ async def main():
         shot=lambda n: pg.screenshot(path=f'/tmp/t{tag}_{n}.png')
         await shot('home')
         # lesson
-        await pg.click('#path .node.cur'); await pg.click('#nmLearn'); await pg.click('#lessonNext'); await pg.wait_for_timeout(2600); await shot('lesson')
+        await pg.evaluate("App.startMode('learn')"); await pg.click('#lessonNext'); await pg.wait_for_timeout(2600); await shot('lesson')
         await pg.click('#exitLesson'); await pg.wait_for_timeout(300)
         # drill
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_timeout(300)
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_timeout(300)
         for i in range(3):
             terms = await pg.eval_on_selector_all('#problemArea .term', 'els=>els.map(e=>e.textContent.replace("−","-"))')
             ans=sum(int(t) for t in terms)+(1 if i==1 else 0)
@@ -28,12 +28,12 @@ async def main():
             await pg.click('#pad [data-k=go]'); await pg.wait_for_timeout(1000)
         await pg.click('#pad [data-k="1"]'); await pg.click('#pad [data-k="2"]'); await shot('drill')
         await pg.click('#exitDrill'); await pg.wait_for_timeout(200)
-        await pg.click('.tile[data-mode=listen]'); await pg.wait_for_timeout(500); await shot('listen'); await pg.click('#exitDrill')
+        await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(500); await shot('listen'); await pg.click('#exitDrill')
         await pg.evaluate("(()=>{const s=JSON.parse(window.__legacy('settings'));s.flashSec=3;localStorage.setItem('abacus.settings',JSON.stringify(s));})()")
         await pg.reload(); await pg.wait_for_timeout(1500)
-        await pg.click('.tile[data-mode=flash]'); await pg.wait_for_timeout(1000); await shot('flash'); await pg.click('#exitDrill')
+        await pg.evaluate("App.startMode('flash')"); await pg.wait_for_timeout(1000); await shot('flash'); await pg.click('#exitDrill')
         # summary
-        await pg.click('.tile[data-mode=visual]'); await pg.wait_for_timeout(300)
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_timeout(300)
         for i in range(10):
             terms = await pg.eval_on_selector_all('#problemArea .term', 'els=>els.map(e=>e.textContent.replace("−","-"))')
             ans=sum(int(t) for t in terms)+(1 if i in (3,7) else 0)
@@ -45,13 +45,13 @@ async def main():
         await pg.click('#showmeClose'); await pg.wait_for_timeout(300)
         await pg.click('#exitDrill'); await pg.wait_for_timeout(300)
         # album, play, games, shop
-        await pg.click('.tile[data-mode=album]'); await pg.wait_for_timeout(400); await shot('album'); await pg.click('#exitAlbum')
-        await pg.click('.tile[data-mode=play]'); await pg.wait_for_timeout(400); await shot('play')
+        await pg.click('#doorRoom'); await pg.wait_for_timeout(500); await shot('room'); await pg.click('#roomStickers'); await pg.wait_for_timeout(400); await shot('album'); await pg.click('#exitAlbum'); await pg.click('#exitRoom')
+        await pg.click('#doorPlay'); await pg.wait_for_timeout(400); await shot('play')
         await pg.click('.gcard[data-game=pop]'); await pg.wait_for_timeout(2200); await shot('pop'); await pg.click('#exitGame'); await pg.wait_for_timeout(300)
         await pg.click('.gcard[data-game=reader]'); await pg.wait_for_timeout(600); await shot('reader'); await pg.wait_for_timeout(1800); await shot('reader_cover'); await pg.click('#exitGame'); await pg.wait_for_timeout(300)
         await pg.click('.gcard[data-game=build]'); await pg.wait_for_timeout(700); await shot('build'); await pg.click('#exitGame'); await pg.wait_for_timeout(300); await pg.click('#exitPlay')
-        await pg.click('#jar'); await pg.wait_for_timeout(500); await shot('shop')
-        await pg.click('.tcard:has-text("bedtime story") [data-get]'); await pg.wait_for_timeout(400); await shot('ask'); await pg.click('#askNo'); await pg.click('#exitShop')
+        await pg.click('#doorRoom'); await pg.click('#jar'); await pg.wait_for_timeout(500); await shot('shop')
+        await pg.click('.tcard:has-text("bedtime story") [data-get]'); await pg.wait_for_timeout(400); await shot('ask'); await pg.click('#askNo'); await pg.click('#exitShop'); await pg.click('#exitRoom')
         await pg.click('#grownups'); await shot('gate'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_timeout(700); await shot('parent')
         print('errors:', errs); await b.close()
 asyncio.run(main())

@@ -7,7 +7,7 @@ async def main():
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         for voice in ['device','ljspeech']:
             await pg.evaluate("(v)=>{const s=JSON.parse(window.__legacy('settings')||'{}');s.gap=1;s.voice=v;s.settingsVersion=5;localStorage.setItem('abacus.settings',JSON.stringify(s));}", voice); await pg.reload(); await pg.wait_for_timeout(300)
-            await pg.click('.tile[data-mode=listen]'); await pg.wait_for_timeout(300)
+            await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(300)
             print(voice, 'msg:', await pg.text_content('#listenMsg'))
             await pg.click('#listenGo'); t0=time.time()
             await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=40000)

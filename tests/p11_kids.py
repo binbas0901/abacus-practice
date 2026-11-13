@@ -37,7 +37,7 @@ async def main():
         check('Children section lists Mia', 'Mia' in (await pg.text_content('#kidsList')))
         await pg.click('#kidAdd'); await pg.wait_for_timeout(1500)
         check('new child starts with first-time setup', await pg.is_visible('#setup'))
-        await pg.fill('#suNameIn','Arjun'); await pg.click('#suNameGo'); await pg.wait_for_timeout(2500)
+        await pg.fill('#suNameIn','Arjun'); await pg.click('#suNameGo'); await pg.wait_for_timeout(1500); await pg.click('[data-abacus=no]'); await pg.wait_for_timeout(1000)
         await pg.click('[data-lv=pick]'); await pg.wait_for_timeout(1500); await pg.click('.su-skill[data-id=add_direct]'); await pg.wait_for_timeout(500)
         await pg.click('#suStart'); await pg.wait_for_timeout(1500)
         pr2=await pg.evaluate("Store.get('progress')"); fun2=await pg.evaluate("Store.get('fun',{})"); s2=await pg.evaluate("App.settings")

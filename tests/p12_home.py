@@ -1,0 +1,134 @@
+import asyncio, json, os, datetime
+from playwright.async_api import async_playwright
+# Workshop home (Today beads + three doors), My Room (sticker book, flower pot, treat jar, "I wish for…"),
+# Who's practising, and the "abacus at home?" setup question saved per child.
+res=[]
+def check(label, ok, extra=''): res.append(bool(ok)); print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
+URL='http://localhost:%s/index.html' % os.environ.get('PORT','8765')
+SEED=open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'seed_init.js')).read()
+ym=datetime.date.today().strftime('%Y-%m'); today=datetime.date.today().day
+PRACTISED=[d for d in range(1, today+1) if d%2==1]          # every other day this month, today if odd
+STATE="""(()=>{ if (localStorage.getItem('abacus.p12')) return; localStorage.setItem('abacus.p12','1');
+ localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}));
+ localStorage.setItem('abacus.days', JSON.stringify(%s));
+ localStorage.setItem('abacus.fun', JSON.stringify({stickers:{'animals:0':1,'ocean:1':1,'space:2':1}, gold:{}, garden:{'%s-01':'full'}, albumSeen:1, seen:0,
+   wallet:{beads:12,total:20,goal:'t5',tickets:[]}}));
+})()""" % (json.dumps({'%s-%02d' % (ym, d): True for d in PRACTISED}), ym)
+async def no_overflow(pg):
+    return await pg.evaluate("""(()=>{ const W=innerWidth,H=innerHeight; const bad=[];
+      document.querySelectorAll('#home.active button, #home.active .hm-frame, #room.active button, #room.active .rm-shelf').forEach(e=>{ const r=e.getBoundingClientRect(); if(!r.width) return;
+        if(r.left<-1||r.top<-1||r.right>W+1||r.bottom>H+1) bad.push((e.id||e.className)+' '+[r.left,r.top,r.right,r.bottom].map(Math.round)); });
+      return bad; })()""")
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
+        errs=[]
+        ctx=await b.new_context(viewport={'width':1180,'height':820}); pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await pg.add_init_script(SEED); await pg.add_init_script(STATE)
+        await pg.goto(URL); await pg.wait_for_timeout(900)
+
+        # ---------- home ----------
+        steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
+        check('home: Bix + greeting bubble + grown-ups lock', await pg.locator('#bixHome .bix.ws-bix').count()==1 and 'Mia' in await pg.text_content('#bixHome .bubble') and await pg.locator('#home #grownups[aria-label]').count()==1)
+        check('home: Today with 3 lacquered beads on the rod; only the next one pulses, later ones faded',
+              len(steps)==3 and 'next' in steps[0] and 'later' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .ws-pulse').count()==1 and await pg.locator('#todaySteps svg.ws-bead').count()==3, steps)
+        check('home: one big Start and three doors (Practice / Play / My Room with bead chip)',
+              (await pg.text_content('#todayGoT'))=='Start' and await pg.locator('.hm-doors > button').count()==3 and (await pg.text_content('#roomBeads')).strip()=='12')
+        check('home: old skill path, mode tiles, jar and garden are gone from home',
+              await pg.locator('#home #path, #home .tile, #home #jar, #home #garden').count()==0)
+        check('home: no emoji in the UI text', not any(ord(c)>0x2600 for c in await pg.text_content('#home')))
+        start=await pg.eval_on_selector('#todayGo','e=>{const r=e.getBoundingClientRect(); return [r.width,r.height]}')
+        check('home: targets are big (Start >= 140px, doors >= 120px tall)', min(start)>=140 and await pg.evaluate("[...document.querySelectorAll('.hm-door')].every(e=>e.getBoundingClientRect().height>=120)"), start)
+        check('home: one child -> no "Switch child"', not await pg.is_visible('#switchKid'))
+        # a finished step turns jade with a check, the next one takes over
+        await pg.evaluate("Fun.data.today.steps[0].done=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(200)
+        steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
+        check('done step: jade bead + check, Start becomes Next for step 2', 'done' in steps[0] and 'next' in steps[1] and (await pg.text_content('#todayGoT'))=='Next' and '2 more' in await pg.text_content('#greetSub'), steps)
+        await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(200)
+        check('all done: "All done!", big button turns into Play', 'done' in await pg.text_content('#todayTitle') and (await pg.text_content('#todayGoT'))=='Play' and await pg.locator('#todayGo.play').count()==1)
+        await pg.click('#todayGo'); await pg.wait_for_selector('#play.active'); await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
+
+        # ---------- the three doors ----------
+        await pg.click('#doorPractice'); await pg.wait_for_timeout(400)
+        door = await pg.locator('#door.active').count()==1; menu = await pg.locator('#nodemenu.active').count()==1
+        check('Practice door -> the Practice door screen (or, before it exists, the current skill menu)', door or menu, 'door' if door else 'node menu')
+        if menu: await pg.click('#nmClose')
+        if door: await pg.evaluate("App.goHome()")
+        await pg.click('#doorPlay'); await pg.wait_for_selector('#play.active')
+        check('Play door -> games', await pg.locator('#play.active').count()==1)
+        await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
+        await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active'); await pg.wait_for_timeout(500)
+        await pg.screenshot(path='/tmp/p12_room.png')
+
+        # ---------- My Room ----------
+        check('My Room: shelf with sticker book, flower pot and treat jar', await pg.locator('#room .rm-shelf').count()==1 and await pg.is_visible('#roomStickers') and await pg.is_visible('#roomGarden') and await pg.is_visible('#jar'))
+        check('sticker book shows "2 new"', await pg.locator('#albumBadge.on').count()==1 and '2 new' in await pg.text_content('#albumBadge'), await pg.text_content('#albumBadge'))
+        fl=await pg.locator('#garden .plot.bloom').count()
+        check("flower pot: one flower per practice day this month (never wilts)", fl==len(PRACTISED) and await pg.locator('#garden .full').count()==1 and await pg.locator('#garden .wilt, #garden .soil').count()==0, f"{fl} flowers for {len(PRACTISED)} days | {await pg.text_content('#gardenLabel')}")
+        check('sprout in the pot when today is not practised yet', (await pg.locator('#garden .sprout').count()==1) == (today%2==0))
+        jb=await pg.locator('#jar .j-bead').count()
+        check('treat jar: golden beads fill toward the goal line, goal tag shows the treat', 0<jb<21 and await pg.locator('#jar .j-goal').count()==1 and 'Park trip' in await pg.text_content('#jar .jar-sub') and (await pg.text_content('#jar .jar-n')).strip()=='12', jb)
+        bub=await pg.text_content('#bixRoom .bubble')
+        check('Bix says how many more beads', '8 more beads' in bub and 'Park trip' in bub, bub)
+        check('My Room fits the screen', not await no_overflow(pg), await no_overflow(pg))
+        await pg.click('#roomGarden'); await pg.wait_for_timeout(300)
+        check('tapping the pot: Bix counts the flowers', f"{len([d for d in PRACTISED])} flower" in await pg.text_content('#bixRoom .bubble'), await pg.text_content('#bixRoom .bubble'))
+        await pg.click('#roomStickers'); await pg.wait_for_selector('#album.active')
+        check('sticker book opens, restyled (pages + slots), new count cleared', await pg.locator('#albumPages .ab-page').count()==5 and await pg.locator('.slot.has').count()==3)
+        await pg.click('#exitAlbum'); await pg.wait_for_selector('#room.active')
+        check('back from stickers -> My Room, badge gone', await pg.locator('#albumBadge.on').count()==0)
+        await pg.click('#roomWish'); await pg.wait_for_selector('#shop.active')
+        check('"I wish for…" opens the treat list (Treats.wish hook)', await pg.locator('#shopCards .tcard').count()==6 and await pg.evaluate("typeof Treats.wish==='function'"))
+        await pg.click('.tcard:has-text("Small snack") [data-get]'); await pg.click('#askYes'); await pg.wait_for_timeout(500)
+        await pg.click('#exitShop'); await pg.wait_for_selector('#room.active')
+        check('after getting a treat, the jar and chip show the new count', (await pg.text_content('#jar .jar-n')).strip()=='9')
+        await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
+        check('home bead chip updated', (await pg.text_content('#roomBeads')).strip()=='9')
+
+        # ---------- reduced motion ----------
+        await pg.emulate_media(reduced_motion='reduce'); await pg.wait_for_timeout(100)
+        anim=await pg.evaluate("[...document.querySelectorAll('#home .ws-pulse, #home .ws-bix-body')].map(e=>getComputedStyle(e).animationName)")
+        check('reduced motion: no pulse / bob', all(a=='none' for a in anim), anim)
+        await pg.emulate_media(reduced_motion='no-preference')
+        await ctx.close()
+
+        # ---------- layouts: portrait and iPad Pro ----------
+        for W,H in [(820,1180),(1366,1024),(1180,820)]:
+            ctx=await b.new_context(viewport={'width':W,'height':H}); pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+            await pg.add_init_script(SEED); await pg.add_init_script(STATE); await pg.goto(URL); await pg.wait_for_timeout(700)
+            bad=await no_overflow(pg); await pg.click('#doorRoom'); await pg.wait_for_timeout(300); bad+=await no_overflow(pg)
+            check(f'{W}x{H}: home and My Room fit, nothing off-screen', not bad, bad)
+            await ctx.close()
+
+        # ---------- first-time setup: "abacus at home?" saved per child ----------
+        ctx=await b.new_context(viewport={'width':1180,'height':820}); pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
+        await pg.goto(URL); await pg.wait_for_timeout(700)
+        answers={'Ava':('yes',True), 'Ben':('no',False), 'Cy':('unsure',None)}
+        for i,(nm,(btn,want)) in enumerate(answers.items()):
+            if i: await pg.evaluate("Store.switchTo(Store.addChild())"); await pg.reload(); await pg.wait_for_timeout(800)
+            await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', nm); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on')
+            q=await pg.text_content('#suAbacusH'); bq=await pg.text_content('#bixSetup .bubble')
+            if i==0: await pg.screenshot(path='/tmp/p12_abacus.png')
+            check(f'{nm}: "Does {nm} have an abacus at home?" (Yes / No / Not sure), Bix asks it out loud', nm in q and 'abacus at home' in bq and await pg.locator('#suAbacus [data-abacus]').count()==3, bq)
+            await pg.click(f'[data-abacus={btn}]'); await pg.wait_for_selector('#suLevel.on'); await pg.click('[data-lv=new]'); await pg.wait_for_selector('#suDone.on'); await pg.click('#suStart'); await pg.wait_for_selector('#home.active')
+        await pg.evaluate("Fun.BixVoice.load()"); await pg.wait_for_timeout(1500)
+        check('Bix has recorded lines for the new questions (extra "home" pack)', await pg.evaluate("['who_ask','ask_abacus'].every(id=>!!Fun.BixVoice.find(id)[1])"))
+        kids=await pg.evaluate("Store.children()")
+        got={k['name']: json.loads(await pg.evaluate(f"localStorage.getItem('abacus.c.{k['id']}.prefs')") or '{}').get('hasAbacus','missing') for k in kids}
+        fam=json.loads(await pg.evaluate("localStorage.getItem('abacus.family')") or '{}')
+        check('hasAbacus saved per child (true / false / null), not family-wide', got=={'Ava':True,'Ben':False,'Cy':None} and 'hasAbacus' not in fam, got)
+        check('App.settings.hasAbacus is the active child\'s answer', await pg.evaluate("App.settings.hasAbacus")is None)
+
+        # ---------- who's practising + switch child ----------
+        await pg.evaluate("sessionStorage.removeItem('abacus.who')"); await pg.reload(); await pg.wait_for_timeout(900)
+        cards=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.textContent.trim())')
+        fills=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.querySelector(".ws-bead path").getAttribute("fill"))')
+        check("Who's practising: a card per child, each bead a different lacquer colour, Bix asks", cards==['Ava','Ben','Cy'] and len(set(fills))==3 and 'practising' in await pg.text_content('#bixWho .bubble'), f"{cards} {fills}")
+        await pg.screenshot(path='/tmp/p12_who.png')
+        await pg.click('#whoList .who-card:has-text("Ben")'); await pg.wait_for_timeout(1200)
+        check('picking Ben opens his home; Switch child shows quietly', await pg.locator('#home.active').count()==1 and await pg.is_visible('#switchKid') and await pg.evaluate("App.settings.hasAbacus")==False)
+        await pg.click('#switchKid'); await pg.wait_for_selector('#who.active')
+        check('Switch child -> back to the picker', True)
+        await ctx.close()
+        print('errors:', errs); print('RESULT', sum(res),'/',len(res)); await b.close()
+asyncio.run(main())

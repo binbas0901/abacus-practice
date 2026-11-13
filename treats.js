@@ -25,53 +25,74 @@
   /* ---------- earning ---------- */
   function earn(n, why) {
     if (!n) return; const w = wallet(); w.beads += n; w.total += n; F().save();
-    float(`+${n} 🟡`, why); renderJar();
+    float(n, why); renderJar();
   }
-  function float(text, sub) {
-    const el = document.createElement('div'); el.className = 'beadfloat';
-    el.innerHTML = `<div>${text}</div>${sub ? `<small>${sub}</small>` : ''}`;
+  // A golden bead pops up with "+n" (and why, as a caption).
+  function float(n, sub) {
+    const W = root.WS, el = document.createElement('div'); el.className = 'beadfloat ws-pop';
+    el.innerHTML = `<div class="bf-row">${W ? W.bead('ochre', 76) : ''}<span>+${typeof n === 'number' ? n : String(n).replace(/[^0-9]/g, '')}</span></div>${sub ? `<small>${esc(sub)}</small>` : ''}`;
     document.body.appendChild(el); try { App().Sfx.sparkle(); } catch (e) {}
     setTimeout(() => el.remove(), 2200);
   }
 
-  /* ---------- the jar on the home screen ---------- */
-  function jarSVG(pct) {
-    const h = Math.round(64 * Math.max(0, Math.min(1, pct))); const y = 86 - h;
-    return `<svg viewBox="0 0 80 96" class="jarsvg"><defs>
-      <clipPath id="jarclip"><path d="M18 24 Q12 30 12 42 L12 80 Q12 90 24 90 L56 90 Q68 90 68 80 L68 42 Q68 30 62 24 Z"/></clipPath>
-      <pattern id="beadpat" width="12" height="10" patternUnits="userSpaceOnUse"><rect width="12" height="10" fill="#F2B21B"/><ellipse cx="6" cy="5" rx="5" ry="3.6" fill="#FFD54F"/><ellipse cx="4.5" cy="3.8" rx="1.6" ry="1" fill="#FFF3C4"/></pattern></defs>
-      <rect x="12" y="${y}" width="56" height="${h + 6}" fill="url(#beadpat)" clip-path="url(#jarclip)"/>
-      <path d="M18 24 Q12 30 12 42 L12 80 Q12 90 24 90 L56 90 Q68 90 68 80 L68 42 Q68 30 62 24 Z" fill="rgba(255,255,255,.25)" stroke="#9C7A4A" stroke-width="3.5"/>
-      <rect x="20" y="10" width="40" height="14" rx="4" fill="#C8875A" stroke="#9C5E35" stroke-width="3"/>
-      <path d="M20 40 Q22 34 26 32" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg>`;
+  /* ---------- the treat jar on the My Room shelf ---------- */
+  const JAR_ROWS = 7, JAR_PER = 3, JAR_FULL = JAR_ROWS * JAR_PER;
+  function jarSVG(shown, goalLine) {
+    let beads = '';
+    for (let k = 0; k < shown; k++) {
+      const r = Math.floor(k / JAR_PER), c = k % JAR_PER, off = r % 2 ? 16 : 0;
+      const x = 46 + c * 46 + off - (r % 2 ? 8 : 0), y = 250 - r * 26;
+      beads += `<path class="j-bead${k === shown - 1 ? ' j-last' : ''}" d="M${x} ${y} Q${x + 24} ${y - 18} ${x + 48} ${y} Q${x + 24} ${y + 18} ${x} ${y}Z"/>`;
+    }
+    const lineY = 250 - JAR_ROWS * 26 + 8;
+    return `<svg class="jarsvg" viewBox="0 0 230 280" width="230" height="280" aria-hidden="true">
+      <rect class="j-lid" x="58" y="14" width="114" height="34" rx="10"/>
+      <path class="j-glass" d="M50 52 H180 Q200 52 200 76 V250 Q200 276 174 276 H56 Q30 276 30 250 V76 Q30 52 50 52Z"/>
+      ${beads}${goalLine ? `<path class="j-goal" d="M44 ${lineY} H186"/>` : ''}
+      <path class="j-edge" d="M50 52 H180 Q200 52 200 76 V250 Q200 276 174 276 H56 Q30 276 30 250 V76 Q30 52 50 52Z"/>
+      <rect class="j-shine" x="44" y="70" width="18" height="150" rx="9"/></svg>`;
   }
   function renderJar() {
-    const el = $('#jar'); if (!el) return; const w = wallet(), g = goal();
-    const pct = g ? w.beads / g.price : Math.min(1, w.beads / 30);
-    el.innerHTML = `${jarSVG(pct)}<div class="jar-txt"><div class="jar-n">${w.beads} <span>🟡</span></div><div class="jar-sub">${g ? (w.beads >= g.price ? `${g.emoji} ready! Tap me!` : `Saving for ${g.emoji} ${w.beads}/${g.price}`) : 'Treat Shop'}</div></div>`;
-    el.classList.toggle('ready', !!(g && w.beads >= g.price));
+    const el = $('#jar'); if (!el) return; const w = wallet(), g = goal(), W = root.WS;
+    const cap = g ? g.price : 30, frac = Math.max(0, Math.min(1, w.beads / cap));
+    const shown = w.beads > 0 ? Math.max(1, Math.round(frac * JAR_FULL)) : 0, ready = !!(g && w.beads >= g.price);
+    el.innerHTML = jarSVG(shown, !!g)
+      + `<span class="jar-n ws-chip">${W.bead('ochre', 30)}<b>${w.beads}</b></span>`
+      + `<span class="jar-sub jar-tag${ready ? ' ready' : ''}${g ? '' : ' none'}">${g ? `<span class="jt-emoji">${g.emoji}</span><span>${esc(g.name)}</span>` : `${W.icon('star', 30, W.colors.ochre)}<span>Pick a treat</span>`}</span>`;
+    el.classList.toggle('ready', ready);
+    el.setAttribute('aria-label', `Treat jar: ${w.beads} golden beads` + (g ? `, saving for ${g.name}` : ''));
+    const chip = $('#roomBeads'); if (chip) chip.innerHTML = `${W.bead('ochre', 26)}<b>${w.beads}</b>`;
+  }
+  // What Bix says in My Room about the jar: [caption, voice line id]. The caption always contains the spoken line.
+  function jarLine() {
+    const w = wallet(), g = goal();
+    if (!g) return ['Pick a treat to save for! Tap “I wish for”.', 'shop_pick'];
+    const more = g.price - w.beads;
+    if (more <= 0) return [`You have enough for ${g.name}! Go get it!`, 'shop_ready'];
+    return [`Just ${more} more bead${more === 1 ? '' : 's'} for ${g.name}! You can do it!`, 'shop_saving'];
   }
 
-  /* ---------- shop ---------- */
+  /* ---------- the treat list ("I wish for…") ---------- */
   function renderShop() {
-    const w = wallet(), g = goal(); $('#shopBeads').textContent = w.beads;
+    const w = wallet(), g = goal(), W = root.WS; $('#shopBeads').textContent = w.beads;
+    const bi = $('#shopBeadIc'); if (bi && !bi.firstChild) bi.innerHTML = W.bead('ochre', 30);
     const box = $('#shopCards'); box.innerHTML = '';
     for (const t of list().slice().sort((a, b) => a.price - b.price)) {
       const can = w.beads >= t.price, pct = Math.min(100, Math.round(100 * w.beads / t.price)), isGoal = g && g.id === t.id;
-      const c = document.createElement('div'); c.className = 'tcard' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
-      c.innerHTML = `${isGoal ? '<div class="tgoal">⭐ Saving for this</div>' : ''}<div class="temoji">${t.emoji}</div><div class="tname">${esc(t.name)}</div>
-        <div class="tprice">${t.price} 🟡</div><div class="tbar"><i style="width:${pct}%"></i></div>
+      const c = document.createElement('div'); c.className = 'tcard ws-card' + (can ? ' can' : '') + (isGoal ? ' goal' : '');
+      c.innerHTML = `${isGoal ? `<div class="tgoal">${W.icon('star', 18, '#3D2412')}Saving for this</div>` : ''}<div class="temoji">${t.emoji}</div><div class="tname">${esc(t.name)}</div>
+        <div class="tprice">${W.bead('ochre', 28)}<b>${t.price}</b></div><div class="tbar" aria-hidden="true"><i style="width:${pct}%"></i></div>
         <div class="tneed">${can ? 'You have enough!' : `${t.price - w.beads} more to go`}</div>
-        <div class="tbtns">${can ? `<button class="btn small coral" data-get="${t.id}">Get it!</button>` : ''}${isGoal ? '' : `<button class="btn small ghost" data-goal="${t.id}">Save for this</button>`}</div>`;
+        <div class="tbtns">${can ? `<button class="ws-btn small" data-get="${t.id}">Get it!</button>` : ''}${isGoal ? '' : `<button class="ws-btn small maple" data-goal="${t.id}">Save for this</button>`}</div>`;
       box.appendChild(c);
     }
-    box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).emoji}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
+    box.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { wallet().goal = b.dataset.goal; F().save(); App().Sfx.ok(); F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(b.dataset.goal).name}!`, 3000, 'shop_choice'); F().Mascot.react($('#bixShop'), 'happy'); renderShop(); renderJar(); });
     box.querySelectorAll('[data-get]').forEach(b => b.onclick = () => ask(byId(b.dataset.get)));
     const open = w.tickets.filter(x => !x.given);
-    $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">🎟 Show a grown-up:</div>` + open.map(x => `<div class="ticket">${x.emoji} ${esc(x.name)}</div>`).join('') : '';
+    $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${x.emoji} ${esc(x.name)}</div>`).join('') : '';
   }
   function ask(t) {
-    const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${t.emoji} ${esc(t.name)}</b> for <b>${t.price} 🟡</b>?`; m.classList.add('active');
+    const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${t.emoji} ${esc(t.name)}</b> for <b class="ask-price">${root.WS.bead('ochre', 34)}${t.price}</b>?`; m.classList.add('active');
     $('#askNo').onclick = () => m.classList.remove('active');
     $('#askYes').onclick = () => { m.classList.remove('active'); buy(t); };
   }
@@ -80,15 +101,18 @@
     w.beads -= t.price; w.tickets.push({ id: 'k' + Date.now(), tid: t.id, emoji: t.emoji, name: t.name, price: t.price, at: new Date().toISOString(), given: false });
     if (w.goal === t.id) w.goal = null; F().save();
     F().confetti(110); App().Sfx.star();
-    const bx = $('#bixShop'); F().Mascot.react(bx, 'cheer', 2200); F().Mascot.say(bx, `Yum! ${t.emoji} Show your ticket to a grown-up!`, 0, 'shop_yum');
+    const bx = $('#bixShop'); F().Mascot.react(bx, 'cheer', 2200); F().Mascot.say(bx, `Yum! ${t.name}! Show your ticket to a grown-up!`, 0, 'shop_yum');
     renderShop(); renderJar();
   }
   function open() {
-    const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 80 });
+    const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 84 });
     const g = goal(), w = wallet();
-    F().Mascot.say(bx, g ? (w.beads >= g.price ? `You can get ${g.emoji} now!` : `${g.price - w.beads} more beads for ${g.emoji}. You can do it!`) : 'Pick a treat to save for!', 0, g ? (w.beads >= g.price ? 'shop_ready' : 'shop_saving') : 'shop_pick');
+    F().Mascot.say(bx, g ? (w.beads >= g.price ? `You have enough for ${g.name}! Go get it!` : `${g.price - w.beads} more beads for ${g.name}. Keep practising to fill the jar. You can do it!`) : 'Pick a treat to save for!', 0, g ? (w.beads >= g.price ? 'shop_ready' : 'shop_saving') : 'shop_pick');
     renderShop(); App().show('shop');
   }
+  // "I wish for…" in My Room. For now it opens the treat list, where the child picks what to save for or gets a treat.
+  // Later milestone: a wish the child makes here goes to a grown-up for approval (replace this one function).
+  function wish() { open(); }
 
   /* ---------- grown-ups ---------- */
   function renderParent() {
@@ -114,5 +138,5 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
-  root.Treats = { EARN, DEFAULT_TREATS, list, wallet, earn, float, renderJar, renderShop, open, renderParent, bindParent };
+  root.Treats = { EARN, DEFAULT_TREATS, list, wallet, goal, earn, float, renderJar, jarLine, renderShop, open, wish, renderParent, bindParent };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

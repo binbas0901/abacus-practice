@@ -356,14 +356,14 @@ const Backup = {
 /* ---------------- screens ---------------- */
 function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
 
-/* ---------------- home ---------------- */
+/* ---------------- home (Workshop: Bix, Today on the soroban, three doors) ---------------- */
 function curIdx(){ return NODE_IDX[progress.current] ?? 0; }
 function stars(nid){ const h=node(nid).hist.slice(-20); if(!h.length) return 0; const p=h.filter(x=>x.ok).length/h.length; return node(nid).mastered ? 3 : p>=0.8 ? 2 : h.length>=5 ? 1 : 0; }
 // Home greetings: [bubble text, voice line]. Bubbles can use the name; the recorded voice never does.
 const HOME_LINES = (n)=>{
   const nm = settings.name ? `, ${settings.name}` : '', h=new Date().getHours();
   const tod = h<12 ? ['Good morning'+nm+'! Ready to move some beads?','hello_morning'] : h<17 ? ['Good afternoon'+nm+'! Let\'s do some abacus!','hello_afternoon'] : ['Good evening'+nm+'! A little practice before bed?','hello_evening'];
-  const L=[tod, [`You're back${nm}! I missed you!`,'hello_back'], [`Hi${nm}! Ready for ${n.short}? Tap Start!`,'hello_ready']];
+  const L=[tod, [`You're back${nm}! I missed you!`,'hello_back'], [`Hi${nm}! Tap Start when you're ready!`,'hello_ready']];
   if (n.family===10) L.push(['Big friends make 10. Let\'s practise!','hello_big']);
   if (n.family===5) L.push(['Small friends make 5. Let\'s practise!','hello_small']);
   return L;
@@ -375,77 +375,55 @@ document.addEventListener('click', e=>{
   const onButton = e.target.closest('button') && !e.target.closest('#bixHome');
   setTimeout(()=>{ if (!onButton && !greeted && $('#home').classList.contains('active')) renderHome(); }, 120);
 }, true);
+// Each kind of step is a lacquered bead whose colour means something: red = learn (the main new thing), indigo = Look, ochre = Listen, jade = Flash / Play.
+const STEP_LOOK = { lesson:['book','red'], visual:['eye','indigo'], listen:['ear','ochre'], flash:['bolt','jade'], game:['game','jade'] };
+function stepBead(s, i, nextI){
+  const [ic, col] = STEP_LOOK[s.kind] || ['star','indigo'], cur = i===nextI, w = cur ? 170 : s.done ? 136 : 150;
+  const bead = s.done ? WS.bead('jade', w) : WS.bead(col, w);
+  const icon = s.done ? WS.icon('check', 40, '#fff', 3.2) : WS.icon(ic, cur ? 40 : 34, cur ? (col==='ochre' ? '#3D2412' : '#fff') : '#6E4126', 2.4);
+  const state = s.done ? 'done' : cur ? 'now' : 'later', just = s.done && stepBead.seen && !stepBead.seen[i];
+  return `<li class="step hm-step ${state}${just?' just':''}${s.done?' done':''}${cur?' next':''}" aria-label="${esc(s.label)}${s.done?' (done)':cur?' (next)':''}"><span class="hm-bead${cur?' ws-pulse':''}">${bead}<span class="hm-bead-ic">${icon}</span></span><span class="sl hm-step-l">${esc(s.label)}</span></li>`;
+}
 function renderHome(){
   $('#switchKid').style.display = Store.children().length>1 ? '' : 'none';
   const cur = NODES[curIdx()];
-  $('#greetSub').textContent = `Skill: ${cur.icon} ${cur.title}`;
   // Bix
   const bh=$('#bixHome'); if (!bh.querySelector('.bix')) Fun.Mascot.mount(bh, {size:92, keep:true});
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
   // Bix talks on the home screen once per visit to the app (the first time sound is allowed), and when today is finished.
   const canTalk = !!Speaker.gestured;   // sound is allowed once she has tapped
-  const line = !settings.name ? ["I don't know your name yet! Tap me to tell me. 😊", 'ask_name']
-    : allDone ? [`All done today, ${settings.name}! 🌸 Play a game or collect stickers.`, 'all_done']
+  const line = !settings.name ? ["I don't know your name yet! Tap me to tell me.", 'ask_name']
+    : allDone ? [`All done today, ${settings.name}! Play a game or visit My Room.`, 'all_done']
     : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
   const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
-  Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null);
+  Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null, line[1]);
   if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; }
   Fun.save();
-  // today's three steps
-  $('#todayTitle').textContent = allDone ? 'Today’s practice — done! 🌸' : 'Today’s practice';
-  const nextI = steps.findIndex(s=>!s.done);
-  $('#todaySteps').innerHTML = steps.map((s,i)=>`<span class="step${s.done?' done':''}${i===nextI?' next':''}"><i class="sb">${s.done?'✓':s.icon}</i><span class="sl">${s.label}</span></span>`).join('');
-  $('#todayGo').textContent = allDone ? 'Play 🎮' : (nextI===0 ? 'Start ▶' : 'Next ▶');
-  // path
-  const p=$('#path'); p.innerHTML='';
-  NODES.forEach((n,i)=>{
-    const el=document.createElement('button'); const st=node(n.id);
-    el.className='node'+(i===curIdx()?' cur':'')+(i>curIdx()?' locked':'')+(st.mastered?' done':'');
-    el.innerHTML=`${i===curIdx()?`<div class="here">${Fun.bixMini()}</div>`:''}<div class="ic">${n.icon}</div><div class="t">${n.short}</div><div class="stars">${'★'.repeat(stars(n.id))}</div>`;
-    el.onclick=()=>{ if (i>curIdx()) { Sfx.tap(); Fun.Mascot.say(bh, 'Locked! Finish the skills before it to open it. 🔒', 3000, 'locked'); return; } openNodeMenu(n); };
-    p.appendChild(el);
-  });
-  layoutPath(p);
-  if (!renderHome.introDone){ p.classList.add('intro'); p.querySelectorAll('.node').forEach((el,i)=>el.style.animationDelay=(i*0.06)+'s'); renderHome.introDone=true; setTimeout(()=>p.classList.remove('intro'), 1500); }
-  requestAnimationFrame(()=>{ layoutPath(p); drawWire(p); });
-  Fun.renderGarden($('#garden'), $('#gardenLabel'), days); Treats.renderJar();
-  const unseen = Fun.count() - (Fun.data.albumSeen||0); const bd=$('#albumBadge'); bd.textContent = unseen>0 ? '+'+unseen : ''; bd.classList.toggle('on', unseen>0);
+  // Today: three beads on the soroban rod
+  const nextI = steps.findIndex(s=>!s.done), left = steps.filter(s=>!s.done).length;
+  $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
+  $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
+  $('#todaySteps').innerHTML = steps.map((s,i)=>stepBead(s,i,nextI)).join('');
+  stepBead.seen = steps.map(s=>s.done);   // a step that turns done since the last visit pops
+  const go=$('#todayGo'); go.classList.toggle('play', allDone);
+  $('#todayGoIc').innerHTML = allDone ? WS.icon('game', 44, '#fff', 2.2) : WS.icon('play', 44, '#fff');
+  $('#todayGoT').textContent = allDone ? 'Play' : (nextI===0 ? 'Start' : 'Next');
+  go.setAttribute('aria-label', allDone ? 'Play a game' : `${nextI===0?'Start':'Next'}: ${steps[nextI].label}`);
+  Treats.renderJar();
 }
-// Lay the skill beads out as a snake that fits the screen: row 1 left->right, row 2 right->left, ...
-function layoutPath(p){
-  const nodes=[...p.querySelectorAll('.node')]; if (!nodes.length) return;
-  const cs=getComputedStyle(p), w=(p.clientWidth || window.innerWidth) - parseFloat(cs.paddingLeft||0) - parseFloat(cs.paddingRight||0);
-  const rows = Math.max(2, Math.ceil(nodes.length*124 / Math.max(1,w))), per = Math.ceil(nodes.length/rows);
-  p.style.gridTemplateColumns = `repeat(${per}, 1fr)`;
-  nodes.forEach((el,i)=>{ const r=Math.floor(i/per), c=i%per; el.style.gridRow = r+1; el.style.gridColumn = (r%2===0 ? c : per-1-c) + 1; });
-}
-// Thread a smooth wire through the centres of the skill beads (the bead-maze look).
-function drawWire(p){
-  const old=p.querySelector('.wire'); if (old) old.remove();
-  const beads=[...p.querySelectorAll('.node .ic')]; if (beads.length<2 || !p.clientWidth) return;
-  const pr=p.getBoundingClientRect();
-  const pts=beads.map(b=>{ const r=b.getBoundingClientRect(); return [r.left-pr.left+p.scrollLeft+r.width/2, r.top-pr.top+r.height/2]; });
-  const first=pts[0], last=pts[pts.length-1], prev=pts[pts.length-2];
-  const lead = 46, endDir = Math.sign(last[0]-prev[0]) || 1;
-  let d=`M ${first[0]-lead} ${first[1]} L ${first[0]} ${first[1]}`;
-  for (let i=1;i<pts.length;i++){
-    const [x0,y0]=pts[i-1], [x1,y1]=pts[i];
-    if (Math.abs(x1-x0) < 30){            // U-turn down to the next row: loop out past the edge bead
-      const dir = (i>=2 && pts[i-2][0] > x0) ? -1 : 1, bulge = 115*dir;
-      d+=` C ${x0+bulge} ${y0}, ${x1+bulge} ${y1}, ${x1} ${y1}`;
-    } else { const dx=(x1-x0)/2; d+=` C ${x0+dx} ${y0}, ${x1-dx} ${y1}, ${x1} ${y1}`; }
-  }
-  d+=` L ${last[0]+lead*endDir} ${last[1]}`;
-  const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg'); svg.setAttribute('class','wire');
-  // small end caps so the wire looks fastened, like a bead-maze toy
-  for (const [x,y] of [[first[0]-lead, first[1]], [last[0]+lead*endDir, last[1]]]){ const c=document.createElementNS(ns,'circle'); c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',7); c.setAttribute('class','cap'); svg.appendChild(c); }
-  svg.setAttribute('width', p.scrollWidth); svg.setAttribute('height', p.scrollHeight); svg.style.width=p.scrollWidth+'px'; svg.style.height=p.scrollHeight+'px';
-  const path=document.createElementNS(ns,'path'); path.setAttribute('d', d); svg.appendChild(path); p.prepend(svg);
-}
-window.addEventListener('resize', ()=>{ if ($('#home').classList.contains('active')){ const p=$('#path'); layoutPath(p); requestAnimationFrame(()=>drawWire(p)); } });
+// Icons for the home screen (kit drawings, no emoji).
+$('#grownups').innerHTML = WS.icon('lock', 26, '#56627A');
+$('#doorPracticeIc').innerHTML = WS.icon('abacus', 56, '#F4E3C3');
+$('#doorPlayIc').innerHTML = WS.icon('game', 54, '#fff', 2);
+$('#doorRoomIc').innerHTML = WS.icon('home', 54, '#3D2412', 2);
 // Tapping Bix on the home screen asks for a name if the device doesn't have one yet.
-$('#bixHome').addEventListener('pointerup', ()=>{ if (settings.name) return; setTimeout(()=>{ Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me. 😊", 0, 'ask_name'); $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200); }, 250); });
-function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you! 🎉`, 0, 'got_name'); }
+$('#bixHome').addEventListener('pointerup', e=>{ if (settings.name || !e.target.closest('.bix')) return; setTimeout(openNameAsk, 250); });
+function openNameAsk(){
+  Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me.", 0, 'ask_name');
+  const nb=$('#bixName'); if (!nb.querySelector('.bix')) Fun.Mascot.mount(nb, {size:96, bubble:false});
+  $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200);
+}
+function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
 $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
@@ -494,7 +472,7 @@ async function activityDone(kind, info={}){
   if (F.today && F.today.day===todayKey() && F.today.steps.every(s=>s.done) && !F.today.celebrated){
     F.today.celebrated=true; F.garden[todayKey()]='full'; Fun.save();
     await sleep(2300); Fun.confetti(120); Sfx.star();
-    await Fun.give({gold:true, title:'Today’s practice is done! 🌸', voice:'today_done'});
+    await Fun.give({gold:true, title:'Today’s practice is done!', voice:'today_done'});
     Treats.earn(Treats.EARN.today, 'Today’s practice done!');
   }
   if ($('#home').classList.contains('active')) renderHome();
@@ -504,18 +482,62 @@ function goPlay(){ Games.renderHub(); const bp=$('#bixPlay'); if (!bp.querySelec
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
-$('#exitAlbum').addEventListener('click', ()=>{ renderHome(); show('home'); });
-$('#jar').addEventListener('click', ()=>{ Sfx.tap(); Treats.open(); });
-$('#exitShop').addEventListener('click', ()=>{ renderHome(); show('home'); });
-$$('.tile').forEach(t=>t.addEventListener('click', ()=>{
+// The three doors. Practice opens the Practice door screen (#door) when it exists; until then, the current skill's menu.
+function openPractice(){
   Speaker.unlock();
-  const n=NODES[curIdx()]; const m=t.dataset.mode;
+  if (typeof window.App.openDoor==='function') return window.App.openDoor();
+  if ($('#door')) return show('door');
+  openNodeMenu(NODES[curIdx()]);
+}
+// Start a practice mode for the current skill (used by the Practice door and the tests).
+function startMode(m){
+  Speaker.unlock();
+  const n=NODES[curIdx()];
   if (m==='play') return goPlay();
   if (m==='album') return goAlbum();
-  if (m==='learn'){ const target = hasLesson(n) ? n : NODES.slice(0,curIdx()).reverse().find(x=>x.demos) || n; startLesson(target); }
-  else if (m==='flash') startDrill('flash', n.kind==='flash' ? n : NODES[curIdx()]);
-  else startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
-}));
+  if (m==='learn'){ const target = hasLesson(n) ? n : NODES.slice(0,curIdx()).reverse().find(x=>x.demos) || n; return startLesson(target); }
+  if (m==='flash') return startDrill('flash', n.kind==='flash' ? n : NODES[curIdx()]);
+  return startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
+}
+$('#doorPractice').addEventListener('click', openPractice);
+$('#doorPlay').addEventListener('click', ()=>{ Speaker.unlock(); goPlay(); });
+$('#doorRoom').addEventListener('click', ()=>{ Speaker.unlock(); goRoom(); });
+
+/* ---------------- My Room: sticker book, flower pot, treat jar ---------------- */
+const BOOK_SVG = `<svg viewBox="0 0 240 210" width="240" height="210" aria-hidden="true"><rect x="22" y="20" width="200" height="186" rx="14" fill="#1C2763"/><rect x="30" y="14" width="200" height="186" rx="14" fill="#2A3A86"/><rect x="30" y="14" width="26" height="186" rx="10" fill="#1C2763"/><circle cx="140" cy="86" r="40" fill="#E8A93A"/><path d="M140 60 l8 16 18 3 -13 12 3 18 -16 -9 -16 9 3 -18 -13 -12 18 -3z" fill="#FFFFFF"/><circle cx="98" cy="160" r="16" fill="#2F9E7E"/><circle cx="140" cy="164" r="13" fill="#E2452F"/><circle cx="180" cy="158" r="17" fill="#F4E3C3"/></svg>`;
+$('#roomBookArt').innerHTML = BOOK_SVG;
+$('#exitRoom').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
+$('#exitAlbum').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
+$('#exitShop').innerHTML = WS.icon('back', 28, '#F4E3C3', 3);
+$('#roomWishIc').innerHTML = WS.icon('star', 26, '#3D2412');
+function renderRoom(){
+  const unseen = Fun.count() - (Fun.data.albumSeen||0), bd=$('#albumBadge');
+  bd.textContent = unseen>0 ? `${unseen} new` : ''; bd.classList.toggle('on', unseen>0);
+  $('#roomStickers').setAttribute('aria-label', `Sticker book: ${Fun.count()} stickers` + (unseen>0 ? `, ${unseen} new` : ''));
+  const n = Fun.renderGarden($('#garden'), $('#gardenLabel'), days);
+  $('#roomGarden').setAttribute('aria-label', `My garden: ${$('#gardenLabel').textContent}`);
+  Treats.renderJar();
+  const ready = $('#jar').classList.contains('ready'), noGoal = !Treats.goal();
+  $('#roomWish').classList.toggle('ws-pulse', noGoal || ready);
+  return n;
+}
+function goRoom(){
+  renderRoom(); show('room');
+  const br=$('#bixRoom'); if (!br.querySelector('.bix')) Fun.Mascot.mount(br, {size:110, keep:true});
+  const [text, vid] = Treats.jarLine(); Fun.Mascot.say(br, text, 0, vid);
+}
+$('#exitRoom').addEventListener('click', ()=>{ renderHome(); show('home'); });
+$('#roomStickers').addEventListener('click', ()=>{ Sfx.tap(); goAlbum(); });
+$('#roomGarden').addEventListener('click', ()=>{
+  Sfx.boing(); const pot=$('#garden'); pot.classList.remove('wiggle'); void pot.offsetWidth; pot.classList.add('wiggle');
+  const n=Object.keys(days).filter(k=>k.startsWith(todayKey().slice(0,8))).length, br=$('#bixRoom');
+  Fun.Mascot.react(br,'happy');
+  Fun.Mascot.say(br, n ? `${n} flower${n===1?'':'s'} this month! Every day you practise, a new one grows.` : 'Practise today and a flower will grow!', 0, null);
+});
+$('#jar').addEventListener('click', ()=>{ Sfx.tap(); Treats.open(); });
+$('#roomWish').addEventListener('click', ()=>{ Sfx.tap(); Treats.wish(); });
+$('#exitAlbum').addEventListener('click', ()=>goRoom());
+$('#exitShop').addEventListener('click', ()=>goRoom());
 let menuNode=null;
 function openNodeMenu(n){ menuNode=n; $('#nmTitle').textContent=n.icon+' '+n.title; $('#nmIntro').textContent=n.intro; $('#nmLearn').style.display=(n.demos||n.kind==='numbers')?'':'none'; $('#nmLook').style.display=(n.drill&&!n.drill.flash)?'':'none'; $('#nmListen').style.display=(n.drill&&!n.drill.flash)?'':'none'; $('#nodemenu').classList.add('active'); }
 $('#nmClose').onclick=()=>$('#nodemenu').classList.remove('active');
@@ -854,11 +876,15 @@ function renderChildren(){
   box.querySelectorAll('[data-kidrm]').forEach(b=>b.onclick=()=>{ const c=Store.children().find(x=>x.id===b.dataset.kidrm); if(!confirm(`Remove ${childLabel(c)} from this device?\n\nThis erases their progress, stickers, beads, garden and treats. Recorded voices are kept.`)) return; Store.removeChild(c.id); location.reload(); });
 }
 $('#kidAdd').addEventListener('click', ()=>{ const id=Store.addChild(); Store.switchTo(id); location.reload(); });
-// "Who's practising?" when more than one child uses this device.
+// "Who's practising?" when more than one child uses this device. Each child is a bead in their own lacquer colour.
+const WHO_COLORS = ['red','indigo','jade','ochre'];
 function showWho(){
-  $('#whoList').innerHTML=Store.children().map(c=>`<button class="who-card" data-who="${c.id}"><span class="who-bead"></span><span>${esc(childLabel(c))}</span></button>`).join('');
-  $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
+  $('#whoList').innerHTML=Store.children().map((c,i)=>`<button class="who-card ws-card" data-who="${c.id}"><span class="who-bead wh-bead">${WS.bead(WHO_COLORS[i%WHO_COLORS.length], 150)}</span><span class="wh-name">${esc(childLabel(c))}</span></button>`).join('');
+  $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); Sfx.tap(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
   show('who');
+  const bw=$('#bixWho'); if (!bw.querySelector('.bix')) Fun.Mascot.mount(bw, {size:110, keep:true});
+  Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask');
+  if (!showWho.bound){ showWho.bound=true; $('#who').addEventListener('click', e=>{ if (!e.target.closest('button') && !showWho.spoke){ showWho.spoke=true; Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask'); } }); }
 }
 $('#switchKid').addEventListener('click', ()=>{ sessionStorage.removeItem('abacus.who'); showWho(); });
 
@@ -867,6 +893,7 @@ window.App = {
   show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
   nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
   unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist,
+  goRoom, startMode, openPractice, renderHome: ()=>renderHome(),
   quietNow: ()=> $('#drill').classList.contains('active') && mode==='listen' && (locked || dictateToken>0 && $('#listenMsg').textContent!=='Your answer?'),
   nodes: ()=>NODES, nodeTitle: id=>(C.BY_ID[id]||{}).title||id,
   goHome(){ renderHome.introDone=false; renderHome(); show('home'); },

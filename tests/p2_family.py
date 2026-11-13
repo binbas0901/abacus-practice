@@ -14,7 +14,7 @@ async def gate(pg):
     await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
     await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)
 async def readers(pg, n):
-    await pg.click('.tile[data-mode=listen]'); await pg.click('#listenGo'); out=[]
+    await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo'); out=[]
     for k in range(n):
         await pg.wait_for_function("/is reading/.test(document.querySelector('#listenMsg').textContent) || document.querySelector('#listenMsg').textContent==='Listen…'", timeout=20000)
         out.append(await pg.text_content('#listenMsg'))

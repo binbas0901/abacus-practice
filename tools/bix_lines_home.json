@@ -1,0 +1,5 @@
+{
+  "_about": "Bix lines added by the Workshop home/setup screens. Built into a small extra pack per voice (audio/bix-<voice>-home.js) by tools/make_bix_pack.py, so the main recordings stay unchanged.",
+  "who_ask": "Who's practising today?",
+  "ask_abacus": "Do you have an abacus at home?"
+}

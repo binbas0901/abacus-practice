@@ -25,63 +25,88 @@
 <body>
 <div id="app">
 
-<section id="home" class="screen active">
-  <div class="hdr">
-    <div id="bixHome"></div>
-    <div class="hright"><button class="btn small ghost switchkid" id="switchKid" style="display:none">Switch child</button><button class="jar" id="jar"></button><div class="garden-box"><div class="garden" id="garden"></div><div class="glabel" id="gardenLabel"></div></div></div>
+<section id="home" class="screen ws-screen hm">
+  <header class="hm-top">
+    <div id="bixHome" class="hm-bix"></div>
+    <div class="hm-tools">
+      <button class="ws-btn ghost hm-switch" id="switchKid" style="display:none">Switch child</button>
+      <button class="ws-iconbtn quiet" id="grownups" aria-label="Grown-ups"></button>
+    </div>
+  </header>
+  <div class="ws-frame hm-frame">
+    <div class="ws-inner hm-inner">
+      <i class="hm-beam" aria-hidden="true"></i><i class="hm-rod" aria-hidden="true"></i>
+      <div class="hm-today"><h1 class="hm-title" id="todayTitle">Today</h1><span class="hm-sub" id="greetSub"></span></div>
+      <ol class="hm-steps" id="todaySteps" aria-label="Today’s steps"></ol>
+      <button class="hm-start" id="todayGo"><span class="hm-start-ic" id="todayGoIc"></span><span class="hm-start-t" id="todayGoT">Start</span></button>
+    </div>
   </div>
-  <div class="today">
-    <div class="tleft"><div class="big" id="todayTitle">Today's practice</div><div class="steps" id="todaySteps"></div><div class="meta" id="greetSub"></div></div>
-    <button class="go" id="todayGo">Start ▶</button>
-  </div>
-  <div class="path" id="path"></div>
-  <div class="tiles">
-    <button class="tile" data-mode="visual"><span class="ic">👀</span>Look</button>
-    <button class="tile" data-mode="listen"><span class="ic">👂</span>Listen</button>
-    <button class="tile" data-mode="flash"><span class="ic">⚡️</span>Flash</button>
-    <button class="tile" data-mode="learn"><span class="ic">📖</span>Learn</button>
-    <button class="tile hot" data-mode="play"><span class="ic">🎮</span>Play</button>
-    <button class="tile" data-mode="album"><span class="ic">📒</span>Stickers<span class="badge" id="albumBadge"></span></button>
-  </div>
-  <div class="foot"><div id="ver" style="font-size:12px;opacity:.6">v3.11</div><button id="grownups">⚙️ Grown-ups</button></div>
+  <nav class="hm-doors" aria-label="Doors">
+    <button class="ws-block hm-door" id="doorPractice"><span class="hm-door-ic" id="doorPracticeIc"></span><span>Practice</span></button>
+    <button class="ws-block jade hm-door" id="doorPlay"><span class="hm-door-ic" id="doorPlayIc"></span><span>Play</span></button>
+    <button class="ws-block ochre hm-door" id="doorRoom"><span class="hm-door-ic" id="doorRoomIc"></span><span>My Room</span><span class="hm-chip" id="roomBeads" aria-label="golden beads"></span></button>
+  </nav>
+  <div id="ver" class="hm-ver">v3.12</div>
 </section>
 
-<section id="who" class="screen who">
-  <h1 class="who-title">Who’s practising?</h1>
-  <div class="who-list" id="whoList"></div>
+<section id="who" class="screen ws-screen wh">
+  <div id="bixWho" class="wh-bix"></div>
+  <div class="who-list wh-list" id="whoList"></div>
 </section>
-<section id="setup" class="screen">
+<section id="room" class="screen ws-screen rm">
+  <header class="a-top rm-top"><button class="ws-iconbtn" id="exitRoom" aria-label="Back home"></button><h1 class="ws-h1">My Room</h1></header>
+  <div class="rm-wall">
+    <div class="rm-items">
+      <div class="rm-item rm-item-book"><button class="rm-thing" id="roomStickers" aria-label="Sticker book"><span class="rm-art" id="roomBookArt"></span><span class="ws-badge rm-new" id="albumBadge"></span></button><span class="rm-label">Stickers</span></div>
+      <div class="rm-item rm-item-pot"><button class="rm-thing" id="roomGarden" aria-label="My garden"><span class="rm-art garden" id="garden"></span></button><span class="rm-label">My garden</span><span class="rm-sr" id="gardenLabel"></span></div>
+      <div class="rm-item rm-item-jar"><button class="rm-thing" id="jar" aria-label="Treat jar"></button><span class="rm-label">Treat jar</span></div>
+    </div>
+    <div class="rm-shelf" aria-hidden="true"></div>
+  </div>
+  <footer class="rm-floor">
+    <div id="bixRoom" class="rm-bix"></div>
+    <button class="ws-btn ochre rm-wish" id="roomWish"><span id="roomWishIc"></span>I wish for…</button>
+  </footer>
+</section>
+<section id="setup" class="screen ws-screen su">
   <div class="su-body">
-    <div id="bixSetup"></div>
+    <div id="bixSetup" class="su-bix"></div>
     <div class="su-step" id="suName">
-      <h2 class="su-h">What's your name?</h2>
-      <input id="suNameIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name">
-      <button class="btn" id="suNameGo">Next ▶</button>
+      <h2 class="su-h">What’s your name?</h2>
+      <input id="suNameIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" aria-label="Your name">
+      <button class="ws-btn big" id="suNameGo">Next<span class="su-ic-next"></span></button>
+    </div>
+    <div class="su-step" id="suAbacus">
+      <h2 class="su-h" id="suAbacusH">Is there an abacus at home?</h2>
+      <div class="su-cards su-cards-3">
+        <button class="su-card" data-abacus="yes"><span class="su-art" data-art="yes"></span><b>Yes</b></button>
+        <button class="su-card" data-abacus="no"><span class="su-art" data-art="no"></span><b>No</b></button>
+        <button class="su-card" data-abacus="unsure"><span class="su-art" data-art="unsure"></span><b>Not sure</b></button>
+      </div>
     </div>
     <div class="su-step" id="suLevel">
       <h2 class="su-h">Where should we start?</h2>
       <div class="su-cards">
-        <button class="su-card" data-lv="new"><span class="ic">🌱</span><b>I'm new to the abacus</b><small>Start from the very beginning</small></button>
-        <button class="su-card" data-lv="check"><span class="ic">🔍</span><b>Find my level</b><small>A few quick problems on your abacus</small></button>
-        <button class="su-card" data-lv="pick"><span class="ic">🧑‍🏫</span><b>A grown-up will choose</b><small>Pick the skill your class is on</small></button>
+        <button class="su-card" data-lv="new"><span class="su-art" data-art="new"></span><b>I’m new to the abacus</b><small>Start from the very beginning</small></button>
+        <button class="su-card" data-lv="check"><span class="su-art" data-art="check"></span><b>Find my level</b><small>A few quick problems on your abacus</small></button>
+        <button class="su-card" data-lv="pick"><span class="su-art" data-art="pick"></span><b>A grown-up will choose</b><small>Pick the skill your class is on</small></button>
       </div>
     </div>
     <div class="su-step" id="suPick">
-      <h2 class="su-h">Which skill are they working on?</h2>
+      <div class="su-pickhead"><button class="ws-iconbtn" id="suPickBack" aria-label="Back"></button><h2 class="su-h">Which skill are they working on?</h2></div>
       <div class="su-skills" id="suPickList"></div>
-      <button class="btn ghost small" id="suPickBack">◀ Back</button>
     </div>
     <div class="su-step" id="suCheck">
-      <div class="su-checkhead"><div class="su-lname" id="suLevelName"></div><div class="su-dots" id="suDots"></div><button class="btn ghost small" id="suStop">Start here</button></div>
+      <div class="su-checkhead"><div class="su-lname" id="suLevelName"></div><div class="su-dots" id="suDots"></div><button class="ws-btn maple small" id="suStop">Start here</button></div>
       <div class="su-checkbody"><div class="problem su-prob" id="suProb"></div>
-        <div class="entry"><div class="feedback" id="suFb"></div><div class="answer" id="suAns">&nbsp;</div><div class="pad" id="suPad"></div></div></div>
+        <div class="entry su-entry"><div class="feedback" id="suFb"></div><div class="answer su-answer" id="suAns">&nbsp;</div><div class="pad su-pad" id="suPad"></div></div></div>
     </div>
     <div class="su-step" id="suDone">
       <h2 class="su-h" id="suDoneH"></h2>
       <p class="su-p" id="suDoneP"></p>
-      <div class="su-install" id="suInstall"><b>Grown-up: add this to the Home Screen</b> so progress is kept safe. In Safari tap the Share button <span class="share">⬆︎</span> then <b>Add to Home Screen</b>, and open it from the new icon.</div>
-      <p class="su-p su-note">Grown-ups can set treats, record voices and see progress under ⚙️ Grown-ups.</p>
-      <button class="btn" id="suStart">Let's go! ▶</button>
+      <div class="su-install ws-panel" id="suInstall"><b>Grown-up: add this to the Home Screen</b> so progress is kept safe. In Safari tap the Share button <span class="share" id="suShareIc"></span> then <b>Add to Home Screen</b>, and open it from the new icon.</div>
+      <p class="su-p su-note">Grown-ups can set treats, record voices and see progress behind the lock on the home screen.</p>
+      <button class="ws-btn big" id="suStart">Let’s go!<span class="su-ic-next"></span></button>
     </div>
   </div>
 </section>
@@ -97,19 +122,19 @@
   <div class="gmascot" id="bixGame"></div>
 </section>
 
-<section id="shop" class="screen">
-  <div class="topbar"><button class="exit" id="exitShop">✕</button><div class="lvl" style="font-size:24px;color:var(--ink);font-weight:900">🍭 Treat Shop</div><div style="flex:1"></div><div class="shop-wallet"><span id="shopBeads">0</span> 🟡 golden beads</div></div>
-  <div class="shop-body">
-    <div class="shop-top"><div id="bixShop"></div><div id="shopTickets" class="shop-tickets"></div></div>
+<section id="shop" class="screen ws-screen sh">
+  <header class="a-top"><button class="ws-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="ws-h1">I wish for…</h1><span class="a-gap"></span><span class="ws-chip sh-wallet" id="shopWallet"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
+  <div class="shop-body sh-body">
+    <div class="shop-top sh-top"><div id="bixShop" class="sh-bix"></div><div id="shopTickets" class="shop-tickets"></div></div>
     <div class="tcards" id="shopCards"></div>
-    <div class="note shop-how">Earn golden beads: finish a lesson, drill or game +1 · gold sticker +1 · finish Today's practice +3 · unlock a new skill +5</div>
+    <div class="note shop-how sh-how">Golden beads come from finishing things: a lesson, drill or game +1 · gold sticker +1 · all of Today +3 · a new skill +5</div>
   </div>
-  <div id="shopAsk" class="askm"><div class="ask-card"><div class="ask-t" id="askText"></div><div class="row"><button class="btn coral" id="askYes">Yes please!</button><button class="btn ghost" id="askNo">Not yet</button></div></div></div>
+  <div id="shopAsk" class="askm"><div class="ask-card"><div class="ask-t" id="askText"></div><div class="row"><button class="ws-btn" id="askYes">Yes please!</button><button class="ws-btn maple" id="askNo">Not yet</button></div></div></div>
 </section>
 
-<section id="album" class="screen">
-  <div class="topbar"><button class="exit" id="exitAlbum">✕</button><div class="lvl" style="font-size:24px;color:var(--ink);font-weight:900">📒 My stickers</div><div style="flex:1"></div><div class="gscore" id="albumCount"></div></div>
-  <div class="album-body" id="albumPages"></div>
+<section id="album" class="screen ws-screen ab">
+  <header class="a-top"><button class="ws-iconbtn" id="exitAlbum" aria-label="Back to My Room"></button><h1 class="ws-h1">My stickers</h1><span class="a-gap"></span><span class="ws-chip" id="albumCount"></span></header>
+  <div class="album-body ab-body" id="albumPages"></div>
 </section>
 
 <section id="lesson" class="screen">
@@ -163,7 +188,7 @@
 
 <div id="stickerReveal"><div class="rv-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack"><span class="rv-wrap"><span class="bow">🎀</span><small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="btn" id="rvOk">Add to my album</button></div></div>
 
-<div id="nameAsk" class="askm"><div class="ask-card"><div class="ask-t">What's your name?</div><input id="nameAskIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name"><div class="row"><button class="btn" id="nameAskOk">That's me!</button><button class="btn ghost" id="nameAskNo">Later</button></div></div></div>
+<div id="nameAsk" class="askm"><div class="ask-card na-card"><div id="bixName" class="na-bix"></div><div class="ask-t">What’s your name?</div><input id="nameAskIn" class="su-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" aria-label="Your name"><div class="row"><button class="ws-btn" id="nameAskOk">That’s me!</button><button class="ws-btn maple" id="nameAskNo">Later</button></div></div></div>
 
 <div id="nodemenu"><div class="menu-card"><h3 id="nmTitle"></h3><div class="intro" id="nmIntro"></div><button class="btn" id="nmLearn">📖 Learn</button><button class="btn ghost" id="nmLook">👀 Look &amp; solve</button><button class="btn ghost" id="nmListen">👂 Listen &amp; solve</button><button class="btn ghost small" id="nmClose">Close</button></div></div>
 

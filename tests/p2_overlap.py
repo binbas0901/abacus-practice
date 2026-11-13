@@ -13,7 +13,7 @@ HOOK = """(()=>{ window.__starts=[]; const o=AudioBufferSourceNode.prototype.sta
 async def run(pg, voice, gap, rate=1.0):
     await pg.evaluate("([v,g,r])=>{const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice=v; st.gap=g; st.gapMin=0.5; st.voiceRate=r; st.speakFeedback=false; st.sfx=false; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st));}", [voice,gap,rate])
     await pg.reload(); await pg.wait_for_timeout(400); await pg.evaluate(HOOK)
-    await pg.click('.tile[data-mode=listen]'); await pg.click('#listenGo')
+    await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo')
     worst=9; n=0
     for k in range(3):
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=60000)
