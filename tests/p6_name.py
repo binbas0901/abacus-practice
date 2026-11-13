@@ -22,11 +22,11 @@ async def main():
         for r in rows: print('     ', r[0].ljust(4), r[1].ljust(16), r[2][:90])
         await pg.screenshot(path='/tmp/nm_check.png')
         st_map={r[1]:r[0] for r in rows}
-        check('checklist: name ok, treats + backup flagged, home screen flagged in a browser', st_map.get('Child’s name')=='ok' and st_map.get('Treats')=='warn' and st_map.get('Backup')=='warn' and st_map.get('Home Screen app')=='todo')
+        check('checklist: name ok, treats + backup flagged, Home Screen gently suggested in a browser tab (no storage row)', st_map.get('Child’s name')=='ok' and st_map.get('Treats')=='warn' and st_map.get('Backup')=='warn' and st_map.get('Open it from the Home Screen')=='warn' and 'Storage' not in st_map)
         await pg.click('#bkMake'); await pg.wait_for_function("document.querySelector('#bkSave').style.display===''", timeout=20000)
         async with pg.expect_download() as dl: await pg.click('#bkSave')
         await dl.value; await pg.wait_for_timeout(500)
-        bk = await pg.eval_on_selector('#setupList .ck:nth-child(7) .ck-t span','e=>e.textContent')
+        bk = await pg.evaluate("[...document.querySelectorAll('#setupList .ck')].find(e=>e.querySelector('b').textContent==='Backup').querySelector('.ck-t span').textContent")
         check('after a backup the checklist shows it', 'today' in bk, bk)
         await pg.click('#setupList [data-go=skill]'); await pg.wait_for_timeout(900)
         check('"Change" jumps to the current-skill picker', await pg.evaluate("(()=>{const r=document.querySelector('#sNode').getBoundingClientRect(); return r.top>0 && r.bottom<innerHeight})()"))

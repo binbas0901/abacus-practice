@@ -16,7 +16,7 @@ async def main():
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(500)
         check('home bead chip and jar start empty', (await pg.text_content('#roomBeads')).strip()=='0' and (await pg.text_content('#jar .jar-n')).strip()=='0' and await pg.locator('#jar .j-bead').count()==0, await pg.text_content('#jar'))
         # earn by finishing a game
-        await pg.evaluate("App.gameSeconds=3"); await pg.click('#doorPlay'); await pg.click('.gcard[data-game=pop]')
+        await pg.evaluate("App.gamePops=1"); await pg.click('#doorPlay'); await pg.click('.gcard[data-game=pop]')
         await pg.wait_for_selector('.bub'); await pg.wait_for_timeout(300)
         ans = await pg.evaluate("+document.querySelector('.pq-f').textContent - +document.querySelector('.pq-a').textContent")
         if await pg.locator(f'.bub[data-v="{ans}"]').count(): await pg.locator(f'.bub[data-v="{ans}"]').first.dispatch_event('pointerdown')

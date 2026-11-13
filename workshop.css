@@ -170,3 +170,22 @@ body.ws-calm .ws-pulse, body.ws-calm .ws-bob{animation:none}  /* grown-ups "Calm
 @keyframes ws-nudge{0%,100%{opacity:0;transform:scale(.97)}50%{opacity:.45;transform:scale(1.02)}}
 @media (prefers-reduced-motion: reduce){ .ws-nudge::after{animation:none} }
 body.ws-calm .ws-nudge::after{animation:none}
+
+/* =====================================================================
+   dialog — WS.confirm() (kit.js): a grown-up panel instead of the browser's confirm()
+   ===================================================================== */
+.ws-dialog{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;
+  background:color-mix(in srgb, var(--ws-ink) 45%, transparent);animation:ws-dialog-in .16s ease both}
+.ws-dialog-panel.ws-panel{width:min(520px,100%);border-radius:var(--ws-r-md);padding:26px 28px 24px;box-shadow:0 8px 0 var(--ws-line);
+  background:var(--ws-white);display:flex;flex-direction:column;gap:12px;animation:ws-pop .26s var(--ws-ease) both}
+.ws-dialog-title{margin:0;font-family:var(--ws-display);font-weight:600;font-size:24px;line-height:1.2;color:var(--ws-ink)}
+.ws-dialog-msg p{margin:0 0 8px;font-family:var(--ws-body);font-size:17px;line-height:1.45;color:var(--ws-ink-2)}
+.ws-dialog-btns{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.ws-dialog-btn{--c:var(--ws-indigo);--d:var(--ws-indigo-dk);--t:var(--ws-white);min-height:48px;padding:0 22px;border:0;border-radius:12px;background:var(--c);color:var(--t);
+  box-shadow:0 3px 0 var(--d);font-family:var(--ws-display);font-weight:600;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ws-dialog-btn.danger{--c:var(--ws-red);--d:var(--ws-red-dk)}
+.ws-dialog-btn.quiet{--c:var(--ws-white);--d:var(--ws-line);--t:var(--ws-ink);box-shadow:inset 0 0 0 2px var(--ws-mist),0 3px 0 var(--ws-line)}
+.ws-dialog-btn:active{transform:translateY(2px);box-shadow:none}
+.ws-dialog-btn:focus-visible{outline:3px solid var(--ws-ochre);outline-offset:2px}
+@keyframes ws-dialog-in{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){ .ws-dialog,.ws-dialog-panel.ws-panel{animation:none} }

@@ -63,7 +63,9 @@ async def main():
         # remove Arjun
         pg2.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
         await gate(pg2); arjun=[c for c in exp if c['name']=='Arjun'][0]['id']
-        await pg2.click(f'[data-kidrm="{arjun}"]'); await pg2.wait_for_timeout(1800)
+        await pg2.click(f'[data-kidrm="{arjun}"]'); await pg2.wait_for_selector('.ws-dialog')
+        check('removing a child asks in a Workshop dialog', 'Remove Arjun' in await pg2.text_content('.ws-dialog-title'))
+        await pg2.click('.ws-dialog [data-r="1"]'); await pg2.wait_for_timeout(1800)
         kids=await pg2.evaluate("Store.children()")
         check('removing Arjun leaves only Mia, picker gone', len(kids)==1 and kids[0]['name']=='Mia' and await pg2.is_visible('#home'), kids)
         check('Mia untouched after removal', (await pg2.evaluate("Store.get('fun')")).get('beads')==17)

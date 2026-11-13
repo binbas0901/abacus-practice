@@ -43,8 +43,8 @@ async def main():
         steps = await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className.includes("done"))')
         check('step 1 ticked', steps==[True,False,False], steps)
 
-        # Step 2: game (Friend Pop for big-friends level), 6-second round
-        await pg.evaluate("App.gameSeconds=6"); await pg.click('#todayGo'); await pg.wait_for_selector('#game.active'); await pg.wait_for_timeout(500)
+        # Step 2: game (Friend Pop for big-friends level), a short round of 3 friends (no clock)
+        await pg.evaluate("App.gamePops=3"); await pg.click('#todayGo'); await pg.wait_for_selector('#game.active'); await pg.wait_for_timeout(500)
         await pg.screenshot(path='/tmp/p3_pop.png')
         popped=0
         for _ in range(200):
@@ -56,7 +56,7 @@ async def main():
                     try: await bub.first.dispatch_event('pointerdown'); popped+=1
                     except Exception: pass
             await pg.wait_for_timeout(60)
-        score = await pg.text_content('#gameScore')
+        score = str(await pg.locator('#gameScore .gdot.ok').count())
         t = await collect(pg); await pg.wait_for_selector('.gresult')
         await pg.screenshot(path='/tmp/p3_pop_result.png')
         check('Friend Pop plays, scores, gives sticker', popped>0 and int(''.join(ch for ch in score if ch.isdigit()) or 0)>0, f"{score} | {await pg.text_content('.gr-big')} | {t}")
@@ -100,8 +100,7 @@ async def main():
             await pg.wait_for_function("document.querySelector('#rdCover').classList.contains('on') || document.querySelector('.gresult')", timeout=20000)
             if await pg.locator('.gresult').count(): break
             if i==1: await pg.screenshot(path='/tmp/p3_reader_cover.png')
-            labels = await pg.eval_on_selector_all('#rdAb .sb-label','els=>els.map(e=>e.textContent)')
-            v = int(''.join(labels)); ans = v if i!=4 else v+1
+            v = int((await pg.get_attribute('#rdAb .abx','aria-label')).split()[-1]); ans = v if i!=4 else v+1
             for ch in str(ans): await pg.click(f'#rdPad [data-k="{ch}"]')
             await pg.click('#rdPad [data-k=go]'); right += (i!=4)
             await pg.wait_for_function("!document.querySelector('#rdCover').classList.contains('on')")
@@ -114,15 +113,14 @@ async def main():
         for k in range(8):
             await pg.wait_for_function(f"document.querySelector('#bdNum') && document.querySelector('#bdNum').textContent!=''")
             v = int(await pg.text_content('#bdNum'))
-            rods = await pg.eval_on_selector_all('#bdAb .sb-rod','els=>els.map(e=>+e.dataset.rod)')
             for r, d in enumerate(reversed(str(v))):
                 d=int(d)
-                if d>=5: await pg.click(f'#bdAb .sb-rod[data-rod="{r}"] .sb-heaven')
-                if d%5: await pg.click(f'#bdAb .sb-rod[data-rod="{r}"] .sb-earth[data-k="{d%5-1}"]')
+                if d>=5: await pg.click(f'#bdAb .abx-rod[data-rod="{r}"] .abx-bead[data-kind="h"]')
+                if d%5: await pg.click(f'#bdAb .abx-rod[data-rod="{r}"] .abx-bead[data-kind="e"][data-k="{d%5-1}"]')
             if k==2: await pg.screenshot(path='/tmp/p3_build.png')
             await pg.wait_for_timeout(750)
         t = await collect(pg); await pg.wait_for_selector('.gresult')
-        check('Bead Builder: 8 numbers set', '8 numbers made' in await pg.text_content('.gr-big') and 'seconds' in await pg.text_content('.gr-sub'), await pg.text_content('.gr-big'))
+        check('Bead Builder: 8 numbers set, counted not timed', '8 numbers made' in await pg.text_content('.gr-big') and 'second' not in await pg.text_content('.gresult') and 'numbers built' in await pg.text_content('.gresult'), await pg.text_content('.gresult'))
         await pg.click('.gresult [data-a=done]')
         data=json.loads(await pg.evaluate("window.__legacy('fun')"))
         w=data.get('wallet',{})

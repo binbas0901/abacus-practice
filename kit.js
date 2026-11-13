@@ -97,3 +97,41 @@
 
   window.WS = { colors: C, bix, bead, icon, bubble, tile, ICONS: Object.keys(I).concat(Object.keys(FILLED), 'abacus') };
 })();
+
+// ---------- dialog (added by the door / grown-ups stream) ----------
+// A Workshop-styled yes/no dialog instead of the browser's confirm():
+//   if (await WS.confirm('Remove Mia?', 'This erases…', { ok:'Remove', cancel:'Keep', danger:true })) …
+// Resolves true for the main button, false for the other one, Escape, or a tap outside the panel.
+// Text is escaped; message may contain line breaks (each becomes a paragraph).
+(function () {
+  'use strict';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function confirm(title, message, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+      const back = document.createElement('div');
+      back.className = 'ws-dialog'; back.setAttribute('role', 'presentation');
+      const id = 'wsdlg' + Date.now().toString(36);
+      const paras = String(message || '').split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join('');
+      back.innerHTML = `<div class="ws-dialog-panel ws-panel ws-grownup" role="alertdialog" aria-modal="true" aria-labelledby="${id}t" aria-describedby="${id}m">`
+        + `<h2 class="ws-dialog-title" id="${id}t">${esc(title)}</h2><div class="ws-dialog-msg" id="${id}m">${paras}</div>`
+        + `<div class="ws-dialog-btns"><button type="button" class="ws-dialog-btn quiet" data-r="0">${esc(opts.cancel || 'Cancel')}</button>`
+        + `<button type="button" class="ws-dialog-btn ${opts.danger ? 'danger' : 'main'}" data-r="1">${esc(opts.ok || 'OK')}</button></div></div>`;
+      const prev = document.activeElement;
+      const done = r => { document.removeEventListener('keydown', onKey, true); back.remove(); if (prev && prev.focus) try { prev.focus(); } catch (e) { /* gone */ } resolve(r); };
+      const onKey = e => {
+        if (e.key === 'Escape') { e.preventDefault(); done(false); }
+        else if (e.key === 'Tab') {   // keep focus inside the dialog
+          const bs = back.querySelectorAll('button'), first = bs[0], last = bs[bs.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      };
+      back.addEventListener('click', e => { const b = e.target.closest('button[data-r]'); if (b) done(b.dataset.r === '1'); else if (e.target === back) done(false); });
+      document.addEventListener('keydown', onKey, true);
+      document.body.appendChild(back);
+      back.querySelector(opts.danger ? '[data-r="0"]' : '[data-r="1"]').focus();
+    });
+  }
+  window.WS.confirm = confirm;
+})();
