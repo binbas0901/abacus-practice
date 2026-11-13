@@ -1,0 +1,28 @@
+/* AbacusInput ("Workshop" soroban). Everything is scoped under .abx. */
+.abx { display: inline-flex; flex-direction: column; align-items: center; gap: 8px; position: relative;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.abx-svg { display: block; max-width: 100%; height: auto; touch-action: none; -webkit-tap-highlight-color: transparent; overflow: visible; }
+.abx-frame { fill: #8A5530; }
+.abx-frame-shadow { fill: #5E3519; }
+.abx-inner { fill: #F4E3C3; }
+.abx-rodline, .abx-beam { fill: #6E4126; }
+.abx-dot { fill: #F4E3C3; }
+
+.abx-bead { cursor: pointer; transition: transform 120ms cubic-bezier(.2, .8, .3, 1); }
+.abx-hit { fill: transparent; }
+.abx-lens { fill: #B07A45; stroke: rgba(60, 30, 10, .35); stroke-width: 1.5; transition: fill 120ms ease-out; }
+.abx-bead.on .abx-lens { fill: #E2452F; }
+.abx-shine { fill: none; stroke: rgba(255, 255, 255, .28); stroke-width: 3; stroke-linecap: round; pointer-events: none; }
+
+.abx-rod:focus { outline: none; }
+.abx-rod:focus-visible .abx-rodline { fill: #2F7DD1; }
+
+.abx-readout { font: 600 18px/1.2 system-ui, -apple-system, sans-serif; color: #6E4126; letter-spacing: .02em; }
+.abx-readout b { font-size: 24px; color: #5E3519; }
+.abx-readout[hidden] { display: none; }
+.abx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.abx-noanim .abx-bead, .abx-noanim .abx-lens { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .abx-bead, .abx-lens { transition: none; }
+}
