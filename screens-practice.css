@@ -43,6 +43,11 @@
 #drill .pr-bubble::before{display:none}
 #drill .pr-bubble.empty{visibility:hidden}
 #drill .pr-bubble .pr-btxt{flex:1;max-height:100%;overflow:hidden}
+/* the bubble never pops or resizes: only the words fade in, and the speaker mark is always there (tap = hear it again) */
+#drill .pr-bubble.ws-pop{animation:none}
+#drill .pr-bubble .pr-btxt.pr-fresh{animation:pr-fresh .22s ease-out both}
+@keyframes pr-fresh{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+#drill .pr-bubble .ws-say{visibility:visible!important}
 #drill .pr-bubble .ws-say{line-height:0}
 
 /* the problem: ONE column of tiles, read top to bottom; long rows (up to 10 numbers) get smaller tiles (fitTiles in app.js) */
@@ -56,6 +61,10 @@
 /* 3-4 digit numbers: smaller digits so "+ 4567" fits a tile */
 #drill .pr-problem.wide .ws-tile{font-size:var(--tf,48px);padding:0 26px}
 #drill .pr-problem.xwide .ws-tile{width:220px;font-size:var(--tf,44px);padding:0 22px}
+/* long rows (5-10 numbers): wider tiles, so the digits can stay big when the tiles get shorter */
+#drill.long .pr-problem{gap:7px}
+#drill.long .pr-problem .ws-tile{width:250px;padding:0 28px}
+#drill.long .pr-problem.xwide .ws-tile{width:280px;padding:0 26px}
 
 /* listen: numbers stay hidden; a calm listening card */
 #drill .pr-listen,#drill .pr-flash{display:flex;flex-direction:column;align-items:center;gap:16px;background:var(--ws-white);border-radius:var(--ws-r-lg);
@@ -93,6 +102,14 @@
 #drill .pr-right.keys .pr-rolabel{display:none}
 #drill .pr-right.keys .pr-readout b{font-size:68px;letter-spacing:.02em}
 #drill .pr-right.keys .pr-readout.empty b{color:var(--ws-line)}
+/* right / wrong, instantly: the answer box turns jade (small pop) or red (gentle shake) */
+#drill .pr-readout{transition:background-color .12s ease, box-shadow .12s ease}
+#drill .pr-readout.is-right{background:var(--ws-jade-dk);box-shadow:0 0 0 5px var(--ws-jade);animation:pr-yes .34s var(--ws-ease) both}
+#drill .pr-readout.is-wrong{background:var(--ws-red-dk);box-shadow:0 0 0 5px var(--ws-red);animation:pr-no .42s ease both}
+#drill .pr-readout.is-right b,#drill .pr-readout.is-wrong b,#drill .pr-readout.is-right .pr-rolabel,#drill .pr-readout.is-wrong .pr-rolabel{color:var(--ws-white)}
+@keyframes pr-yes{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
+@keyframes pr-no{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}45%{transform:translateX(6px)}70%{transform:translateX(-4px)}}
+#drill .pr-rod .pr-b.ws-shake{animation:pr-no .42s ease both}
 
 #drill .pr-abacus{line-height:0;display:none}
 #drill .pr-right.beads .pr-abacus{display:block;align-self:stretch}
@@ -129,6 +146,11 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
 body:has(#certificate.active) .beadfloat{left:auto;right:40px;top:24px;transform:none}
 body:has(#certificate.active) .beadfloat .bf-row{font-size:34px;padding:6px 20px 6px 12px}
 body:has(#certificate.active) .beadfloat .bf-row svg{width:48px;height:auto}
+/* confetti falls BEHIND the headline, beads, certificate and buttons (never over text): the screen goes see-through and
+   the page behind it carries the same ground colour, so the confetti layer can sit underneath the app */
+body:has(#summary.active),body:has(#certificate.active){background:var(--ws-ground)}
+body:has(#summary.active) .confetti,body:has(#certificate.active) .confetti{z-index:-1}
+#summary.pr-sum.active,#certificate.pr-cert.active{background:transparent}
 #summary .pr-sumbix{line-height:0;cursor:pointer}
 #summary .pr-sumbix .bix{width:auto;height:auto}
 #summary .pr-sumhead{display:flex;align-items:center;gap:12px}
@@ -172,12 +194,11 @@ body:has(#certificate.active) .beadfloat .bf-row svg{width:48px;height:auto}
 #stickerReveal.active{display:flex}
 #stickerReveal .pr-ic{display:inline-flex;line-height:0}
 #stickerReveal .rv-card{border-radius:var(--ws-r-lg);padding:30px 44px 34px;display:flex;flex-direction:column;align-items:center;gap:20px;animation:ws-pop .38s var(--ws-ease) both;box-shadow:0 6px 0 var(--ws-line);
-  min-height:520px;min-width:420px;box-sizing:border-box}
+  min-width:420px;box-sizing:border-box}
 /* before it opens: just the present, centred in the card (no empty slot for the name and button below it) */
 #stickerReveal .rv-card:has(.rv-pack:not(.open)) .rv-name,#stickerReveal .rv-card:has(.rv-pack:not(.open)) #rvOk{display:none}
-#stickerReveal .rv-card:has(.rv-pack:not(.open)) .rv-pack{margin:auto 0}
-#stickerReveal .rv-pack.open{margin:auto 0 0}
-#stickerReveal #rvOk{margin-bottom:auto}
+/* the card hugs its content: title + present before, title + sticker + name + button after (no empty band under the gift) */
+#stickerReveal .rv-card:has(.rv-pack:not(.open)){padding-bottom:44px}
 #stickerReveal .rv-title{font-family:var(--ws-display);font-weight:700;font-size:36px;line-height:1.1;color:var(--ws-indigo);text-align:center}
 #stickerReveal .rv-pack{position:relative;width:210px;height:210px;margin-top:22px;border:0;border-radius:var(--ws-r-lg);background:var(--ws-ochre);box-shadow:0 9px 0 var(--ws-ochre-dk);
   display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;animation:pr-wiggle 1.6s ease-in-out infinite;-webkit-tap-highlight-color:transparent}
@@ -210,6 +231,12 @@ body:has(#certificate.active) .beadfloat .bf-row svg{width:48px;height:auto}
 #certificate .pr-certbeads{display:flex;gap:10px;margin:10px 0 4px}
 #certificate .pr-certmeta{display:flex;gap:10px;font-size:18px;color:var(--ws-ink-2)}
 #certificate .pr-certbtns{display:flex;gap:22px;align-items:center}
+
+/* "Save picture" in the Home Screen app when sharing is not available: the picture to press and hold */
+#certificate .pr-certpic{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:color-mix(in srgb, var(--ws-ink) 55%, transparent)}
+#certificate .pr-certpic.on{display:flex}
+#certificate .pr-certpiccard{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 28px 28px;max-width:90vw;box-sizing:border-box}
+#certificate .pr-certpiccard img{width:min(760px, 80vw);height:auto;border-radius:var(--ws-r-sm);-webkit-touch-callout:default;user-select:auto}
 
 @media print{
   @page{size:landscape;margin:12mm}
@@ -250,9 +277,10 @@ body:has(#certificate.active) .beadfloat .bf-row svg{width:48px;height:auto}
   /* long rows (5-10 numbers): ONE column of tiles on the left, the answer tool beside it */
   #drill.long .pr-body{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:20px 28px}
   #drill.long .pr-left{display:contents}
-  #drill.long .pr-bix{grid-column:1 / -1;justify-self:center}
-  #drill.long .pr-problem{grid-column:1;grid-row:2;flex-direction:column;align-self:start;max-height:100%}
-  #drill.long .pr-problem .ws-tile{width:200px}
+  #drill.long .pr-bix{grid-column:1 / -1;justify-self:center;width:100%}   /* same bubble width as short rows */
+  #drill.long .pr-problem{grid-column:1;grid-row:2;flex-direction:column;align-self:stretch;justify-content:flex-start;min-height:0}
+  #drill.long .pr-problem .ws-tile{width:220px;padding:0 24px}
+  #drill.long .pr-problem.xwide .ws-tile{width:240px;padding:0 22px}
   #drill.long .pr-showme{grid-column:1;grid-row:3}
   #drill.long .pr-right{grid-column:2;grid-row:2 / 4}
   #drill.long .pr-keys{--ws-key-w:112px;--ws-key-h:96px;--ws-key-font:48px}
@@ -263,21 +291,44 @@ body:has(#certificate.active) .beadfloat .bf-row svg{width:48px;height:auto}
   #summary .pr-sumbtns .ws-btn.big{padding:0 34px}
   #summary .pr-rewards{right:28px;top:28px}
 }
-/* ============ big iPad ============ */
+/* ============ big iPad (12.9" Pro, 1366×1024): everything grows into the extra room — bigger Bix, tiles, keys and abacus ============ */
 @media (min-width:1300px) and (min-height:960px){
   #drill.pr{padding:32px 56px 40px;gap:30px}
-  #drill .pr-left{width:470px}
-  #drill .pr-bubble{font-size:22px;height:86px}
-  #drill .pr-problem .ws-tile{width:220px;height:var(--th,92px);font-size:var(--tf,62px)}
-  #drill .pr-problem.wide .ws-tile{font-size:var(--tf,52px)}
-  #drill .pr-problem.xwide .ws-tile{width:236px;font-size:var(--tf,46px)}
-  #drill .pr-abacus .abx-svg{max-height:min(580px, calc(100vh - 380px))}
-  #drill .pr-keys{--ws-key-w:120px;--ws-key-h:96px;--ws-key-font:50px}
+  #drill #exitDrill{width:72px;height:72px}
+  #drill .pr-body{gap:56px}
+  #drill .pr-left{width:500px;gap:24px}
+  #drill .pr-bixfig svg{width:96px;height:96px}
+  #drill .pr-bubble{font-size:24px;height:92px}
+  #drill .pr-problem{gap:16px}
+  #drill .pr-problem .ws-tile{width:250px;height:var(--th,108px);font-size:var(--tf,72px);border-radius:var(--ws-r-md)}
+  #drill .pr-problem.wide .ws-tile{font-size:var(--tf,60px)}
+  #drill .pr-problem.xwide .ws-tile{width:270px;font-size:var(--tf,54px)}
+  #drill.long .pr-problem{gap:9px}
+  #drill.long .pr-problem .ws-tile{width:290px}
+  #drill.long .pr-problem.xwide .ws-tile{width:310px}
+  #drill .pr-right{gap:24px}
+  #drill .pr-readout{min-height:60px;padding:10px 28px}
+  #drill .pr-rolabel{font-size:20px}
+  #drill .pr-readout b{font-size:40px}
+  #drill .pr-right.keys .pr-readout{min-width:380px;height:124px}
+  #drill .pr-right.keys .pr-readout b{font-size:84px}
+  #drill .pr-keys{--ws-key-w:140px;--ws-key-h:118px;--ws-key-font:60px;--ws-key-gap:18px}
+  #drill .pr-pad{gap:26px}
+  #drill .pr-abacus .abx-svg{max-height:min(640px, calc(100vh - 360px))}
+  #drill .pr-right.beads{justify-content:center}   /* the 3-rod frame is width-bound: centre it in the tall column instead of a band at the bottom */
+  #drill .pr-check{min-height:88px;padding:0 68px;font-size:36px}
+  #drill .pr-switch{font-size:20px}
+  #drill .pr-listen,#drill .pr-flash{padding:34px 26px 28px;gap:20px}
+  #drill .pr-ear{width:160px;height:160px}
+  #drill .flash-num{font-size:120px;min-height:136px}
+  #drill .pr-msg{font-size:28px}
 }
 
 @media (prefers-reduced-motion: reduce){
   #drill .pr-ear.pulse::after,#drill .pr-listen.reading .pr-ear,#drill .flash-num.pop,#stickerReveal .rv-pack,#stickerReveal .rv-card,#stickerReveal .rv-pack.open .rv-face,#showme .pr-showcard,#summary .pr-goldchip{animation:none}
   #drill .pr-problem .ws-tile,#drill .pr-right.waiting .pr-readout,#drill .pr-right.waiting .pr-abacus{transition:none}
   #summary .pr-newchip{animation:none}
+  #drill .pr-readout.is-right,#drill .pr-readout.is-wrong,#drill .pr-rod .pr-b.ws-shake,#drill .pr-bubble .pr-btxt.pr-fresh{animation:none}
 }
+body.ws-calm #drill .pr-readout.is-right,body.ws-calm #drill .pr-readout.is-wrong{animation:none}
 body.ws-calm #drill .pr-listen.reading .pr-ear,body.ws-calm #stickerReveal .rv-pack{animation:none}

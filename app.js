@@ -762,18 +762,27 @@ function bixArt(mood, size){ return WS.bix(mood, size).replace('class="ws-bix ',
 const PB = {
   base:null, cur:null, t:null,
   el(){ return $('#bixDrill'); },
+  // One bubble for the whole practice screen: fixed width and place, a reserved two-line height and ALWAYS the speaker mark.
+  // Only the words change (a soft fade); the bubble itself never pops, grows or moves.
   mount(){ const el=this.el(); if (el.querySelector('.pr-bubble')) return; el.innerHTML='<span class="pr-bixfig"></span><div class="bubble pr-bubble ws-bubble on"><span class="pr-btxt"></span><span class="ws-say">'+WS.icon('speaker',24,WS.colors.indigo)+'</span></div>';
-    el.addEventListener('click', ()=>{ if (this.cur && this.cur.vid && !(mode==='listen' && locked)) Fun.BixVoice.play(this.cur.vid, el); }); },
+    el.addEventListener('click', ()=>this.replay()); },
+  // Tap Bix or his bubble: hear the line again (the recorded line when there is one, else the device voice reads the caption).
+  replay(){
+    const c=this.cur; if (!c || !c.text || (mode==='listen' && locked) || App.quietNow()) return;
+    const vid=c.vid || (this.base && this.base.text===c.text && this.base.vid);
+    Speaker.unlock();
+    if (vid && window.BIX_LINES && window.BIX_LINES[vid]) Fun.BixVoice.play(vid, this.el());
+    else if (Fun.BixVoice.enabled()){ Fun.BixVoice.stop(); Speaker.sayDevice(c.text); }
+  },
   draw(mood){ const f=this.el().querySelector('.pr-bixfig'); if (f.dataset.mood!==mood){ f.dataset.mood=mood; f.innerHTML=bixArt(mood, 76); } },
   // set the line Bix comes back to (the instruction for this problem)
-  setBase(text, mood, vid){ this.base={text, mood:mood||'happy', vid:null}; this.show(text, mood, vid); },
+  setBase(text, mood, vid){ this.base={text, mood:mood||'happy', vid:vid||null}; this.show(text, mood, vid); },
   // say(text, mood, vid, ms): a reaction; after ms he returns to the base line
   say(text, mood, vid, ms){ this.show(text, mood||'happy', vid); clearTimeout(this.t); if (ms && this.base){ const b=this.base; this.t=setTimeout(()=>{ if (this.base===b) this.show(b.text, b.mood, null); }, ms); } },
   show(text, mood, vid){
-    this.mount(); this.draw(mood||'happy'); this.cur={text, vid};
+    this.mount(); this.draw(mood||'happy'); this.cur={text, vid:vid||null};
     const b=this.el().querySelector('.pr-bubble'); b.classList.toggle('on', !!text); b.classList.toggle('empty', !text);
-    const tx=b.querySelector('.pr-btxt'); if (tx.textContent!==text){ tx.textContent=text||''; this.fit(); b.classList.remove('ws-pop'); void b.offsetWidth; b.classList.add('ws-pop'); }
-    b.querySelector('.ws-say').style.visibility = vid ? '' : 'hidden';
+    const tx=b.querySelector('.pr-btxt'); if (tx.textContent!==(text||'')){ tx.textContent=text||''; this.fit(); tx.classList.remove('pr-fresh'); void tx.offsetWidth; tx.classList.add('pr-fresh'); }
     if (vid) Fun.BixVoice.play(vid, this.el());
   },
   // The bubble keeps a fixed two-line height (nothing below it jumps); a longer line gets slightly smaller letters.
@@ -784,6 +793,7 @@ const PB = {
     while (tx.scrollHeight && lines()>2.15 && fs>15){ fs-=1; tx.style.fontSize=fs+'px'; }
   },
 };
+PB.mount();   // mounted up front, so the first problem's tiles are sized with the bubble already in place
 
 /* ---- the answer tool: keypad (the kit's one keypad, WS.keypad) or on-screen soroban (AbacusInput) ---- */
 const Keys = WS.keypad($('#padKeys'), {
@@ -816,7 +826,7 @@ const Tool = {
     this.readout();
   },
   switchTo(kind){ this.kind=kind; Fun.data.answerTool=kind; Fun.save(); this.apply(); if (kind==='beads'){ this.ab.clear({animate:false}); this.readout(); PB.setBase(baseLine(), baseMood()); } else setEntry(''); markTiles(); },
-  reset(){ setEntry(''); if (this.kind==='beads' && problems[idx]){ this.ensureAb(this.rodsForSet()).clear({animate:false}); } this.readout(); },
+  reset(){ verdict(null); setEntry(''); if (this.kind==='beads' && problems[idx]){ this.ensureAb(this.rodsForSet()).clear({animate:false}); } this.readout(); },
   // Listen / Flash: the keypad, the beads and Check wait (dimmed) until the numbers are done and Bix asks "Your answer?".
   setReady(on){ $('#answerTool').classList.toggle('waiting', !on); Keys.setEnabled(on); $('#checkBtn').disabled=!on; },
   value(){ return this.kind==='beads' ? (this.ab ? this.ab.value() : 0) : (entry==='' ? null : parseInt(entry,10)); },
@@ -868,17 +878,32 @@ function markTiles(){
   const all=reached>=tiles.length-1;   // every number is on the beads: show the whole problem again for checking
   tiles.forEach((t,i)=>{ t.classList.toggle('done', on && !all && i<=reached); t.classList.toggle('now', on && i===reached+1); });
 }
-// Long rows (up to 10 numbers, up to 4 digits): always ONE column, read top to bottom; the tiles shrink to fit the height.
+// Long rows (up to 10 numbers, up to 4 digits): always ONE column, read top to bottom; the tiles shrink to fit the height
+// that is left under Bix's bubble (and above "Show me"), at every iPad size, so nothing ever scrolls.
+function tileRoom(area){
+  const left=area.parentElement, cs=getComputedStyle(left);
+  if (cs.display==='contents') return area.clientHeight;          // portrait long rows: the grid row is the room
+  const gap=parseFloat(cs.rowGap)||0; let used=0, n=0;
+  for (const ch of left.children){ if (ch===area || !ch.getClientRects().length) continue; used+=ch.offsetHeight; n++; }
+  return left.clientHeight - used - gap*n;
+}
 function fitTiles(){
   const area=$('#problemArea'); const tiles=[...area.querySelectorAll('.ws-tile')]; area.style.removeProperty('--th'); area.style.removeProperty('--tf');
   if (!tiles.length || area.style.display==='none' || !$('#drill').classList.contains('active')) return;
   const row=getComputedStyle(area).flexDirection==='row'; if (row) return;          // portrait, short rows: tiles side by side
-  const n=tiles.length, gap=parseFloat(getComputedStyle(area).rowGap)||12, avail=area.clientHeight;
-  const max=parseFloat(getComputedStyle(tiles[0]).height)||82, dg=Math.max(...(problems[idx]||{terms:[1]}).terms.map(t=>String(Math.abs(t)).length));
-  const h=Math.max(36, Math.min(max, Math.floor((avail-gap*(n-1)-5)/n)));
-  if (h<max){ area.style.setProperty('--th', h+'px'); area.style.setProperty('--tf', Math.round(h*(dg>=4?0.56:dg>=3?0.62:0.68))+'px'); }
+  const n=tiles.length, gap=parseFloat(getComputedStyle(area).rowGap)||12, pad=parseFloat(getComputedStyle(area).paddingBottom)||0, avail=tileRoom(area)-pad;
+  const max=parseFloat(getComputedStyle(tiles[0]).height)||82, maxF=parseFloat(getComputedStyle(tiles[0]).fontSize)||56;
+  const h=Math.max(36, Math.min(max, Math.floor((avail-gap*(n-1))/n)));
+  if (h>=max) return;
+  area.style.setProperty('--th', h+'px');
+  // the digits stay as big as the tile allows: about 2/3 of its height, smaller only if a 4-digit number would not fit its width
+  let f=Math.min(maxF, Math.round(h*0.7)); area.style.setProperty('--tf', f+'px');
+  while (f>20 && tiles.some(t=>t.scrollWidth>t.clientWidth+1)){ f-=2; area.style.setProperty('--tf', f+'px'); }
 }
 window.addEventListener('resize', ()=>{ if ($('#drill').classList.contains('active')){ fitTiles(); PB.fit(); } });
+// Refit whenever the room changes (bubble mounted, "Show me" appears, fonts arrive, rotation).
+if (window.ResizeObserver){ let q=0; const ro=new ResizeObserver(()=>{ if (q) return; q=requestAnimationFrame(()=>{ q=0; if ($('#drill').classList.contains('active') && mode==='visual') fitTiles(); }); }); ro.observe($('#drill .pr-left')); ro.observe($('#drill .pr-body')); }
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if ($('#drill').classList.contains('active')) fitTiles(); });
 function beadW(n, max){ return n<=12 ? max : Math.max(26, Math.floor(max*12/n)); }
 function renderStrip(popIdx){
   const st=$('#strip'); const fixing=reviewing && !LT; $('#fixLabel').hidden=!fixing; st.classList.toggle('fixing', fixing);
@@ -887,12 +912,14 @@ function renderStrip(popIdx){
   st.innerHTML = list.map((i,k)=>{
     const p=problems[i], cur=i===idx, ok=results[i]===true||p._fixed, bad=results[i]===false&&!p._fixed;
     let svg, label=`Problem ${k+1}`;
-    if (cur){ svg=WS.bead('white', Math.round(w*1.2), {ring: fixing?'red':'indigo'}); label+=', now'; }
+    if (cur && !LT && (ok||bad)){ svg=WS.bead(ok?'jade':'red', Math.round(w*1.2)); label+= ok?', right':', to fix'; }   // the verdict shows at once, on the bead she is on
+    else if (cur){ svg=WS.bead('white', Math.round(w*1.2), {ring: fixing?'red':'indigo'}); label+=', now'; }
     else if (LT) svg=WS.bead(results[i]!==null&&results[i]!==undefined?'walnut':'pale', w), label+= results[i]!=null?', done':'';
     else if (ok){ svg=WS.bead('jade', w); label+=', right'; }
     else if (bad){ svg=WS.bead('red', w); label+=', to fix'; }
     else svg=WS.bead('pale', w);
-    return `<span role="listitem" aria-label="${label}" class="pr-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${i===popIdx?' ws-pop':''}">${svg}</span>`;
+    const fx = i===popIdx ? (bad && !LT ? ' ws-shake' : ' ws-pop') : '';
+    return `<span role="listitem" aria-label="${label}" class="pr-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${fx}">${svg}</span>`;
   }).join('');
 }
 
@@ -953,8 +980,9 @@ function presentProblem(){
   renderStrip();
   const long = mode==='visual' && p.terms.length>4;
   $('#drill').classList.toggle('long', long);
-  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', long); area.classList.toggle('wide', dg>=3); area.classList.toggle('xwide', dg>=4); markTiles(); fitTiles(); locked=false; Tool.setReady(true); }
+  if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', long); area.classList.toggle('wide', dg>=3); area.classList.toggle('xwide', dg>=4); markTiles(); locked=false; Tool.setReady(true); }
   PB.setBase(baseLine(), baseMood());
+  if (mode==='visual') fitTiles();   // after the bubble and "Show me" are in place
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
 }
@@ -1028,6 +1056,9 @@ $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[
 $('#checkBtn').addEventListener('click', ()=>{ if(locked||demoing) return; submit(); });
 document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('ws-shake'); void t.offsetWidth; t.classList.add('ws-shake'); setTimeout(()=>t.classList.remove('ws-shake'),400); }
+// Right / wrong shows instantly where she is looking: the answer box turns jade (a small pop) or red (a gentle shake),
+// and so does her bead on the rod. Cleared when the next problem comes. Never used in the level test.
+function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong'); if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
   if (val===null){ shake(); return; }
@@ -1043,17 +1074,19 @@ async function submit(){
     const mf=methodFeedback(p); if (mf) p._method=mf.ok;
     if (mf && mf.text) PB.say(mf.text, mf.ok?'cheer':'happy', null, mf.ok?1800:3600);
     else { const k=Math.floor(Math.random()*6); PB.say(['Yes!','Nice!','You got it!','Fantastic!','Super!','Wow!'][k], 'cheer', (Math.random()<0.35 && !settings.speakFeedback && mode!=='listen') ? 'yes_'+(k+1) : null, 1400); }
+    verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Fixed!'; renderStrip(idx); }
     if(settings.speakFeedback) Speaker.say(null,'yes');
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
-    fb.textContent='Not quite'; Sfx.bad(); shake();
+    fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
     if (!reviewing) { const k=Math.floor(Math.random()*3); PB.say(['Oops! We\'ll fix it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 'concerned', (!settings.speakFeedback && mode!=='listen') ? 'oops_'+(k+1) : null, 1800); }
     if(settings.speakFeedback) Speaker.say(null,'not quite');
-    if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(800); }
+    if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
+      const cb=$('#strip .pr-b.cur'); if (cb){ cb.innerHTML=WS.bead('red', cb.querySelector('svg').getAttribute('width')|0); cb.classList.remove('ws-shake'); void cb.offsetWidth; cb.classList.add('ws-shake'); }
       PB.say('Let\'s watch the beads together.', 'happy', 'fix_watch', 0);
       await sleep(900); await showMe(p);
       if (!$('#drill').classList.contains('active')) return;
@@ -1214,13 +1247,66 @@ function showCertificate(c){
   $('#certSkill').textContent = c.title; $('#certDate').textContent = niceDate(c.date);
   $('#certBix').innerHTML = bixArt('cheer', 120);
   $('#certBeads').innerHTML = ['ochre','jade','red','indigo','ochre'].map(k=>WS.bead(k, 44)).join('');
+  // In the Home Screen app (iOS standalone) window.print may do nothing, so the button saves a picture instead.
+  const pic=standaloneApp(); certShown=c; certPic=pic ? certPicture(c) : null;
+  $('#certPrint').innerHTML = pic ? WS.icon('share', 30)+'Save picture' : WS.icon('print', 30)+'Print';
+  $('#certPrint').setAttribute('aria-label', pic ? 'Save a picture of the certificate' : 'Print the certificate');
   show('certificate'); Sfx.star(); Fun.confetti(110);
   Fun.BixVoice.play('lesson_done', $('#certCard'));
 }
-$('#certPrint').addEventListener('click', ()=>{ Sfx.tap(); window.print(); });
+let certShown=null, certPic=null;
+function standaloneApp(){ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches; }catch(e){ return false; } }
+// The certificate as a PNG (1600×1130), drawn on a canvas with the app's own fonts, colours, Bix and beads.
+async function certPicture(c){
+  const W=1600, H=1130, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
+  const css=getComputedStyle(document.documentElement), v=n=>css.getPropertyValue('--ws-'+n).trim();
+  try{ await Promise.all(['700 120px Fredoka','600 40px Fredoka','400 36px Andika'].map(f=>document.fonts.load(f))); }catch(e){}
+  const rr=(x,y,w,h,r,fill)=>{ g.beginPath(); if (g.roundRect) g.roundRect(x,y,w,h,r); else g.rect(x,y,w,h); g.fillStyle=fill; g.fill(); };
+  rr(0,0,W,H,0,v('ground'));
+  rr(40,56,W-80,H-96,60,v('wood-dk')); rr(40,40,W-80,H-96,60,v('wood')); rr(72,72,W-144,H-160,36,v('maple'));
+  g.beginPath(); if (g.roundRect) g.roundRect(100,100,W-200,H-216,22); else g.rect(100,100,W-200,H-216); g.lineWidth=6; g.strokeStyle=v('maple-dk'); g.stroke();
+  // Bix (his SVG, without the extra talking mouths that CSS normally hides)
+  try{
+    const svg=WS.bix('cheer', 210).replace(/^[^<]*<span[^>]*>/, '').replace(/<\/span>\s*$/, '').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/<g class="m-[ab]">.*?<\/g>/g, '');
+    const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    await new Promise((ok,no)=>{ img.onload=ok; img.onerror=no; setTimeout(no, 1500); });
+    g.drawImage(img, W/2-105, 120, 210, 210);
+  }catch(e){ Diag.add('certificate picture: no Bix'); }
+  const text=(t, font, color, y, maxW)=>{ let size=parseFloat(font.match(/(\d+)px/)[1]); const f=s=>font.replace(/\d+px/, s+'px');
+    g.font=f(size); while (maxW && g.measureText(t).width>maxW && size>24){ size-=4; g.font=f(size); }
+    g.fillStyle=color; g.textAlign='center'; g.textBaseline='alphabetic'; g.fillText(t, W/2, y); };
+  text('CERTIFICATE OF MASTERY', '600 40px Fredoka, sans-serif', v('wood'), 405);
+  text(settings.name || 'Abacus star', '700 124px Fredoka, sans-serif', v('indigo'), 540, 1280);
+  text('has mastered', '400 40px Andika, sans-serif', v('ink-2'), 615);
+  text(c.title, '700 68px Fredoka, sans-serif', v('wood-dk'), 710, 1280);
+  // five lacquered beads, drawn from the kit's bead shape
+  const lens=new Path2D('M4 52 Q85 -12 166 52 Q85 116 4 52Z'), seam=new Path2D('M8 52 Q85 34 162 52');
+  ['ochre','jade','red','indigo','ochre'].forEach((k,i)=>{ const bw=86, sc=bw/170, x=W/2-(5*bw+4*16)/2+i*(bw+16), y=748;
+    g.save(); g.translate(x,y); g.scale(sc,sc); g.fillStyle=WS.colors[k]; g.fill(lens); g.strokeStyle='rgba(0,0,0,.18)'; g.lineWidth=3; g.stroke(seam);
+    g.fillStyle='rgba(255,255,255,.28)'; g.beginPath(); g.ellipse(62,31,24,7,0,0,Math.PI*2); g.fill(); g.restore(); });
+  text(niceDate(c.date)+'  ·  Bix Abacus', '400 36px Andika, sans-serif', v('ink-2'), 900);
+  return await new Promise((ok,no)=>{ try{ cv.toBlob(b=>b?ok(b):no(new Error('no picture')), 'image/png'); }catch(e){ no(e); } });
+}
+async function saveCertPicture(){
+  let blob; try{ blob=await (certPic || (certPic=certPicture(certShown))); }catch(e){ Diag.add('certificate picture failed: '+(e&&e.message||e)); return; }
+  const name='Bix certificate - '+(settings.name||'star')+' - '+certShown.title+'.png', file=new File([blob], name.replace(/[\\/:*?"<>|]/g,''), {type:'image/png'});
+  if (navigator.canShare && navigator.share && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:'Certificate'}); return; }catch(e){ if (e && e.name==='AbortError') return; Diag.add('share failed: '+(e&&e.name)); }
+  }
+  const url=URL.createObjectURL(blob);
+  if (navigator.standalone===true){ certPicView(url); return; }   // iOS Home Screen app: no downloads; press-and-hold the picture to save it
+  const a=document.createElement('a'); a.href=url; a.download=file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 30000);
+}
+function certPicView(url){
+  let box=$('#certPic'); if (!box){ box=document.createElement('div'); box.id='certPic'; box.className='pr-certpic'; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Certificate picture');
+    box.innerHTML='<div class="pr-certpiccard ws-card"><img alt="Certificate"><p class="ws-caption">Press and hold the picture, then choose “Save to Photos”.</p><button class="ws-btn jade" id="certPicDone">'+WS.icon('check',30)+'Done</button></div>';
+    $('#certificate').appendChild(box); box.querySelector('#certPicDone').addEventListener('click', ()=>box.classList.remove('on')); }
+  box.querySelector('img').src=url; box.classList.add('on');
+}
+$('#certPrint').addEventListener('click', ()=>{ Sfx.tap(); if (standaloneApp()) saveCertPicture(); else window.print(); });
 $('#certDone').addEventListener('click', ()=>{ renderHome(); show('home'); });
 // Other screens (practice door, grown-ups) can start a level test or read this child's certificates.
-window.LevelTest = { start: startLevelTest, certificates, show: c=>showCertificate(c) };
+window.LevelTest = { start: startLevelTest, certificates, show: c=>showCertificate(c), picture: c=>certPicture(c||certShown) };
 
 /* ---------------- parent gate ---------------- */
 let gateAnswer=0, gateNext=null, gateFrom='home'; $('#grownups').addEventListener('click', ()=>openGate());
