@@ -37,7 +37,7 @@
     if (d.require && !d.requireMove) { const fs = d.require.map(moveMatcher); d.requireMove = m => fs.some(f => f(m)); }
     return d;
   }
-  function compileNode(spec) { return Object.assign({}, spec, { drill: compileDrill(spec.drill) }); }
+  function compileNode(spec) { return Object.assign({ mastery: MASTERY }, spec, { drill: compileDrill(spec.drill) }); }
 
   // --- Skill nodes (data) ----------------------------------------------------
   // Node fields used by the app: id, title, short, icon, kind ('numbers' | 'flash'), intro, family,
@@ -47,8 +47,10 @@
   //
   // Adding a node = adding an entry here (order = unlock order). Ready-made drill shapes for the next
   // band live in TEMPLATES below (longer rows, 3- and 4-digit add/subtract); the generator handles
-  // 1-4 digit terms quickly. Multiplication would also be a node here (e.g. kind: 'mul') but needs its
-  // own generator/explainer in engine.js (see the note at the end of engine.js); not added, scope undecided.
+  // 1-4 digit terms quickly. Multiplication nodes use drill.op = 'mul' (engine.js Phase 4, explainMul here).
+  const ALL = ['direct', 'five', 'ten', 'combined'];
+  // Mastery rule shared by every node (app.js checkMastery): >= 80% of the last 20 answers, over >= 2 days.
+  const MASTERY = { lastN: 20, minAccuracy: 0.8, minDays: 2 };
   const NODE_SPECS = [
     { id: 'beads', title: 'Beads & numbers', short: 'Beads', icon: '🧮', kind: 'numbers',
       intro: 'The top bead is worth 5. Each bottom bead is worth 1. A bead counts when it touches the bar.',
@@ -94,15 +96,92 @@
       intro: 'Work left to right: tens rod first, then units. Every rod uses the same friends.',
       demos: [[23, 45], [38, 27], [64, -29]], guided: [[12, 34], [25, 48], [57, 36], [72, -45], [60, -27], [81, -56]],
       drill: { operands: 4, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ['direct', 'five', 'ten', 'combined'] } },
-    // Next band goes here as data, e.g. { id: 'three_digit', ..., drill: TEMPLATES.threeDigit } (see TEMPLATES).
     { id: 'anzan', title: 'Mental abacus', short: 'Mental', icon: '🧠', kind: 'flash',
       intro: 'Picture the beads in your head. Numbers flash by; move the beads in your mind; say the answer.',
       review: ['add_direct', 'sf_add', 'bf_add_a', 'bf_add_b'],      // flash test reviews add-only skills
       drill: { operands: 3, digits: 1, maxTotal: 99, allowSubtraction: false, allowedRules: ['direct', 'five', 'ten', 'combined'], flash: true } },
+
+    // ---- Levels 4-6 (appended: the 12 nodes above keep their ids and order, so saved progress stays valid) ----
+    // Order follows the shared ladder of KSC sheets 09-12 / Japanese 10-9 kyu: longer rows, 2-digit x 5 rows,
+    // 3-digit, 4-digit, times tables, then 2x1 and 3x1 multiplication. Flash anzan grows numbers before
+    // digits (official flash-anzan ladder) and stays add-only, as in the anzan exams.
+    // New fields: level (4-6), iconKey (a kit.js WS.icon name), mastery (same rule as every node),
+    // drill.operandsMax (row length varies operands..operandsMax), drill.flashSec (suggested seconds per
+    // flashed number), drill.op: 'mul' (multiplication drill, see engine.js Phase 4) and method (mul nodes:
+    // the placement rule in three short lines). Mul nodes keep demos/guided as [a, b] pairs: use
+    // lessonStep(node, pair) to turn any demo/guided pair into start value, target and animated steps.
+
+    // Level 4
+    { id: 'long_rows', level: 4, title: 'Long rows: 8 to 10 numbers', short: 'Long rows', icon: '📜', iconKey: 'plus',
+      intro: 'Long rows use every friend you know. Keep going number after number, keep your finger on your place, and let the beads do the thinking.',
+      demos: [[9, 7], [16, -8], [8, 6]],                                                 // one row: 9 +7 -8 +6
+      guided: [[24, 8], [32, -5], [27, 6], [33, -9], [24, 7], [31, -4]],                 // one row: 24 +8 -5 +6 -9 +7 -4 = 27
+      drill: { operands: 8, operandsMax: 10, digits: 1, maxTotal: 99, allowSubtraction: true, allowedRules: ALL } },
+    { id: 'rows_2d', level: 4, title: 'Two-digit rows: 5 numbers', short: '2-digit ×5', icon: '🔢', iconKey: 'star',
+      intro: 'Five two-digit numbers in a row. Tens rod first, then units. When the tens rod is full, a big friend carries onto the hundreds rod.',
+      demos: [[46, 38], [84, 57], [141, -65]],
+      guided: [[35, 47], [82, 29], [111, -46], [65, 58], [123, -79]],                    // one row: = 44
+      drill: { operands: 5, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ALL, require: ['ten:*:*:1-2', 'combined:*:*:1-2'] } },
+    { id: 'anzan_more', level: 4, title: 'Mental abacus: 5 numbers', short: 'Mental ×5', icon: '🧠', iconKey: 'bolt', kind: 'flash',
+      intro: 'Same mental beads, more numbers. Picture the abacus, add each number as it flashes, and keep the picture still between numbers.',
+      demos: [[7, 8], [15, 6]],
+      guided: [[6, 9], [15, 7], [22, 5]],
+      review: ['add_direct', 'sf_add', 'bf_add_a', 'bf_add_b'],
+      drill: { operands: 5, digits: 1, maxTotal: 99, allowSubtraction: false, allowedRules: ALL, flash: true, flashSec: 1.0 } },
+
+    // Level 5
+    { id: 'three_digit', level: 5, title: 'Three-digit numbers', short: '3-digit', icon: '🏔️', iconKey: 'sprout',
+      intro: 'Now three rods for each number: hundreds, tens, units. Always start on the left. Each rod is just a one-digit sum you already know.',
+      demos: [[125, 341], [468, 275], [703, -458]],
+      guided: [[214, 352], [566, 187], [753, -329], [424, 596], [1020, -485]],          // one row: = 535
+      drill: { operands: 3, operandsMax: 5, digits: 3, minTerm: 100, maxTotal: 9999, allowSubtraction: true, allowedRules: ALL } },
+    { id: 'times_a', level: 5, title: 'Times tables 2 to 5', short: '× 2–5', icon: '✖️', iconKey: 'keypad',
+      intro: '3 × 4 means three 4s: 4, 8, 12. Count up on the abacus to see it, then learn the answer by heart. Fast facts make abacus multiplying easy.',
+      demos: [[3, 4], [6, 2], [4, 5]],
+      guided: [[2, 3], [3, 3], [5, 4], [7, 2], [4, 4], [8, 5]],
+      review: ['three_digit', 'rows_2d'],
+      drill: { op: 'mul', a: [2, 9], bSet: [2, 3, 4, 5] } },
+    { id: 'times_b', level: 5, title: 'Times tables 6 to 9', short: '× 6–9', icon: '✖️', iconKey: 'keypad',
+      intro: 'The bigger tables. 3 × 7 is three 7s: 7, 14, 21. Count up a few times, then say the fact without counting.',
+      demos: [[3, 6], [4, 8]],
+      guided: [[2, 6], [4, 7], [6, 6], [8, 8], [9, 7], [7, 9]],
+      review: ['times_a', 'three_digit'],
+      drill: { op: 'mul', a: [2, 9], bSet: [6, 7, 8, 9] } },
+    { id: 'anzan_2d', level: 5, title: 'Mental abacus: two-digit', short: 'Mental 2-digit', icon: '🧠', iconKey: 'bolt', kind: 'flash',
+      intro: 'Picture two rods now: tens and units. Add the tens first, then the units, just like on the real abacus.',
+      demos: [[24, 35], [59, 47]],
+      guided: [[31, 26], [57, 48], [105, 23]],
+      review: ['add_direct', 'sf_add', 'bf_add_a', 'bf_add_b', 'long_rows'],
+      drill: { operands: 3, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: false, allowedRules: ALL, flash: true, flashSec: 1.5 } },
+
+    // Level 6
+    { id: 'four_digit', level: 6, title: 'Four-digit numbers', short: '4-digit', icon: '🚀', iconKey: 'star',
+      intro: 'Thousands, hundreds, tens, units: four rods for each number. Left to right, one rod at a time, every friend still works.',
+      demos: [[1234, 2345], [4876, 3459], [8205, -3768]],
+      guided: [[2513, 1264], [3777, 4685], [8462, -2938], [5524, 3891]],               // one row: = 9415
+      review: ['three_digit', 'rows_2d', 'long_rows'],
+      drill: { operands: 3, operandsMax: 4, digits: 4, minTerm: 1000, maxTotal: 99999, allowSubtraction: true, allowedRules: ALL } },
+    { id: 'mul_2x1', level: 6, title: 'Multiplying: 2-digit × 1-digit', short: '2-digit ×', icon: '🧩', iconKey: 'abacus',
+      intro: 'Start at 0. Go left to right: times each digit by the small number and add the answer to the abacus. Every times answer takes two rods.',
+      method: ['Start with 0 on the abacus. Keep the problem on the card.',
+        'Left to right: times each digit by the small number. Say the answer with two digits (6 is 06).',
+        'The last digit of that answer goes on the same rod as the digit you multiplied; the first digit goes one rod to its left. Add it.'],
+      demos: [[23, 3], [34, 6], [78, 9]],
+      guided: [[13, 2], [24, 3], [42, 5], [56, 4], [67, 8], [89, 7]],
+      review: ['times_b', 'times_a', 'four_digit'],
+      drill: { op: 'mul', a: [12, 99], b: [2, 9], zeros: 'none', twoDigitPartial: true } },
+    { id: 'mul_3x1', level: 6, title: 'Multiplying: 3-digit × 1-digit', short: '3-digit ×', icon: '🧩', iconKey: 'abacus',
+      intro: 'Same method, one more digit: hundreds, then tens, then units. A 0 digit gives 00, so nothing to add: just move one rod right.',
+      method: ['Start with 0 on the abacus. Keep the problem on the card.',
+        'Left to right: hundreds, tens, units. Times each digit by the small number (two digits: 6 is 06, 0 is 00).',
+        'The last digit goes on the rod of the digit you multiplied, the first digit one rod to its left. Add it.'],
+      demos: [[123, 3], [406, 7], [358, 6]],
+      guided: [[213, 3], [142, 4], [305, 6], [476, 5], [829, 7]],
+      review: ['mul_2x1', 'times_b', 'times_a'],
+      drill: { op: 'mul', a: [102, 999], b: [2, 9], zeros: 'inner', twoDigitPartial: true } },
   ];
   const NODES = NODE_SPECS.map(compileNode);
-  // Drill shapes for future nodes (not in the path yet). Each is a plain generateSet2 config once compiled.
-  const ALL = ['direct', 'five', 'ten', 'combined'];
+  // Drill shapes (the Level 4-6 nodes above use these shapes). Each is a plain generateSet2 config once compiled.
   const TEMPLATES = {
     longRows:   { operands: 8, digits: 1, maxTotal: 99, allowSubtraction: true, allowedRules: ALL },          // 8-10 rows of 1-digit
     longRows2:  { operands: 8, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ALL },
@@ -160,6 +239,62 @@
     return steps;
   }
 
+  // --- Multiplication explanation (left to right, soroban placement) ---------------
+  // explainMul(a, b, opts) -> steps [{say, do:[{rod, delta}]}], the same shape as explain(): the abacus
+  // starts at 0 and `do` moves end on a*b. Each partial product is one step whose `do` holds the bead
+  // moves explain() would use to add it (so carries are shown properly).
+  //   opts.countUp (default: true when a and b are both 1-digit): show a times-table fact by counting up
+  //   on the abacus (3 x 7: 7, 14, 21) instead of placing the fact in one go.
+  const PLACE = ['units', 'tens', 'hundreds', 'thousands', 'ten-thousands'];
+  const moveList = steps => steps.reduce((o, st) => o.concat(st.do), []);
+  function explainMul(a, b, opts) {
+    a = Math.floor(Math.abs(a)); b = Math.floor(Math.abs(b));
+    const ans = a * b, steps = [];
+    const countUp = opts && opts.countUp !== undefined ? opts.countUp : (a < 10 && b < 10);
+    if (countUp && a < 10 && b < 10) {
+      const big = Math.max(a, b), times = Math.min(a, b);
+      const seq = []; for (let k = 1; k <= times; k++) seq.push(big * k);
+      steps.push({ say: `${a} × ${b} means ${times} groups of ${big}. Count up by ${big}s.`, do: [] });
+      let total = 0;
+      for (let k = 1; k <= times; k++) { steps.push({ say: `Add ${big}: ${seq.slice(0, k).join(', ')}.`, do: moveList(explain(total, big)) }); total += big; }
+      steps.push({ say: `${a} × ${b} = ${ans}. Say it by heart: ${a} times ${b} is ${ans}.`, do: [] });
+      return steps;
+    }
+    const parts = E.mulPartials(a, b);
+    steps.push({ say: parts.length > 1 ? `${a} × ${b}. Start at 0. Go left to right: times each digit of ${a} by ${b}.`
+                                       : `${a} × ${b}. Start at 0.`, do: [] });
+    let total = 0;
+    for (const pt of parts) {
+      const two = String(pt.product).padStart(2, '0');
+      if (!pt.value) { steps.push({ say: `${pt.digit} × ${b} = 00. Nothing to add: move one rod to the right.`, do: [] }); continue; }
+      const where = pt.place + 1 < PLACE.length ? `${PLACE[pt.place + 1]} and ${PLACE[pt.place]} rods` : 'next two rods';
+      const lead = parts.length > 1 ? `${pt.digit} is on the ${PLACE[pt.place]} rod, so ` : '';
+      steps.push({ say: `${pt.digit} × ${b} = ${two}. ${lead}${two} goes on the ${where}: add ${pt.value}.`, do: moveList(explain(total, pt.value)) });
+      total += pt.value;
+    }
+    steps.push({ say: `Now it shows ${ans}. ${a} × ${b} = ${ans}.`, do: [] });
+    return steps;
+  }
+
+  // lessonStep(node, pair) -> { start, target, label, op, steps } for one demo/guided pair of any node:
+  //   add/subtract nodes: pair = [total, delta] -> start total, target total+delta, steps explain(total, delta)
+  //   mul nodes:          pair = [a, b]         -> start 0, target a*b, steps explainMul(a, b)
+  // label is the card text ('34 × 6', '16 − 8'); op is 'add' | 'sub' | 'mul'.
+  function lessonStep(node, pair) {
+    const [x, y] = pair;
+    if (node.drill && node.drill.op === 'mul') return { start: 0, target: x * y, label: `${x} × ${y}`, op: 'mul', steps: explainMul(x, y) };
+    return { start: x, target: x + y, label: `${x} ${y < 0 ? '−' : '+'} ${Math.abs(y)}`, op: y < 0 ? 'sub' : 'add', steps: explain(x, y) };
+  }
+
+  // advanceCurrent(currentId, isMastered) -> id the child should be on. Moves past mastered nodes (e.g. a
+  // child who had mastered 'anzan', the old last node, now continues at 'long_rows'). Pure.
+  function advanceCurrent(currentId, isMastered) {
+    let i = NODES.findIndex(n => n.id === currentId);
+    if (i < 0) return NODES[0].id;
+    while (i < NODES.length - 1 && isMastered(NODES[i].id)) i++;
+    return NODES[i].id;
+  }
+
   // --- Level tests ------------------------------------------------------------
   // levelTest(nodeId, opts) -> LevelTest, or null if the node has no drill (e.g. 'beads').
   // Pure: no clock, no storage. Pass opts.seed (or opts.rng) for a repeatable test.
@@ -179,9 +314,11 @@
   //   passRule: { minAccuracy: 0.8, withinTimeLimit: true }
   // }
   // Time estimate per problem: 5 s + per term (2 s + 4 s per digit), so a 4-term 1-digit problem is 29 s.
+  // Multiplication (op 'mul'): 4 s + 6 s per digit of a (times fact 10 s, 2x1 16 s, 3x1 22 s).
+  // Mul nodes' problems have the mul shape (op, terms [a, b], answer, partials; see engine.js Phase 4).
   const PASS_ACCURACY = 0.8;
   function shuffle(a, rng) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-  function problemSeconds(p) { return 5 + p.terms.reduce((s, t) => s + 2 + 4 * String(Math.abs(t)).length, 0); }
+  function problemSeconds(p) { return p.op === 'mul' ? 4 + 6 * String(p.terms[0]).length : 5 + p.terms.reduce((s, t) => s + 2 + 4 * String(Math.abs(t)).length, 0); }
   function levelTest(nodeId, opts) {
     opts = opts || {};
     const node = BY_ID[nodeId];
@@ -198,7 +335,9 @@
     const operands = opts.operands || node.drill.operands;
     const make = (n, k) => {                     // k problems from node n's drill; fall back to its own row count
       for (const ops of [operands, n.drill.operands]) {
-        try { return E.generateSet2(Object.assign({}, n.drill, { operands: ops }), k, rng); } catch (e) { /* try next shape */ }
+        const cfg = Object.assign({}, n.drill, { operands: ops });
+        if (ops !== n.drill.operands) delete cfg.operandsMax;         // an explicit row length is exact
+        try { return E.generateSet2(cfg, k, rng); } catch (e) { /* try next shape */ }
       }
       return null;
     };
@@ -258,6 +397,6 @@
       certificate: passed ? { nodeId: test.nodeId, title: test.title, icon: test.icon, accuracyPct: Math.round(accuracy * 100), correct, total, timeSec: elapsedSec, timeLimitSec: test.timeLimitSec } : null };
   }
 
-  const api = { NODES, BY_ID, explain, FRIEND5, FRIEND10, NODE_SPECS, TEMPLATES, compileNode, compileDrill, moveMatcher, levelTest, scoreLevelTest, PASS_ACCURACY };
+  const api = { NODES, BY_ID, explain, explainMul, lessonStep, advanceCurrent, MASTERY, FRIEND5, FRIEND10, NODE_SPECS, TEMPLATES, compileNode, compileDrill, moveMatcher, levelTest, scoreLevelTest, PASS_ACCURACY };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Curriculum = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
