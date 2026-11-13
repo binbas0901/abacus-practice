@@ -10,7 +10,7 @@ HOOK = r"""(()=>{
   window.__bix=[]; const S=AudioBufferSourceNode.prototype.start, P=AudioBufferSourceNode.prototype.stop;
   AudioBufferSourceNode.prototype.start=function(w,off,dur){ try{ const bv=window.Fun&&Fun.BixVoice, tag=bv&&bv.tag();
     if(bv&&this.buffer&&this.buffer===bv.buf[tag]){ const id=(Object.entries(bv.map[tag]).find(([k,v])=>Math.abs(v[0]-off)<0.01)||[])[0];
-      const bubbles=[...document.querySelectorAll('.bubble.on')].map(b=>b.textContent);
+      const bubbles=[...document.querySelectorAll('.bubble.on, .tp-bubble.on, #summary.active .tp-sumnote')].map(b=>b.textContent);
       const rec={id, t0:this.context.currentTime, t1:this.context.currentTime+dur, state:this.context.state, bubbles, screen:document.querySelector('.screen.active').id}; this.__rec=rec; window.__bix.push(rec); } }catch(e){}
     return S.apply(this,arguments); };
   AudioBufferSourceNode.prototype.stop=function(){ if(this.__rec) this.__rec.t1=Math.min(this.__rec.t1,this.context.currentTime); return P.apply(this,arguments); };

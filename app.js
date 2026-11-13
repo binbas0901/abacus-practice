@@ -785,18 +785,38 @@ $('#exitLesson').addEventListener('click', ()=>{ Fun.BixVoice.stop(); leaveLesso
 /* ---------------- practice (Look / Listen / Flash), answer tool, end of set, fix, level test ---------------- */
 let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
 let LT=null, pendingTest=null;   // LT: level test in progress {test, answers, start, tick}; pendingTest: node id whose test Bix offers
-// Workshop icons for static markup (index.html marks them with data-ic).
-function paintIcons(root){ (root||document).querySelectorAll('.pr-ic[data-ic]').forEach(el=>{ if (el.firstChild) return; const n=el.dataset.ic, sz=+(el.dataset.sz||0)||(n==='check'?32:n==='speaker'?26:28); el.innerHTML=WS.icon(n, sz); }); }
+// Icons for static markup (index.html marks them with data-ic). The Toy Table screens (.tp) use the toy kit's icons;
+// a name the toy kit does not have yet (print, share) falls back to the Workshop drawing.
+const TOY_IC = new Set(TOY.ICONS);
+function tpIcon(n, sz, stroke){ return TOY_IC.has(n) ? TOY.icon(n, sz, 'currentColor', stroke ? {stroke} : {}) : WS.icon(n, sz); }
+function paintIcons(root){ (root||document).querySelectorAll('.pr-ic[data-ic]').forEach(el=>{ if (el.firstChild) return; const n=el.dataset.ic, sz=+(el.dataset.sz||0)||(n==='check'?32:n==='speaker'?26:28);
+  el.innerHTML = el.closest('.tp, .tp-show') ? tpIcon(n, sz, +el.dataset.stroke||0) : WS.icon(n, sz); }); }
 paintIcons();
+$('#drillBowl').innerHTML = TOY.prop('bowl', 150);
 $('#rvPack .bow').innerHTML = WS.bead('red',64)+WS.bead('red',64);
-// Bix on the practice screens: Workshop drawing + caption bubble. He talks with a recorded line when one exists.
-function bixArt(mood, size){ return WS.bix(mood, size).replace('class="ws-bix ', 'class="ws-bix bix '); }
+// Bix on the practice screens: the toy figurine + a paper bubble. He talks with a recorded line when one exists.
+// He thinks while she works, cheers when it is right and is sheepish (never sad) when it is not.
+const TOY_MOOD = { concerned:'oops' };
+function bixArt(mood, size, opts){ return TOY.bix(TOY_MOOD[mood]||mood, size, opts).replace('class="toy-bix ', 'class="toy-bix bix '); }
+// A rod bead (tall, seen on its rod): teal = right, red = one to fix, mustard = the one she is on, wood = still to come.
+function rodBead(color, h, dim){ return TOY.bead(color, h, {tall:true, shadow:false, dim:!!dim}); }
+// The answer-tool switch is a little thing on the table to pick up: a soroban ("Use the beads") or a set of keys ("Type it instead").
+function switchArt(to){
+  const sh='<ellipse cx="70" cy="101" rx="66" ry="9" fill="url(#toy-g-shadow)" opacity=".8"/>';
+  if (to==='beads'){
+    const bead=(x,y,c)=>`<g transform="translate(${x},${y}) scale(.62,.5)"><path d="M-8,-13 H8 Q12,-13 15,-10.5 L22.5,-2.5 Q25,0 22.5,2.5 L15,10.5 Q12,13 8,13 H-8 Q-12,13 -15,10.5 L-22.5,2.5 Q-25,0 -22.5,-2.5 L-15,-10.5 Q-12,-13 -8,-13Z" fill="url(#toy-lac-${c})"/><ellipse cx="-6" cy="-7" rx="8" ry="2.6" fill="#fff" opacity=".75"/></g>`;
+    let rods=''; [38,70,102].forEach(x=>{ rods+=`<rect x="${x-1.5}" y="14" width="3" height="76" fill="#E6C690"/>`+bead(x,23,'mustard')+[0,1,2,3].map(k=>bead(x,56+k*8.6,'red')).join(''); });
+    return `<svg width="140" height="110" viewBox="0 0 140 110" aria-hidden="true">${sh}<g transform="rotate(-3 70 55)"><rect x="12" y="10" width="116" height="90" rx="9" fill="#55331A"/><rect x="12" y="6" width="116" height="90" rx="9" fill="#7A4A24"/><rect x="13.5" y="7.5" width="113" height="87" rx="8" fill="none" stroke="#B98448" stroke-width="1.5" opacity=".6"/><rect x="21" y="14" width="98" height="74" rx="4" fill="#DDBB86"/><rect x="21" y="14" width="98" height="5" fill="#3A1E06" opacity=".22"/>${rods}<rect x="21" y="31" width="98" height="6" fill="#6A3F1E"/><circle cx="70" cy="34" r="1.6" fill="#FFF3D6"/></g></svg><span class="toy-chip">Use the beads</span>`;
+  }
+  let keys=''; for (let r=0;r<3;r++) for (let c=0;c<3;c++){ const x=29+c*28, y=14+r*26; keys+=`<rect x="${x}" y="${y+4}" width="24" height="20" rx="5" fill="#B98448"/><rect x="${x}" y="${y}" width="24" height="20" rx="5" fill="url(#toy-g-maple)"/><rect x="${x+2}" y="${y+2}" width="20" height="5" rx="2.5" fill="#FFF6E2" opacity=".6"/>`; }
+  return `<svg width="140" height="110" viewBox="0 0 140 110" aria-hidden="true">${sh}<g transform="rotate(-3 70 55)"><rect x="18" y="8" width="104" height="92" rx="14" fill="#B5A688"/><rect x="18" y="5" width="104" height="92" rx="14" fill="#F4ECDC"/><rect x="23" y="10" width="94" height="82" rx="10" fill="none" stroke="#B89B6E" stroke-width="1.6" stroke-dasharray="5 4" opacity=".8"/>${keys}</g></svg><span class="toy-chip">Type it instead</span>`;
+}
 const PB = {
   base:null, cur:null, t:null,
   el(){ return $('#bixDrill'); },
   // One bubble for the whole practice screen: fixed width and place, a reserved two-line height and ALWAYS the speaker mark.
   // Only the words change (a soft fade); the bubble itself never pops, grows or moves.
-  mount(){ const el=this.el(); if (el.querySelector('.pr-bubble')) return; el.innerHTML='<span class="pr-bixfig"></span><div class="bubble pr-bubble ws-bubble on"><span class="pr-btxt"></span><span class="ws-say">'+WS.icon('speaker',24,WS.colors.indigo)+'</span></div>';
+  mount(){ const el=this.el(); if (el.querySelector('.tp-bubble')) return; el.innerHTML='<div class="tp-bubble toy-bubble toy-bubble--left on"><span class="tp-btxt"></span><span class="tp-say">'+TOY.icon('speaker',30,'currentColor')+'</span></div><span class="tp-bixfig"></span>';
     el.addEventListener('click', ()=>this.replay()); },
   // Tap Bix or his bubble: hear the line again (the recorded line when there is one, else the device voice reads the caption).
   replay(){
@@ -806,20 +826,20 @@ const PB = {
     if (vid && window.BIX_LINES && window.BIX_LINES[vid]) Fun.BixVoice.play(vid, this.el());
     else if (Fun.BixVoice.enabled()){ Fun.BixVoice.stop(); Speaker.sayDevice(c.text); }
   },
-  draw(mood){ const f=this.el().querySelector('.pr-bixfig'); if (f.dataset.mood!==mood){ f.dataset.mood=mood; f.innerHTML=bixArt(mood, 76); } },
+  draw(mood){ const f=this.el().querySelector('.tp-bixfig'); if (f.dataset.mood!==mood){ f.dataset.mood=mood; f.innerHTML=bixArt(mood, 200); } },
   // set the line Bix comes back to (the instruction for this problem)
   setBase(text, mood, vid){ this.base={text, mood:mood||'happy', vid:vid||null}; this.show(text, mood, vid); },
   // say(text, mood, vid, ms): a reaction; after ms he returns to the base line
   say(text, mood, vid, ms){ this.show(text, mood||'happy', vid); clearTimeout(this.t); if (ms && this.base){ const b=this.base; this.t=setTimeout(()=>{ if (this.base===b) this.show(b.text, b.mood, null); }, ms); } },
   show(text, mood, vid){
     this.mount(); this.draw(mood||'happy'); this.cur={text, vid:vid||null};
-    const b=this.el().querySelector('.pr-bubble'); b.classList.toggle('on', !!text); b.classList.toggle('empty', !text);
-    const tx=b.querySelector('.pr-btxt'); if (tx.textContent!==(text||'')){ tx.textContent=text||''; this.fit(); tx.classList.remove('pr-fresh'); void tx.offsetWidth; tx.classList.add('pr-fresh'); }
+    const b=this.el().querySelector('.tp-bubble'); b.classList.toggle('on', !!text); b.classList.toggle('empty', !text);
+    const tx=b.querySelector('.tp-btxt'); if (tx.textContent!==(text||'')){ tx.textContent=text||''; this.fit(); tx.classList.remove('tp-fresh'); void tx.offsetWidth; tx.classList.add('tp-fresh'); }
     if (vid) Fun.BixVoice.play(vid, this.el());
   },
   // The bubble keeps a fixed two-line height (nothing below it jumps); a longer line gets slightly smaller letters.
   fit(){
-    const tx=this.el().querySelector('.pr-btxt'); if (!tx) return; tx.style.fontSize='';
+    const tx=this.el().querySelector('.tp-btxt'); if (!tx) return; tx.style.fontSize='';
     const lines=()=>tx.scrollHeight/(parseFloat(getComputedStyle(tx).lineHeight)||25);
     let fs=parseFloat(getComputedStyle(tx).fontSize)||20;
     while (tx.scrollHeight && lines()>2.15 && fs>15){ fs-=1; tx.style.fontSize=fs+'px'; }
@@ -827,8 +847,8 @@ const PB = {
 };
 PB.mount();   // mounted up front, so the first problem's tiles are sized with the bubble already in place
 
-/* ---- the answer tool: keypad (the kit's one keypad, WS.keypad) or on-screen soroban (AbacusInput) ---- */
-const Keys = WS.keypad($('#padKeys'), {
+/* ---- the answer tool: keypad (the toy kit's wooden keys on felt, same key order as before) or on-screen soroban (AbacusInput) ---- */
+const Keys = TOY.keypad($('#padKeys'), { order:'calc',
   onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<6) setEntry(entry+k); },
   onBackspace: ()=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys') setEntry(entry.slice(0,-1)); },
 });
@@ -853,7 +873,7 @@ const Tool = {
     const beads=this.kind==='beads';
     $('#answerTool').classList.toggle('beads', beads); $('#answerTool').classList.toggle('keys', !beads);
     $('#readoutLabel').textContent = beads ? 'beads show' : '';
-    $('#toolSwitch').innerHTML = beads ? WS.icon('keypad',26)+'Type it instead' : WS.icon('abacus',28)+'Use the beads';
+    const sw=$('#toolSwitch'), to=beads?'keys':'beads'; if (sw.dataset.to!==to){ sw.dataset.to=to; sw.innerHTML=switchArt(to); }
     if (beads && problems[idx]) this.ensureAb(this.rodsForSet());
     this.readout();
   },
@@ -862,7 +882,7 @@ const Tool = {
   // Listen / Flash: the keypad, the beads and Check wait (dimmed) until the numbers are done and Bix asks "Your answer?".
   setReady(on){ $('#answerTool').classList.toggle('waiting', !on); Keys.setEnabled(on); $('#checkBtn').disabled=!on; },
   value(){ return this.kind==='beads' ? (this.ab ? this.ab.value() : 0) : (entry==='' ? null : parseInt(entry,10)); },
-  readout(){ if (this.kind==='beads'){ $('#answer').textContent = this.ab ? this.ab.value() : 0; } else $('#answer').textContent = entry || '?'; $('#readout').classList.toggle('empty', this.kind!=='beads' && !entry); },
+  readout(){ if (this.kind==='beads'){ $('#answer').textContent = this.ab ? this.ab.value() : 0; } else $('#answer').textContent = entry || '?'; $('#readout').classList.toggle('empty', this.kind!=='beads' && !entry); $('#readout').dataset.len=$('#answer').textContent.length; },
   changed(v){
     this.readout(); markTiles();
     if (LT || demoing) return;
@@ -897,9 +917,11 @@ function methodFeedback(p){
 }
 
 /* ---- problem tiles, bead rod, time beads ---- */
+// The sum as written on the sheet: one number per line, its sign on the left (the first number has none).
+function termHtml(i, sign, cls, n){ return `<div class="tp-term term${i===0?' first':''}" data-i="${i}"><span class="op ${cls}">${sign}</span><span class="num">${n}</span></div>`; }
 function tileHtml(p){
-  if (p.op==='mul') return `<div class="ws-tile first term" data-i="0">${p.terms[0]}</div><div class="ws-tile term" data-i="1"><span class="times">×</span><span>${p.terms[1]}</span></div>`;
-  return p.terms.map((t,i)=>WS.tile(t, i===0).replace('class="ws-tile', `data-i="${i}" class="ws-tile term`)).join('');
+  if (p.op==='mul') return termHtml(0, '', '', p.terms[0]) + termHtml(1, '×', 'times', p.terms[1]);
+  return p.terms.map((t,i)=> i===0 ? termHtml(0, '', '', Math.abs(t)) : termHtml(i, t<0?'−':'+', t<0?'minus':'plus', Math.abs(t))).join('');
 }
 // Look + beads: the number being worked on is outlined; numbers already on the beads are ticked.
 function markTiles(){
@@ -912,46 +934,46 @@ function markTiles(){
 }
 // Long rows (up to 10 numbers, up to 4 digits): always ONE column, read top to bottom; the tiles shrink to fit the height
 // that is left under Bix's bubble (and above "Show me"), at every iPad size, so nothing ever scrolls.
+// The room for the lines is what the sheet has left beside the rule and the answer box.
 function tileRoom(area){
-  const left=area.parentElement, cs=getComputedStyle(left);
-  if (cs.display==='contents') return area.clientHeight;          // portrait long rows: the grid row is the room
+  const sheet=area.parentElement, cs=getComputedStyle(sheet);
   const gap=parseFloat(cs.rowGap)||0; let used=0, n=0;
-  for (const ch of left.children){ if (ch===area || !ch.getClientRects().length) continue; used+=ch.offsetHeight; n++; }
-  return left.clientHeight - used - gap*n;
+  for (const ch of sheet.children){ if (ch===area || !ch.getClientRects().length) continue; used+=ch.offsetHeight; n++; }
+  return sheet.clientHeight - (parseFloat(cs.paddingTop)||0) - (parseFloat(cs.paddingBottom)||0) - used - gap*n;
 }
 function fitTiles(){
-  const area=$('#problemArea'); const tiles=[...area.querySelectorAll('.ws-tile')]; area.style.removeProperty('--th'); area.style.removeProperty('--tf');
+  const area=$('#problemArea'); const tiles=[...area.querySelectorAll('.term')]; area.style.removeProperty('--th'); area.style.removeProperty('--tf');
   if (!tiles.length || area.style.display==='none' || !$('#drill').classList.contains('active')) return;
-  const row=getComputedStyle(area).flexDirection==='row'; if (row) return;          // portrait, short rows: tiles side by side
-  const n=tiles.length, gap=parseFloat(getComputedStyle(area).rowGap)||12, pad=parseFloat(getComputedStyle(area).paddingBottom)||0, avail=tileRoom(area)-pad;
-  const max=parseFloat(getComputedStyle(tiles[0]).height)||82, maxF=parseFloat(getComputedStyle(tiles[0]).fontSize)||56;
-  const h=Math.max(36, Math.min(max, Math.floor((avail-gap*(n-1))/n)));
-  if (h>=max) return;
-  area.style.setProperty('--th', h+'px');
-  // the digits stay as big as the tile allows: about 2/3 of its height, smaller only if a 4-digit number would not fit its width
-  let f=Math.min(maxF, Math.round(h*0.7)); area.style.setProperty('--tf', f+'px');
+  const n=tiles.length, avail=tileRoom(area);
+  const max=parseFloat(getComputedStyle(tiles[0]).height)||98, maxF=parseFloat(getComputedStyle(tiles[0]).fontSize)||84;
+  const h=Math.max(36, Math.min(max, Math.floor(avail/n)));
+  let f=maxF;
+  if (h<max){ area.style.setProperty('--th', h+'px'); f=Math.min(maxF, Math.round(h*0.84)); area.style.setProperty('--tf', f+'px'); }
+  // the digits stay as big as the line allows, smaller only if a long number would not fit the sheet's width
   while (f>20 && tiles.some(t=>t.scrollWidth>t.clientWidth+1)){ f-=2; area.style.setProperty('--tf', f+'px'); }
 }
 window.addEventListener('resize', ()=>{ if ($('#drill').classList.contains('active')){ fitTiles(); PB.fit(); } });
 // Refit whenever the room changes (bubble mounted, "Show me" appears, fonts arrive, rotation).
-if (window.ResizeObserver){ let q=0; const ro=new ResizeObserver(()=>{ if (q) return; q=requestAnimationFrame(()=>{ q=0; if ($('#drill').classList.contains('active') && mode==='visual') fitTiles(); }); }); ro.observe($('#drill .pr-left')); ro.observe($('#drill .pr-body')); }
+if (window.ResizeObserver){ let q=0; const ro=new ResizeObserver(()=>{ if (q) return; q=requestAnimationFrame(()=>{ q=0; if ($('#drill').classList.contains('active') && mode==='visual') fitTiles(); }); }); ro.observe($('#sheet')); ro.observe($('#drill .tp-body')); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if ($('#drill').classList.contains('active')) fitTiles(); });
 function beadW(n, max){ return n<=12 ? max : Math.max(26, Math.floor(max*12/n)); }
+// The set as beads on a brass rod: finished ones have slid to the left (teal = right, red = one to fix),
+// the one she is on glows in the middle, the rest wait on the right.
 function renderStrip(popIdx){
   const st=$('#strip'); const fixing=reviewing && !LT; $('#fixLabel').hidden=!fixing; st.classList.toggle('fixing', fixing);
   const list = fixing ? reviewQueue : problems.map((_,i)=>i);
-  const room=st.clientWidth || 1000, w=Math.min(beadW(list.length, fixing?62:58), Math.floor(room/list.length*0.78));
+  const room=(st.clientWidth || 520)-24, h=Math.max(18, Math.min(st.clientHeight>80 ? 60 : 50, Math.floor(room*0.8/list.length/0.74)));
   st.innerHTML = list.map((i,k)=>{
     const p=problems[i], cur=i===idx, ok=results[i]===true||p._fixed, bad=results[i]===false&&!p._fixed;
     let svg, label=`Problem ${k+1}`;
-    if (cur && !LT && (ok||bad)){ svg=WS.bead(ok?'jade':'red', Math.round(w*1.2)); label+= ok?', right':', to fix'; }   // the verdict shows at once, on the bead she is on
-    else if (cur){ svg=WS.bead('white', Math.round(w*1.2), {ring: fixing?'red':'indigo'}); label+=', now'; }
-    else if (LT) svg=WS.bead(results[i]!==null&&results[i]!==undefined?'walnut':'pale', w), label+= results[i]!=null?', done':'';
-    else if (ok){ svg=WS.bead('jade', w); label+=', right'; }
-    else if (bad){ svg=WS.bead('red', w); label+=', to fix'; }
-    else svg=WS.bead('pale', w);
-    const fx = i===popIdx ? (bad && !LT ? ' ws-shake' : ' ws-pop') : '';
-    return `<span role="listitem" aria-label="${label}" class="pr-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${fx}">${svg}</span>`;
+    if (cur && !LT && (ok||bad)){ svg=rodBead(ok?'teal':'red', Math.round(h*1.16)); label+= ok?', right':', to fix'; }   // the verdict shows at once, on the bead she is on
+    else if (cur){ svg=rodBead('mustard', Math.round(h*1.16)); label+=', now'; }
+    else if (LT) svg=rodBead('indigo', h, results[i]===null||results[i]===undefined), label+= results[i]!=null?', done':'';
+    else if (ok){ svg=rodBead('teal', h); label+=', right'; }
+    else if (bad){ svg=rodBead('red', h); label+=', to fix'; }
+    else svg=rodBead('red', h, true);
+    const fx = i===popIdx ? (bad && !LT ? ' tp-wob' : ' tp-pop') : '';
+    return `<span role="listitem" aria-label="${label}" class="tp-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${fx}">${svg}</span>`;
   }).join('');
 }
 
@@ -973,7 +995,7 @@ function beginSet(){
 }
 async function startDrill(m, n){
   mode=m; drillNode=n; reviewing=false; locked=false; listenArmed=false; Speaker.turn=0; Speaker.unlock(); stopTest(); LT=null;
-  try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ if (window.WS && WS.confirm) WS.confirm('No problems to make', 'The grown-up settings for numbers and speed can’t make problems for this skill. Change them in Grown-ups → Practice.', {ok:'OK', cancel:'Close'}); return; }
+  try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ TOY.confirm('No problems to make', 'The grown-up settings for numbers and speed can’t make problems for this skill. Change them in Grown-ups → Practice.', {ok:'OK', cancel:'Close'}); return; }
   beginSet();
   presentProblem();                       // start speaking while we are still inside the tap
   if (mode==='listen') PB.say('Listen carefully!', 'happy', 'drill_listen', 2600);   // spoken before Ready; numbers stop Bix
@@ -986,7 +1008,7 @@ function setStages(){
   $('#problemArea').style.display = mode==='visual'?'':'none';
   $('#listenStage').style.display = mode==='listen'?'':'none';
   $('#flashStage').style.display = mode==='flash'?'':'none';
-  $('#drill').dataset.mode = mode;
+  $('#drill').dataset.mode = mode; $('#drill').classList.toggle('lt', !!LT);
   const speed = (mode==='listen'||mode==='flash') && !LT;
   $('#speedBtn').hidden=!speed; $('#speedPop').hidden=true; $('#speedBtn').setAttribute('aria-expanded','false');
   $('#listenSpeed').style.display = mode==='listen'?'flex':'none'; $('#flashSpeed').style.display = mode==='flash'?'flex':'none';
@@ -1005,11 +1027,11 @@ function baseLine(){
   if (p && p.op==='mul') return Tool.kind==='beads' ? 'Work it out, then show the answer on the beads.' : 'Work it out, then type the answer.';
   return Tool.kind==='beads' ? 'Move the beads for each number, then tap Check.' : 'Solve it on your abacus, then type the answer.';
 }
-function baseMood(){ return reviewing && !LT ? 'concerned' : mode==='listen' ? 'think' : 'happy'; }
+function baseMood(){ return LT ? 'happy' : 'think'; }   // Bix thinks along while she works
 function presentProblem(){
   const p=problems[idx]; $('#feedback').textContent='';
   Tool.apply(); Tool.reset();
-  $('#showMeBtn').style.display = reviewing && !LT ? '' : 'none';
+  $('#showMeBtn').style.display = reviewing && !LT ? '' : 'none'; $('#drill').classList.toggle('fixing', reviewing && !LT);
   renderStrip();
   const long = mode==='visual' && p.terms.length>4;
   $('#drill').classList.toggle('long', long);
@@ -1070,10 +1092,11 @@ $('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._rep
 function setupGapSlider(){ const s=$('#gapSlider'); s.min=settings.gapMin; s.max=settings.gapMax; s.value=settings.gap; s.style.direction='rtl'; $('#gapVal').textContent=settings.gap+'s'; s.oninput=()=>{ settings.gap=parseFloat(s.value); $('#gapVal').textContent=settings.gap+'s'; saveSettings(); }; }
 function setupFlashSlider(){ const s=$('#flashSlider'); s.value=settings.flashSec; s.style.direction='rtl'; $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; s.oninput=()=>{ settings.flashSec=parseFloat(s.value); $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; saveSettings(); }; }
 // Flash: she taps Ready (after clearing her abacus), numbers pop up one at a time with their + / − sign, then she answers.
-function flashDots(n, on){ $('#flashDots').innerHTML = Array.from({length:n},(_,i)=>WS.bead(i<on?'jade':'pale', 30)).join(''); }
+function flashDots(n, on){ const w=n>8?22:30; $('#flashDots').innerHTML = Array.from({length:n},(_,i)=>TOY.bead('teal', w, {dim:i>=on, shadow:false})).join(''); }
+function flashLen(el, t){ el.style.setProperty('--len', Math.max(2, String(Math.abs(t)).length+1)); }
 function flashSign(t, i, p){ if (p && p.op==='mul') return i===0 ? String(t) : `<b class="times">×</b>${t}`; return (i===0 ? (t<0?'<b class="minus">−</b>':'') : `<b class="${t<0?'minus':'plus'}">${t<0?'−':'+'}</b>`) + Math.abs(t); }
 function armFlash(p){
-  ++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.className='flash-num hint'; el.innerHTML=WS.icon('bolt', 64);
+  ++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.className='flash-num hint'; el.innerHTML=TOY.icon('flash', 72);
   flashDots(p.terms.length, 0); $('#flashAgain').style.display='none';
   $('#flashMsg').textContent = idx===0 && !reviewing ? 'Clear your abacus. Numbers pop up one at a time.' : 'Clear your abacus, then tap Ready.';
   const b=$('#flashGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; Speaker.unlock(); flash(p); };
@@ -1081,16 +1104,16 @@ function armFlash(p){
 async function flash(p){
   const my=++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
   $('#flashMsg').textContent='Watch…'; $('#flashGo').style.display='none'; $('#flashAgain').style.display='none'; flashDots(p.terms.length, 0); await sleep(600);
-  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
+  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); flashLen(el, t); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
   if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='= ?';
   $('#flashMsg').textContent = Tool.kind==='beads' ? 'What did you get? Show it on the beads.' : 'What did you get? Tap it in.'; $('#flashAgain').style.display = LT ? 'none' : ''; locked=false; Tool.setReady(true);
 }
 $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
 $('#checkBtn').addEventListener('click', ()=>{ if(locked||demoing) return; submit(); });
 document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
-function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('ws-shake'); void t.offsetWidth; t.classList.add('ws-shake'); setTimeout(()=>t.classList.remove('ws-shake'),400); }
-// Right / wrong shows instantly where she is looking: the answer box turns jade (a small pop) or red (a gentle shake),
-// and so does her bead on the rod. Cleared when the next problem comes. Never used in the level test.
+function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('tp-nudge'); void t.offsetWidth; t.classList.add('tp-nudge'); setTimeout(()=>t.classList.remove('tp-nudge'),460); }
+// Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or gets a red rim (a gentle shake),
+// and her bead on the rod turns teal or red. Cleared when the next problem comes. Never used in the level test.
 function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong'); if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
@@ -1119,7 +1142,7 @@ async function submit(){
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
-      const cb=$('#strip .pr-b.cur'); if (cb){ cb.innerHTML=WS.bead('red', cb.querySelector('svg').getAttribute('width')|0); cb.classList.remove('ws-shake'); void cb.offsetWidth; cb.classList.add('ws-shake'); }
+      const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('red', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
       PB.say('Let\'s watch the beads together.', 'happy', 'fix_watch', 0);
       await sleep(900); await showMe(p);
       if (!$('#drill').classList.contains('active')) return;
@@ -1139,8 +1162,50 @@ function checkMastery(nid){
 }
 
 /* ---- end of set ---- */
-function sumBeads(list){ const w=Math.min(beadW(list.length, 76), Math.floor((Math.min(window.innerWidth||1180, 1180)-180)/list.length)-14); $('#sumStars').innerHTML=list.map((c,i)=>`<span role="listitem" aria-label="${i+1}: ${c==='jade'?'green':c==='red'?'red, to fix':'done'}" class="pr-b ws-pop" style="animation-delay:${(i*0.05).toFixed(2)}s">${WS.bead(c, w)}</span>`).join(''); }
-function sumBix(mood){ const el=$('#bixSum'); el.innerHTML=bixArt(mood, 170); return el; }
+// The wooden bowl the earned beads drop into: a back (rim + hollow) and a front lip, with the beads between them.
+const BOWL_BACK = '<svg class="tp-bowlback" viewBox="0 0 400 264" aria-hidden="true"><ellipse cx="226" cy="238" rx="176" ry="24" fill="url(#toy-g-shadow)" opacity=".75"/><ellipse cx="204" cy="240" rx="128" ry="17" fill="url(#toy-g-shadow)"/>'
+  + '<ellipse cx="200" cy="104" rx="190" ry="52" fill="#B98448"/><ellipse cx="200" cy="110" rx="172" ry="42" fill="#8E5E2C"/><ellipse cx="200" cy="118" rx="150" ry="30" fill="#7A4E22" opacity=".7"/></svg>';
+const BOWL_FRONT = '<svg class="tp-bowlfront" viewBox="0 0 400 264" aria-hidden="true"><path d="M10,104 A190,52 0 0 0 390,104 Q384,236 200,244 Q16,236 10,104Z" fill="url(#toy-g-maple-side)"/>'
+  + '<path d="M10,104 A190,52 0 0 0 390,104 Q384,228 200,236 Q16,228 10,104Z" fill="url(#toy-g-maple)"/><path d="M200,236 Q384,228 390,104 A190,52 0 0 1 300,146 Q300,214 200,236Z" fill="#8A5A2A" opacity=".2"/>'
+  + '<path d="M10,104 A190,52 0 0 0 390,104 A190,60 0 0 1 10,104Z" fill="#E7BE86"/><path d="M16,100 A190,52 0 0 1 200,54" fill="none" stroke="#FFF0CF" stroke-width="5" stroke-linecap="round" opacity=".8"/>'
+  + '<path d="M40,150 Q60,214 150,228" fill="none" stroke="#FFF3D6" stroke-width="6" stroke-linecap="round" opacity=".35"/></svg>';
+// Where bead i lands: rows from the bottom of the heap up, a little turn each (percent of the bowl box).
+function bowlSlot(i, total){
+  const per = total<=14 ? [5,4,3,2] : total<=25 ? [7,6,5,4,3] : [9,8,7,6,5,4,3,3,3,3], bs = total<=14 ? .19 : total<=25 ? .145 : .112;
+  let row=0, k=i; while (row<per.length-1 && k>=per[row]){ k-=per[row]; row++; }
+  const m=per[row], x=50+(k%m-(m-1)/2)*bs*84+((i*37)%7-3)*.5, y=44-row*bs*47-Math.floor(k/m)*bs*40;
+  return `left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;--r:${(i*53)%41-20}deg;--r0:${(i*71)%121-60}deg;--dx:${(i*29)%61-30}px;animation-delay:${(0.25+i*0.11).toFixed(2)}s`;
+}
+// Beads earned drop into the bowl (teal = right, then the golden ones); the red ones to fix wait on the felt mat beside it.
+// list: 'jade' (right) | 'red' (to fix) | 'pale' (not yet)
+function sumBeads(list, gold){
+  gold=gold||0; const inBowl=list.filter(c=>c==='jade').length, total=inBowl+gold, bs = total<=14 ? .19 : total<=25 ? .145 : .112;
+  const box=$('#sumStars'); box.style.setProperty('--bs', bs); let k=0, html=BOWL_BACK;
+  list.forEach((c,i)=>{ if (c==='jade') html+=`<span role="listitem" aria-label="${i+1}: green" class="tp-b in" style="${bowlSlot(k++, total)}">${TOY.bead('teal', 80, {shadow:false})}</span>`; });
+  for (let g=0; g<gold; g++) html+=`<span aria-hidden="true" class="tp-b tp-gold in" style="${bowlSlot(k++, total)}">${TOY.bead('mustard', 80, {shadow:false})}</span>`;
+  box.innerHTML=html+BOWL_FRONT;
+  const out=list.map((c,i)=>[c,i]).filter(x=>x[0]!=='jade'), w=out.length>8 ? 44 : 60;
+  $('#sumFix').innerHTML=out.map(([c,i])=>`<span role="listitem" aria-label="${i+1}: ${c==='red'?'red, to fix':'not yet'}" class="tp-b out">${TOY.bead('red', w, {dim:c!=='red'})}</span>`).join('');
+}
+function sumBix(mood){ const el=$('#bixSum'); el.innerHTML=bixArt(mood, 210); return el; }
+// Today's steps as the moon sees them: how many were done before this activity, and after it.
+function todayMoon(kind){
+  const t=Fun.data.today; if (!t || t.day!==todayKey() || !Array.isArray(t.steps) || !t.steps.length) return null;
+  const total=t.steps.length, before=t.steps.filter(x=>x.done).length, a=t.active;
+  const gain = kind && ((a && a.kind===kind && t.steps[a.at] && !t.steps[a.at].done) || t.steps.some(x=>!x.done && x.kind===kind)) ? 1 : 0;
+  return { total, before, after:before+gain };
+}
+// The moon in the window gains a phase for the step just finished (she never shrinks); the same shows as phase moons on a plaque.
+function drawMoon(sky, plaque, kind){
+  const m=todayMoon(kind), name=TOY.moonName;
+  if (!m){ sky.innerHTML=TOY.skyMoon('calm', .5); if (plaque) plaque.hidden=true; return; }
+  const full=m.after>=m.total, ph=n=>n/m.total;
+  sky.innerHTML = m.after>m.before ? TOY.skyMoon('calm', ph(m.before))+TOY.skyMoon(full?'proud':'happy', ph(m.after)) : TOY.skyMoon(full?'proud':m.after?'happy':'calm', ph(m.after));
+  if (!plaque) return;
+  plaque.hidden=false; plaque.setAttribute('role','img'); plaque.setAttribute('aria-label', `${name}: ${m.after} of ${m.total} today`);
+  const svg=(n,cls)=>TOY.moonPhases(n, m.total).replace('class="toy-moonphases"', `class="toy-moonphases ${cls}"`).replace('role="img"', 'aria-hidden="true"');
+  plaque.innerHTML=`<span class="tp-moonstack">${svg(m.before,'before')}${m.after>m.before ? svg(m.after,'after') : ''}</span>`;
+}
 let sumVoice=null;
 $('#sumSay').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
 $('#bixSum').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
@@ -1161,7 +1226,6 @@ function finish(){
   const toFix=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0);
   const allFixed = reviewing && !toFix.length;
   $('#sumScore').textContent = green ? `${green} green bead${green===1?'':'s'}!` : 'Good practice!';
-  sumBeads(problems.map((p,i)=>results[i]===true||p._fixed?'jade':results[i]===false?'red':'pale'));
   const vid = allFixed ? 'sum_fixed' : leveled ? 'sum_unlock' : n===3 ? 'sum_amazing' : n===2 ? 'sum_great' : 'sum_good';
   const say = { sum_fixed:'All fixed! You fixed every one. You’re a star!', sum_unlock:`Hooray! You unlocked a new skill: ${NODES[curIdx()].title}!`, sum_amazing:'Amazing work!',
     sum_great:'Great job! Want to fix the red ones with me?', sum_good:'Good practice! Every try makes you stronger.' }[vid];
@@ -1170,14 +1234,16 @@ function finish(){
   // Golden beads earned here (handed out by activityDone below) all land in ONE place: the chip at the top right,
   // after the headline has settled (the floating "+n" toasts stay off this screen, see screens-practice.css).
   const gold = !reviewing ? Treats.EARN.activity + (n===3 ? Treats.EARN.gold : 0) + (leveled ? Treats.EARN.skill : 0) : 0;
-  $('#sumGold').hidden = !gold; $('#sumGold').innerHTML = gold ? WS.bead('ochre', 40)+`<span>+${gold} golden bead${gold===1?'':'s'}</span>` : '';
-  $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? WS.icon('sprout', 26, WS.colors.jade)+'<span>New skill!</span>' : '';
+  sumBeads(problems.map((p,i)=>results[i]===true||p._fixed?'jade':results[i]===false?'red':'pale'), gold);
+  drawMoon($('#sumSky'), $('#sumMoons'), reviewing ? null : mode);
+  $('#sumGold').hidden = !gold; $('#sumGold').innerHTML = gold ? TOY.bead('mustard', 44, {shadow:false})+`<span>+${gold} golden bead${gold===1?'':'s'}</span>` : '';
+  $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? TOY.icon('star', 30, '#C98A16')+'<span>New skill!</span>' : '';
   // one obvious next step: fix the red ones; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
   $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
-  $('#againBtn').innerHTML=WS.icon('retry',28)+'Play again';
-  const mood = (n>=2||leveled||allFixed) ? 'cheer' : 'happy';
+  $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
+  const mood = (n===3||leveled||allFixed) ? 'proud' : n===2 ? 'cheer' : 'happy';
   sumVoice=vid; $('#sumSay').style.visibility=''; show('summary'); const bs=sumBix(mood); Fun.BixVoice.play(vid, bs);
   if (n===3||leveled||allFixed){ Sfx.star(); if (n===3||leveled) Fun.confetti(); } else Sfx.ok();
   if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 2400);   // let the beads and Bix land first
@@ -1214,7 +1280,7 @@ async function showMe(p){
   $('#showme').classList.add('active');
   const rods=Tool.rodsForSet();
   if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.1, readOnly:true}); }
-  $('#showmeBix').innerHTML=bixArt('happy', 64);
+  $('#showmeBix').innerHTML=bixArt('happy', 96, {still:true});
   const probHtml=(k)=>p.op==='mul' ? `${p.terms[0]} <i>×</i> ${p.terms[1]}` : p.terms.map((t,i)=>`<span class="${i===k?'cur':''}">${i===0?t:(t<0?'<i class="minus">−</i>'+(-t):'<i class="plus">+</i>'+t)}</span>`).join('');
   const run = async()=>{ const my=++showToken; $('#showmeProb').innerHTML=probHtml(-1);
     await playSolution(showAb, p, ()=>my===showToken, h=>{ $('#showmeText').innerHTML=h; }, k=>{ $('#showmeProb').innerHTML=probHtml(k); });
@@ -1266,59 +1332,72 @@ function finishLevelTest(){
   const right=score.perProblem.map(x=>x.answer!==null && x.answer===x.expected);
   const green=right.filter(Boolean).length;
   $('#sumScore').textContent = green ? `${green} green bead${green===1?'':'s'}!` : 'Good try!';
-  sumBeads(right.map(r=>r?'jade':'red'));
+  sumBeads(right.map(r=>r?'jade':'pale')); drawMoon($('#sumSky'), $('#sumMoons'), null);
   $('#sumNote').textContent = score.correctAny/score.total >= score.minAccuracy
     ? 'So many right! Let’s practise a little more to get quicker, then try the test again.'
     : `Almost there! Let’s practise ${lt.test.title} a little more, then try again.`;
   $('#sumGold').hidden=true; $('#sumNew').hidden=true; $('#fixBtn').style.display='none'; $('#testBtn').style.display='none';
-  $('#againBtn').style.display=''; $('#againBtn').innerHTML=WS.icon('retry',28)+'Practise';   // practises the tested skill
+  $('#againBtn').style.display=''; $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Practise</span>';   // practises the tested skill
   sumVoice=null; $('#sumSay').style.visibility='hidden'; show('summary'); sumBix('happy'); Sfx.ok();
 }
 function niceDate(key){ const [y,m,d]=key.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'}); }
+// A red wax seal with a golden bead pressed into it, on two indigo ribbon tails (the certificate's emblem).
+function certSealSvg(size){
+  let lobes=''; for (let i=0;i<14;i++){ const a=i/14*Math.PI*2; lobes+=`<circle cx="${(Math.cos(a)*45).toFixed(1)}" cy="${(Math.sin(a)*45).toFixed(1)}" r="10.5"/>`; }
+  return `<svg width="${size}" height="${Math.round(size*1.3)}" viewBox="-62 -62 124 161" aria-hidden="true"><path d="M-24,30 L-38,92 L-19,80 L-8,96 L4,34Z" fill="#3F52A8"/><path d="M24,30 L40,90 L20,80 L10,96 L-2,34Z" fill="#28357A"/>`
+    + `<ellipse cx="7" cy="12" rx="56" ry="50" fill="url(#toy-g-shadow)" opacity=".6"/><g fill="#B52323">${lobes}</g><circle r="47" fill="url(#toy-lac-red)"/><circle r="36" fill="none" stroke="#8A181D" stroke-width="2.5" opacity=".55"/><circle r="33" fill="none" stroke="#FF9B80" stroke-width="1.5" opacity=".5"/>`
+    + TOY.bead('mustard', 58, {shadow:false}).replace('<svg ', '<svg x="-28" y="-16" ') + `<ellipse cx="-20" cy="-27" rx="15" ry="6" transform="rotate(-34 -20 -27)" fill="#fff" opacity=".55"/></svg>`;
+}
 function showCertificate(c){
   $('#certName').textContent = settings.name || 'Abacus star';
   $('#certSkill').textContent = c.title; $('#certDate').textContent = niceDate(c.date);
-  $('#certBix').innerHTML = bixArt('cheer', 120);
-  $('#certBeads').innerHTML = ['ochre','jade','red','indigo','ochre'].map(k=>WS.bead(k, 44)).join('');
+  $('#certBix').innerHTML = bixArt('proud', 190);
+  $('#certBeads').innerHTML = ['mustard','teal','red','indigo','mustard'].map(k=>TOY.bead(k, 50, {tall:true, shadow:false})).join('');
+  $('#certSeal').innerHTML = certSealSvg(92);
+  drawMoon($('#certSky'), null, null);
   // In the Home Screen app (iOS standalone) window.print may do nothing, so the button saves a picture instead.
   const pic=standaloneApp(); certShown=c; certPic=pic ? certPicture(c) : null;
-  $('#certPrint').innerHTML = pic ? WS.icon('share', 30)+'Save picture' : WS.icon('print', 30)+'Print';
+  $('#certPrint').innerHTML = tpIcon(pic ? 'share' : 'print', 40)+`<span class="toy-block-label">${pic ? 'Save picture' : 'Print'}</span>`;
   $('#certPrint').setAttribute('aria-label', pic ? 'Save a picture of the certificate' : 'Print the certificate');
   show('certificate'); Sfx.star(); Fun.confetti(110);
-  Fun.BixVoice.play('lesson_done', $('#certCard'));
+  Fun.BixVoice.play('lesson_done', $('#certificate'));
 }
 let certShown=null, certPic=null;
 // Home Screen app or the native App Store wrapper (WKWebView): window.print does nothing there, so save a picture instead.
 function standaloneApp(){ try{ return navigator.standalone===true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || !!(window.Capacitor || window.cordova || window.ReactNativeWebView || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bix)); }catch(e){ return false; } }
-// The certificate as a PNG (1600×1130), drawn on a canvas with the app's own fonts, colours, Bix and beads.
+// A toy-kit drawing as a stand-alone picture: its SVG with the kit's shared gradients copied in.
+async function toyImage(svgHtml){
+  const d=document.getElementById('toy-defs'), defs=d ? d.innerHTML : '';
+  const svg=svgHtml.replace(/^[^<]*<span[^>]*>/, '').replace(/<\/span>\s*$/, '').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/(<svg[^>]*>)/, '$1'+defs);
+  const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  await new Promise((ok,no)=>{ img.onload=ok; img.onerror=no; setTimeout(no, 1500); });
+  return img;
+}
+// The certificate as a PNG (1600×1130), drawn on a canvas in the same keepsake look: paper on the maple table,
+// a double rule, Bix, lacquered beads on a brass rod and the wax seal.
 async function certPicture(c){
   const W=1600, H=1130, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
-  const css=getComputedStyle(document.documentElement), v=n=>css.getPropertyValue('--ws-'+n).trim();
+  const css=getComputedStyle(document.documentElement), v=n=>css.getPropertyValue('--toy-'+n).trim();
   try{ await Promise.all(['700 120px Fredoka','600 40px Fredoka','400 36px Andika'].map(f=>document.fonts.load(f))); }catch(e){}
   const rr=(x,y,w,h,r,fill)=>{ g.beginPath(); if (g.roundRect) g.roundRect(x,y,w,h,r); else g.rect(x,y,w,h); g.fillStyle=fill; g.fill(); };
-  rr(0,0,W,H,0,v('ground'));
-  rr(40,56,W-80,H-96,60,v('wood-dk')); rr(40,40,W-80,H-96,60,v('wood')); rr(72,72,W-144,H-160,36,v('maple'));
-  g.beginPath(); if (g.roundRect) g.roundRect(100,100,W-200,H-216,22); else g.rect(100,100,W-200,H-216); g.lineWidth=6; g.strokeStyle=v('maple-dk'); g.stroke();
-  // Bix (his SVG, without the extra talking mouths that CSS normally hides)
-  try{
-    const svg=WS.bix('cheer', 210).replace(/^[^<]*<span[^>]*>/, '').replace(/<\/span>\s*$/, '').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/<g class="m-[ab]">.*?<\/g>/g, '');
-    const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
-    await new Promise((ok,no)=>{ img.onload=ok; img.onerror=no; setTimeout(no, 1500); });
-    g.drawImage(img, W/2-105, 120, 210, 210);
-  }catch(e){ Diag.add('certificate picture: no Bix'); }
+  const line=(x,y,w,h,r,color,lw)=>{ g.beginPath(); if (g.roundRect) g.roundRect(x,y,w,h,r); else g.rect(x,y,w,h); g.lineWidth=lw; g.strokeStyle=color; g.stroke(); };
+  const table=g.createLinearGradient(0,0,0,H); table.addColorStop(0, v('maple')||'#E2B782'); table.addColorStop(1, v('maple-dk')||'#CF9858'); rr(0,0,W,H,0,table);
+  rr(58,62,W-100,H-100,22,'rgba(58,30,6,.28)');
+  const paper=g.createLinearGradient(0,40,0,H-40); paper.addColorStop(0, v('paper')||'#FFFDF6'); paper.addColorStop(1, '#F8F0DD'); rr(40,40,W-80,H-80,22,paper);
+  line(76,76,W-152,H-152,12,v('indigo')||'#3F52A8',7); line(96,96,W-192,H-192,6,v('mustard-dk')||'#C98A16',3);
+  try{ const img=await toyImage(TOY.bix('proud', 240, {still:true})); g.drawImage(img, W/2-120, 104, 240, 240); }catch(e){ Diag.add('certificate picture: no Bix'); }
   const text=(t, font, color, y, maxW)=>{ let size=parseFloat(font.match(/(\d+)px/)[1]); const f=s=>font.replace(/\d+px/, s+'px');
     g.font=f(size); while (maxW && g.measureText(t).width>maxW && size>24){ size-=4; g.font=f(size); }
     g.fillStyle=color; g.textAlign='center'; g.textBaseline='alphabetic'; g.fillText(t, W/2, y); };
-  text('CERTIFICATE OF MASTERY', '600 40px Fredoka, sans-serif', v('wood'), 405);
-  text(settings.name || 'Abacus star', '700 124px Fredoka, sans-serif', v('indigo'), 540, 1280);
-  text('has mastered', '400 40px Andika, sans-serif', v('ink-2'), 615);
-  text(c.title, '700 68px Fredoka, sans-serif', v('wood-dk'), 710, 1280);
-  // five lacquered beads, drawn from the kit's bead shape
-  const lens=new Path2D('M4 52 Q85 -12 166 52 Q85 116 4 52Z'), seam=new Path2D('M8 52 Q85 34 162 52');
-  ['ochre','jade','red','indigo','ochre'].forEach((k,i)=>{ const bw=86, sc=bw/170, x=W/2-(5*bw+4*16)/2+i*(bw+16), y=748;
-    g.save(); g.translate(x,y); g.scale(sc,sc); g.fillStyle=WS.colors[k]; g.fill(lens); g.strokeStyle='rgba(0,0,0,.18)'; g.lineWidth=3; g.stroke(seam);
-    g.fillStyle='rgba(255,255,255,.28)'; g.beginPath(); g.ellipse(62,31,24,7,0,0,Math.PI*2); g.fill(); g.restore(); });
-  text(niceDate(c.date)+'  ·  Bix Abacus', '400 36px Andika, sans-serif', v('ink-2'), 900);
+  text('Certificate of mastery', '600 46px Fredoka, sans-serif', '#8A5A1C', 408);
+  text(settings.name || 'Abacus star', '700 124px Fredoka, sans-serif', v('indigo')||'#3F52A8', 544, 1240);
+  text('has mastered', '400 40px Andika, sans-serif', v('ink-soft')||'#5B4A36', 618);
+  text(c.title, '700 68px Fredoka, sans-serif', v('ink')||'#2B3674', 712, 1240);
+  // five lacquered beads on a brass rod, and the wax seal (drawn by the kit)
+  const rod=g.createLinearGradient(0,800,0,814); rod.addColorStop(0,'#FFF1B8'); rod.addColorStop(.35,'#E2B54A'); rod.addColorStop(.7,'#9C7420'); rod.addColorStop(1,'#C99A38'); rr(W/2-290,800,580,14,7,rod);
+  try{ const cols=['mustard','teal','red','indigo','mustard']; for (let i=0;i<5;i++){ const img=await toyImage(TOY.bead(cols[i], 104, {tall:true, shadow:false})); g.drawImage(img, W/2-5*42+i*84+4, 807-49, 77, 104); } }catch(e){ Diag.add('certificate picture: no beads'); }
+  try{ const img=await toyImage(certSealSvg(190)); g.drawImage(img, W-370, H-372, 190, 247); }catch(e){ Diag.add('certificate picture: no seal'); }
+  text(niceDate(c.date)+'  ·  Bix Abacus', '400 36px Andika, sans-serif', v('ink-soft')||'#5B4A36', 936);
   return await new Promise((ok,no)=>{ try{ cv.toBlob(b=>b?ok(b):no(new Error('no picture')), 'image/png'); }catch(e){ no(e); } });
 }
 async function saveCertPicture(){
@@ -1332,8 +1411,8 @@ async function saveCertPicture(){
   const a=document.createElement('a'); a.href=url; a.download=file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 30000);
 }
 function certPicView(url){
-  let box=$('#certPic'); if (!box){ box=document.createElement('div'); box.id='certPic'; box.className='pr-certpic'; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Certificate picture');
-    box.innerHTML='<div class="pr-certpiccard ws-card"><img alt="Certificate"><p class="ws-caption">Press and hold the picture, then choose “Save to Photos”.</p><button class="ws-btn jade" id="certPicDone">'+WS.icon('check',30)+'Done</button></div>';
+  let box=$('#certPic'); if (!box){ box=document.createElement('div'); box.id='certPic'; box.className='tp-certpic'; box.setAttribute('role','dialog'); box.setAttribute('aria-label','Certificate picture');
+    box.innerHTML='<div class="tp-certpiccard toy-paper"><img alt="Certificate"><p class="toy-caption">Press and hold the picture, then choose “Save to Photos”.</p><button class="toy-block toy-block--teal toy-block--sm" id="certPicDone">'+TOY.icon('check',30,'currentColor')+'<span class="toy-block-label">Done</span></button></div>';
     $('#certificate').appendChild(box); box.querySelector('#certPicDone').addEventListener('click', ()=>box.classList.remove('on')); }
   box.querySelector('img').src=url; box.classList.add('on');
 }

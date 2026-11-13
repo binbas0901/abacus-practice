@@ -1,30 +1,44 @@
-/* AbacusInput ("Workshop" soroban). Everything is scoped under .abx. */
+/* AbacusInput: the on-screen soroban in the Toy Table look (walnut frame, lacquered beads). Everything is scoped under .abx.
+   Gradients come from one hidden <svg id="abx-defs"> that abacus-input.js adds; the flat fills below are the fallback. No filters. */
 .abx { display: inline-flex; flex-direction: column; align-items: center; gap: 8px; position: relative;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .abx-svg { display: block; max-width: 100%; height: auto; touch-action: none; -webkit-tap-highlight-color: transparent; overflow: visible; }
-.abx-frame { fill: #8A5530; }
-.abx-frame-shadow { fill: #5E3519; }
-.abx-inner { fill: #F4E3C3; }
-.abx-rodline, .abx-beam { fill: #6E4126; }
-.abx-dot { fill: #F4E3C3; }
+.abx-cast { fill: #3A1E06; opacity: .2; }
+.abx-cast2 { opacity: .12; }
+.abx-frame { fill: #7A4A24; }
+.abx-frame-shadow { fill: #4A2A10; }
+.abx-bevel { fill: none; stroke: #D9A66A; stroke-width: 2; opacity: .55; }
+.abx-inner { fill: #DDBB86; }
+.abx-innershade { fill: #3A1E06; opacity: .16; pointer-events: none; }
+.abx-rodline { fill: #DDB678; }
+.abx-beam { fill: #6A3F1E; }
+.abx-beamlight { fill: #E9BE86; opacity: .5; pointer-events: none; }
+.abx-dot { fill: #FFF6DF; }
 
 .abx-bead { cursor: pointer; transition: transform 120ms cubic-bezier(.2, .8, .3, 1); }
 .abx-hit { fill: transparent; }
-.abx-lens { fill: #B07A45; stroke: rgba(60, 30, 10, .35); stroke-width: 1.5; transition: fill 120ms ease-out; }
-.abx-bead.on .abx-lens { fill: #E2452F; }
-.abx-shine { fill: none; stroke: rgba(255, 255, 255, .28); stroke-width: 3; stroke-linecap: round; pointer-events: none; }
+.abx-beadcast { fill: #3A1E06; opacity: .22; pointer-events: none; }
+.abx-lens { fill: #E3BE8A; }
+.abx-lac { fill: #E5402F; opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }
+.abx-bead[data-kind="h"] .abx-lac { fill: #F2B632; }
+.abx-bead.on .abx-lac { opacity: 1; }
+.abx-shade { fill: #1A0606; opacity: .16; pointer-events: none; }
+.abx-bead.on .abx-shade { opacity: .26; }
+.abx-shine { fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; opacity: .45; pointer-events: none; }
+.abx-spec { fill: #fff; opacity: .78; pointer-events: none; }
+.abx-hole { fill: #2A0D08; opacity: .32; pointer-events: none; }
 
 .abx-rod:focus { outline: none; }
-.abx-rod:focus-visible .abx-rodline { fill: #2F7DD1; }
+.abx-rod:focus-visible .abx-rodline { fill: #2B3674; }
 
 .abx-readout { font: 600 18px/1.2 system-ui, -apple-system, sans-serif; color: #6E4126; letter-spacing: .02em; }
 .abx-readout b { font-size: 24px; color: #5E3519; }
 .abx-readout[hidden] { display: none; }
 .abx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.abx-noanim .abx-bead, .abx-noanim .abx-lens { transition: none !important; }
+.abx-noanim .abx-bead, .abx-noanim .abx-lac { transition: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .abx-bead, .abx-lens { transition: none; }
+  .abx-bead, .abx-lac { transition: none; }
 }
 
 /* readOnly: a demo abacus (Show me, lessons) — the same drawing, not touchable */
