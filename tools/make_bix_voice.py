@@ -26,6 +26,8 @@ hee h ˈ i
 hoo h ˈ u
 beadtastic b ˌ i d t ˈ æ s t ɪ k
 poptastic p ˌ ɑ p t ˈ æ s t ɪ k
+juni ʤ ˈ u n i
+juni's ʤ ˈ u n i z
 """
 # tag: (label, kokoro speaker id, semitones up, kokoro speed)
 VOICES = {
@@ -36,9 +38,14 @@ VOICES = {
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 def ensure_lexicon():
-    if os.path.exists(LEXICON): return
-    with open(K + 'lexicon-us-en.txt', encoding='utf-8') as f: base = f.read()
-    with open(LEXICON, 'w', encoding='utf-8') as f: f.write(base.rstrip('\n') + '\n' + LEXICON_EXTRA)
+    """The Kokoro lexicon plus Bix's own words; words added to LEXICON_EXTRA later are appended to an existing file."""
+    if not os.path.exists(LEXICON):
+        with open(K + 'lexicon-us-en.txt', encoding='utf-8') as f: base = f.read()
+        with open(LEXICON, 'w', encoding='utf-8') as f: f.write(base.rstrip('\n') + '\n')
+    with open(LEXICON, encoding='utf-8') as f: have = set(f.read().split('\n'))
+    add = [l for l in LEXICON_EXTRA.strip().split('\n') if l not in have]
+    if add:
+        with open(LEXICON, 'a', encoding='utf-8') as f: f.write('\n'.join(add) + '\n')
 
 def make_tts():
     return sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
@@ -72,7 +79,7 @@ def f0(x, sr):
 NUM = {'zero':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6','seven':'7','eight':'8','nine':'9','ten':'10'}
 def words(t):
     w = re.sub(r"[^a-z0-9' ]", " ", t.lower().replace('’', "'").replace('-', ' ')).split()
-    alias = {'everyone':'every one','beads':'bead\'s' if False else 'beads','bicks':'bix','biks':'bix','bixs':'bix','bigs':'bix','bics':'bix','vix':'bix','bex':'bix','bead tastic':'beadtastic'}
+    alias = {'everyone':'every one','beads':'bead\'s' if False else 'beads','bicks':'bix','biks':'bix','bixs':'bix','bigs':'bix','bics':'bix','vix':'bix','bex':'bix','bead tastic':'beadtastic','junie':'juni','juny':'juni','joonie':'juni','juney':'juni','joony':'juni','jooni':'juni','juni':'juni','okay':'ok'}
     out = [NUM.get(alias.get(x, x), alias.get(x, x)) for x in w]
     return ' '.join(out).replace("bead's", 'beads').split()
 

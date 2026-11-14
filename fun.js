@@ -35,7 +35,8 @@
     tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] && !this.missing[t] ? t : 'sweet'; },
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
     // Extra line packs recorded after the main set (audio/bix-<voice>-<pack>.js, see tools/make_bix_pack.py).
-    PACKS: ['home'],
+    // Newest first: a line re-recorded in a pack replaces the take in the main recording (see find).
+    PACKS: ['polish', 'home'],
     load(tag) {
       if (!tag) { const s = App() && App().settings, want = s && this.voices[s.bixVoice] ? s.bixVoice : 'sweet';
         if (want !== 'sweet') return this.load(want).then(() => { this.missing[want] = !this.buf[want]; if (this.missing[want]) return this.load('sweet'); }); }
@@ -57,14 +58,17 @@
       });
       return this.loading[key];
     },
-    // Where a line lives: the main recording first, then the extra packs.
+    // Where a line lives: the extra packs first (they hold the newer take of a re-recorded line), then the main recording.
     find(id) {
-      const tag = this.tag(); if (this.map[tag] && this.map[tag][id]) return [this.buf[tag], this.map[tag][id]];
+      const tag = this.tag();
       for (const p of this.PACKS) { const k = tag + '-' + p; if (this.map[k] && this.map[k][id]) return [this.buf[k], this.map[k][id]]; }
+      if (this.map[tag] && this.map[tag][id]) return [this.buf[tag], this.map[tag][id]];
       return [null, null];
     },
-    // Play a line by id. Returns a promise that resolves when it ends (or right away if Bix can't talk now).
+    // Play a line by id. Returns a promise that resolves when it ends (or right away if Bix can't talk now): true when
+    // the line was said to its end. A list of ids is said one after the other, and stops if anything else interrupts.
     async play(id, el) {
+      if (Array.isArray(id)) { for (const x of id) { if (x && !(await this.play(x, el))) return false; } return true; }
       if (!id || !this.enabled()) return;
       const a = App(); if (!a || (a.quietNow && a.quietNow())) return;
       if (!a.Speaker.gestured) return;                                            // no sound before the first tap (iPad rule)
@@ -76,11 +80,13 @@
       } finally { this.queued--; }
       if (my !== this.seq || ctx.state !== 'running') return;                    // a newer line was asked for, or sound is still off
       const [buf, sp] = this.find(id); if (!buf || !sp) return;
-      this.stop();
+      this.stop(); const mine = this.seq;
       const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start(ctx.currentTime + 0.02, sp[0], sp[1]); this.src = s;
       const bx = el && el.querySelector('.bix'); if (bx) { bx.classList.add('talking'); this.talkingEl = bx; }
       await new Promise(r => { s.onended = r; setTimeout(r, sp[1] * 1000 + 400); });
-      if (this.src === s) { this.src = null; if (bx) bx.classList.remove('talking'); }
+      if (this.src !== s) return false;
+      this.src = null; if (bx) bx.classList.remove('talking');
+      return this.seq === mine;
     },
     stop() { this.seq++; if (this.src) { try { this.src.stop(); } catch (e) {} this.src = null; } if (this.talkingEl) { this.talkingEl.classList.remove('talking'); this.talkingEl = null; } },
   };
@@ -127,11 +133,11 @@
     // say(el, text, ms, voiceId, replayId): show the speech bubble; if a voice line id is given, Bix says it out loud too.
     // replayId: the line that goes with this caption when it is not spoken right now (the bubble's speaker plays it on tap).
     say(el, text, ms = 3500, vid, replayId) {
-      if (vid && (text === null || text === undefined)) text = LINES()[vid] || '';
+      if (vid && (text === null || text === undefined)) text = [].concat(vid).map(v => LINES()[v] || '').join(' ');
       if (vid) BixVoice.play(vid, el);
       const b = el && el.querySelector('.bubble'); if (!b) return;
       const t = b.querySelector('.ws-text') || b; t.textContent = caption(text); b._vid = vid || replayId || null;
-      b.classList.toggle('has-voice', !!(b._vid && LINES()[b._vid]));
+      b.classList.toggle('has-voice', !!(b._vid && [].concat(b._vid).some(v => v && LINES()[v])));
       b.classList.add('on'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
       clearTimeout(b._t); if (ms) b._t = setTimeout(() => b.classList.remove('on'), ms);
     },

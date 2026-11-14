@@ -1,0 +1,12 @@
+{
+  "_about": "v4.1: the lines that used to say \"fix\" now say \"polish\" (the same words as the screen), and the home bubble's sentence about the moon is spoken too. Built per voice into audio/bix-<voice>-polish.js by tools/make_bix_pack.py (python3 tools/make_bix_pack.py polish tools/bix_lines_polish.json sweet boy). fun.js looks in the packs before the main recording, so the old takes of fix_start, fix_one, oops_1 and sum_fixed in bix-<voice>.js are simply never played. The moon's name is spoken as JOO-nee (lexicon entry in make_bix_voice.py); app.js plays these lines only while TOY.moonName is \"Juni\".",
+  "fix_start": "Let's polish these together.",
+  "fix_one": "Let's polish this one together.",
+  "oops_1": "Oops! We'll polish it later.",
+  "sum_fixed": "All polished! So shiny!",
+  "moon_3": "Three beads to fill up Juni!",
+  "moon_2": "Two more beads to fill up Juni!",
+  "moon_1": "One more bead to fill up Juni!",
+  "home_done": "All done today! Juni is full! Play a game or visit My Room.",
+  "hello_next": "Hi friend! Tap Next when you're ready!"
+}

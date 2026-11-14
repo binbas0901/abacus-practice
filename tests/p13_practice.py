@@ -119,7 +119,7 @@ async def main():
         # fix the ones to polish
         await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(2500)
         d = await drill(pg)
-        check('fix: "Fixing" rod with only the ones to polish', await pg.locator('#fixLabel').is_visible() and await pg.evaluate("document.querySelectorAll('#strip .tp-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
+        check('fix: "Polishing" rod with only the ones to polish', await pg.locator('#fixLabel').is_visible() and (await pg.text_content('#fixLabel')).strip() == 'Polishing' and await pg.evaluate("document.querySelectorAll('#strip .tp-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
         check('fix: Bix "This one was tricky. Want me to show you first?" + indigo Show me', 'tricky' in await bubble(pg) and await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'fix')
         check('child targets >= 60px on the practice screen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
@@ -144,7 +144,7 @@ async def main():
         await pg.click('#showmeClose'); await pg.wait_for_timeout(400)
         check('fix: wrong with keypad -> Show me card -> same problem again', (await drill(pg))['idx'] == d['idx'])
         await keypad(pg, d['answer']); await pg.wait_for_selector('#summary.active', timeout=6000)
-        check('all fixed -> 10 shiny beads, "All fixed"', (await pg.text_content('#sumScore')).strip() == '10 shiny beads!' and 'All fixed' in await pg.text_content('#sumNote'))
+        check('all polished -> 10 shiny beads, "All polished! So shiny!"', (await pg.text_content('#sumScore')).strip() == '10 shiny beads!' and 'All polished! So shiny!' in await pg.text_content('#sumNote'))
         await shot(pg, 'end_all_fixed')
         await ctx.close()
 

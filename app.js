@@ -427,11 +427,19 @@ function homeMoon(done, total){
 }
 // The bubble as in the mockup: the greeting as a title, then the rest of what Bix says (the caption always holds the
 // spoken line) and how many beads are left today. The moon gets one mention.
+// The sentence about the moon while steps are left: [words, recorded line]. The recordings say "Juni" and cover a day
+// of three steps, so they are used only while that is her name; any other count is a caption only.
+const moonSpoken = ()=>TOY.moonName==='Juni';
+function moonLine(steps){
+  const n=steps.length, left=steps.filter(s=>!s.done).length;
+  const text = left===n ? `${NUM_WORD[n]||n} beads to fill up ${TOY.moonName}!` : `${NUM_WORD[left]||left} more ${left===1?'bead':'beads'} to fill up ${TOY.moonName}!`;
+  const id = !moonSpoken() ? null : left===n ? (n===3 ? 'moon_3' : null) : left<=2 ? 'moon_'+left : null;
+  return [text, id];
+}
 function homeBubble(text, steps){
   const t=$('#bixHome .bubble .ws-text'); if (!t || !settings.name) return;
   const n=steps.length, done=steps.filter(s=>s.done).length, left=n-done, m=/^(.*?[!.?])\s+(.*)$/.exec(text), title = m ? m[1] : text, rest = m ? m[2] : '';
-  const sub = !left ? `${TOY.moonName} is full! ${rest.replace('My Room', 'My room')}`
-    : rest + ' ' + (!done ? `${NUM_WORD[n]||n} beads to fill up ${TOY.moonName}!` : `${NUM_WORD[left]||left} more ${left===1?'bead':'beads'} to slide.`);
+  const sub = !left ? `${TOY.moonName} is full! ${rest}` : rest + ' ' + moonLine(steps)[0];
   t.innerHTML = `<span class="toy-bubble-title">${esc(title)}</span> <span class="th-bub-sub">${esc(sub.trim())}</span>`;
 }
 function renderHome(){
@@ -447,12 +455,14 @@ function renderHome(){
   // Bix talks on the home screen once per visit to the app (the first time sound is allowed), and when today is finished.
   const canTalk = !!Speaker.gestured;   // sound is allowed once she has tapped
   const line = !settings.name ? ["I don't know your name yet! Tap me to tell me.", 'ask_name']
-    : allDone ? [`All done today, ${settings.name}! Play a game or visit My Room.`, 'all_done']
+    : allDone ? [`All done today, ${settings.name}! Play a game or visit My Room.`, moonSpoken() ? 'home_done' : 'all_done']
     : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
   // Once a step is done the round button says Next: the bubble names that button (the recorded line says "Start", so this one is a caption only).
-  if (settings.name && !allDone && steps.some(s=>s.done) && line[1]==='hello_ready') line.splice(0, 2, line[0].replace('Tap Start', 'Tap Next'), null);
+  if (settings.name && !allDone && steps.some(s=>s.done) && line[1]==='hello_ready') line.splice(0, 2, line[0].replace('Tap Start', 'Tap Next'), 'hello_next');
   const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
-  Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null, line[1]);
+  // He says what the bubble shows: the greeting, then the sentence about the moon (see homeBubble).
+  const mv = settings.name && !allDone ? moonLine(steps)[1] : null, vids = mv ? [line[1], mv] : line[1];
+  Fun.Mascot.say(bh, line[0], 0, speak ? vids : null, vids);
   homeBubble(line[0], steps);
   if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; }
   Fun.save();
@@ -1299,13 +1309,13 @@ async function submit(){
     if (mf && mf.text) PB.say(mf.text, mf.ok?'cheer':'happy', null, mf.ok?1800:3600);
     else { const k=Math.floor(Math.random()*6); PB.say(['Yes!','Nice!','You got it!','Fantastic!','Super!','Wow!'][k], 'cheer', (Math.random()<0.35 && !settings.speakFeedback && mode!=='listen') ? 'yes_'+(k+1) : null, 1400); }
     verdict('right');
-    if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Fixed!'; renderStrip(idx); }
+    if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
     if(settings.speakFeedback) Speaker.say(null,'yes');
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
-    if (!reviewing) { const k=Math.floor(Math.random()*3); PB.say(['Oops! We\'ll fix it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 'concerned', (!settings.speakFeedback && mode!=='listen') ? 'oops_'+(k+1) : null, 1800); }
+    if (!reviewing) { const k=Math.floor(Math.random()*3); PB.say(['Oops! We\'ll polish it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 'concerned', (!settings.speakFeedback && mode!=='listen') ? 'oops_'+(k+1) : null, 1800); }
     if(settings.speakFeedback) Speaker.say(null,'not quite');
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
@@ -1375,6 +1385,8 @@ function drawMoon(sky, plaque, kind){
   plaque.innerHTML=`<span class="tp-moonstack">${svg(m.before,'before')}${m.after>m.before ? svg(m.after,'after') : ''}</span>`;
 }
 let sumVoice=null;
+// The words on screen are the words Bix says (audio/bix-<voice>-polish.js).
+const POLISH_LINE = { fix_one:'Let’s polish this one together.', fix_start:'Let’s polish these together.' };
 $('#sumSay').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
 $('#bixSum').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
 function finish(){
@@ -1395,9 +1407,11 @@ function finish(){
   const allFixed = reviewing && !toFix.length;
   $('#sumScore').textContent = green ? `${green} shiny bead${green===1?'':'s'}!` : 'Good practice!';
   const vid = allFixed ? 'sum_fixed' : leveled ? 'sum_unlock' : n===3 ? 'sum_amazing' : n===2 ? 'sum_great' : 'sum_good';
-  const say = { sum_fixed:'All fixed! You fixed every one. You’re a star!', sum_unlock:`Hooray! You unlocked a new skill: ${NODES[curIdx()].title}!`, sum_amazing:'Amazing work!',
+  const say = { sum_fixed:'All polished! So shiny!', sum_unlock:`Hooray! You unlocked a new skill: ${NODES[curIdx()].title}!`, sum_amazing:'Amazing work!',
     sum_great:'Great job! Want to polish these with me?', sum_good:'Good practice! Every try makes you stronger.' }[vid];
-  const fixLine = toFix.length && vid!=='sum_great' ? ` Let’s polish ${toFix.length===1?'this one':'these '+toFix.length} together.` : '';
+  // ...and, when some are left to polish, the same sentence Bix says next (and again when the polish pass starts)
+  const fixVid = toFix.length && vid!=='sum_great' ? (toFix.length===1 ? 'fix_one' : 'fix_start') : null;
+  const fixLine = fixVid ? ' ' + POLISH_LINE[fixVid] : '';
   $('#sumNote').textContent = say + fixLine;
   // Golden beads earned here (handed out by activityDone below) all land in ONE place: the chip at the top right,
   // after the headline has settled (the floating "+n" toasts stay off this screen, see screens-practice.css).
@@ -1415,7 +1429,7 @@ function finish(){
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
   const mood = (n===3||leveled||allFixed) ? 'proud' : n===2 ? 'cheer' : 'happy';
-  sumVoice=vid; $('#sumSay').style.visibility=''; show('summary'); const bs=sumBix(mood); Fun.BixVoice.play(vid, bs);
+  sumVoice = fixVid ? [vid, fixVid] : vid; $('#sumSay').style.visibility=''; show('summary'); const bs=sumBix(mood); Fun.BixVoice.play(sumVoice, bs);
   if (n===3||leveled||allFixed){ Sfx.star(); if (n===3||leveled) Fun.confetti(); } else Sfx.ok();
   if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 2400);   // let the beads and Bix land first
 }
@@ -1424,7 +1438,7 @@ $('#fixBtn').addEventListener('click', ()=>{
   Speaker.unlock(); reviewing=true; idx=reviewQueue[0]; t0=Date.now();
   setStages(); toySky('#drillSky'); show('drill');
   presentProblem();            // same mode as the drill: Listen re-reads the problem, Look shows it, Flash re-flashes it
-  PB.say(reviewQueue.length===1 ? 'Let\'s fix this one!' : `Let's fix these ${reviewQueue.length}!`, 'happy', mode==='listen' ? null : (reviewQueue.length===1 ? 'fix_one' : 'fix_start'), 2200);
+  { const v = reviewQueue.length===1 ? 'fix_one' : 'fix_start'; PB.say(POLISH_LINE[v], 'happy', mode==='listen' ? null : v, 2200); }
 });
 $('#showMeBtn').addEventListener('click', async()=>{ if(locked||demoing) return; locked=true; await showMe(problems[idx]); locked=false; if (Tool.kind==='beads' && $('#drill').classList.contains('active')){ Tool.reset(); markTiles(); PB.setBase('Your turn! Move the beads, then tap Check.', 'happy'); } });
 $('#againBtn').addEventListener('click', ()=>startDrill(mode, drillNode));

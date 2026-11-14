@@ -285,7 +285,7 @@
         const idx = order.indexOf(id), prev = idx > 0 ? order[idx - 1] : null;
         out.push({ kind: 'stuck_skill', nodeId: id, severity: 2,
           message: `${nodeTitle(id, opts)} is still feeling hard: ${pct(w.accuracy)}% on the last ${w.n} problems after ${nDays} days of practice. That's normal for a new trick; it just needs a different angle.`,
-          suggestion: `Watch the lesson again together (tap the skill on the path, then Learn), and use "Fix" after practice so ${name} sees the beads move. You can also lower "Numbers per problem" in settings for a few days` + (prev ? `, or spend a day back on ${nodeTitle(prev, opts)} for a confidence boost.` : '.') });
+          suggestion: `Watch the lesson again together (tap the skill on the path, then Learn), and use "Polish these with Bix" after practice so ${name} sees the beads move. You can also lower "Numbers per problem" in settings for a few days` + (prev ? `, or spend a day back on ${nodeTitle(prev, opts)} for a confidence boost.` : '.') });
       }
     }
     // b) no practice for 3+ days

@@ -20,18 +20,18 @@ async def main():
         # ---- offline: the Boy voice is not in the default install; it is saved when a grown-up picks it ----
         def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
         URL='http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')
-        BOY="Promise.all(['./audio/bix-boy.js','./audio/bix-boy-home.js','./audio/bix-extra-boy.js'].map(f=>caches.match(f).then(r=>!!r)))"
+        BOY="Promise.all(['./audio/bix-boy.js','./audio/bix-boy-home.js','./audio/bix-boy-polish.js','./audio/bix-extra-boy.js'].map(f=>caches.match(f).then(r=>!!r)))"
         ctx=await b.new_context(viewport={'width':1180,'height':820}); pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read())
         await pg.goto(URL); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, sfx:false}))"); await pg.reload()
         await pg.evaluate("navigator.serviceWorker.ready.then(()=>new Promise(r=>{ const t=setInterval(()=>caches.match('./audio/voice-ljspeech.js').then(x=>{ if (x){ clearInterval(t); r(); } }), 200); }))"); await pg.wait_for_timeout(2500)
-        check('default install does not hold the Boy voice (about 3 MB)', await pg.evaluate(BOY)==[False,False,False], await pg.evaluate(BOY))
+        check('default install does not hold the Boy voice (about 3 MB)', await pg.evaluate(BOY)==[False]*4, await pg.evaluate(BOY))
         await pg.click('#grownups'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active')
         await pg.select_option('#sBixVoice','boy')
         for _ in range(60):
-            if await pg.evaluate(BOY)==[True,True,True]: break
+            if await pg.evaluate(BOY)==[True]*4: break
             await pg.wait_for_timeout(300)
-        check('picking Boy saves all three Boy files for offline use', await pg.evaluate(BOY)==[True,True,True], await pg.evaluate(BOY))
+        check('picking Boy saves all four Boy files for offline use', await pg.evaluate(BOY)==[True]*4, await pg.evaluate(BOY))
         await ctx.set_offline(True); await pg.reload(); await pg.wait_for_selector('#home.active', timeout=15000)
         got=await pg.evaluate("(async()=>{ App.unlock(); await Fun.BixVoice.load(); const x=await new Promise(r=>{ const s=document.createElement('script'); s.src='audio/bix-extra-boy.js'; s.onload=()=>r(true); s.onerror=()=>r(false); document.head.appendChild(s); }); return [Fun.BixVoice.tag(), !!Fun.BixVoice.buf.boy, !!Fun.BixVoice.buf['boy-home'], x]; })()")
         check('offline, after a reload: Bix still talks in the Boy voice (main, home and extra lines)', got==['boy',True,True,True], got)

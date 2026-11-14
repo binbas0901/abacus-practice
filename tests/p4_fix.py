@@ -51,7 +51,7 @@ async def run(pg, m):
     check(f'{m}: fix pass visits only the red ones, in order', visited_unique==[1,4,7], visited)
     check(f'{m}: stays in {m} mode (no numbers shown for listen/flash)', stages_ok and terms_ok)
     await pg.wait_for_selector('#summary.active'); strip=(await pg.evaluate("window.__drill()"))['strip']
-    check(f'{m}: all red beads now green, summary says All fixed', all('ok' in s for s in strip) and 'All fixed' in await pg.text_content('#sumNote'), f"{await pg.text_content('#sumScore')} | {await pg.text_content('#sumNote')}")
+    check(f'{m}: all red beads now green, summary says All polished', all('ok' in s for s in strip) and 'All polished! So shiny!' in await pg.text_content('#sumNote'), f"{await pg.text_content('#sumScore')} | {await pg.text_content('#sumNote')}")
     await pg.click('#homeBtn'); await pg.wait_for_timeout(300)
 async def main():
     async with async_playwright() as p:

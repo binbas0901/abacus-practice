@@ -11,8 +11,16 @@ import make_bix_voice as M
 def build_pack(pack, tag, lines, tts, asr, out_dir):
     label, sid, semis, speed = M.VOICES[tag]
     parts, sprite, t, sr, report = [], {}, 0.0, None, []
+    cache_dir = os.path.join('/tmp', f'bixcache-{tag}-{pack}'); os.makedirs(cache_dir, exist_ok=True)   # one checkpoint per line: survives restarts
     for key, text in lines.items():
-        c, _, x, sr, heard, how = M.best_take(tts, asr, text, sid, semis, speed)
+        cf = os.path.join(cache_dir, key + '.npz'); z = None
+        if os.path.exists(cf):
+            z = np.load(cf, allow_pickle=True)
+            if str(z['text']) == text: c, x, sr, heard = float(z['c']), z['x'], int(z['sr']), str(z['heard'])
+            else: z = None
+        if z is None:
+            c, _, x, sr, heard, how = M.best_take(tts, asr, text, sid, semis, speed)
+            np.savez(cf, c=c, x=x, sr=sr, heard=heard, how=how, text=text); print('  done', tag, key, round(c, 2), '|', heard, flush=True)
         dur = len(x) / sr; sprite[key] = [round(t, 3), round(dur, 3)]; t += dur + 0.3
         parts += [x, np.zeros(int(sr * 0.3), dtype=np.float32)]
         report.append((key, round(c, 2), heard, round(dur, 2)))
