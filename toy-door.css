@@ -208,7 +208,7 @@
 
 /* the lesson soroban is tapped in "Your turn", so it is as big as the table allows: it takes the width Bix's side leaves, limited by the height
    (bead pitch about 47px at 1180x820, was 39). --abr = the drawing's width / height for its number of rods. */
-#lesson{--abr:1.519} #lesson[data-rods="1"]{--abr:.658} #lesson[data-rods="2"]{--abr:1.089} #lesson[data-rods="4"]{--abr:1.949} #lesson[data-rods="5"]{--abr:2.38} #lesson[data-rods="6"]{--abr:2.81} #lesson[data-rods="7"]{--abr:3.24}
+#lesson{--abr:1.463} #lesson[data-rods="1"]{--abr:.634} #lesson[data-rods="2"]{--abr:1.049} #lesson[data-rods="4"]{--abr:1.878} #lesson[data-rods="5"]{--abr:2.293} #lesson[data-rods="6"]{--abr:2.707} #lesson[data-rods="7"]{--abr:3.122}
 #lesson{--ab-room:150px} #lesson.may-pair{--ab-room:226px}
 #lesson .lesson-left{flex:1 1 0;align-items:center}
 #lesson .lesson-ab{width:min(100%,calc((100vh - var(--toy-wall-h) - var(--ab-room))*var(--abr)))}
