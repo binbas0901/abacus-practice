@@ -1809,7 +1809,7 @@ async function renderParent(){
   bindSwitch('#sBixTalks','bixTalks', ()=>{ if(!settings.bixTalks) Fun.BixVoice.stop(); });
   $('#sBixVoice').innerHTML=Object.entries(Fun.BixVoice.voices).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   $('#sBixVoice').value=Fun.BixVoice.tag();
-  $('#sBixVoice').onchange=async()=>{ settings.bixVoice=$('#sBixVoice').value; saveSettings(); Fun.BixVoice.stop(); Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); };
+  $('#sBixVoice').onchange=async()=>{ settings.bixVoice=$('#sBixVoice').value; saveSettings(); keepVoiceOffline(); Fun.BixVoice.stop(); Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); };
   $('#sBixTest').onclick=async()=>{ Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play(['intro_hi','tap_3','tap_4','sum_amazing'][Math.floor(Math.random()*4)]); };
   $('#levelAgain').onclick=()=>{ Recorder.stop(); Setup.open('check'); };
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
@@ -1913,6 +1913,12 @@ window.App = {
   },
   goDoor(){ show('door'); },
 };
+// A voice that is not in the default offline install (Boy) is saved for offline use when it is the chosen one:
+// asked of the service worker when a grown-up picks it and at every start (so a new app version keeps it).
+function keepVoiceOffline(){
+  const tag=settings.bixVoice; if (!tag || tag==='sweet' || !('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg=>{ if (reg.active) reg.active.postMessage({type:'cache-voice', tag}); }).catch(()=>{});
+}
 /* ---------------- boot ---------------- */
 window.__diag = Diag;
 // Test hook: put a given problem on the practice screen (layout checks for long rows, 4-digit numbers, multiplication on beads).
@@ -1931,5 +1937,5 @@ setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 // iPad Safari only allows sound to start on a finger lift / click, so try on every tap until it's on.
 ['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)) Speaker.unlock(); }, true));
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').then(keepVoiceOffline).catch(()=>{});
 })();
