@@ -3,7 +3,7 @@
 cd "$(dirname "$0")/.." || exit 1
 PORT="${PORT:-8765}"; export PORT
 python3 -c "import urllib.request;urllib.request.urlopen('http://localhost:$PORT/index.html')" 2>/dev/null || { nohup python3 -m http.server "$PORT" >/dev/null 2>&1 & sleep 1; }
-SUITES="${*:-p2_test p2_master p2_listen p2_myvoice p2_overlap p2_family p3_fun p3_treats p4_fix p5_setup p6_name p7_bix p8_ipad p9_boy p10_flash p11_kids p12_home p13_practice p14_door}"
+SUITES="${*:-p2_test p2_master p2_listen p2_myvoice p2_overlap p2_family p3_fun p3_treats p4_fix p5_setup p6_name p7_bix p8_ipad p9_boy p10_flash p11_kids p12_home p13_practice p14_door p15_dayone}"
 fail=0
 for t in $SUITES; do
   out=$(timeout 400 python3 "tests/$t.py" 2>&1); code=$?
