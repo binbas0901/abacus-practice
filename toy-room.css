@@ -128,7 +128,7 @@
 .tr-wallet{display:inline-flex;align-items:center;gap:8px;padding:6px 22px 9px 12px;font:700 30px/1 var(--toy-display);color:var(--toy-ink)}
 .tr-wallet span{display:flex;line-height:0}
 .tr-wallet b{font-weight:700}
-.tr-shop-body{position:relative;display:flex;flex-direction:column;gap:10px;padding:30px clamp(18px,3vw,40px) 18px;touch-action:pan-y}
+.tr-shop-body{position:relative;display:flex;flex-direction:column;gap:10px;padding:24px clamp(18px,3vw,40px) 14px;touch-action:pan-y}
 .tr-shop-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;min-height:118px;flex:none}
 #bixShop{flex:1 1 auto}
 #bixShop{--tb:148px}
@@ -180,7 +180,8 @@
   box-shadow:inset 0 2px 0 rgba(255,243,216,.75),0 7px 0 var(--toy-wood-deep),6px 16px 10px rgba(var(--toy-shade),.36)}
 #shop .tcard.tpick .tname{display:-webkit-box;box-sizing:border-box;width:100%;min-height:2.64em;padding:5px 8px 6px;border-radius:9px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));font:600 clamp(16px,1.65vw,19px)/1.16 var(--toy-display);
   box-shadow:inset 0 1px 0 #fff,2px 5px 6px rgba(var(--toy-shade),.28)}
-#shop .tcard.tpick .tname.long,#shop .tcard.tpick .tname.xlong{font-size:clamp(14px,1.4vw,16px);min-height:3.1em}
+/* shelf labels: one size for every treat, long names wrap onto the second line (no per-name shrinking) */
+#shop .tcard.tpick .tname,#shop .tcard.tpick .tname.long,#shop .tcard.tpick .tname.xlong{font-size:clamp(15px,1.5vw,18px);line-height:1.16;height:calc(2.32em + 13px);min-height:0;-webkit-box-pack:center}
 #shop .tcard.tpick.goal .tname{box-shadow:inset 0 1px 0 #fff,0 0 0 3px var(--toy-mustard),2px 5px 6px rgba(var(--toy-shade),.28)}
 #shop .tcard.tpick .tprice{font-size:21px;padding:2px 12px 3px 6px}
 #shop .tcard.tpick .tbar{width:78%;height:8px}

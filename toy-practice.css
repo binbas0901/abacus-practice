@@ -206,7 +206,9 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
 #summary .tp-sumbixcol{position:relative;justify-self:end;align-self:end;display:flex;flex-direction:column;align-items:flex-start;gap:22px;max-width:360px}
 #summary .tp-sumbub{display:flex;align-items:center;gap:12px;padding:16px 16px 18px 24px;max-width:100%;min-width:0}
 #summary .tp-sumnote{margin:0;font:600 clamp(19px,2vw,22px)/1.3 var(--toy-display);color:var(--toy-ink)}
-#summary .tp-saybtn{flex:none;width:60px;height:60px;margin-right:-4px}
+#summary .tp-saybtn{flex:none;width:64px;height:64px;margin-right:-4px}
+/* a wide bubble (two or three lines, not five short ones): it may reach over the table beside Bix, above the bowl */
+#summary .tp-sumbub{position:relative;z-index:4;box-sizing:border-box;width:calc(100% + clamp(90px,11vw,170px));max-width:none;margin-right:calc(clamp(90px,11vw,170px)*-1)}
 #summary .tp-sumbix{line-height:0;cursor:pointer;margin-left:22px}
 #summary .tp-sumbix svg{width:var(--sbix);height:var(--sbix)}
 /* the beads she earned drop into a wooden bowl; the red ones wait on a little felt mat */
@@ -369,7 +371,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #summary .tp-sumstage{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto auto;gap:34px 16px;padding-top:120px}
   #summary .tp-sumbixcol{grid-column:1 / -1;justify-self:center;flex-direction:row-reverse;align-items:flex-end;max-width:100%;gap:26px}
   #summary .tp-sumbub.toy-bubble--left::after{left:-22px;bottom:26px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
-  #summary .tp-sumbub{margin-bottom:40px}
+  #summary .tp-sumbub{width:auto;max-width:100%;margin:0 0 40px}
   #summary .tp-sumbix{margin:0}
   #summary .tp-catch{grid-column:2}
   #summary .tp-sumbtns{gap:18px;padding-bottom:44px}
