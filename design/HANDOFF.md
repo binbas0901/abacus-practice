@@ -1,6 +1,6 @@
 # Toy Table rebuild — where things stand (update on every milestone)
 
-- Live app: main, v3.13 (old Workshop look). Do not push to main until the owner approves.
+- Live app: main, v4.0 (Toy Table look), released 2026-11-14. v3.13 was the last Workshop-look build.
 - New look: branch `toy-int` = kit (toy.css, toykit.js, toystickers.js) + all screens merged, 19/19 suites green at ebcd74b.
 - Review 4 (independent): 1 P0, 9 P1, 19 P2. Fixes in progress on two branches off toy-int:
   - `toy-fixA` (behaviour): day-one blank drill (P0), lesson demo race, lesson skip, Boy voice offline, restore dialog, sticker-over-result, small behaviour items.
