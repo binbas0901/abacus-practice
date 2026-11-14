@@ -21,7 +21,7 @@ async def readers(pg, n):
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000)
         await pg.click('#pad [data-k="1"]'); await pg.click('#pad [data-k=go]'); await pg.wait_for_timeout(1000)
     await pg.click('#exitDrill'); return out
-def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+extra) if extra else ''))
+def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'])
@@ -61,6 +61,31 @@ async def main():
         st=json.loads(await pg.evaluate("window.__legacy('settings')") or '{}')
         check('7. device wiped (simulated)', not st.get('profiles'), str(st.get('profiles')))
         await gate(pg)
+        # a file that is not a backup: one plain sentence, no question, nothing changed
+        snap="JSON.stringify([window.__legacy('settings'), window.__legacy('progress'), Store.children().length])"
+        before=await pg.evaluate(snap); msgs=[]
+        for i,bad in enumerate(['{ this is not json', '{"app":"something-else","voices":{}}', '[1,2,3]', '{"app":"abacus-practice"}']):
+            bp='/tmp/abacus-bad-%d.json' % i; open(bp,'w').write(bad)
+            await pg.set_input_files('#bkFile', bp); await pg.wait_for_timeout(400)
+            msgs.append([await pg.text_content('#bkInfo'), await pg.locator('.toy-dialog').count()])
+        if os.environ.get('SHOTS'): await pg.locator('#guBackup').scroll_into_view_if_needed(); await pg.screenshot(path='/tmp/p2_restore_bad.png')
+        check('7a. a broken or foreign file: "This is not a Bix Abacus backup file", no dialog, no parser text', all(m[0].startswith('This is not a Bix Abacus backup file') and m[1]==0 and 'JSON' not in m[0] and 'position' not in m[0] for m in msgs), msgs)
+        check('7b. ...and nothing on the device changed', await pg.evaluate(snap)==before)
+        # a real backup: the question says what really happens and has Cancel; Cancel, Escape and a tap outside change nothing
+        ways=[]
+        for way in ('cancel','escape','outside'):
+            await pg.set_input_files('#bkFile', path); await pg.wait_for_selector('.toy-dialog')
+            if way=='cancel':
+                btns=await pg.eval_on_selector_all('.toy-dialog button','els=>els.map(e=>e.textContent.trim())'); msg=await pg.text_content('.toy-dialog-msg')
+                if os.environ.get('SHOTS'): await pg.wait_for_timeout(500); await pg.screenshot(path='/tmp/p2_restore_dialog.png')
+                await pg.click('.toy-dialog [data-r="0"]')
+            elif way=='escape': await pg.keyboard.press('Escape')
+            else: await pg.mouse.click(8, 8)
+            await pg.wait_for_timeout(500)
+            ways.append([way, await pg.locator('.toy-dialog').count(), await pg.text_content('#bkInfo'), await pg.evaluate(snap)==before])
+        check('7c. restore asks first, with Cancel / Voices only / Restore everything', btns==['Cancel','Voices only','Restore everything'], btns)
+        check('7d. the question matches what restore does (children in the file are replaced, others are kept)', 'Other children already on this device are kept' in msg and '2 recorded voices' in msg and 'replacing what is on this device' not in msg, msg)
+        check('7e. Cancel, Escape and a tap outside all restore nothing (not even voices)', all(w[1]==0 and w[2]=='Nothing was restored.' and w[3] for w in ways), ways)
         await pg.set_input_files('#bkFile', path); await pg.wait_for_selector('.toy-dialog'); await pg.click('.toy-dialog [data-r="1"]'); await pg.wait_for_function("/Restored/.test(document.querySelector('#bkInfo').textContent)", timeout=30000)
         info=await pg.text_content('#bkInfo'); st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         prog=json.loads(await pg.evaluate("window.__legacy('progress')"))

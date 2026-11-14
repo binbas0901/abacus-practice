@@ -122,7 +122,6 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 .node .t{font-family:var(--display);font-weight:700;font-size:16px;line-height:1.1;color:var(--ink);background:rgba(255,255,255,.85);border-radius:10px;padding:3px 8px}
 .node .stars{color:var(--sun-d);font-size:14px;letter-spacing:1px;height:16px}
 .node.locked .ic{background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.7) 0 7%,rgba(255,255,255,0) 26%),radial-gradient(circle at 50% 60%,#C9D3E6 55%,#9FAECB 100%);filter:none}
-.node.locked .ic{font-size:0} .node.locked .ic::after{content:"🔒";font-size:26px;opacity:.7}
 .node.locked .t{color:var(--ink-2);background:rgba(255,255,255,.55)}
 .node .lock{display:none}
 .node.done .ic::before{content:"✓";position:absolute;top:0;right:12px;width:28px;height:28px;border-radius:50%;background:var(--grass);color:#fff;font-family:var(--display);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 var(--grass-d)}

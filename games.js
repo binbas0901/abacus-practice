@@ -78,13 +78,17 @@
       highlight(r, on = true) { const g = rodG(r); if (g) g.classList.toggle('hl', on); },
       clearHighlights() { ab.el.querySelectorAll('.abx-rod.hl').forEach(g => g.classList.remove('hl')); },
       // Animate one move like Soroban.move: light the rod, move its beads by delta, wait, unlight.
-      async move(r, delta, ms = 500) {
+      // alive(): the caller's cancel token. A cancelled move stops at once and leaves the beads to whoever cancelled it.
+      async move(r, delta, ms = 500, alive) {
+        if (alive && !alive()) return;
         api.highlight(r, true); await sleep(120);
+        if (alive && !alive()) return;
         const d = AI.digitsOf(ab.value(), Math.max(ab.rods(), r + 1));
         d[r] = Math.max(0, Math.min(9, d[r] + delta));
         ab.setValue(d.reduce((s, v, i) => s + v * Math.pow(10, i), 0));
-        await sleep(ms); api.highlight(r, false);
+        await sleep(ms); if (!alive || alive()) api.highlight(r, false);
       },
+      poke(v) { ab.setValue(v, { animate: false }); if (opts.onChange) opts.onChange(ab.value()); },   // tests: set a value as if she had moved the beads
       destroy() { ab.destroy(); host.classList.remove('ab-demo', 'ab-ro'); },
     };
     if (opts.readOnly) api.setReadOnly(true);
@@ -167,7 +171,25 @@
       $('#popQ').className = 'pop-q together';
       $('#popQ').innerHTML = `<span class="pq-pair">${T().pair(t.a, v, 150, { mood: 'cheer' })}</span>`;
       $('#popHint').textContent = `${t.a} and ${v} make ${t.F}!`;
-      setTimeout(() => { busy = false; if (!ended && tok === token) newTarget(); }, calm ? 700 : 950);
+      setTimeout(() => { busy = false; if (!ended && tok === token) { newTarget(); if (calm) grid(); } }, calm ? 700 : 950);
+    }
+    // Reduced motion: nothing drifts. Every friend of the family waits in a still grid, shuffled for each new question.
+    function grid() {
+      if (!layout()) return;
+      bubbles.forEach(b => b.el.remove()); bubbles = [];
+      const fitC = Math.max(2, Math.floor((W - 2 * PAD) / (size + GAP))), fitR = Math.max(1, Math.floor((H - 2 * PAD + GAP) / (size + GAP)));
+      // As many friends as fit whole on the mat (the answer is always one of them).
+      const others = Array.from({ length: target.F - 1 }, (_, i) => i + 1).filter(v => v !== target.ans).sort(() => Math.random() - 0.5).slice(0, fitC * fitR - 1);
+      const vals = others.concat(target.ans).sort(() => Math.random() - 0.5), n = vals.length;
+      const cols = Math.min(n, fitC), rows = Math.ceil(n / cols);
+      const cw = (W - 2 * PAD) / cols, ch = Math.max(size + GAP, (H - 2 * PAD) / rows);
+      vals.forEach((v, i) => {
+        const el = document.createElement('button'); el.className = 'bub still'; el.dataset.v = v; el.setAttribute('aria-label', String(v));
+        el.innerHTML = `${T().buddy(v, 96, 'happy')}<b class="bub-n tr-disc">${v}</b>`;
+        const b = { el, v, gone: false }; el.addEventListener('pointerdown', e => { e.preventDefault(); tap(b); });
+        el.style.translate = `${(PAD + (i % cols) * cw + (cw - size) / 2).toFixed(1)}px ${(PAD + Math.floor(i / cols) * ch + (ch - size) / 2).toFixed(1)}px`;
+        field.appendChild(el); bubbles.push(b);
+      });
     }
     function freeLanes(y) { return lanes.filter(l => !l.last || l.last.gone || l.last.y <= y - size - GAP); }
     function spawn(y) {
@@ -199,13 +221,14 @@
       } else { wrong++; b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore(beadDots(N, 0));
-    requestAnimationFrame(() => { if (!layout()) return; for (let k = 3; k >= 0; k--) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });   // lowest first: the first bubble is the answer, so it stays longest
+    requestAnimationFrame(() => { if (calm) return grid(); if (!layout()) return; for (let k = 3; k >= 0; k--) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });   // lowest first: the first bubble is the answer, so it stays longest
     bixLine(GO, 'pop_go', 0);
     return new Promise(res => {
       function frame(now) {
         if (tok !== token) return res(null);
         const dt = Math.min(0.05, (now - last) / 1000); last = now;
         if (ended) { setTimeout(() => { field.querySelectorAll('.bub').forEach(e => e.remove()); $('#popQ').innerHTML = ''; $('#popHint').textContent = ''; res(tok === token ? { score, wrong, of: N } : null); }, 900); return; }
+        if (calm) { if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H || !bubbles.length) && !busy) grid(); requestAnimationFrame(frame); return; }
         if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H)) layout_keep();
         spawnIn -= dt;
         if (spawnIn <= 0) { const need = !bubbles.some(b => !b.gone && b.v === target.ans); spawnIn = spawn() ? 0.6 + Math.random() * 0.4 : (need ? 0.05 : 0.3); }
@@ -229,7 +252,7 @@
      ========================================================= */
   async function reader(tok) {
     const a = App(), st = $('#gameStage');
-    const maxR = a.nodeIndex() >= a.idx('bf_add_a') ? 3 : 2; const N = 10;
+    const maxR = a.nodeIndex() >= a.idx('bf_add_a') ? 3 : 2; const N = a.gameReads || 10;
     let rods = 1, show = 2.0, streak = 0, misses = 0, score = 0; const marks = [];
     st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${TI('eye', 76, '#7A4A24', { stroke: 2.2, accent: '#FFFDF6' })}<b>?</b></span></div></div></div>
       <div class="rd-right"><div class="rd-slip"><div class="answer empty" id="rdAns">?</div><div class="feedback" id="rdFb" aria-live="polite"></div></div><div class="g-pad" id="rdPad"></div></div></div>`;
@@ -274,6 +297,7 @@
     let want = null, hit = null;
     const ab = demoAbacus($('#bdAb'), { rods: Math.max(2, rods), scale: 1.6, onBead: () => a.Sfx.tap(), onChange: v => { if (want !== null && v === want && hit) { const h = hit; hit = null; h(); } } });
     $('#bdClear').onclick = () => { ab.reset(); a.Sfx.tap(); };
+    root.__gameAb = ab;   // test hook
     $('#bdSay').onclick = () => { if (want !== null) a.say(want); };
     await a.voiceReady();
     bixLine('Make this number on the abacus!', 'build_go', 0);
@@ -295,8 +319,11 @@
   }
 
   /* ---------- runner ---------- */
-  async function open(id) {
-    const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim();
+  // from: where Done goes back to ('home' for a Today step, 'door' for the Practice door; otherwise the Play hub).
+  let cameFrom = '';
+  async function open(id, o) {
+    const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim(); if (o) cameFrom = o.from || '';
+    $('#exitGame').setAttribute('aria-label', cameFrom === 'home' ? 'Back home' : cameFrom === 'door' ? 'Back to Practice' : 'Back to the games');
     const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
     root.Fun.Mascot.mount(bix(), { size: 76 }); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
     a.show('game');
@@ -316,11 +343,16 @@
     root.Fun.save();
     root.Fun.Mascot.react(bix(), 'cheer', 2000); const newBest = isBest && id === 'reader'; bixLine(newBest ? 'A new best! Wow!' : 'Great playing!', newBest ? 'game_best' : 'game_good', 0);
     if (isBest) root.Fun.confetti(60);
-    a.activityDone('game', { gold: isBest, game: id });
+    const leveled = a.gameResult ? a.gameResult(id, id === 'build' ? Array(r.n).fill(true) : r.marks) : false;
+    if (leveled) { card.best = true; card.bestLine = 'New skill!'; bixLine('Hooray! You unlocked a new skill!', 'sum_unlock', 0); }
+    // The sticker present comes first, on its own; the result card follows once it has been collected (never two layers).
+    await a.activityDone('game', { gold: isBest, game: id, leveled, gap: 700 });
+    if (my !== token) return;
     const choice = await results(card, g.block);
     if (my !== token) return;
-    if (choice === 'again') open(id); else { token++; clearScrim(); a.goPlay(); }
+    if (choice === 'again') open(id); else { token++; clearScrim(); leave(); }
   }
+  function leave() { const a = App(), f = cameFrom; cameFrom = ''; if (f === 'home') a.goHome(); else if (f === 'door') a.goDoor(); else a.goPlay(); }
   function stop() { token++; clearScrim(); }
   function clearScrim() { document.querySelectorAll('#game .gscrim').forEach(e => e.remove()); }
   // Friends popped so far. Older versions kept only a best round in best.pop (a timed score): a child who played
@@ -337,9 +369,9 @@
       const el = document.createElement('button'); el.type = 'button'; el.className = `gcard toy-box ${g.block}`; el.dataset.game = id; el.setAttribute('aria-label', `${g.name}: ${g.desc}`);
       const tagChip = chip ? `<span class="gc-best">${TI('star', 20, '#C98A16')}${chip}</span>` : id === 'build' ? '' : `<span class="gc-best is-new">New!</span>`;
       el.innerHTML = `<span class="gc-lid" aria-hidden="true"><i></i></span><span class="gc-box"><span class="gc-icon">${g.art(132)}</span><span class="gc-name">${g.name}</span><span class="gc-desc">${g.desc}</span>${tagChip}</span>`;
-      el.onclick = () => open(id); box.appendChild(el);
+      el.onclick = () => open(id, { from: '' }); box.appendChild(el);
     }
   }
   root.DemoAbacus = demoAbacus;
-  root.Games = { GAMES, open, stop, renderHub, family, demoAbacus };
+  root.Games = { GAMES, open, stop, leave, renderHub, family, demoAbacus };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

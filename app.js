@@ -326,8 +326,36 @@ const Backup = {
     if (navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f], title:'Abacus backup'}); return 'shared'; }catch(e){ if (e && e.name==='AbortError') return 'cancelled'; } }
     const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 30000); return 'downloaded';
   },
+  // Read a chosen file before anything is asked or changed. Anything that is not one of our backups gets one plain sentence.
+  check(text){
+    let d=null; try{ d=JSON.parse(text); }catch(e){}
+    if (!d || typeof d!=='object' || Array.isArray(d) || d.app!=='abacus-practice' || !(d.voices || d.children || d.progress)) throw new Error('This is not a Bix Abacus backup file');
+    const kids=(d.format>=3 && Array.isArray(d.children)) ? d.children.filter(c=>c && c.id) : null;
+    return { d, kids, voices:(d.voices && d.voices.profiles || []).length, hasProgress: !!(kids ? kids.length : d.progress) };
+  },
+  // What to restore: resolves 'all', 'voices' or null (Cancel, Escape or a tap outside: nothing is changed).
+  ask(info){
+    const names=(info.kids||[]).map(c=>c.name || 'New child'), when=info.d.savedAt ? niceDate(String(info.d.savedAt).slice(0,10)) : '';
+    const holds=[ info.kids ? `${names.length} ${names.length===1?'child':'children'}${names.length ? ' ('+names.join(', ')+')' : ''}` : (info.hasProgress ? 'progress' : ''), info.voices ? `${info.voices} recorded voice${info.voices===1?'':'s'}` : '' ].filter(Boolean).join(' and ');
+    const lines=[ `This backup${when ? ' from '+when : ''} holds ${holds || 'no progress and no voices'}.` ];
+    if (info.kids) lines.push('Restoring progress replaces the children in the file with their saved copy, and the settings with the saved settings. Other children already on this device are kept.');
+    else if (info.hasProgress) lines.push('Restoring progress replaces the progress and settings on this device with the saved copy.');
+    if (info.voices) lines.push('Recorded voices in the file replace the same voices on this device.');
+    return new Promise(resolve=>{
+      const back=document.createElement('div'); back.className='toy-dialog'; back.setAttribute('role','presentation');
+      const btn=(r, label, col)=>`<button type="button" class="toy-block toy-block--${col} toy-block--sm" data-r="${r}"><span class="toy-block-label">${esc(label)}</span></button>`;
+      back.innerHTML=`<div class="toy-dialog-panel toy-paper" role="alertdialog" aria-modal="true" aria-labelledby="bkAskT" aria-describedby="bkAskM"><h2 class="toy-dialog-title" id="bkAskT">Restore this backup?</h2>`
+        + `<div class="toy-dialog-msg" id="bkAskM">${lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div><div class="toy-dialog-btns bk-ask-btns">${btn('0','Cancel','wood')}`
+        + (info.voices && info.hasProgress ? btn('v','Voices only','wood') : '') + btn('1', info.hasProgress ? (info.voices ? 'Restore everything' : 'Restore progress') : 'Restore voices', 'teal') + `</div></div>`;
+      const prev=document.activeElement;
+      const done=r=>{ document.removeEventListener('keydown', onKey, true); back.remove(); if (prev && prev.focus) try{ prev.focus(); }catch(e){} resolve(r); };
+      const onKey=e=>{ if (e.key==='Escape'){ e.preventDefault(); done(null); } };
+      back.addEventListener('click', e=>{ const b=e.target.closest('button[data-r]'); if (b) done(b.dataset.r==='1' ? (info.hasProgress ? 'all' : 'voices') : b.dataset.r==='v' ? 'voices' : null); else if (e.target===back) done(null); });
+      document.addEventListener('keydown', onKey, true); document.body.appendChild(back); back.querySelector('[data-r="0"]').focus();
+    });
+  },
   async restore(text, withProgress){
-    const d=JSON.parse(text); if (d.app!=='abacus-practice') throw new Error('Not an Abacus Practice backup file');
+    const d=this.check(text).d;
     let n=0;
     if (d.voices && d.voices.profiles){
       for (const p of d.voices.profiles){
@@ -421,6 +449,8 @@ function renderHome(){
   const line = !settings.name ? ["I don't know your name yet! Tap me to tell me.", 'ask_name']
     : allDone ? [`All done today, ${settings.name}! Play a game or visit My Room.`, 'all_done']
     : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
+  // Once a step is done the round button says Next: the bubble names that button (the recorded line says "Start", so this one is a caption only).
+  if (settings.name && !allDone && steps.some(s=>s.done) && line[1]==='hello_ready') line.splice(0, 2, line[0].replace('Tap Start', 'Tap Next'), null);
   const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
   Fun.Mascot.say(bh, line[0], 0, speak ? line[1] : null, line[1]);
   homeBubble(line[0], steps);
@@ -475,7 +505,11 @@ function todaySteps(){
     const s3 = n.kind==='flash' ? (k%2===0?'visual':'listen') : (s1==='visual' ? 'listen' : 'visual');
     const gameIds = Games.family()===5 && curIdx()<NODE_IDX.sf_add ? ['build','reader'] : ['pop','reader','build'];
     const g = gameIds[k % gameIds.length];
-    F.today = { day, celebrated:false, steps:[ {kind:s1}, {kind:'game', game:g}, {kind:s3} ].map(s=>Object.assign(s,{done:false})) };
+    // A skill with no sums yet (bead numbers) is practised by making numbers (Bead Builder) and reading them (Bead Detective).
+    const plan = n.drill ? [ {kind:s1}, {kind:'game', game:g}, {kind:s3} ]
+      : s1==='lesson' ? [ {kind:'lesson'}, {kind:'game', game:'build'}, {kind:'game', game:'reader'} ]
+      : (k%2===0 ? ['build','reader','build'] : ['reader','build','reader']).map(x=>({kind:'game', game:x}));
+    F.today = { day, celebrated:false, steps:plan.map(s=>Object.assign(s,{done:false})) };
     Fun.save();
   }
   return F.today.steps.map((s,at)=>{ const [icon,label]=STEP_INFO[s.kind]; const g=s.game&&Games.GAMES[s.game]; return Object.assign({}, s, { at, icon, label: g?g.name:label }); });
@@ -486,7 +520,11 @@ function startStep(s){
   const n=NODES[curIdx()], F=Fun.data;
   const ran = (kind)=>{ if (F.today) { F.today.active={ at:s.at, kind }; Fun.save(); } };
   if (s.kind==='lesson'){ ran('lesson'); return startMode('learn'); }
-  if (s.kind==='game'){ ran('game'); return Games.open(s.game); }
+  if (s.kind==='game'){ ran('game'); return Games.open(s.game, {from:'home'}); }
+  if (!n.drill && s.kind!=='lesson'){                                        // a plan made before this skill had bead games: never a drill without sums
+    if (hasLesson(n) && !node(n.id).lesson){ ran('lesson'); return startLesson(n); }
+    ran('game'); return Games.open(s.kind==='listen' ? 'build' : 'reader', {from:'home'});
+  }
   if ((s.kind==='visual'||s.kind==='listen') && hasLesson(n) && !node(n.id).lesson){ ran('lesson'); return startLesson(n); }   // learn a new skill before drilling it
   if (s.kind==='flash'){ ran('flash'); return startDrill('flash', n); }
   ran(s.kind); return startDrill(s.kind, n.kind==='flash' ? C.BY_ID.combined : n);
@@ -500,10 +538,11 @@ async function activityDone(kind, info={}){
   Fun.save();
   await Fun.give({gold: !!info.gold});
   Treats.earn(Treats.EARN.activity + (info.gold ? Treats.EARN.gold : 0), info.gold ? 'finished + gold sticker' : 'for finishing');
-  if (info.leveled){ await sleep(2300); Treats.earn(Treats.EARN.skill, 'new skill unlocked!'); }
+  const gap = info.gap || 2300;   // a pause between rewards (shorter after a game: nothing else is landing on the screen)
+  if (info.leveled){ await sleep(gap); Treats.earn(Treats.EARN.skill, 'new skill unlocked!'); }
   if (F.today && F.today.day===todayKey() && F.today.steps.every(s=>s.done) && !F.today.celebrated){
     F.today.celebrated=true; F.garden[todayKey()]='full'; Fun.save();
-    await sleep(2300); Fun.confetti(120); Sfx.star();
+    await sleep(gap); Fun.confetti(120); Sfx.star();
     await Fun.give({gold:true, title:'Today’s practice is done!', voice:'today_done'});
     Treats.earn(Treats.EARN.today, 'Today’s practice done!');
   }
@@ -513,7 +552,7 @@ $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySt
 function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
-$('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
+$('#exitGame').addEventListener('click', ()=>{ Games.stop(); Games.leave(); });
 // The three doors. Practice opens the Practice door screen (#door).
 function openPractice(){
   Speaker.unlock();
@@ -670,16 +709,20 @@ function replay(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.clas
 $('#exitDoor').innerHTML=TOY.icon('back', 32, 'currentColor'); $('#exitLesson').innerHTML=TOY.icon('back', 32, 'currentColor');
 
 // The three ways to practise: wooden toy blocks with a lacquer face. [TOY icon, label, icon colour, accent]
-const DOOR_TOYS = { visual:['eye','Look','#fff','#FFD25E'], listen:['ear','Listen','#4A2C06','#FFFDF6'], flash:['flash','Flash','#fff','#FFD25E'] };
+const DOOR_TOYS = { visual:['eye','Look','#fff','#FFD25E','Look: read the numbers'], listen:['ear','Listen','#4A2C06','#FFFDF6','Listen: hear the numbers'], flash:['flash','Flash','#fff','#FFD25E','Flash: numbers pop up fast'] };
+// A skill with no sums yet (bead numbers): the same three blocks offer what works for it. [.., what it opens]
+const DOOR_BEADS = { visual:['book','Learn','#fff','#FFD25E','Learn: Bix shows you the beads','learn'], listen:['practice','Make','#4A2C06','#FFFDF6','Make: make numbers on the abacus','build'], flash:['eye','Read','#fff','#FFD25E','Read: read numbers from the beads','reader'] };
 function renderDoor(){
-  $$('#door .door-block').forEach(b=>{ const [ic,lab,col,acc]=DOOR_TOYS[b.dataset.door];
-    if (!b.dataset.drawn){ b.innerHTML=`<span class="td-toy-face">${TOY.icon(ic, 96, col, {accent:acc, stroke:2.3})}</span><span class="door-label">${lab}</span>`; b.dataset.drawn='1'; } });
+  const sums=!!NODES[curIdx()].drill, set=sums ? DOOR_TOYS : DOOR_BEADS, key=sums ? '1' : 'beads';
+  $$('#door .door-block').forEach(b=>{ const [ic,lab,col,acc,aria]=set[b.dataset.door];
+    if (b.dataset.drawn!==key){ b.innerHTML=`<span class="td-toy-face">${TOY.icon(ic, 96, col, {accent:acc, stroke:2.3})}</span><span class="door-label">${lab}</span>`; b.setAttribute('aria-label', aria); b.dataset.drawn=key; } });
   const all=$('#doorAll'); if (!all.innerHTML) all.innerHTML=TOY.icon('lock', 22, 'currentColor')+'<span>See all skills</span>';
   const props=$('#doorProps'); if (!props.innerHTML) props.innerHTML=TOY.prop('rainbow', 150)+TOY.prop('plant', 170);
   toySky($('#doorSky'));
   renderDoorPath();
   const bd=$('#bixDoor'); toyBix(bd, 'happy', {size:190});
-  bixSay(bd, 'How do you want to play with numbers?', 'door_ask');
+  if (sums) bixSay(bd, 'How do you want to play with numbers?', 'door_ask');
+  else bixSay(bd, 'First we get to know the beads. Sums come next!', null);
   $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
 }
 // My path: every skill is a bead on one brass rod that winds across the table. Learned beads are glossy teal, the
@@ -729,7 +772,8 @@ new MutationObserver(()=>{ const d=$('#door'); if (d.classList.contains('active'
   .observe($('#door'), {attributes:true, attributeFilter:['class']});
 $$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
   Speaker.unlock(); const m=b.dataset.door, n=NODES[curIdx()];
-  if (!n.drill) return startLesson(lessonTarget(n), 'door');                  // nothing to drill yet (bead numbers): learn it
+  if (!n.drill){ const to=DOOR_BEADS[m][5];                                   // nothing to drill yet (bead numbers): learn, make or read
+    return to==='learn' ? startLesson(lessonTarget(n), 'door') : Games.open(to, {from:'door'}); }
   startDrill(m, doorDrillNode(m, n));
 }));
 $('#exitDoor').addEventListener('click', ()=>{ Fun.BixVoice.stop(); renderHome(); show('home'); });
@@ -767,7 +811,8 @@ function startLesson(n, from){
   const rods=lessonRods(n);
   if (!lessonAb || lessonAb.rodsMade!==rods){ if (lessonAb) lessonAb.destroy(); lessonAb = DemoAbacus($('#lessonAbacus'), {rods, readout:true, onBead:()=>Sfx.tap(), onChange:(v)=>onLessonBeads(v)}); lessonAb.rodsMade=rods; }
   lessonAb.reset();
-  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
+  if (L) clearTimeout(L.skipT), clearTimeout(L.tryT);
+  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   toyBix($('#bixLesson'), 'happy', {size:170, keep:false, bubble:false}); toySky($('#lessonSky'));
   // Room under the soroban is kept for the friends only in lessons where a friend rule can come up.
@@ -787,7 +832,7 @@ function lessonRods(n){
   return Math.max(3, String(Math.floor(mx)).length);
 }
 function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1; }
-function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx:0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
+function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx : L.phase==='done'?lessonTotal() : 0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
 // The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
 function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>').replace(/×/g,'<i class="times">×</i>'); }
 function cap(kind, text, prob){ $('#capKind').textContent=kind; const t=$('#capText'); t.classList.remove('tight'); t.innerHTML=text; if (capLines()>3) t.classList.add('tight'); if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? TOY.icon('star', 64, '#F2B632') : probHtml(prob||''); }
@@ -816,13 +861,25 @@ function lessonPages(n){
   return pages;
 }
 // The one obvious next step is the teal block; "Skip" is plain wood.
-function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); b.className='toy-block td-next toy-block--'+(kind==='maple' ? 'wood' : 'teal'); b.innerHTML=(icon?TOY.icon(icon, 36, 'currentColor', {stroke:3.2}):'')+`<span class="toy-block-label">${label}</span>`; }
+function lessonBtn(label, icon, kind){ const b=$('#lessonNext'); clearTimeout(L.skipT); clearTimeout(L.tryT); b.style.visibility=''; b.className='toy-block td-next toy-block--'+(kind==='maple' ? 'wood' : 'teal'); b.innerHTML=(icon?TOY.icon(icon, 36, 'currentColor', {stroke:3.2}):'')+`<span class="toy-block-label">${label}</span>`; }
+// "Your turn": the beads are the way forward, so there is no big button. Skip is a small wooden one that only
+// turns up after a while, or after two tries that ended on another number.
+const SKIP_MS = 10000;
+function turnIdx(){ return L.phase==='numbers' ? L.demoIdx : L.node.demos.length+L.guidedIdx; }
+function turnTotal(n){ return n.kind==='numbers' ? n.lesson.numbers.length : n.guided.length; }
+function lessonSkip(){
+  lessonBtn('Skip', null, 'maple'); const b=$('#lessonNext'), l=L, at=l.phase+turnIdx(); b.classList.add('td-skip'); b.style.visibility='hidden'; l.tries=0;
+  l.showSkip=()=>{ if (L===l && l.phase+turnIdx()===at && !l.won && $('#lesson').classList.contains('active')) b.style.visibility=''; };
+  l.skipT=setTimeout(l.showSkip, window.App.lessonSkipMs ?? SKIP_MS);
+}
+// Learned = she really did most of the "Your turn" steps (two in three); skipped ones do not count.
+function lessonLearned(){ const t=turnTotal(L.node); return L.did*3 >= t*2; }
 function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); capVoice(id); }
 // Lesson progress as beads on a brass rod (one per demo / try): done teal, the one you are on gold, the rest bare wood.
 function renderLessonSteps(){
   const tot=lessonTotal()-1, done=Math.min(tot, lessonDone()), live=['numbers','demo','guided'].includes(L.phase);
   const el=$('#lessonSteps'); el.setAttribute('aria-label', L.phase==='done' ? 'All steps done' : live ? `Step ${done+1} of ${tot}` : `${tot} steps`);
-  el.innerHTML=Array.from({length:tot},(_,i)=>{ const ok=i<done, cur=i===done&&live; return `<i class="ls-dot${ok?' ok':cur?' cur':''}">${TOY.stateBead(ok?'done':cur?'now':'todo', 48, {dim:false})}</i>`; }).join('');
+  el.innerHTML=Array.from({length:tot},(_,i)=>{ const skip=i<done&&L.marks[i]===false, ok=i<done&&!skip, cur=i===done&&live; return `<i class="ls-dot${ok?' ok':skip?' skip':cur?' cur':''}">${TOY.stateBead(ok?'done':cur?'now':'todo', 48, {dim:false})}</i>`; }).join('');
 }
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
@@ -837,7 +894,7 @@ async function renderLesson(){
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonBtn('Skip', null, 'maple'); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
@@ -848,26 +905,36 @@ async function renderLesson(){
   if (L.phase==='guided'){
     const ls=lessonStep(n, n.guided[L.guidedIdx]); L.target=ls.target; lessonAb.value=ls.start;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label); { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
-    lessonBtn('Skip', null, 'maple'); $('#lessonHint').style.display=''; if (L.guidedIdx===0) lessonSay('lesson_turn'); return;
+    lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0) lessonSay('lesson_turn'); return;
   }
+  if (L.phase==='done' && !lessonLearned()){   // mostly skipped: kind words, no sticker, no golden bead, the Today step stays open
+    cap('Good try!', `Good practice! Every try makes you stronger. Let’s do <b>${esc(n.title)}</b> again later.`, ''); lessonBtn('OK', 'check'); Fun.Mascot.react($('#bixLesson'), 'happy', 1600);
+    if (!L.told){ L.told=true; lessonSay('sum_good'); } return; }
   if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
 }
 $('#lessonHint').innerHTML=TOY.icon('eye', 30, 'currentColor')+'<span class="toy-block-label">Show me</span>';
 let animToken=0;
 async function playSteps(ab, steps, onStep){
   const my=++animToken; L.busy=true;
-  for (const s of steps){ if (my!==animToken) return; onStep(s); for (const m of s.do){ if (my!==animToken) return; await ab.move(m.rod, m.delta, 450); } await sleep(s.do.length?600:900); }
-  if (my===animToken) L.busy=false;
+  // Each run has its own token, checked after every wait (inside ab.move too): a demo that was left behind
+  // (Next tapped mid-move) never touches the beads of the next one.
+  const live=()=>my===animToken;
+  for (const s of steps){ if (!live()) return; onStep(s); for (const m of s.do){ if (!live()) return; await ab.move(m.rod, m.delta, 450, live); if (!live()) return; } await sleep(s.do.length?600:900); }
+  if (live()) L.busy=false;
 }
 function onLessonBeads(v){
   if (L.busy) return;
   if (L.phase==='numbers' || L.phase==='guided'){
-    if (v===L.target){ Sfx.ok(); lessonSay('lesson_yes'); Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+    clearTimeout(L.tryT);
+    if (v!==L.target){ const l=L, at=l.phase+turnIdx();   // the beads rest on another number: a try. After two, Skip turns up.
+      l.tryT=setTimeout(()=>{ if (L!==l || l.phase+turnIdx()!==at || l.busy || lessonAb.value===l.target) return; if (++l.tries>=2 && l.showSkip) l.showSkip(); }, 1500); }
+    if (v===L.target){ clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok(); lessonSay('lesson_yes'); Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
 function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
 function advanceLesson(){
-  const n=L.node; animToken++; L.busy=false; lessonAb.clearHighlights();
+  const n=L.node; animToken++; L.busy=false; L.won=false; lessonAb.clearHighlights();
+  if ((L.phase==='numbers' || L.phase==='guided') && L.marks[turnIdx()]===undefined){ L.marks[turnIdx()]=false; L.skipped++; }   // skipped: not done
   if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; } L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
@@ -875,7 +942,7 @@ function advanceLesson(){
   else if (L.phase==='done'){ leaveLesson(); return; }
   renderLesson();
 }
-$('#lessonNext').addEventListener('click', ()=>advanceLesson());
+$('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; advanceLesson(); });   // (the step she just got right moves on by itself)
 // Other screens and the tests can open any skill's lesson.
 window.Lessons = { start: (n, from)=>startLesson(typeof n==='string' ? C.BY_ID[n] : n, from) };
 // What to do on a "your turn" step, in words (multiplication starts from 0 and ends on the product).
@@ -950,7 +1017,7 @@ PB.mount();   // mounted up front, so the first problem's tiles are sized with t
 
 /* ---- the answer tool: keypad (the toy kit's wooden keys on felt, same key order as before) or on-screen soroban (AbacusInput) ---- */
 const Keys = TOY.keypad($('#padKeys'), { 
-  onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<6) setEntry(entry+k); },
+  onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<entryMax()) setEntry(entry+k); },
   onBackspace: ()=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys') setEntry(entry.slice(0,-1)); },
 });
 const Tool = {
@@ -1094,6 +1161,10 @@ function beginSet(){
   setStages(); toySky('#drillSky'); show('drill');
 }
 async function startDrill(m, n){
+  if (!n || !n.drill){                                                       // no sums for this skill (bead numbers): its lesson, or making numbers
+    if (n && hasLesson(n) && !node(n.id).lesson) return startLesson(n);
+    return Games.open('build', {from:'home'});
+  }
   mode=m; drillNode=n; reviewing=false; locked=false; listenArmed=false; Speaker.turn=0; Speaker.unlock(); stopTest(); LT=null;
   try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ TOY.confirm('No problems to make', 'The grown-up settings for numbers and speed can’t make problems for this skill. Change them in Grown-ups → Practice.', {ok:'OK', cancel:'Close'}); return; }
   beginSet();
@@ -1113,6 +1184,8 @@ function setStages(){
 function endDrill(){ dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
 function stopTest(){ /* the level test keeps a silent, generous time measure only (LT.start); nothing ticks on screen */ }
 function setEntry(v){ entry=v; Tool.readout(); }
+// The keypad takes one digit more than the answer has (room for a slip, not for a row of digits).
+function entryMax(){ const p=problems[idx]; return p ? String(Math.abs(p.answer)).length+1 : 6; }
 function baseLine(){
   if (LT) return 'Take your time. Check each one.';
   if (reviewing) return 'This one was tricky. Want me to show you first?';
@@ -1203,7 +1276,7 @@ async function flash(p){
 }
 $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
 $('#checkBtn').addEventListener('click', ()=>{ if(locked||demoing) return; submit(); });
-document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
+document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<entryMax()&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('tp-nudge'); void t.offsetWidth; t.classList.add('tp-nudge'); setTimeout(()=>t.classList.remove('tp-nudge'),460); }
 // Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or gets a red rim (a gentle shake),
 // and her bead on the rod turns teal or red. Cleared when the next problem comes. Never used in the level test.
@@ -1333,6 +1406,7 @@ function finish(){
   $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? TOY.icon('star', 30, '#C98A16')+'<span>New skill!</span>' : '';
   // one obvious next step: fix the red ones; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
+  { const fl=$('#fixBtn .toy-block-label'); if (fl) fl.textContent = toFix.length===1 ? 'Fix the red one' : 'Fix the red ones'; }
   $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
@@ -1735,7 +1809,7 @@ async function renderParent(){
   bindSwitch('#sBixTalks','bixTalks', ()=>{ if(!settings.bixTalks) Fun.BixVoice.stop(); });
   $('#sBixVoice').innerHTML=Object.entries(Fun.BixVoice.voices).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   $('#sBixVoice').value=Fun.BixVoice.tag();
-  $('#sBixVoice').onchange=async()=>{ settings.bixVoice=$('#sBixVoice').value; saveSettings(); Fun.BixVoice.stop(); Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); };
+  $('#sBixVoice').onchange=async()=>{ settings.bixVoice=$('#sBixVoice').value; saveSettings(); keepVoiceOffline(); Fun.BixVoice.stop(); Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); };
   $('#sBixTest').onclick=async()=>{ Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play(['intro_hi','tap_3','tap_4','sum_amazing'][Math.floor(Math.random()*4)]); };
   $('#levelAgain').onclick=()=>{ Recorder.stop(); Setup.open('check'); };
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
@@ -1758,7 +1832,13 @@ async function renderParent(){
   $('#bkMake').onclick=async()=>{ const b=$('#bkMake'); b.disabled=true; b.textContent='Preparing…'; try{ const f=await Backup.build(); $('#bkSave').style.display=''; $('#bkInfo').textContent=`Ready: ${f.name} (${(f.size/1048576).toFixed(1)} MB, ${profiles().length} voice${profiles().length===1?'':'s'}, progress and settings). Tap "Save file", then choose "Save to Files".`; }catch(e){ $('#bkInfo').textContent='Could not prepare backup: '+(e&&e.message||e); } b.disabled=false; b.textContent='1. Prepare backup'; };
   $('#bkSave').onclick=async()=>{ const r=await Backup.save(); if (r==='shared'||r==='downloaded'){ settings.lastBackup=new Date().toISOString(); saveSettings(); renderChecklist(); } $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
   $('#bkOpen').onclick=()=>$('#bkFile').click();
-  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=await TOY.confirm('Restore progress and settings too?', 'Recorded voices are always restored. This backup can also bring back the children’s progress and settings, replacing what is on this device now.', {ok:'Voices, progress and settings', cancel:'Voices only'}); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
+  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return;
+    let text, info; try{ text=await f.text(); info=Backup.check(text); }catch(e){ $('#bkInfo').textContent='This is not a Bix Abacus backup file. Nothing was changed.'; return; }
+    const what=await Backup.ask(info); if (!what){ $('#bkInfo').textContent='Nothing was restored.'; return; }
+    const withProgress = what==='all';
+    try{ const r=await Backup.restore(text, withProgress) || {voices:info.voices, clips:0}; for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome();
+      $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }
+    catch(e){ Diag.add('restore failed: '+(e&&e.message||e)); $('#bkInfo').textContent='Could not restore this backup. Nothing else was changed.'; } };
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#soundTest').onclick=async()=>{ Speaker.unlock(); Sfx.star(); await sleep(450); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); Diag.add('sound test ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); };
@@ -1823,14 +1903,31 @@ window.App = {
   },
   async voiceReady(){ try{ await Speaker.prepare(); Speaker.pickReader(false); }catch(e){} },
   say(n){ try{ Speaker.stop(); return Speaker.say(n); }catch(e){} },
-  gamePops: null, gameNumbers: null,   // tests can shorten a game round (Friend Pop friends, Bead Builder numbers)
+  gamePops: null, gameNumbers: null, gameReads: null,   // tests can shorten a game round (Friend Pop friends, Bead Builder numbers, Bead Detective numbers)
+  // A bead game finished. On a skill with no sums (bead numbers) the numbers she made / read are its practice record,
+  // so the usual mastery rule (checkMastery) opens the next skill. Returns true when it just did.
+  gameResult(id, marks){
+    const n=NODES[curIdx()]; if (n.drill || (id!=='build' && id!=='reader') || !marks || !marks.length) return false;
+    const st=node(n.id), day=todayKey(); marks.forEach(ok=>st.hist.push({ok:!!ok, day})); st.hist=st.hist.slice(-40);
+    const leveled=checkMastery(n.id); saveProgress(); return leveled;
+  },
+  goDoor(){ show('door'); },
 };
+// A voice that is not in the default offline install (Boy) is saved for offline use when it is the chosen one:
+// asked of the service worker when a grown-up picks it and at every start (so a new app version keeps it).
+function keepVoiceOffline(){
+  const tag=settings.bixVoice; if (!tag || tag==='sweet' || !('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg=>{ if (reg.active) reg.active.postMessage({type:'cache-voice', tag}); }).catch(()=>{});
+}
 /* ---------------- boot ---------------- */
 window.__diag = Diag;
 // Test hook: put a given problem on the practice screen (layout checks for long rows, 4-digit numbers, multiplication on beads).
 window.__drillSet = (terms, op, tool)=>{ const p={terms, answer: op==='mul' ? terms[0]*terms[1] : terms.reduce((a,b)=>a+b,0)}; if (op) p.op=op;
   problems[idx]=p; Tool.setRods=Math.max(3, ...problems.map(q=>Tool.rodsFor(q))); if (tool) Tool.kind=tool; presentProblem(); };
 window.__drillSay = text=>PB.say(text, 'happy', null, 0);
+// Test hooks for lessons: where the lesson is, and "she moved the beads to v".
+window.__lesson = ()=>L ? { phase:L.phase, target:L.target, demoIdx:L.demoIdx, guidedIdx:L.guidedIdx, busy:!!L.busy, value: lessonAb ? lessonAb.value : null, did:L.did||0, skipped:L.skipped||0 } : null;
+window.__lessonSet = v=>{ if (lessonAb) lessonAb.poke(v); };
 window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
 Setup.bind();
 if (firstRun){ show('setup'); Setup.open(); }
@@ -1840,5 +1937,5 @@ setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 // iPad Safari only allows sound to start on a finger lift / click, so try on every tap until it's on.
 ['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)) Speaker.unlock(); }, true));
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').then(keepVoiceOffline).catch(()=>{});
 })();

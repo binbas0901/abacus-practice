@@ -205,6 +205,9 @@
 #lesson .lesson-nav{flex:none;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:16px;margin:0 0 12px}
 #lesson #lessonNext.td-next{min-width:clamp(180px,17vw,220px);min-height:92px;padding:6px 24px 4px;font-size:clamp(28px,2.9vw,34px);justify-content:center}
 #lesson #lessonHint{justify-content:center;min-height:66px}
+/* Skip on a "Your turn" step: a small, quiet wooden button (it turns up late; the beads are the way forward) */
+#lesson #lessonNext.td-next.td-skip{align-self:flex-end;min-width:0;min-height:64px;padding:4px 20px 2px;font-size:22px;opacity:.86}
+#lesson .ls-dot.skip{opacity:.7}
 
 /* =====================================================================
    other iPad sizes
