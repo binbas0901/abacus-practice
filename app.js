@@ -1349,7 +1349,7 @@ function bowlSlot(i, total){
 function sumBeads(list, gold){
   gold=gold||0; const inBowl=list.filter(c=>c==='jade').length, total=inBowl+gold, bs = total<=14 ? .19 : total<=25 ? .145 : .112;
   const box=$('#sumStars'); box.style.setProperty('--bs', bs); let k=0, html=BOWL_BACK;
-  list.forEach((c,i)=>{ if (c==='jade') html+=`<span role="listitem" aria-label="${i+1}: green" class="tp-b in" style="${bowlSlot(k++, total)}">${TOY.bead('teal', 80, {shadow:false})}</span>`; });
+  list.forEach((c,i)=>{ if (c==='jade') html+=`<span role="listitem" aria-label="${i+1}: shiny" class="tp-b in" style="${bowlSlot(k++, total)}">${TOY.bead('teal', 80, {shadow:false})}</span>`; });
   for (let g=0; g<gold; g++) html+=`<span aria-hidden="true" class="tp-b tp-gold in" style="${bowlSlot(k++, total)}">${TOY.bead('mustard', 80, {shadow:false})}</span>`;
   box.innerHTML=html+BOWL_FRONT;
   const out=list.map((c,i)=>[c,i]).filter(x=>x[0]!=='jade'), w=out.length>8 ? 44 : 60;
@@ -1393,7 +1393,7 @@ function finish(){
   const green=problems.filter((p,i)=>results[i]===true||p._fixed).length;
   const toFix=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0);
   const allFixed = reviewing && !toFix.length;
-  $('#sumScore').textContent = green ? `${green} green bead${green===1?'':'s'}!` : 'Good practice!';
+  $('#sumScore').textContent = green ? `${green} shiny bead${green===1?'':'s'}!` : 'Good practice!';
   const vid = allFixed ? 'sum_fixed' : leveled ? 'sum_unlock' : n===3 ? 'sum_amazing' : n===2 ? 'sum_great' : 'sum_good';
   const say = { sum_fixed:'All fixed! You fixed every one. You’re a star!', sum_unlock:`Hooray! You unlocked a new skill: ${NODES[curIdx()].title}!`, sum_amazing:'Amazing work!',
     sum_great:'Great job! Want to polish these with me?', sum_good:'Good practice! Every try makes you stronger.' }[vid];
@@ -1408,7 +1408,9 @@ function finish(){
   $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? TOY.icon('star', 30, '#C98A16')+'<span>New skill!</span>' : '';
   // one obvious next step: fix the ones to polish; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
-  { const fl=$('#fixBtn .toy-block-label'); if (fl) fl.textContent = toFix.length===1 ? 'Fix this with Bix' : 'Fix these with Bix'; }
+  // one phrase family for the ones not right yet: "to polish" on the mat, "Polish this / these with Bix" on the button
+  { const fl=$('#fixBtn .toy-block-label'); if (fl) fl.textContent = toFix.length===1 ? 'Polish this with Bix' : 'Polish these with Bix';
+    const cap=toFix.length===1 ? 'Bead to polish' : 'Beads to polish', fc=$('#summary .tp-fixcap'); if (fc) fc.textContent=cap; $('#sumFix').setAttribute('aria-label', cap); }
   $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
@@ -1500,7 +1502,7 @@ function finishLevelTest(){
   // Not yet: show the beads she got, and point back to practice. No fix pass, no grade.
   const right=score.perProblem.map(x=>x.answer!==null && x.answer===x.expected);
   const green=right.filter(Boolean).length;
-  $('#sumScore').textContent = green ? `${green} green bead${green===1?'':'s'}!` : 'Good try!';
+  $('#sumScore').textContent = green ? `${green} shiny bead${green===1?'':'s'}!` : 'Good try!';
   sumBeads(right.map(r=>r?'jade':'pale')); drawMoon($('#sumSky'), $('#sumMoons'), null);
   $('#sumNote').textContent = score.correctAny/score.total >= score.minAccuracy
     ? 'So many right! Let’s practise a little more to get quicker, then try the test again.'

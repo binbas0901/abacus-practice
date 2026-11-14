@@ -335,7 +335,7 @@
       card = { icon: T().pair(family() === 5 ? 2 : 3, family() === 5 ? 3 : 7, 130, { mood: 'cheer' }), big: `${r.score} friend${r.score === 1 ? '' : 's'} found!`, sub: isBest ? 'Every pop was a friend.' : 'popped in one round', best: isBest, bestLine: 'Perfect popping!', bestText: `${best.popTotal} friends popped so far` };
     } else if (id === 'reader') {
       isBest = r.score > (best.reader || 0); if (isBest) best.reader = r.score;
-      card = { icon: GAMES.reader.art(130), big: `${r.score} green bead${r.score === 1 ? '' : 's'}!`, dots: beadDots(r.of, r.of, r.marks), sub: `numbers read · up to ${r.rods} rod${r.rods > 1 ? 's' : ''}`, best: isBest && r.score > 0, bestText: `Your best: ${best.reader}` };
+      card = { icon: GAMES.reader.art(130), big: `${r.score} shiny bead${r.score === 1 ? '' : 's'}!`, dots: beadDots(r.of, r.of, r.marks), sub: `numbers read · up to ${r.rods} rod${r.rods > 1 ? 's' : ''}`, best: isBest && r.score > 0, bestText: `Your best: ${best.reader}` };
     } else {
       best.buildTotal = (best.buildTotal || 0) + r.n;
       card = { icon: GAMES.build.art(130), big: `${r.n} numbers made!`, sub: 'all on the abacus', best: false, bestText: `${best.buildTotal} numbers built so far` };
@@ -363,7 +363,7 @@
     const ic = $('#playIc'); if (ic && !ic.innerHTML) ic.innerHTML = TI('play', 30, '#4A2C06');
     for (const [id, g] of Object.entries(GAMES)) {
       const chip = id === 'pop' ? (popTotal(best) ? `${popTotal(best)} friends popped` : '')
-        : id === 'reader' ? (best.reader ? `Best: ${best.reader} green beads` : '')
+        : id === 'reader' ? (best.reader ? `Best: ${best.reader} shiny beads` : '')
         : (best.buildTotal ? `${best.buildTotal} numbers built` : '');
       // A toy box with its lid: the picture on the front is the game. A game never played says "New!" (Bead Builder stays plain).
       const el = document.createElement('button'); el.type = 'button'; el.className = `gcard toy-box ${g.block}`; el.dataset.game = id; el.setAttribute('aria-label', `${g.name}: ${g.desc}`);

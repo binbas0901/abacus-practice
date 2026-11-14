@@ -107,7 +107,7 @@ async def main():
             await pg.click('#rdPad [data-k=go]'); right += (i!=4)
             await pg.wait_for_function("!document.querySelector('#rdCover').classList.contains('on')")
         t = await collect(pg); await pg.wait_for_selector('.gresult')
-        check('Bead Detective: 9/10, rods grow', (await pg.text_content('.gr-big'))=='9 green beads!' and await pg.locator('.gr-dots .gdot.ok').count()==9 and await pg.locator('.gr-dots .gdot.miss').count()==1, f"{await pg.text_content('.gr-big')} | {await pg.text_content('.gr-sub')}")
+        check('Bead Detective: 9/10, rods grow', (await pg.text_content('.gr-big'))=='9 shiny beads!' and await pg.locator('.gr-dots .gdot.ok').count()==9 and await pg.locator('.gr-dots .gdot.miss').count()==1, f"{await pg.text_content('.gr-big')} | {await pg.text_content('.gr-sub')}")
         await pg.click('.gresult [data-a=done]'); await pg.wait_for_selector('#play.active')
 
         # Bead Builder: set beads by tapping
