@@ -128,7 +128,7 @@
 .tr-wallet{display:inline-flex;align-items:center;gap:8px;padding:6px 22px 9px 12px;font:700 30px/1 var(--toy-display);color:var(--toy-ink)}
 .tr-wallet span{display:flex;line-height:0}
 .tr-wallet b{font-weight:700}
-.tr-shop-body{position:relative;flex:1;min-height:0;overflow:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:30px clamp(18px,3vw,40px) 18px;touch-action:pan-y}
+.tr-shop-body{position:relative;display:flex;flex-direction:column;gap:10px;padding:30px clamp(18px,3vw,40px) 18px;touch-action:pan-y}
 .tr-shop-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;min-height:118px;flex:none}
 #bixShop{flex:1 1 auto}
 #bixShop{--tb:148px}
@@ -200,7 +200,7 @@
    Sticker album — the pages of the sticker book laid out on the table
    ===================================================================== */
 #album .tr-top{padding-bottom:6px}
-.tr-album-body{flex:1;min-height:0;overflow:auto;box-sizing:border-box;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:26px;align-content:start;padding:20px clamp(18px,3vw,40px) 40px;touch-action:pan-y}
+.tr-album-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:26px;align-content:start;padding:20px clamp(18px,3vw,40px) 40px;touch-action:pan-y}
 #album .ab-page{position:relative;padding:18px 20px 22px;border-radius:8px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);box-shadow:inset 0 1px 0 #fff,0 2px 0 #D9CEB8,5px 11px 14px rgba(var(--toy-shade),.32)}
 #album .ab-page:nth-child(odd){transform:rotate(-.5deg)} #album .ab-page:nth-child(even){transform:rotate(.6deg)}
 #album .ab-head{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}
@@ -339,10 +339,6 @@
 #game .toy-keypad{--toy-key-h:clamp(60px,8.6vh,88px);--toy-key-w:clamp(72px,7.6vw,96px)}
 #game .toy-keypad-mat{padding:clamp(14px,1.8vw,22px)}
 #game .g-pad .toy-key{line-height:1}
-/* waiting keys: dimmed once, not twice (the kit fades both the mat and each key) */
-#game .toy-keypad-wrap.off{opacity:1}
-#game .toy-keypad-wrap.off .toy-key:disabled{opacity:.6}
-#game .toy-keypad-wrap .toy-start:disabled{opacity:.55}
 
 /* ---- Bead Builder ---- */
 #game .bd-q{all:unset;display:flex;flex-direction:column;align-items:center;gap:26px;flex:none}
@@ -352,7 +348,6 @@
 #game .bd-num{all:unset;display:block;min-height:1em;color:var(--toy-ink);font:700 clamp(84px,13.5vh,118px)/1 var(--toy-display);font-variant-numeric:tabular-nums}
 #game .bd-num.pop{animation:tr-pop .38s cubic-bezier(.2,1.4,.4,1) both}
 .bd-tools{display:flex;gap:16px}
-.bd-tools .toy-block{min-width:0;padding-left:18px;padding-right:20px}
 #game .bd-ab{line-height:0}
 #game .bd-ab .abx-svg{width:auto;height:min(620px,calc(100vh - 262px));max-width:calc(100vw - 400px)}
 

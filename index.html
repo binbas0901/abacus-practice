@@ -110,7 +110,7 @@
     </div>
     <div class="su-step to-step" id="suPick">
       <div class="to-pickhead"><button type="button" class="toy-iconbtn" id="suPickBack" aria-label="Back"></button><h2 class="toy-plaque toy-h2 to-h">Skills</h2></div>
-      <div class="toy-felt to-skillmat"><div class="to-skills" id="suPickList"></div></div>
+      <div class="toy-felt to-skillmat"><div class="to-skills toy-scroll" id="suPickList"></div></div>
     </div>
     <div class="su-step to-step" id="suCheck">
       <div class="to-checkhead"><div class="toy-plaque to-lname" id="suLevelName"></div><div class="to-dots" id="suDots"></div><button type="button" class="toy-block toy-block--wood toy-block--sm" id="suStop" aria-label="Too tricky? Stop here and start practising this one"><span class="toy-block-label">Stop here</span></button></div>
@@ -164,7 +164,7 @@
 <section id="shop" class="screen toy-scene toy-scene--table tr-shop">
   <div class="tr-awning" aria-hidden="true"></div>
   <header class="tr-top"><button class="toy-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">Treats</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="shopWallet" aria-label="golden beads"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
-  <div class="tr-shop-body sh-body">
+  <div class="tr-shop-body toy-scroll sh-body">
     <div class="tr-shop-top"><div id="bixShop" class="tr-shop-bix"></div><div id="shopTickets" class="tr-tickets"></div></div>
     <div class="tr-stall" id="shopCards"></div>
     <div class="tr-how">Golden beads come from finishing things: a lesson, drill or game +1 · gold sticker +1 · all of Today +3 · a new skill +5</div>
@@ -174,7 +174,7 @@
 
 <section id="album" class="screen toy-scene toy-scene--table tr-album">
   <header class="tr-top"><button class="toy-iconbtn" id="exitAlbum" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">My stickers</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="albumCount"></span></header>
-  <div class="tr-album-body" id="albumPages"></div>
+  <div class="tr-album-body toy-scroll" id="albumPages"></div>
 </section>
 
 <section id="lesson" class="screen toy-scene toy-scene--calm td-lesson">
@@ -215,14 +215,14 @@
       <div class="tp-listen" id="listenStage" style="display:none">
         <div class="tp-ear toy-lac--mustard" id="ear"><span class="pr-ic" data-ic="ear" data-sz="60"></span></div>
         <div class="tp-msg" id="listenMsg" aria-live="polite">Listen…</div>
-        <button class="toy-block toy-block--mustard toy-block--sm" id="listenGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
-        <button class="toy-block toy-block--wood toy-block--sm" id="replayBtn"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Say it again</span></button>
+        <button class="toy-block toy-block--mustard toy-block--sm toy-block--compact" id="listenGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
+        <button class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="replayBtn"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Say it again</span></button>
       </div>
       <div class="tp-flash" id="flashStage" style="display:none">
         <div class="tp-flashdots" id="flashDots" aria-hidden="true"></div>
         <div class="flash-num" id="flashNum" aria-live="polite"></div>
         <div class="tp-msg" id="flashMsg"></div>
-        <button class="toy-block toy-block--teal toy-block--sm" id="flashGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
+        <button class="toy-block toy-block--teal toy-block--sm toy-block--compact" id="flashGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
         <button class="toy-block toy-block--wood toy-block--sm" id="flashAgain" style="display:none"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Show again</span></button>
       </div>
       <div class="tp-rule" aria-hidden="true"></div>
@@ -258,10 +258,10 @@
     <div class="tp-fixside"><div class="toy-felt tp-fixmat" id="sumFix" role="list" aria-label="Beads to fix"></div></div>
   </div>
   <div class="tp-sumbtns">
-    <button class="toy-block toy-block--mustard" id="testBtn" style="display:none"><span class="pr-ic" data-ic="star" data-sz="40"></span><span class="toy-block-label">Level test</span></button>
-    <button class="toy-block toy-block--red" id="fixBtn"><span class="pr-ic" data-ic="retry" data-sz="40"></span><span class="toy-block-label">Fix the red ones</span></button>
-    <button class="toy-block toy-block--teal" id="againBtn"></button>
-    <button class="toy-block toy-block--wood" id="homeBtn"><span class="toy-block-label">I’m done</span></button>
+    <button class="toy-block toy-block--md toy-block--mustard" id="testBtn" style="display:none"><span class="pr-ic" data-ic="star" data-sz="40"></span><span class="toy-block-label">Level test</span></button>
+    <button class="toy-block toy-block--md toy-block--red" id="fixBtn"><span class="pr-ic" data-ic="retry" data-sz="40"></span><span class="toy-block-label">Fix the red ones</span></button>
+    <button class="toy-block toy-block--md toy-block--teal" id="againBtn"></button>
+    <button class="toy-block toy-block--md toy-block--wood" id="homeBtn"><span class="toy-block-label">I’m done</span></button>
   </div>
 </section>
 
@@ -285,7 +285,7 @@
 <div id="showme" class="tp-show" role="dialog" aria-label="Show me"><div class="tp-showcard toy-felt">
   <div class="tp-showleft"><div class="tp-showbix" id="showmeBix"></div>
     <div class="toy-paper tp-shownote"><div class="tp-showprob" id="showmeProb"></div><div class="tp-showtext" id="showmeText" aria-live="polite"></div></div>
-    <div class="tp-showbtns"><button class="toy-block toy-block--wood toy-block--sm" id="showmeReplay"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Again</span></button><button class="toy-block toy-block--teal toy-block--sm" id="showmeClose"><span class="pr-ic" data-ic="check" data-sz="30"></span><span class="toy-block-label">Got it</span></button></div></div>
+    <div class="tp-showbtns"><button class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="showmeReplay"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Again</span></button><button class="toy-block toy-block--teal toy-block--sm toy-block--compact" id="showmeClose"><span class="pr-ic" data-ic="check" data-sz="30"></span><span class="toy-block-label">Got it</span></button></div></div>
   <div class="tp-showab" id="showmeAbacus"></div>
 </div></div>
 

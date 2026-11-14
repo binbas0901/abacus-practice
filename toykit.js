@@ -450,6 +450,8 @@
       + `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="5" fill="#DDBB86"/><rect x="10" y="10" width="${W - 20}" height="7" fill="#3A1E06" opacity=".16"/>${g}`
       + `<rect x="10" y="${beam - 4}" width="${W - 20}" height="9" fill="#6A3F1E"/><rect x="10" y="${beam - 4}" width="${W - 20}" height="3" fill="#E9BE86" opacity=".5"/></svg>`;
   }
+  // rod beads by state: done = teal (right), now = mustard (the one she is on), fix = red, todo = bare wood
+  const STATE_LAC = { done: 'teal', now: 'mustard', fix: 'red', todo: 'wood' };
   function bead(color, size, opts) {
     opts = opts || {}; size = size || 64;
     const c = opts.dim ? 'wood' : (LAC[color] ? color : 'red');
@@ -613,6 +615,8 @@
     colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, stepPhase, soroban, parts: { wideBead, tallBead, shadow }, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
     MOODS: Object.keys(BIX), MOON_MOODS: Object.keys(MOON), ICONS: ['practice', 'play', 'room', 'lock', 'close', 'back', 'backspace', 'check', 'speaker', 'star', 'book', 'eye', 'ear', 'flash', 'gear', 'retry', 'plus', 'print', 'share', 'keypad'],
     FRIENDS: { small: [[1, 4], [2, 3]], big: [[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]] },
+    // friendColor(n): the lacquer colour a number friend wears (big friends share one); stateBead(state, size): a tall rod bead by state
+    friendColor: n => (SH[n] ? SH[n].c : 'wood'), stateBead: (state, size, o) => bead(STATE_LAC[state] || 'wood', size, Object.assign({ tall: true, shadow: false, dim: state === 'todo' }, o || {})),
   };
   if (typeof window !== 'undefined') {
     window.TOY = TOY;

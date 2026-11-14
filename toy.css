@@ -142,7 +142,7 @@
 .toy-clipboard::before{content:"";position:absolute;z-index:2;left:50%;top:-12px;width:112px;height:46px;margin-left:-56px;border-radius:10px;
   background:radial-gradient(circle at 50% 62%,#5A4010 0 5px,#F5D77E 5.5px 9px,rgba(0,0,0,0) 9.5px),linear-gradient(#FFF1B8,#E2B54A 38%,#A47C24 74%,#C99A38);
   box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 0 #7E5C16,3px 7px 8px rgba(var(--toy-shade),.4)}
-.toy-clipboard > .toy-paper{display:block}
+:where(.toy-clipboard > .toy-paper){display:block}   /* zero specificity: a screen's own display (flex, grid) wins */
 /* little paper pills (step labels) */
 .toy-chip{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:2px 14px 2px 6px;border-radius:999px;background:var(--toy-paper);color:var(--toy-ink);
   font:600 20px/1 var(--toy-display);box-shadow:0 2px 0 rgba(138,90,38,.5)}
@@ -174,6 +174,11 @@
   box-shadow:inset 0 4px 0 var(--lip),0 6px 0 var(--edge),4px 12px 10px rgba(var(--toy-shade),.4)}
 .toy-block--sm:active{transform:translateY(4px);box-shadow:inset 0 4px 0 var(--lip),0 2px 0 var(--edge),2px 4px 4px rgba(var(--toy-shade),.4)}
 .toy-block--wide{width:100%}
+/* more block sizes: --md for a row of two or three main choices, --compact when the label sets the width */
+.toy-block--md{min-width:0;min-height:84px;padding-left:30px;padding-right:34px;white-space:nowrap}
+.toy-block--compact{min-width:0;padding-left:18px;padding-right:20px;white-space:nowrap}
+/* a scrolling area on the table (lists, album pages): the scene stays put, this part pans */
+.toy-scroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;box-sizing:border-box}
 .toy-blocks{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
 
 /* ============ the round Start / check button: a lacquer dome on a wooden ring ============ */
@@ -227,8 +232,10 @@
 .toy-key:active,.toy-key.is-pressed{transform:translateY(5px);box-shadow:inset 0 0 0 2px rgba(255,243,216,.75),inset 0 12px 0 rgba(255,246,226,.42),0 2px 0 var(--toy-wood-edge),1px 4px 4px rgba(var(--toy-shade),.36)}
 .toy-key--zero{grid-column:span 2}
 .toy-key--del{color:var(--toy-red-dk)}
-.toy-key:disabled{opacity:.45;pointer-events:none}
-.toy-keypad-wrap.off{opacity:.6}
+.toy-key:disabled{opacity:.55;pointer-events:none}
+/* a waiting keypad is dimmed once: the keys fade, the felt mat stays */
+.toy-keypad-wrap.off{opacity:1}
+.toy-keypad-wrap .toy-start:disabled{opacity:.55}
 
 /* ============ speech bubble: a paper card with a tail ============ */
 .toy-bubble{position:relative;display:inline-block;box-sizing:border-box;max-width:min(440px,100%);padding:18px 28px 20px;border-radius:28px;
@@ -312,10 +319,11 @@ body.ws-calm .confetti.ws-confetti{display:none}
 
 /* ============ dialog ============ */
 .toy-dialog{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:rgba(58,30,6,.55);animation:toy-fade .16s ease both}
-.toy-dialog-panel.toy-paper{width:min(520px,100%);padding:28px 30px 26px;border-radius:16px;box-shadow:inset 0 2px 0 #fff,0 4px 0 #D9CEB8,10px 24px 30px rgba(30,14,2,.45)}
+.toy-dialog-panel.toy-paper{width:min(600px,100%);padding:28px 30px 26px;border-radius:16px;box-shadow:inset 0 2px 0 #fff,0 4px 0 #D9CEB8,10px 24px 30px rgba(30,14,2,.45)}
 .toy-dialog-title{margin:0 0 10px;font:700 26px/1.2 var(--toy-display);color:var(--toy-ink)}
 .toy-dialog-msg p{margin:0 0 8px;font:400 18px/1.45 var(--toy-body);color:var(--toy-ink)}
 .toy-dialog-btns{display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;padding-bottom:8px}
+.toy-dialog-btns .toy-block{min-width:120px;white-space:nowrap;flex:0 1 auto}   /* a long label stays on one line; the row wraps instead */
 @keyframes toy-fade{from{opacity:0}to{opacity:1}}
 
 /* ============ sizes ============ */
@@ -331,7 +339,8 @@ body.ws-calm .confetti.ws-confetti{display:none}
 /* iPad Pro 12.9: everything a touch larger */
 @media (min-width:1300px) and (min-height:960px){
   :root{--toy-plank:144px}
-  .toy-block{min-width:230px;min-height:108px}
+  .toy-block:where(:not(.toy-block--sm,.toy-block--md,.toy-block--compact)){min-width:230px;min-height:108px}
+  .toy-block--sm{min-width:140px;min-height:72px;font-size:24px}
   .toy-tag{height:64px;font-size:28px}
   .toy-iconbtn{width:72px;height:72px}
 }

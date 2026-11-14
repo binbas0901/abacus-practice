@@ -740,10 +740,9 @@ $('#doorAll').addEventListener('click', ()=>openGate('skills'));
 // standing on the table next to Bix, holding hands around what they make.
 function friendsHtml(n){
   const ps = n.family===5 ? TOY.FRIENDS.small : n.family===10 ? TOY.FRIENDS.big : [];
-  const dot=v=>`<b class="toy-lac--${FRIEND_LAC[v]}">${v}</b>`;
+  const dot=v=>`<b class="toy-lac--${TOY.friendColor(v)}">${v}</b>`;
   return ps.map(([a,b])=>`<span data-pair="${a}-${b}" aria-label="${a} and ${b}">${dot(a)}${dot(b)}</span>`).join('');
 }
-const FRIEND_LAC = {1:'red', 9:'red', 2:'plum', 8:'plum', 3:'teal', 7:'teal', 4:'indigo', 6:'indigo', 5:'mustard'};
 function friendIn(text){ const m=/(?:Small|Big) friend of (\d) is (\d)/.exec(String(text||'').replace(/<[^>]+>/g,'')); return m ? [+m[1], +m[2]] : null; }
 function friendOfSteps(steps){ for (const st of steps||[]){ const f=friendIn(st.say); if (f) return f; } return null; }
 function lessonPair(f, mood){
@@ -823,7 +822,7 @@ function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); capVoice(id); }
 function renderLessonSteps(){
   const tot=lessonTotal()-1, done=Math.min(tot, lessonDone()), live=['numbers','demo','guided'].includes(L.phase);
   const el=$('#lessonSteps'); el.setAttribute('aria-label', L.phase==='done' ? 'All steps done' : live ? `Step ${done+1} of ${tot}` : `${tot} steps`);
-  el.innerHTML=Array.from({length:tot},(_,i)=>{ const ok=i<done, cur=i===done&&live; return `<i class="ls-dot${ok?' ok':cur?' cur':''}">${TOY.bead(ok?'teal':cur?'mustard':'wood', 48, {tall:true, shadow:false})}</i>`; }).join('');
+  el.innerHTML=Array.from({length:tot},(_,i)=>{ const ok=i<done, cur=i===done&&live; return `<i class="ls-dot${ok?' ok':cur?' cur':''}">${TOY.stateBead(ok?'done':cur?'now':'todo', 48, {dim:false})}</i>`; }).join('');
 }
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
@@ -1566,6 +1565,8 @@ function openGate(next){
   const g=$('#gate');
   if (g.classList.contains('active')) return;
   gateNext = typeof next==='string' ? next : null; gateCb = typeof next==='function' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home';
+  // Leaving a practice set for the gate: whatever is being read or flashed stops, and the problem waits at "Ready" again.
+  if (gateFrom==='drill' && (mode==='listen' || mode==='flash') && problems[idx]){ dictateToken++; Speaker.stop(); Fun.BixVoice.stop(); if (mode==='listen') armListen(problems[idx]); else armFlash(problems[idx]); }
   GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   gateAnswer=-1; window.__gateAnswer=null;
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
@@ -1727,7 +1728,7 @@ async function renderParent(){
   const tb=$('#nodeTable tbody'); tb.innerHTML='';
   NODES.forEach((n,i)=>{ if (i===0 || levelOf(NODES[i-1])!==levelOf(n)){ const lr=document.createElement('tr'); lr.className='lvl-row'; lr.innerHTML=`<th colspan="5">Level ${levelOf(n)}</th>`; tb.appendChild(lr); } const st=node(n.id); const h=st.hist.slice(-20); const acc=h.length?Math.round(100*h.filter(x=>x.ok).length/h.length):null; const dn=new Set(h.map(x=>x.day)).size;
     const tr=document.createElement('tr'); const status = st.mastered==='auto'?'<span class="pill good">learned</span>':st.mastered==='parent'?'<span class="pill good">learned (set by you)</span>':st.mastered==='placed'?'<span class="pill good">learned (level check)</span>':i===curIdx()?'<span class="pill">current</span>':'<span class="pill">locked</span>';
-    tr.innerHTML=`<td>${esc(n.title)}</td><td>${st.lesson?`<span class="gu-tick" aria-label="done">${TOY.icon('check', 20, 'currentColor', {stroke:3.2})}</span>`:'—'}</td><td>${acc===null?'—':`<span class="mini" aria-hidden="true"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="btn small ghost" data-toggle="${n.id}">${st.mastered?'un-learn':'mark learned'}</button></td>`;
+    tr.innerHTML=`<td>${esc(n.title)}</td><td>${st.lesson?`<span class="gu-tick" aria-label="done">${TOY.icon('check', 20, 'currentColor', {stroke:3.2})}</span>`:'—'}</td><td>${acc===null?'—':`<span class="mini" aria-hidden="true"><i style="width:${acc}%"></i></span>${acc}% (${h.length})`}</td><td>${dn||'—'}</td><td>${status} <button class="gu-link" data-toggle="${n.id}" aria-label="${st.mastered?'Un-learn':'Mark learned'}: ${esc(n.title)}">${st.mastered?'un-learn':'mark learned'}</button></td>`;
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
   Treats.renderParent(); Treats.bindParent();
