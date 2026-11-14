@@ -19,7 +19,6 @@ Each child uses their own device and opens the same link. A device that has neve
 **Files**
 - `engine.js` — bead-rule classifier and rule-aware problem generator (`node engine.test.js`)
 - `curriculum.js` — skill nodes and the left-to-right explanation generator
-- `soroban.js` — on-screen soroban component
 - `onboarding.js` — first-time setup and level check
 - `fun.js` — mascot, stickers, garden, confetti · `games.js` — mini-games · `treats.js` — golden beads and Treat Shop
 - `styles.css` — the design system · `fonts/` — self-hosted fonts
