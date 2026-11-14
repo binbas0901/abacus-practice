@@ -171,7 +171,25 @@
       $('#popQ').className = 'pop-q together';
       $('#popQ').innerHTML = `<span class="pq-pair">${T().pair(t.a, v, 150, { mood: 'cheer' })}</span>`;
       $('#popHint').textContent = `${t.a} and ${v} make ${t.F}!`;
-      setTimeout(() => { busy = false; if (!ended && tok === token) newTarget(); }, calm ? 700 : 950);
+      setTimeout(() => { busy = false; if (!ended && tok === token) { newTarget(); if (calm) grid(); } }, calm ? 700 : 950);
+    }
+    // Reduced motion: nothing drifts. Every friend of the family waits in a still grid, shuffled for each new question.
+    function grid() {
+      if (!layout()) return;
+      bubbles.forEach(b => b.el.remove()); bubbles = [];
+      const fitC = Math.max(2, Math.floor((W - 2 * PAD) / (size + GAP))), fitR = Math.max(1, Math.floor((H - 2 * PAD + GAP) / (size + GAP)));
+      // As many friends as fit whole on the mat (the answer is always one of them).
+      const others = Array.from({ length: target.F - 1 }, (_, i) => i + 1).filter(v => v !== target.ans).sort(() => Math.random() - 0.5).slice(0, fitC * fitR - 1);
+      const vals = others.concat(target.ans).sort(() => Math.random() - 0.5), n = vals.length;
+      const cols = Math.min(n, fitC), rows = Math.ceil(n / cols);
+      const cw = (W - 2 * PAD) / cols, ch = Math.max(size + GAP, (H - 2 * PAD) / rows);
+      vals.forEach((v, i) => {
+        const el = document.createElement('button'); el.className = 'bub still'; el.dataset.v = v; el.setAttribute('aria-label', String(v));
+        el.innerHTML = `${T().buddy(v, 96, 'happy')}<b class="bub-n tr-disc">${v}</b>`;
+        const b = { el, v, gone: false }; el.addEventListener('pointerdown', e => { e.preventDefault(); tap(b); });
+        el.style.translate = `${(PAD + (i % cols) * cw + (cw - size) / 2).toFixed(1)}px ${(PAD + Math.floor(i / cols) * ch + (ch - size) / 2).toFixed(1)}px`;
+        field.appendChild(el); bubbles.push(b);
+      });
     }
     function freeLanes(y) { return lanes.filter(l => !l.last || l.last.gone || l.last.y <= y - size - GAP); }
     function spawn(y) {
@@ -203,13 +221,14 @@
       } else { wrong++; b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore(beadDots(N, 0));
-    requestAnimationFrame(() => { if (!layout()) return; for (let k = 3; k >= 0; k--) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });   // lowest first: the first bubble is the answer, so it stays longest
+    requestAnimationFrame(() => { if (calm) return grid(); if (!layout()) return; for (let k = 3; k >= 0; k--) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });   // lowest first: the first bubble is the answer, so it stays longest
     bixLine(GO, 'pop_go', 0);
     return new Promise(res => {
       function frame(now) {
         if (tok !== token) return res(null);
         const dt = Math.min(0.05, (now - last) / 1000); last = now;
         if (ended) { setTimeout(() => { field.querySelectorAll('.bub').forEach(e => e.remove()); $('#popQ').innerHTML = ''; $('#popHint').textContent = ''; res(tok === token ? { score, wrong, of: N } : null); }, 900); return; }
+        if (calm) { if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H || !bubbles.length) && !busy) grid(); requestAnimationFrame(frame); return; }
         if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H)) layout_keep();
         spawnIn -= dt;
         if (spawnIn <= 0) { const need = !bubbles.some(b => !b.gone && b.v === target.ans); spawnIn = spawn() ? 0.6 + Math.random() * 0.4 : (need ? 0.05 : 0.3); }

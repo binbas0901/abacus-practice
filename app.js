@@ -1017,7 +1017,7 @@ PB.mount();   // mounted up front, so the first problem's tiles are sized with t
 
 /* ---- the answer tool: keypad (the toy kit's wooden keys on felt, same key order as before) or on-screen soroban (AbacusInput) ---- */
 const Keys = TOY.keypad($('#padKeys'), { 
-  onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<6) setEntry(entry+k); },
+  onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<entryMax()) setEntry(entry+k); },
   onBackspace: ()=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys') setEntry(entry.slice(0,-1)); },
 });
 const Tool = {
@@ -1184,6 +1184,8 @@ function setStages(){
 function endDrill(){ dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
 function stopTest(){ /* the level test keeps a silent, generous time measure only (LT.start); nothing ticks on screen */ }
 function setEntry(v){ entry=v; Tool.readout(); }
+// The keypad takes one digit more than the answer has (room for a slip, not for a row of digits).
+function entryMax(){ const p=problems[idx]; return p ? String(Math.abs(p.answer)).length+1 : 6; }
 function baseLine(){
   if (LT) return 'Take your time. Check each one.';
   if (reviewing) return 'This one was tricky. Want me to show you first?';
@@ -1274,7 +1276,7 @@ async function flash(p){
 }
 $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
 $('#checkBtn').addEventListener('click', ()=>{ if(locked||demoing) return; submit(); });
-document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
+document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<entryMax()&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('tp-nudge'); void t.offsetWidth; t.classList.add('tp-nudge'); setTimeout(()=>t.classList.remove('tp-nudge'),460); }
 // Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or gets a red rim (a gentle shake),
 // and her bead on the rod turns teal or red. Cleared when the next problem comes. Never used in the level test.
@@ -1404,6 +1406,7 @@ function finish(){
   $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? TOY.icon('star', 30, '#C98A16')+'<span>New skill!</span>' : '';
   // one obvious next step: fix the red ones; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
+  { const fl=$('#fixBtn .toy-block-label'); if (fl) fl.textContent = toFix.length===1 ? 'Fix the red one' : 'Fix the red ones'; }
   $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
