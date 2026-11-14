@@ -18,8 +18,8 @@
 
 /* Bix in these screens (Fun.Mascot, kit rules in toy.css): he stands at the bottom edge, the bubble floats beside his head */
 .tr-bix,.tr-play-bix,.tr-gbix,.tr-shop-bix{align-items:flex-end}
-.tr-bix .bubble,.tr-play-bix .bubble,.tr-gbix .bubble,.tr-shop-bix .bubble{align-items:center;gap:10px;max-width:min(540px,100%);margin:0 0 calc(var(--tb,120px)*.36) 0;padding:13px 22px 15px;border-radius:24px;
-  font:600 clamp(19px,2vw,23px)/1.3 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(var(--toy-shade),.3)}
+.tr-bix .bubble,.tr-play-bix .bubble,.tr-gbix .bubble,.tr-shop-bix .bubble{align-items:center;gap:10px;max-width:min(680px,100%);margin:0 0 calc(var(--tb,120px)*.36) 0;padding:13px 22px 15px;border-radius:24px;
+  font:600 clamp(19px,calc(.9vw + 1.4vh),28px)/1.3 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(var(--toy-shade),.3)}   /* type grows with the screen (iPad Pro, portrait) */
 .tr-bix .bubble::after,.tr-play-bix .bubble::after,.tr-gbix .bubble::after,.tr-shop-bix .bubble::after{left:-22px;bottom:14px;width:32px;height:32px;background:var(--toy-paper-dk);clip-path:polygon(100% 0,100% 78%,0 100%)}
 /* Bix on the right, bubble to his left */
 .tr-flip{flex-direction:row-reverse}
@@ -240,7 +240,7 @@
 #play .gcard:active .gc-box{box-shadow:inset 0 -3px 0 rgba(0,0,0,.1),0 3px 0 var(--edge),3px 7px 7px rgba(var(--toy-shade),.42)}
 #play .gcard:active .gc-lid{transform:rotate(0deg)}
 /* the picture on the front of the box */
-#play .gc-icon{all:unset;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:center;width:100%;height:clamp(140px,19.5vh,176px);padding:6px 4px 8px;border-radius:14px;overflow:hidden;line-height:0;
+#play .gc-icon{all:unset;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:center;width:100%;height:clamp(140px,19.5vh,236px);padding:6px 4px 8px;border-radius:14px;overflow:hidden;line-height:0;
   background:radial-gradient(120% 90% at 30% 10%,#FFFDF6 0,#F6EEDC 70%,#EADFC6 100%);box-shadow:inset 0 3px 5px rgba(var(--toy-shade),.26),0 2px 0 rgba(255,255,255,.28)}
 #play .gc-icon svg{flex:none;max-width:100%;max-height:100%;width:auto;height:auto}
 #play .gc-icon .toy-pair,#play .gc-icon .toy-buddy{display:flex;align-items:flex-end;height:100%}
@@ -374,15 +374,14 @@
    sizes
    ===================================================================== */
 @media (orientation:portrait){
-  /* the window moves to the right so the back button and title stay clear of it; the shelf hangs under the title */
+  /* the window moves to the right so the back button and title stay clear of it; the lamp stands under the title */
   #room,#play{--toy-window-x:calc(100vw - (var(--toy-wall-h) - 16px)*2.15 - 18px)}
   /* the lamp stands on the table beside the jar; its light pools around it, none on the wall */
-  #room{--toy-lamp-x:calc(100vw - 128px);--toy-lamp-y:calc(74vh - var(--toy-wall-h) - 150px);--toy-lamp-wy:900%}
-  .tr-lamp{top:74vh}
-  .tr-lamp svg{height:250px}
+  /* the lamp stands at the back edge of the table left of the window (as in landscape), not alone among the things */
+  #room{--toy-lamp-x:clamp(84px,14vw,130px)}
   #room{--toy-wall-h:clamp(220px,22vh,280px);--bw:min(40vw,23vh)}
-  .tr-shelfwrap{right:auto;left:14px;width:clamp(230px,31vw,290px);height:calc(var(--toy-wall-h) - 44px)}
-  .tr-shelf-things{transform:scale(.86);transform-origin:50% 100%}
+  /* no room for the wall shelf beside the window in portrait: it crowded the window, so it is left out */
+  .tr-shelfwrap{display:none}
   /* two rows: the book and the pot, then the jar */
   .tr-things{flex-wrap:wrap;align-content:flex-end;justify-content:center;gap:14px 7vw;padding:0 6px}
   .tr-foot{min-height:21vh}
@@ -393,7 +392,10 @@
   #shop .tbtns .toy-block{flex:1;min-width:0}
   .tr-boxes{gap:14px}
   .gc-box{padding:22px 10px 18px}
-  #play .gc-icon{height:clamp(140px,15vh,190px)}
+  #play .gc-icon{height:clamp(150px,19vh,240px)}
+  #play .gc-desc{font-size:clamp(16px,1.5vh,19px)}
+  #play .gc-name{font-size:clamp(25px,2.5vh,32px)}
+  .gc-box{gap:12px;padding-bottom:26px}
   /* games: a taller wall; back + title on the first row, the progress rod under them, the window to the right */
   #game{--toy-wall-h:clamp(172px,15.6vh,200px);--toy-window-x:calc(100vw - (var(--toy-wall-h) - 16px)*2.15 - 20px)}
   #game .tr-top{flex-wrap:wrap;align-content:center;row-gap:8px;padding-right:calc((var(--toy-wall-h) - 16px)*2.15 + 34px);padding-bottom:6px}
@@ -414,7 +416,13 @@
   #shop .tbtns .toy-block{min-width:230px}
   #bixShop{--tb:170px}
   .tr-gbix{--tb:150px;min-height:132px}
-  #play .gcard{max-width:380px}
+  #game .toy-keypad{--toy-key-w:116px;--toy-key-h:100px}
+  #game .answer{min-width:190px;height:100px;font-size:66px}
+  #play .gcard{max-width:410px}
+  #play .gc-name{font-size:38px}
+  #play .gc-desc{font-size:21px}
+  #play .gc-best{font-size:20px;min-height:38px}
+  .gc-box{gap:13px;padding:28px 20px 26px}
   .gc-lid{height:46px}
   #shop .tcard.tpick .tart{height:112px} #shop .tcard.tpick .tart svg{width:112px;height:112px} #shop .tcard.tpick::after{top:109px}
 }
