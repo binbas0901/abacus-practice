@@ -39,9 +39,9 @@
 .gu-kids button:not([aria-pressed="true"]) .gu-kbead{opacity:.85}
 /* share: the one lacquered block up here */
 .gu-share{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 22px 2px;border-radius:16px;cursor:pointer;
-  font:600 19px/1 var(--toy-display);color:#fff;background:linear-gradient(#4A5DB6,#303F8C);
-  box-shadow:inset 0 3px 0 #7E8FDC,0 5px 0 #232F6B,4px 11px 10px rgba(var(--toy-shade),.4);transition:transform .09s ease-out,box-shadow .09s ease-out}
-.gu-share:active{transform:translateY(4px);box-shadow:inset 0 3px 0 #7E8FDC,0 1px 0 #232F6B,1px 3px 4px rgba(var(--toy-shade),.4)}
+  font:600 19px/1 var(--toy-display);color:#FFFDF6;background:linear-gradient(#34418C,#252F6C);
+  box-shadow:inset 0 3px 0 #6676C8,0 5px 0 #151B45,4px 11px 10px rgba(var(--toy-shade),.4);transition:transform .09s ease-out,box-shadow .09s ease-out}
+.gu-share:active{transform:translateY(4px);box-shadow:inset 0 3px 0 #6676C8,0 1px 0 #151B45,1px 3px 4px rgba(var(--toy-shade),.4)}
 .gu-share:focus-visible,.gu-kids button:focus-visible,#parent.gu .btn:focus-visible,.gu-nav a:focus-visible,.tip-watch:focus-visible,.tip-more:focus-visible,.rep-alert.as-btn:focus-visible{outline:3px solid var(--toy-ink);outline-offset:3px}
 .gu-toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:50;max-width:min(640px,90vw);white-space:pre-line;
   background:#4A2C10;color:var(--toy-paper);border-radius:14px;padding:13px 22px;font-size:17px;box-shadow:4px 10px 14px rgba(var(--toy-shade),.4);transition:opacity .2s ease,transform .2s ease}
@@ -97,10 +97,10 @@
 .tip-why{margin:0;font-size:16.5px;line-height:1.45;color:var(--gu-soft)}
 .tip-b{display:flex;gap:14px;flex-wrap:wrap;margin-top:auto;padding:10px 0 5px}
 .tip-watch,.tip-more{display:inline-flex;align-items:center;gap:8px;min-height:50px;padding:0 20px 2px;border-radius:14px;font:600 18px/1 var(--toy-display);cursor:pointer;transition:transform .09s ease-out,box-shadow .09s ease-out}
-.tip-watch{color:#fff;background:linear-gradient(#4A5DB6,#303F8C);box-shadow:inset 0 3px 0 #7E8FDC,0 4px 0 #232F6B,3px 9px 8px rgba(var(--toy-shade),.36)}
+.tip-watch{color:#FFFDF6;background:linear-gradient(#34418C,#252F6C);box-shadow:inset 0 3px 0 #6676C8,0 4px 0 #151B45,3px 9px 8px rgba(var(--toy-shade),.36)}
 .tip-more{color:var(--toy-ink);background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;
   box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 4px 0 var(--toy-wood-deep),3px 9px 8px rgba(var(--toy-shade),.32)}
-.tip-watch:active{transform:translateY(3px);box-shadow:inset 0 3px 0 #7E8FDC,0 1px 0 #232F6B,1px 3px 3px rgba(var(--toy-shade),.36)}
+.tip-watch:active{transform:translateY(3px);box-shadow:inset 0 3px 0 #6676C8,0 1px 0 #151B45,1px 3px 3px rgba(var(--toy-shade),.36)}
 .tip-more:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),0 1px 0 var(--toy-wood-deep),1px 3px 3px rgba(var(--toy-shade),.32)}
 
 .rep-side{display:flex;flex-direction:column;gap:24px;min-width:0}
@@ -188,11 +188,12 @@
 #parent.gu .gu-tickets{flex:1;max-width:62%;flex-direction:column;align-items:flex-start;gap:8px}
 
 /* buttons on the sheets: small wooden blocks; the main one is indigo lacquer */
-#parent.gu .btn{--c1:#4A5DB6;--c2:#303F8C;--edge:#232F6B;--lip:#7E8FDC;--t:#fff;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:48px;min-height:46px;padding:0 17px 2px;margin-bottom:4px;
+/* small labels: cream on ink (white on the lighter indigo lacquer is kept for 22px+ only) */
+#parent.gu .btn{--c1:#34418C;--c2:#252F6C;--edge:#151B45;--lip:#6676C8;--t:#FFFDF6;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:48px;min-height:46px;padding:0 17px 2px;margin-bottom:4px;
   border:0;border-radius:12px;background:linear-gradient(var(--c1),var(--c2));color:var(--t);font:600 17px/1.1 var(--toy-display);cursor:pointer;
   box-shadow:inset 0 2.5px 0 var(--lip),0 4px 0 var(--edge),3px 8px 7px rgba(var(--toy-shade),.3);transition:transform .08s ease-out,box-shadow .08s ease-out}
 #parent.gu .btn.ghost{--edge:var(--toy-wood-deep);--lip:rgba(255,246,224,.85);--t:var(--toy-ink);background:var(--toy-grain) 0 0/512px 256px,linear-gradient(var(--toy-wood-lt),var(--toy-wood))}
-#parent.gu .btn.coral{--c1:#EA4C3A;--c2:#C92F27;--edge:#93201F;--lip:#FF8D78}
+#parent.gu .btn.coral{--c1:#C8372C;--c2:#A3251F;--edge:#6E1614;--lip:#F0806E}
 #parent.gu .btn:active{transform:translateY(3px);box-shadow:inset 0 2.5px 0 var(--lip),0 1px 0 var(--edge),1px 3px 3px rgba(var(--toy-shade),.3)}
 #parent.gu .btn:disabled,#parent.gu .btn[disabled]{opacity:.45;pointer-events:none}
 #parent.gu .btn.gu-sq{width:50px;padding:0 0 2px}

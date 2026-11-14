@@ -179,7 +179,7 @@ async def main():
         check('setup skill list: every target at least 60px tall', not small, small)
         await p3.click('#suPickBack'); await p3.click('[data-lv=check]'); await p3.wait_for_selector('#suCheck.on')
         keys=await p3.eval_on_selector_all('#suPad .toy-keypad button','els=>els.map(e=>e.dataset.k)')
-        check('level check uses the kit keypad (TOY.keypad, calculator order), no local copy', keys==['7','8','9','4','5','6','1','2','3','0','del'] and await p3.locator('#suPad > button').count()==0, keys)
+        check('level check uses the kit keypad (TOY.keypad, calculator order), no local copy', keys==['7','8','9','4','5','6','1','2','3','del','0'] and await p3.locator('#suPad > button').count()==0, keys)
         small=await p3.evaluate("[...document.querySelectorAll('#setup .su-step.on button')].filter(e=>e.getBoundingClientRect().width).map(e=>[e.id||e.dataset.k, Math.round(e.getBoundingClientRect().height)]).filter(x=>x[1]<60)")
         check('level check: every target at least 60px tall', not small, small)
         check('level check: the stop button says what it does ("Stop here")', (await p3.text_content('#suStop')).strip()=='Stop here' and 'Stop here' in (await p3.get_attribute('#suStop','aria-label')))

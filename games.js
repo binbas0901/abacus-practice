@@ -141,7 +141,7 @@
     const GO = 'Find the friend and pop it!';
     // Bubbles rise in lanes, so they never overlap: one speed per round, a new bubble enters a lane only once the
     // last one in it has risen clear, and the sway stays inside the lane. They appear and fade INSIDE the frame.
-    const PAD = 20, SWAY = 8, GAP = 10, SPEED = 70;
+    const PAD = 20, SWAY = 8, GAP = 10, SPEED = 46;   // big bubbles on a mat that fits them; slow enough to read each friend
     let lanes = [], size = 100, W = 0, H = 0;
     function layout() {
       W = field.clientWidth; H = field.clientHeight; if (!W) return false;
@@ -208,7 +208,7 @@
         if (ended) { setTimeout(() => { field.querySelectorAll('.bub').forEach(e => e.remove()); $('#popQ').innerHTML = ''; $('#popHint').textContent = ''; res(tok === token ? { score, wrong, of: N } : null); }, 900); return; }
         if (field.clientWidth && (field.clientWidth !== W || field.clientHeight !== H)) layout_keep();
         spawnIn -= dt;
-        if (spawnIn <= 0) { const need = !bubbles.some(b => !b.gone && b.v === target.ans); spawnIn = spawn() ? 0.75 + Math.random() * 0.45 : (need ? 0.05 : 0.3); }
+        if (spawnIn <= 0) { const need = !bubbles.some(b => !b.gone && b.v === target.ans); spawnIn = spawn() ? 0.6 + Math.random() * 0.4 : (need ? 0.05 : 0.3); }
         for (const b of bubbles) {
           if (b.gone) continue; b.y -= SPEED * dt; b.ph += dt * 2.2; place(b);
           if (b.y <= top()) leave(b);

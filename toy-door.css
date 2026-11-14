@@ -168,7 +168,7 @@
 #lesson .caption::before{display:none}
 #lesson .caption.toy-bubble--left::after{left:58px}
 #lesson .caption.has-voice{cursor:pointer}
-#lesson .caption .k{display:inline-flex;align-items:center;min-height:30px;margin:0 0 6px;padding:2px 16px 3px;border-radius:999px;background:var(--toy-indigo);color:#fff;
+#lesson .caption .k{display:inline-flex;align-items:center;min-height:30px;margin:0 0 6px;padding:2px 16px 3px;border-radius:999px;background:var(--toy-ink);color:var(--toy-paper);
   font:600 18px/1.2 var(--toy-display)}
 #lesson[data-phase=done] .caption .k{background:var(--toy-teal-dk)}
 #lesson[data-phase=guided] .caption .k,#lesson[data-phase=numbers] .caption .k{background:#F2B632;color:var(--toy-on-mustard)}

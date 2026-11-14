@@ -225,11 +225,19 @@
   .tg-body{flex-direction:column;gap:34px}
 }
 @media (min-width:1300px) and (min-height:960px){
-  #bixGate.tg-bix{--tb:220px}
-  .tg-card{width:500px;min-height:370px}
-  .tg-art svg{width:250px}
-  .tg-bix .bubble{font-size:26px;max-width:400px}
-  .tg-q{font-size:33px}
+  /* the gate fills the big table: a larger clipboard, Bix and the two figures, bigger type and targets */
+  #bixGate.tg-bix{--tb:300px}
+  .tg-body{gap:96px}
+  .tg-board{padding:60px 28px 28px}
+  .tg-card{width:620px;min-height:470px;padding:40px 40px 32px;gap:22px}
+  .tg-art svg{width:320px}
+  .tg-bix .bubble{font-size:31px;max-width:480px;padding:20px 30px 22px}
+  .tg-q{font-size:40px}
+  .tg-q small{font-size:22px}
+  .tg-q .gw{font-size:27px}
+  .tg-q .gnum i{width:66px;height:78px;font-size:44px}
+  .tg-holdbtn{width:400px;height:104px;font-size:34px}
+  #gate #gateA{font-size:44px;min-height:84px}
 }
 
 /* =====================================================================
@@ -365,9 +373,10 @@
   .to-card{width:320px;min-height:286px}
   .to-cards-3 .to-card{min-height:260px}
   .to-card small{font-size:20px}
-  #suPad{--toy-key-w:104px;--toy-key-h:88px;--toy-key-gap:12px}
-  #suProb .term{font-size:72px}
-  .to-answer{min-width:220px;height:84px;font-size:52px}
+  #suPad{--toy-key-w:128px;--toy-key-h:104px;--toy-key-gap:14px}
+  #suPad .toy-key{font-size:50px}
+  #suProb .term{font-size:92px}
+  .to-answer{min-width:270px;height:100px;font-size:60px}
   .to-skills{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
   #setup .su-skill{min-height:88px}
   .to-skill-t b{font-size:23px} .to-skill-t small{font-size:18px}

@@ -115,7 +115,7 @@
 @keyframes tp-ring{0%{transform:scale(1);opacity:.75}100%{transform:scale(1.45);opacity:0}}
 @keyframes tp-listen{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 #drill .tp-msg{font:600 22px/1.2 var(--toy-display);color:var(--toy-ink);min-height:27px}
-#drill .tp-listen .toy-block,#drill .tp-flash .toy-block{padding-left:16px;padding-right:18px;font-size:21px}
+#drill .tp-listen .toy-block,#drill .tp-flash .toy-block{padding-left:16px;padding-right:18px;font-size:22px}
 #drill .tp-flashdots{display:flex;gap:5px;min-height:20px;align-items:center;justify-content:center;flex-wrap:wrap;line-height:0}
 #drill .flash-num{font:700 calc(min(92px, var(--board) * 1.05 / var(--len, 2)))/1 var(--toy-display);color:var(--toy-ink);min-height:100px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 #drill .flash-num b{font-weight:700;margin-right:.08em;font-size:.82em}
@@ -131,8 +131,6 @@
 #drill .tp-tool.keys .tp-keys{display:block}
 #drill .tp-keys .toy-keypad-wrap{display:block}
 /* same key order as before: 7-8-9 / 4-5-6 / 1-2-3, then delete on the left of a wide 0 */
-#drill .tp-keys .toy-key--del{grid-column:1;grid-row:4}
-#drill .tp-keys .toy-key--zero{grid-column:2 / span 2;grid-row:4}
 #drill .tp-abacus{display:none;line-height:0;flex:1;min-height:0;min-width:0;align-items:center;justify-content:center}
 #drill .tp-tool.beads{flex-direction:column;justify-content:center}
 #drill .tp-tool.beads .tp-abacus{display:flex}

@@ -111,7 +111,7 @@
     }
     finish('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
   }
-  // The kit's one keypad (TOY.keypad, calculator order: 7-8-9 / 4-5-6 / 1-2-3, then a wide 0 and delete). The round teal Check button sits beside the mat.
+  // The kit's one keypad (TOY.keypad, calculator order: 7-8-9 / 4-5-6 / 1-2-3, then delete and a wide 0). The round teal Check button sits beside the mat.
   function makePad(el, ansEl) {
     const go = $('#suGo');
     let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; go.disabled = !v; };

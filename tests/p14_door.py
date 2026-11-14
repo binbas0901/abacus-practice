@@ -108,7 +108,7 @@ async def main():
             if g=='reader':
                 await pg.wait_for_selector('#rdCover.on', timeout=8000)
                 keys=await pg.eval_on_selector_all('#rdPad .toy-keypad button','els=>els.map(e=>e.dataset.k)')
-                check('Bead Detective uses the kit keypad (TOY.keypad): 7-8-9/4-5-6/1-2-3, wide 0, delete; no local copy', keys==['7','8','9','4','5','6','1','2','3','0','del'] and await pg.locator('#rdPad .g-keys, #rdPad .toy-keypad [data-k=go]').count()==0, keys)
+                check('Bead Detective uses the kit keypad (TOY.keypad): 7-8-9/4-5-6/1-2-3, delete, wide 0; no local copy', keys==['7','8','9','4','5','6','1','2','3','del','0'] and await pg.locator('#rdPad .g-keys, #rdPad .toy-keypad [data-k=go]').count()==0, keys)
                 check('games.js has no keypad of its own', '.keypad(el' in open(os.path.join(HERE,'..','games.js')).read() and 'g-keys' not in open(os.path.join(HERE,'..','games.js')).read())
                 check('Bead Detective: round teal Check beside the mat (outside the grid), off until a number is typed', await pg.locator('#rdPad .toy-keypad-wrap > .toy-start.g-check[data-k=go]:disabled').count()==1)
                 await pg.click('#rdPad [data-k="5"]')

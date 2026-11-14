@@ -556,7 +556,7 @@
     return '';
   }
 
-  // ---------- keypad: wooden keys on a felt mat (always the app's order: 7-8-9 / 4-5-6 / 1-2-3, then 0 and delete) ----------
+  // ---------- keypad: wooden keys on a felt mat (always the app's order: 7-8-9 / 4-5-6 / 1-2-3, then delete and a wide 0) ----------
   // Keys carry data-k="0".."9" / data-k="del"; the round check button (data-k="check") sits beside the mat when onCheck is given.
   function keypad(container, opts) {
     opts = opts || {};
@@ -565,8 +565,8 @@
     el.className = 'toy-keypad-wrap';
     el.innerHTML = `<div class="${opts.mat === false ? '' : 'toy-felt '}toy-keypad-mat"><div class="toy-keypad" role="group" aria-label="${esc(opts.label || 'Number keys')}">`
       + order.map(d => `<button type="button" class="toy-key" data-k="${d}">${d}</button>`).join('')
-      + '<button type="button" class="toy-key toy-key--zero" data-k="0">0</button>'
-      + `<button type="button" class="toy-key toy-key--del" data-k="del" aria-label="Delete">${icon('backspace', 40, 'currentColor', { stroke: 2.4 })}</button></div></div>`
+      + `<button type="button" class="toy-key toy-key--del" data-k="del" aria-label="Delete">${icon('backspace', 40, 'currentColor', { stroke: 2.4 })}</button>`
+      + '<button type="button" class="toy-key toy-key--zero" data-k="0">0</button></div></div>'
       + (opts.onCheck ? start(opts.checkLabel || 'Check', { icon: 'check', small: true, attrs: 'data-k="check"' }) : '');
     el.addEventListener('click', e => {
       const b = e.target.closest('button[data-k]'); if (!b || b.disabled) return;

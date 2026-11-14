@@ -1570,7 +1570,7 @@ function openGate(next){
   GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   gateAnswer=-1; window.__gateAnswer=null;
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
-  show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
+  toySky('#gateSky'); show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
 }
 function leaveGate(){ gateCb=null; GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
