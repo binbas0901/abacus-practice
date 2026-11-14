@@ -116,7 +116,7 @@
     const go = $('#suGo');
     let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; go.disabled = !v; };
     el.innerHTML = '';
-    root.TOY.keypad(el, { label: 'Number keys', order: 'calc',
+    root.TOY.keypad(el, { label: 'Number keys',
       onKey(d) { if (!waiting) return; App().Sfx.tap(); if (val.length < 4) set(val + d); },
       onBackspace() { if (!waiting) return; App().Sfx.tap(); set(val.slice(0, -1)); } });
     go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; go.disabled = true; w(parseInt(val, 10)); };

@@ -514,11 +514,11 @@
     return '';
   }
 
-  // ---------- keypad: wooden keys on a felt mat (1-2-3 on top, as in the mockup; order:'calc' gives 7-8-9 on top) ----------
+  // ---------- keypad: wooden keys on a felt mat (always the app's order: 7-8-9 / 4-5-6 / 1-2-3, then 0 and delete) ----------
   // Keys carry data-k="0".."9" / data-k="del"; the round check button (data-k="check") sits beside the mat when onCheck is given.
   function keypad(container, opts) {
     opts = opts || {};
-    const order = opts.order === 'calc' ? [7, 8, 9, 4, 5, 6, 1, 2, 3] : [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const order = [7, 8, 9, 4, 5, 6, 1, 2, 3];
     const el = document.createElement('div');
     el.className = 'toy-keypad-wrap';
     el.innerHTML = `<div class="${opts.mat === false ? '' : 'toy-felt '}toy-keypad-mat"><div class="toy-keypad" role="group" aria-label="${esc(opts.label || 'Number keys')}">`

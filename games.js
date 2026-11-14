@@ -236,7 +236,7 @@
       } else { wrong++; b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore(beadDots(N, 0));
-    requestAnimationFrame(() => { if (!layout()) return; for (let k = 0; k < 4; k++) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });
+    requestAnimationFrame(() => { if (!layout()) return; for (let k = 3; k >= 0; k--) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });   // lowest first: the first bubble is the answer, so it stays longest
     bixLine(GO, 'pop_go', 0);
     return new Promise(res => {
       function frame(now) {

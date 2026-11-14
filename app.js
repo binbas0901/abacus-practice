@@ -550,8 +550,8 @@ $('#doorRoom').addEventListener('click', ()=>{ Speaker.unlock(); goRoom(); });
 /* ---------------- My Room: sticker book, flower pot, treat jar (Toy Table look) ---------------- */
 // The moon in the window of these screens: she fills as today's steps get done and is proud when they all are.
 function toySky(sel){
-  const el=$(sel); if (!el) return; const st=todaySteps(), done=st.filter(x=>x.done).length, full=st.length>0 && done===st.length;
-  el.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', 0.4 + 0.6*done/Math.max(1, st.length));
+  const el = typeof sel==='string' ? $(sel) : sel; if (!el) return; const st=todaySteps(), tot=st.length||3, done=st.filter(x=>x.done).length, full=st.length>0 && done===st.length;
+  el.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', full ? 1 : 0.4 + 0.45*done/tot);
 }
 ToyRoom.sky = toySky;
 // The sticker book lies open on the table; the first stickers she has earned are stuck on its pages (n = how many she has).
@@ -689,12 +689,6 @@ function toyBixD(el, size, opts){
   const draw=()=>{ const m=bx.dataset.mood || bx.dataset.base || 'happy'; if (fig.dataset.m===m) return; fig.dataset.m=m; fig.innerHTML=TOY.bix(TOY_MOOD_D[m]||m, size); };
   draw(); new MutationObserver(draw).observe(bx, {attributes:true, attributeFilter:['data-mood']});
   const say=el.querySelector('.ws-say'); if (say) say.innerHTML=TOY.icon('speaker', 26, 'currentColor');
-}
-// The moon in the window fills with today's steps (she never shrinks: no plan yet = her resting crescent).
-function toySky(el){
-  const t=Fun.data && Fun.data.today, ok=t && t.day===todayKey() && t.steps && t.steps.length;
-  const tot=ok ? t.steps.length : 3, done=ok ? t.steps.filter(x=>x.done).length : 0;
-  el.innerHTML=TOY.skyMoon(done>=tot ? 'proud' : done ? 'happy' : 'calm', done>=tot ? 1 : .4+.45*done/tot);
 }
 function replay(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 $('#exitDoor').innerHTML=TOY.icon('back', 32, 'currentColor'); $('#exitLesson').innerHTML=TOY.icon('back', 32, 'currentColor');
@@ -984,7 +978,7 @@ const PB = {
 PB.mount();   // mounted up front, so the first problem's tiles are sized with the bubble already in place
 
 /* ---- the answer tool: keypad (the toy kit's wooden keys on felt, same key order as before) or on-screen soroban (AbacusInput) ---- */
-const Keys = TOY.keypad($('#padKeys'), { order:'calc',
+const Keys = TOY.keypad($('#padKeys'), { 
   onKey: k=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys' && entry.length<6) setEntry(entry+k); },
   onBackspace: ()=>{ if (locked||demoing) return; Sfx.tap(); if (Tool.kind==='keys') setEntry(entry.slice(0,-1)); },
 });
