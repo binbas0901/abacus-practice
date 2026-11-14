@@ -415,7 +415,7 @@ function stepBead(s, nextI){
   const i = s.at, cur = i===nextI, col = STEP_COLORS[i%3];
   const state = s.done ? 'done' : cur ? 'now' : 'later', just = s.done && stepBead.seen && !stepBead.seen[i];
   return `<li class="step th-step ${state}${just?' just':''}${cur?' next':''}" data-n="${i+1}" data-c="${col}" aria-label="${esc(s.label)}${s.done?' (done)':cur?' (next)':''}">`
-    + `<span class="th-bead">${TOY.bead(s.done ? 'teal' : col, 150, {tall:true})}${s.done ? `<span class="th-bead-ic">${TOY.icon('check', 44, '#fff', {stroke:3.4})}</span>` : ''}</span><span class="sl th-lab" data-n="${i+1}">${esc(s.label)}</span></li>`;
+    + `<span class="th-bead">${TOY.bead(s.done ? 'teal' : col, 150, {tall:true})}${s.done ? `<span class="th-bead-ic">${TOY.icon('check', 44, '#fff', {stroke:3.4})}</span>` : ''}</span><span class="sl th-lab" data-n="${i+1}"${String(s.label).length>9 ? ' data-long' : ''}>${esc(s.label)}</span></li>`;
 }
 // The moon in the window fills as today's steps get done: thin crescent, half, gibbous, then full and proud.
 const HOME_SPARKS = `<svg class="th-sparks" viewBox="0 0 430 200" aria-hidden="true">`

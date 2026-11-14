@@ -42,6 +42,8 @@ async def main():
         ctx,pg,errs = await fresh(b)
         labels=await pg.eval_on_selector_all('#todaySteps .step .sl','els=>els.map(e=>e.textContent)')
         check('day one plan: Learn, then making numbers, then reading them (no Look / Listen on a skill without sums)', await plan(pg)==['lesson','game:build','game:reader'] and labels==['Learn','Bead Builder','Bead Detective'], [await plan(pg), labels])
+        lab=await pg.evaluate("(()=>{ const st=[...document.querySelectorAll('#todaySteps .step')].map(s=>[s.getBoundingClientRect(), s.querySelector('.th-lab').getBoundingClientRect(), s.querySelector('.th-bead').getBoundingClientRect()]); return { inThird: st.every(([t,l])=>l.left>=t.left-.5&&l.right<=t.right+.5), apart: st.every(([t,l],i)=>!i||l.left>=st[i-1][1].right), centred: st.every(([t,l,b])=>Math.abs((l.left+l.right)-(b.left+b.right))<4) }; })()")
+        check('home: each step label stays in its own third, centred under its bead (long game names wrap, none touch)', lab['inThird'] and lab['apart'] and lab['centred'], lab)
         # step 1: the lesson, really done
         await pg.click('#todayGo'); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
         check('lesson "Your turn": no Skip at first (the beads are the way forward)', await pg.eval_on_selector('#lessonNext','e=>getComputedStyle(e).visibility')=='hidden')

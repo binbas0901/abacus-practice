@@ -66,8 +66,10 @@
 #todaySteps .step.just .th-bead{animation:th-slide .5s cubic-bezier(.3,1.4,.5,1) both}
 @keyframes th-slide{0%{transform:translateX(calc(var(--u)*46))}100%{transform:none}}
 /* number chips on the base */
-#todaySteps .th-lab{display:inline-flex;align-items:center;gap:calc(var(--u)*7);box-sizing:border-box;min-height:calc(var(--u)*36);max-width:calc(100% + var(--u)*24);margin:calc(var(--u)*21) calc(var(--u)*-12) calc(var(--u)*24);
-  padding:2px calc(var(--u)*13) 2px calc(var(--u)*6);border-radius:999px;color:var(--toy-ink);font:600 max(17px,calc(var(--u)*20))/1.02 var(--toy-display);white-space:normal;text-align:left}
+#todaySteps .th-lab{display:inline-flex;align-items:center;gap:calc(var(--u)*7);box-sizing:border-box;min-height:calc(var(--u)*36);max-width:calc(100% - var(--u)*6);margin:calc(var(--u)*21) 0 calc(var(--u)*24);
+  padding:2px calc(var(--u)*13) 2px calc(var(--u)*6);border-radius:999px;color:var(--toy-ink);font:600 max(17px,calc(var(--u)*20))/1.02 var(--toy-display);white-space:normal;text-align:left;text-wrap:balance;overflow-wrap:anywhere}
+/* each label keeps to its own third of the base, centred under its bead: a long game name wraps to two lines and is set a little smaller */
+#todaySteps .th-lab[data-long]{max-width:min(calc(100% - var(--u)*6),max(118px,calc(var(--u)*132)));font-size:max(15px,calc(var(--u)*18));gap:calc(var(--u)*6);padding-right:calc(var(--u)*10)}
 #todaySteps .th-lab::before{content:attr(data-n);flex:none;display:inline-flex;align-items:center;justify-content:center;width:calc(var(--u)*25);height:calc(var(--u)*25);min-width:22px;min-height:22px;border-radius:50%;
   background:var(--toy-red);color:#fff;font:700 max(15px,calc(var(--u)*16))/1 var(--toy-display)}
 #todaySteps .step[data-c=mustard] .th-lab::before{background:#A86F08}
