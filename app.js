@@ -326,8 +326,36 @@ const Backup = {
     if (navigator.canShare && navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f], title:'Abacus backup'}); return 'shared'; }catch(e){ if (e && e.name==='AbortError') return 'cancelled'; } }
     const url=URL.createObjectURL(f); const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 30000); return 'downloaded';
   },
+  // Read a chosen file before anything is asked or changed. Anything that is not one of our backups gets one plain sentence.
+  check(text){
+    let d=null; try{ d=JSON.parse(text); }catch(e){}
+    if (!d || typeof d!=='object' || Array.isArray(d) || d.app!=='abacus-practice' || !(d.voices || d.children || d.progress)) throw new Error('This is not a Bix Abacus backup file');
+    const kids=(d.format>=3 && Array.isArray(d.children)) ? d.children.filter(c=>c && c.id) : null;
+    return { d, kids, voices:(d.voices && d.voices.profiles || []).length, hasProgress: !!(kids ? kids.length : d.progress) };
+  },
+  // What to restore: resolves 'all', 'voices' or null (Cancel, Escape or a tap outside: nothing is changed).
+  ask(info){
+    const names=(info.kids||[]).map(c=>c.name || 'New child'), when=info.d.savedAt ? niceDate(String(info.d.savedAt).slice(0,10)) : '';
+    const holds=[ info.kids ? `${names.length} ${names.length===1?'child':'children'}${names.length ? ' ('+names.join(', ')+')' : ''}` : (info.hasProgress ? 'progress' : ''), info.voices ? `${info.voices} recorded voice${info.voices===1?'':'s'}` : '' ].filter(Boolean).join(' and ');
+    const lines=[ `This backup${when ? ' from '+when : ''} holds ${holds || 'no progress and no voices'}.` ];
+    if (info.kids) lines.push('Restoring progress replaces the children in the file with their saved copy, and the settings with the saved settings. Other children already on this device are kept.');
+    else if (info.hasProgress) lines.push('Restoring progress replaces the progress and settings on this device with the saved copy.');
+    if (info.voices) lines.push('Recorded voices in the file replace the same voices on this device.');
+    return new Promise(resolve=>{
+      const back=document.createElement('div'); back.className='toy-dialog'; back.setAttribute('role','presentation');
+      const btn=(r, label, col)=>`<button type="button" class="toy-block toy-block--${col} toy-block--sm" data-r="${r}"><span class="toy-block-label">${esc(label)}</span></button>`;
+      back.innerHTML=`<div class="toy-dialog-panel toy-paper" role="alertdialog" aria-modal="true" aria-labelledby="bkAskT" aria-describedby="bkAskM"><h2 class="toy-dialog-title" id="bkAskT">Restore this backup?</h2>`
+        + `<div class="toy-dialog-msg" id="bkAskM">${lines.map(l=>`<p>${esc(l)}</p>`).join('')}</div><div class="toy-dialog-btns bk-ask-btns">${btn('0','Cancel','wood')}`
+        + (info.voices && info.hasProgress ? btn('v','Voices only','wood') : '') + btn('1', info.hasProgress ? (info.voices ? 'Restore everything' : 'Restore progress') : 'Restore voices', 'teal') + `</div></div>`;
+      const prev=document.activeElement;
+      const done=r=>{ document.removeEventListener('keydown', onKey, true); back.remove(); if (prev && prev.focus) try{ prev.focus(); }catch(e){} resolve(r); };
+      const onKey=e=>{ if (e.key==='Escape'){ e.preventDefault(); done(null); } };
+      back.addEventListener('click', e=>{ const b=e.target.closest('button[data-r]'); if (b) done(b.dataset.r==='1' ? (info.hasProgress ? 'all' : 'voices') : b.dataset.r==='v' ? 'voices' : null); else if (e.target===back) done(null); });
+      document.addEventListener('keydown', onKey, true); document.body.appendChild(back); back.querySelector('[data-r="0"]').focus();
+    });
+  },
   async restore(text, withProgress){
-    const d=JSON.parse(text); if (d.app!=='abacus-practice') throw new Error('Not an Abacus Practice backup file');
+    const d=this.check(text).d;
     let n=0;
     if (d.voices && d.voices.profiles){
       for (const p of d.voices.profiles){
@@ -1801,7 +1829,13 @@ async function renderParent(){
   $('#bkMake').onclick=async()=>{ const b=$('#bkMake'); b.disabled=true; b.textContent='Preparing…'; try{ const f=await Backup.build(); $('#bkSave').style.display=''; $('#bkInfo').textContent=`Ready: ${f.name} (${(f.size/1048576).toFixed(1)} MB, ${profiles().length} voice${profiles().length===1?'':'s'}, progress and settings). Tap "Save file", then choose "Save to Files".`; }catch(e){ $('#bkInfo').textContent='Could not prepare backup: '+(e&&e.message||e); } b.disabled=false; b.textContent='1. Prepare backup'; };
   $('#bkSave').onclick=async()=>{ const r=await Backup.save(); if (r==='shared'||r==='downloaded'){ settings.lastBackup=new Date().toISOString(); saveSettings(); renderChecklist(); } $('#bkInfo').textContent = r==='shared'?'Saved. Keep the file somewhere safe (Files → iCloud Drive is best).': r==='downloaded'?'Downloaded. Check your Downloads folder.' : r==='cancelled'?'Cancelled.':'Prepare the backup first.'; };
   $('#bkOpen').onclick=()=>$('#bkFile').click();
-  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return; try{ const text=await f.text(); const withProgress=await TOY.confirm('Restore progress and settings too?', 'Recorded voices are always restored. This backup can also bring back the children’s progress and settings, replacing what is on this device now.', {ok:'Voices, progress and settings', cancel:'Voices only'}); const r=await Backup.restore(text, withProgress); for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome(); $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }catch(e){ $('#bkInfo').textContent='Could not restore: '+(e&&e.message||e); } };
+  $('#bkFile').onchange=async()=>{ const f=$('#bkFile').files[0]; $('#bkFile').value=''; if(!f) return;
+    let text, info; try{ text=await f.text(); info=Backup.check(text); }catch(e){ $('#bkInfo').textContent='This is not a Bix Abacus backup file. Nothing was changed.'; return; }
+    const what=await Backup.ask(info); if (!what){ $('#bkInfo').textContent='Nothing was restored.'; return; }
+    const withProgress = what==='all';
+    try{ const r=await Backup.restore(text, withProgress) || {voices:info.voices, clips:0}; for (const pp of profiles()) await Speaker.loadRec(pp.id, true); Recorder.pid=null; await renderParent(); renderHome();
+      $('#bkInfo').textContent=`Restored ${r.voices} voice${r.voices===1?'':'s'} (${r.clips} recordings)`+(withProgress?', progress and settings.':'.'); }
+    catch(e){ Diag.add('restore failed: '+(e&&e.message||e)); $('#bkInfo').textContent='Could not restore this backup. Nothing else was changed.'; } };
   $('#diagLog').textContent=Diag.lines.join('\n');
   $('#diagState').textContent=`voice=${settings.voice} kind=${Speaker.kind()} | AudioContext: ${Speaker.ctx?Speaker.ctx.state:'none'} | device voices: ${('speechSynthesis' in window)?speechSynthesis.getVoices().length:'n/a'} | chosen: ${Speaker.deviceVoice()?Speaker.deviceVoice().name:'none'} | clips: ${Speaker.canSchedule()?'ready':'not loaded'} | ${navigator.userAgent.slice(0,60)}`;
   $('#soundTest').onclick=async()=>{ Speaker.unlock(); Sfx.star(); await sleep(450); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); Diag.add('sound test ctx='+(Speaker.ctx?Speaker.ctx.state:'none')); };

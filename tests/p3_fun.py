@@ -35,7 +35,8 @@ async def main():
         await pg.click('#todayGo'); await pg.wait_for_selector('#lesson.active')
         for _ in range(25):   # intro pages + demos + tries
             if (await pg.text_content('#capKind'))=='Done!': break
-            await pg.click('#lessonNext'); await pg.wait_for_timeout(150)
+            if (await pg.evaluate("__lesson().phase")) in ('numbers','guided'): await pg.evaluate("__lessonSet(__lesson().target)"); await pg.wait_for_timeout(1100)   # her turn: she moves the beads (Skip would not count)
+            else: await pg.click('#lessonNext'); await pg.wait_for_timeout(150)
         await pg.screenshot(path='/tmp/p3_lesson_done.png')
         t = await collect(pg); check('lesson done -> sticker', bool(t), t)
         await pg.screenshot(path='/tmp/p3_reveal.png')
