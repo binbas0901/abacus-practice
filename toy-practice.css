@@ -99,7 +99,7 @@
 #drill .tp-readout[data-len="4"] b{font-size:50px} #drill .tp-readout[data-len="5"] b{font-size:42px} #drill .tp-readout[data-len="6"] b{font-size:35px}
 #drill .tp-readout.is-right{border-style:solid;border-color:var(--toy-teal-dk);background:radial-gradient(circle at 30% 22%,#8FEBD9 0,#1FA595 46%,#137A70 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
 #drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(10,74,69,.45)}
-#drill .tp-readout.is-wrong{border-color:var(--toy-red);background:#FFE7DE;animation:tp-no .46s ease both}
+#drill .tp-readout.is-wrong{animation:tp-no .46s ease both}   /* "not yet": the slot stays neutral and dashed, it only wobbles (red never means wrong) */
 @keyframes tp-yes{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
 @keyframes tp-no{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
 #drill:has(#answerTool.waiting) .tp-readout{opacity:.45}
@@ -220,6 +220,8 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
   72%{transform:translate(0,0) rotate(var(--r,0deg))}84%{transform:translate(0,-7px) rotate(var(--r,0deg))}100%{transform:translate(0,0) rotate(var(--r,0deg));opacity:1}}
 #summary .tp-fixside{align-self:end;justify-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:14px;margin-bottom:14px}
 #summary .tp-fixmat{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;justify-content:center;max-width:250px;padding:18px 20px;border-radius:24px;animation:tp-pop .4s cubic-bezier(.3,1.4,.5,1) .9s both}
+#summary .tp-fixcap{font-size:20px;min-height:36px;padding:3px 16px;margin-left:6px;animation:tp-pop .4s cubic-bezier(.3,1.4,.5,1) .9s both}
+#summary .tp-fixcap:has(+ .tp-fixmat:empty){display:none}
 #summary .tp-fixmat::before{inset:7px;border-radius:17px}
 #summary .tp-fixmat:empty{display:none}
 #summary .tp-fixmat .tp-b{line-height:0}
@@ -338,7 +340,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   .tp-pop,.tp-wob,.tp .bix.talking .toy-bix-breathe,.tp-show .bix.talking .toy-bix-breathe{animation:none}
   #drill .tp-ear.pulse::after,#drill .tp-listen.reading .tp-ear,#drill .flash-num.pop,#drill .tp-readout.is-right,#drill .tp-readout.is-wrong,#drill .tp-bubble .tp-btxt.tp-fresh,#showme .tp-showcard{animation:none}
   #drill .tp-term,#drill .tp-switch,#drill .tp-readout{transition:none}
-  #summary .tp-goldchip,#summary .tp-newchip,#summary .tp-fixmat,#summary .tp-catch .tp-b.in{animation:none}
+  #summary .tp-goldchip,#summary .tp-newchip,#summary .tp-fixmat,#summary .tp-fixcap,#summary .tp-catch .tp-b.in{animation:none}
   #summary .tp-sky .toy-sky-moon + .toy-sky-moon{animation:none;opacity:1}
   #summary .tp-moons .after{animation:none}
 }

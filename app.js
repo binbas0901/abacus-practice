@@ -901,7 +901,7 @@ $('#rvOkIc').innerHTML = TOY.icon('book', 30, 'currentColor');
 // Bix on the practice screens: the toy figurine + a paper bubble. He talks with a recorded line when one exists.
 // He thinks while she works, cheers when it is right and is sheepish (never sad) when it is not.
 const bixArt = Fun.Mascot.art;   // a Bix drawing that can talk, for the practice screens (they place him themselves)
-// A rod bead (tall, seen on its rod): teal = right, red = one to fix, mustard = the one she is on, wood = still to come.
+// A rod bead (tall, seen on its rod): teal = right, walnut = one to polish, mustard = the one she is on, wood = still to come.
 function rodBead(color, h, dim){ return TOY.bead(color, h, {tall:true, shadow:false, dim:!!dim}); }
 // The answer-tool switch is a little thing on the table to pick up: a soroban ("Use the beads") or a set of keys ("Type it instead").
 function switchArt(to){
@@ -1057,7 +1057,7 @@ window.addEventListener('resize', ()=>{ if ($('#drill').classList.contains('acti
 // Refit whenever the room changes (bubble mounted, "Show me" appears, fonts arrive, rotation).
 if (window.ResizeObserver){ let q=0; const ro=new ResizeObserver(()=>{ if (q) return; q=requestAnimationFrame(()=>{ q=0; if ($('#drill').classList.contains('active') && mode==='visual') fitTiles(); }); }); ro.observe($('#sheet')); ro.observe($('#drill .tp-body')); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if ($('#drill').classList.contains('active')) fitTiles(); });
-// The set as beads on a brass rod: finished ones have slid to the left (teal = right, red = one to fix),
+// The set as beads on a brass rod: finished ones have slid to the left (teal = right, walnut = one to polish),
 // the one she is on glows in the middle, the rest wait on the right.
 function renderStrip(popIdx){
   const st=$('#strip'); const fixing=reviewing && !LT; $('#fixLabel').hidden=!fixing; st.classList.toggle('fixing', fixing);
@@ -1066,12 +1066,12 @@ function renderStrip(popIdx){
   st.innerHTML = list.map((i,k)=>{
     const p=problems[i], cur=i===idx, ok=results[i]===true||p._fixed, bad=results[i]===false&&!p._fixed;
     let svg, label=`Problem ${k+1}`;
-    if (cur && !LT && (ok||bad)){ svg=rodBead(ok?'teal':'red', Math.round(h*1.16)); label+= ok?', right':', to fix'; }   // the verdict shows at once, on the bead she is on
+    if (cur && !LT && (ok||bad)){ svg=rodBead(ok?'teal':'walnut', Math.round(h*1.16)); label+= ok?', right':', to polish'; }   // the verdict shows at once, on the bead she is on
     else if (cur){ svg=rodBead('mustard', Math.round(h*1.16)); label+=', now'; }
     else if (LT) svg=rodBead('indigo', h, results[i]===null||results[i]===undefined), label+= results[i]!=null?', done':'';
     else if (ok){ svg=rodBead('teal', h); label+=', right'; }
-    else if (bad){ svg=rodBead('red', h); label+=', to fix'; }
-    else svg=rodBead('red', h, true);
+    else if (bad){ svg=rodBead('walnut', h); label+=', to polish'; }
+    else svg=rodBead('wood', h, true);
     const fx = i===popIdx ? (bad && !LT ? ' tp-wob' : ' tp-pop') : '';
     return `<span role="listitem" aria-label="${label}" class="tp-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${fx}">${svg}</span>`;
   }).join('');
@@ -1205,8 +1205,8 @@ $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[
 $('#checkBtn').addEventListener('click', ()=>{ if(locked||demoing) return; submit(); });
 document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('active')||locked||demoing) return; if (e.target && e.target.closest && e.target.closest('.abx-rod')) return; if(/^[0-9]$/.test(e.key)&&entry.length<6&&Tool.kind==='keys') setEntry(entry+e.key); else if(e.key==='Backspace'&&Tool.kind==='keys') setEntry(entry.slice(0,-1)); else if(e.key==='Enter') submit(); });
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('tp-nudge'); void t.offsetWidth; t.classList.add('tp-nudge'); setTimeout(()=>t.classList.remove('tp-nudge'),460); }
-// Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or gets a red rim (a gentle shake),
-// and her bead on the rod turns teal or red. Cleared when the next problem comes. Never used in the level test.
+// Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or keeps its dashed rim and wobbles gently ("not yet", never red),
+// and her bead on the rod turns teal or stays raw walnut (one to polish). Cleared when the next problem comes. Never used in the level test.
 function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong'); if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
@@ -1235,7 +1235,7 @@ async function submit(){
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
-      const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('red', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
+      const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('walnut', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
       PB.say('Let\'s watch the beads together.', 'happy', 'fix_watch', 0);
       await sleep(900); await showMe(p);
       if (!$('#drill').classList.contains('active')) return;
@@ -1269,8 +1269,8 @@ function bowlSlot(i, total){
   const m=per[row], x=50+(k%m-(m-1)/2)*bs*84+((i*37)%7-3)*.5, y=44-row*bs*47-Math.floor(k/m)*bs*40;
   return `left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;--r:${(i*53)%41-20}deg;--r0:${(i*71)%121-60}deg;--dx:${(i*29)%61-30}px;animation-delay:${(0.25+i*0.11).toFixed(2)}s`;
 }
-// Beads earned drop into the bowl (teal = right, then the golden ones); the red ones to fix wait on the felt mat beside it.
-// list: 'jade' (right) | 'red' (to fix) | 'pale' (not yet)
+// Beads earned drop into the bowl (teal = right, then the golden ones); the ones to polish (raw walnut) wait on the felt mat beside it.
+// list: 'jade' (right) | 'fix' (to polish) | 'pale' (not yet)
 function sumBeads(list, gold){
   gold=gold||0; const inBowl=list.filter(c=>c==='jade').length, total=inBowl+gold, bs = total<=14 ? .19 : total<=25 ? .145 : .112;
   const box=$('#sumStars'); box.style.setProperty('--bs', bs); let k=0, html=BOWL_BACK;
@@ -1278,7 +1278,7 @@ function sumBeads(list, gold){
   for (let g=0; g<gold; g++) html+=`<span aria-hidden="true" class="tp-b tp-gold in" style="${bowlSlot(k++, total)}">${TOY.bead('mustard', 80, {shadow:false})}</span>`;
   box.innerHTML=html+BOWL_FRONT;
   const out=list.map((c,i)=>[c,i]).filter(x=>x[0]!=='jade'), w=out.length>8 ? 44 : 60;
-  $('#sumFix').innerHTML=out.map(([c,i])=>`<span role="listitem" aria-label="${i+1}: ${c==='red'?'red, to fix':'not yet'}" class="tp-b out">${TOY.bead('red', w, {dim:c!=='red'})}</span>`).join('');
+  $('#sumFix').innerHTML=out.map(([c,i])=>`<span role="listitem" aria-label="${i+1}: ${c==='fix'?'to polish':'not yet'}" class="tp-b out">${TOY.bead('walnut', w, {dim:c!=='fix'})}</span>`).join('');
 }
 function sumBix(mood){ const el=$('#bixSum'); el.innerHTML=bixArt(mood, 210); return el; }
 // Today's steps as the moon sees them: how many were done before this activity, and after it.
@@ -1321,17 +1321,17 @@ function finish(){
   $('#sumScore').textContent = green ? `${green} green bead${green===1?'':'s'}!` : 'Good practice!';
   const vid = allFixed ? 'sum_fixed' : leveled ? 'sum_unlock' : n===3 ? 'sum_amazing' : n===2 ? 'sum_great' : 'sum_good';
   const say = { sum_fixed:'All fixed! You fixed every one. You’re a star!', sum_unlock:`Hooray! You unlocked a new skill: ${NODES[curIdx()].title}!`, sum_amazing:'Amazing work!',
-    sum_great:'Great job! Want to fix the red ones with me?', sum_good:'Good practice! Every try makes you stronger.' }[vid];
-  const fixLine = toFix.length && vid!=='sum_great' ? ` Let’s turn the ${toFix.length===1?'red one':toFix.length+' red ones'} green together.` : '';
+    sum_great:'Great job! Want to polish these with me?', sum_good:'Good practice! Every try makes you stronger.' }[vid];
+  const fixLine = toFix.length && vid!=='sum_great' ? ` Let’s polish ${toFix.length===1?'this one':'these '+toFix.length} together.` : '';
   $('#sumNote').textContent = say + fixLine;
   // Golden beads earned here (handed out by activityDone below) all land in ONE place: the chip at the top right,
   // after the headline has settled (the floating "+n" toasts stay off this screen, see screens-practice.css).
   const gold = !reviewing ? Treats.EARN.activity + (n===3 ? Treats.EARN.gold : 0) + (leveled ? Treats.EARN.skill : 0) : 0;
-  sumBeads(problems.map((p,i)=>results[i]===true||p._fixed?'jade':results[i]===false?'red':'pale'), gold);
+  sumBeads(problems.map((p,i)=>results[i]===true||p._fixed?'jade':results[i]===false?'fix':'pale'), gold);
   drawMoon($('#sumSky'), $('#sumMoons'), reviewing ? null : mode);
   $('#sumGold').hidden = !gold; $('#sumGold').innerHTML = gold ? TOY.bead('mustard', 44, {shadow:false})+`<span>+${gold} golden bead${gold===1?'':'s'}</span>` : '';
   $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? TOY.icon('star', 30, '#C98A16')+'<span>New skill!</span>' : '';
-  // one obvious next step: fix the red ones; then the level test; else play again — always beside "I'm done"
+  // one obvious next step: fix the ones to polish; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
   $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
@@ -1792,7 +1792,7 @@ $('#kidAdd').addEventListener('click', ()=>{ const id=Store.addChild(); Store.sw
 function showWho(){
   $('#whoList').innerHTML=Store.children().map((c,i)=>`<button type="button" class="who-card tw-card" data-who="${c.id}"><span class="tw-bead">${TOY.bead(KID_COLORS[i%KID_COLORS.length], 128, {tall:true})}</span><span class="tw-name">${esc(childLabel(c))}</span></button>`).join('');
   $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); Sfx.tap(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
-  if (!$('#whoSky').innerHTML){ $('#whoSky').innerHTML=TOY.skyMoon('calm', .5); $('#whoShelf').innerHTML=TOY.prop('rainbow', 150) + TOY.prop('plant', 170); }
+  if (!$('#whoSky').innerHTML){ $('#whoSky').innerHTML=TOY.skyMoon('calm', 1);   /* nobody is picked yet: a neutral full moon, not somebody's phase */ $('#whoShelf').innerHTML=TOY.prop('rainbow', 150) + TOY.prop('plant', 170); }
   show('who');
   const bw=$('#bixWho'); toyBix(bw, 'wave');
   Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask');
