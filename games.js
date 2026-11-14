@@ -33,26 +33,7 @@
       + `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="5" fill="#F3DFBA"/><rect x="10" y="10" width="${W - 20}" height="7" fill="#3A1E06" opacity=".16"/>${g}`
       + `<rect x="10" y="${beam - 4}" width="${W - 20}" height="9" fill="#5A3416"/><rect x="10" y="${beam - 4}" width="${W - 20}" height="3" fill="#9A6A3A"/></svg>`;
   }
-  // Bix in these screens: Fun.Mascot still mounts and drives him (moods, voice, bubble); here his drawing becomes the Toy Table
-  // figurine. The observer swaps in TOY.bix whenever Mascot draws the old one, so mount / react / mood keep working unchanged.
-  const MOOD = { happy: 'happy', cheer: 'cheer', think: 'think', concerned: 'oops', wow: 'wow', sleepy: 'sleepy' };
-  function toyBix(el) {
-    if (!el || !T()) return;
-    el.classList.add('tr-bixhost');
-    const swap = () => {
-      const s = el.querySelector('.bix'); if (!s) return;
-      const svg = s.querySelector('svg');
-      if (svg && svg.getAttribute('viewBox') !== '-160 -190 320 320') {
-        const mood = MOOD[s.dataset.mood || (s.className.match(/ws-bix-(\w+)/) || [])[1]] || 'happy';
-        const t = document.createElement('div'); t.innerHTML = T().bix(mood, 120);
-        const n = t.querySelector('svg'); n.removeAttribute('width'); n.removeAttribute('height'); svg.replaceWith(n);
-      }
-      const say = el.querySelector('.ws-say'); if (say && !say.dataset.toy) { say.dataset.toy = '1'; say.innerHTML = TI('speaker', 24, '#2B3674'); }
-    };
-    if (!el._toyBix) { el._toyBix = new MutationObserver(swap); el._toyBix.observe(el, { childList: true, subtree: true }); }
-    swap();
-  }
-  root.ToyRoom = { bix: toyBix, wideBead, miniSoroban, shadowE };
+  root.ToyRoom = { wideBead, miniSoroban, shadowE };
 
   // art(size): the picture on the game's toy box, built from kit parts; mark(): the small one beside its title; block: its lacquer colour.
   const ART = {
@@ -335,7 +316,7 @@
   async function open(id) {
     const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim();
     const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
-    root.Fun.Mascot.mount(bix(), { size: 76 }); toyBix(bix()); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
+    root.Fun.Mascot.mount(bix(), { size: 76 }); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
     a.show('game');
     const r = id === 'pop' ? await pop(my) : id === 'reader' ? await reader(my) : await build(my);
     if (!r || my !== token) return;

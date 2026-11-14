@@ -59,6 +59,9 @@
       + '<linearGradient id="toy-g-rim" x1="0" y1="0" x2="1" y2="1"><stop offset=".6" stop-color="#FFD9A8" stop-opacity="0"/><stop offset="1" stop-color="#FFD9A8" stop-opacity=".5"/></linearGradient>'
       + '<linearGradient id="toy-g-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7FB487"/><stop offset="1" stop-color="#3E7A54"/></linearGradient>'
       + '<linearGradient id="toy-g-pot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FBF4E8"/><stop offset="1" stop-color="#CDBFA8"/></linearGradient>'
+      + '<radialGradient id="toy-g-moonnight" cx=".5" cy=".5" r=".75" fx=".3" fy=".22"><stop offset="0" stop-color="#B9C0EC"/><stop offset=".5" stop-color="#949DD6"/><stop offset="1" stop-color="#6C75B4"/></radialGradient>'
+      + '<radialGradient id="toy-g-moonday" cx=".5" cy=".5" r=".75" fx=".3" fy=".22"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#E6F0F4"/><stop offset="1" stop-color="#C9DCE6"/></radialGradient>'
+      + '<linearGradient id="toy-g-lampshade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9A8"/><stop offset=".55" stop-color="#FFF6CF"/><stop offset="1" stop-color="#F8C866"/></linearGradient>'
       + '<radialGradient id="toy-g-moonglow"><stop offset=".5" stop-color="#FFF6C8" stop-opacity=".9"/><stop offset=".72" stop-color="#FFEEA8" stop-opacity=".3"/><stop offset="1" stop-color="#FFE9A0" stop-opacity="0"/></radialGradient>'
       + '<radialGradient id="toy-g-moondim" cx=".5" cy=".5" r=".7" fx=".34" fy=".26"><stop offset="0" stop-color="#EDE6D6"/><stop offset=".6" stop-color="#D4CAB6"/><stop offset="1" stop-color="#B3A78F"/></radialGradient>'
       + `<clipPath id="toy-bix-clip"><path d="${BIX_BODY}"/></clipPath>`;
@@ -223,7 +226,7 @@
     const blush = `<ellipse cx="-78" cy="24" rx="21" ry="11" fill="#FFAE9C" opacity=".62"/><ellipse cx="76" cy="22" rx="21" ry="11" fill="#FFAE9C" opacity=".62"/>`
       + `<ellipse cx="-78" cy="24" rx="13" ry="6" fill="#FFBFAE" opacity=".6"/><ellipse cx="76" cy="22" rx="13" ry="6" fill="#FFBFAE" opacity=".6"/>`;
     const peg = `<rect x="-9" y="-100" width="18" height="34" rx="6" fill="url(#toy-g-post)"/><circle cx="0" cy="-104" r="14" fill="url(#toy-g-maple-side)"/><circle cx="-1" cy="-106" r="13" fill="url(#toy-g-maple)"/><ellipse cx="-5" cy="-111" rx="5" ry="3" fill="#fff" opacity=".7"/>`;
-    const face = `<g transform="translate(0,${M.faceY || 0})">${blush}${bixEyes(M.eyes)}${brow}${MOUTH[M.mouth]}</g>`;
+    const face = `<g transform="translate(0,${M.faceY || 0})">${blush}${bixEyes(M.eyes)}${brow}<g class="toy-bix-mouth">${MOUTH[M.mouth]}</g></g>`;
     return `<span class="toy-bix toy-bix--${key}${opts.still ? ' toy-still' : ''}"><svg width="${size}" height="${size}" viewBox="-160 -190 320 320" role="img" aria-label="${esc(opts.label || 'Bix')}">`
       + shadow(40, 100, r1(128 * sh), r1(15 * sh), .4) + shadow(6, 98, r1(92 * sh), r1(12 * sh), .95)
       + `<g transform="translate(0,${sink - lift})">`
@@ -372,11 +375,12 @@
   // a little star companion with a face
   const starPal = (cx, cy, r) => `<g transform="translate(${cx},${cy})">${star(1, 1.5, r, '#B8860F')}${star(0, 0, r, '#F7C843')}<ellipse cx="${r1(-r * .3)}" cy="${r1(-r * .42)}" rx="${r1(r * .3)}" ry="${r1(r * .13)}" transform="rotate(-30 ${r1(-r * .3)} ${r1(-r * .42)})" fill="#fff" opacity=".8"/>`
     + `<circle cx="${r1(-r * .24)}" cy="${r1(r * .02)}" r="${r1(r * .11)}" fill="${MEYE}"/><circle cx="${r1(r * .24)}" cy="${r1(r * .02)}" r="${r1(r * .11)}" fill="${MEYE}"/><path d="M${r1(-r * .16)},${r1(r * .26)} Q0,${r1(r * .44)} ${r1(r * .16)},${r1(r * .26)}" fill="none" stroke="${MEYE}" stroke-width="${r1(r * .11)}" stroke-linecap="round"/></g>`;
+  // The face is always whole and centred: her night side is a soft matte (periwinkle at night, milky by day), light enough
+  // for the eyes to read, so every phase from a thin crescent to full keeps her expression.
   function moon(mood, size, opts) {
     const key = MOON[mood] ? mood : 'calm', M = MOON[key]; size = size || 120; opts = opts || {};
-    const p = Math.max(.36, Math.min(1, opts.phase == null ? 1 : +opts.phase)), r = 50, sky = !!opts.sky, cy = sky ? 0 : -8;
-    const tEdge = r * (1 - 2 * p), w = r - tEdge, fx = p >= .995 ? 0 : tEdge + w * .53, fs = Math.max(.5, Math.min(1, w / (r * 1.36))) * 1.12, narrow = p < .6, thin = p < .45;
-    const t = Math.max(0, Math.min(1, (1 - p) * 2)), sx = -21 + 48 * t, sy = cy - 27 - 4 * t;
+    const p = Math.max(0, Math.min(1, opts.phase == null ? 1 : +opts.phase)), r = 50, sky = !!opts.sky, cy = sky ? 0 : -8, full = p >= .995;
+    const t = Math.max(0, Math.min(1, (1 - p) * 2)), sx = -21 + 52 * t, sy = cy - 27 - 4 * t;
     const craters = p > .8 ? `<g fill="#E2C272" opacity=".5"><ellipse cx="29" cy="${cy + 27}" rx="8" ry="6.4"/><ellipse cx="34" cy="${cy - 26}" rx="5.5" ry="4.6"/><ellipse cx="14" cy="${cy + 38}" rx="3.6" ry="3"/></g><g fill="#fff" opacity=".5"><ellipse cx="30" cy="${cy + 29.5}" rx="6" ry="3.4"/><ellipse cx="34.6" cy="${cy - 24.4}" rx="4" ry="2.4"/></g>` : '';
     const stand = sky ? '' : shadow(10, 80, 64, 9, .5) + shadow(2, 79, 42, 7, .95)
       + `<rect x="-6" y="${cy + 44}" width="12" height="26" rx="4" fill="url(#toy-g-post)"/><ellipse cx="0" cy="77" rx="33" ry="9" fill="url(#toy-g-maple-side)"/><ellipse cx="0" cy="73.5" rx="33" ry="8.4" fill="url(#toy-g-maple)"/><ellipse cx="-10" cy="71" rx="13" ry="2.6" fill="#fff" opacity=".5"/>`;
@@ -385,15 +389,18 @@
       + (M.spark ? sparkle(-62, cy - 44, 10, '#FFFDF6') + sparkle(64, cy - 50, 8, '#FFFDF6') + sparkle(70, cy + 22, 6, '#FFFDF6') : '')
       + (M.twinkle ? sparkle(60, cy - 44, 11, '#FFFDF6') + sparkle(74, cy - 22, 5.5, '#FFFDF6') : '')
       + (M.zz ? zed(48, cy - 62, 8, .85) + zed(62, cy - 80, 11, .6) : '');
-    const name = opts.label || TOY.moonName;
+    const name = opts.label || TOY.moonName, lit = litPath(r, p, 0, cy);
     return `<span class="toy-moon toy-moon--${key}${sky ? ' toy-moon--sky' : ''}${opts.still ? ' toy-still' : ''}"><svg width="${size}" height="${size}" viewBox="${sky ? '-80 -80 160 160' : '-90 -100 180 190'}" role="img" aria-label="${esc(name)}">`
-      + stand + `<circle class="toy-moon-halo" cx="0" cy="${cy}" r="${r1(62 + 22 * p)}" fill="url(#toy-g-moonglow)" opacity="${r1(.6 + .4 * p)}"/>`
-      + (p >= .995 ? '' : `<circle class="toy-moon-dark" cx="0" cy="${cy}" r="${r}" fill="url(#toy-lac-indigo)"${sky ? ' opacity=".3"' : ''}/>${sky ? '' : spec(-27, cy - 27, 7, 2.8, -40, .5)}`)
-      + `<path d="${litPath(r, p, 0, cy)}" fill="url(#toy-lac-moon)"/><path d="${litPath(r, p, 0, cy)}" fill="url(#toy-g-shade)" opacity=".5"/>`
-      + craters + soft(r1(sx + 4), r1(sy + 3), 22, 10, -35, .95) + spec(r1(sx), r1(sy), 8.5, 3.4, -38, .95) + `<circle cx="${r1(sx + 12)}" cy="${r1(sy - 9)}" r="2.2" fill="#fff" opacity=".9"/>`
-      + `<g class="toy-moon-face" transform="translate(${r1(thin ? tEdge + w * .5 : fx)},${cy + 2}) scale(${thin ? .78 : r1(fs * 100) / 100})">${moonFace(M, narrow, thin)}</g>${fx2}</svg></span>`;
+      + stand + `<circle class="toy-moon-halo" cx="0" cy="${cy}" r="${r1(66 + 12 * p)}" fill="url(#toy-g-moonglow)" opacity="${r1(.7 + .3 * p)}"/>`
+      + (full ? '' : `<circle class="toy-moon-dark" cx="0" cy="${cy}" r="${r}" fill="url(#toy-g-moonnight)"/><circle class="toy-moon-day" cx="0" cy="${cy}" r="${r}" fill="url(#toy-g-moonday)"/>`)
+      + (p > .01 ? `<path d="${lit}" fill="url(#toy-lac-moon)"/><path d="${lit}" fill="url(#toy-g-shade)" opacity=".5"/>` : '')
+      + `<circle cx="0" cy="${cy}" r="${r - .8}" fill="none" stroke="${ML.deep}" stroke-width="1.6" opacity=".45"/>`
+      + craters + (p > .12 ? soft(r1(sx + 4), r1(sy + 3), r1(10 + 12 * Math.min(1, p * 1.6)), 10, -35, .95) + spec(r1(sx), r1(sy), 8.5, 3.4, -38, .95) + `<circle cx="${r1(sx + 12)}" cy="${r1(sy - 9)}" r="2.2" fill="#fff" opacity=".9"/>` : '')
+      + `<g class="toy-moon-face" transform="translate(0,${cy + 2}) scale(1.08)">${moonFace(M)}</g>${fx2}</svg></span>`;
   }
-  const skyMoon = (mood, phase) => `<div class="toy-sky-moon">${moon(mood || 'calm', 80, { sky: true, phase: phase == null ? 1 : phase })}</div>`;
+  // Today's steps as a phase: a real crescent, then half, gibbous, and full when every step is done (she never shrinks).
+  const stepPhase = (done, total) => (total > 0 && done >= total ? 1 : .24 + .52 * Math.min(1, done / Math.max(1, total - 1)));
+  const skyMoon = (mood, phase) => `<div class="toy-sky-moon"><div class="toy-sky-moon-in">${moon(mood || 'calm', 160, { sky: true, stars: false, phase: phase == null ? 1 : phase })}</div></div>`;
   // Progress as phases: moon i shows (i+1)/total of the disc; finished ones are glazed and glow, the rest are matte.
   function moonPhases(done, total, opts) {
     opts = opts || {}; total = Math.max(1, total | 0); done = Math.max(0, Math.min(total, done | 0));
@@ -402,7 +409,7 @@
     for (let i = 0; i < total; i++) {
       const cx = 8 + step / 2 + i * step, u = total > 1 ? (i / (total - 1)) * 2 - 1 : 0, cy = r1(31 + arc * u * u), p = i === total - 1 ? 1 : .18 + .82 * (i + 1) / total, on = i < done;
       if (on) g += `<circle cx="${cx}" cy="${cy}" r="${r + 12}" fill="url(#toy-g-moonglow)"/>` + shadow(cx + 3, cy + r + 2, r, 4, .6)
-        + (p >= .995 ? '' : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#toy-lac-indigo)"/>`)
+        + (p >= .995 ? '' : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#toy-g-moonnight)"/>`)
         + `<path d="${litPath(r, p, cx, cy)}" fill="url(#toy-lac-moon)"/>` + spec(r1(cx + (p < .7 ? 9 : -7)), cy - 11, 4.6, 1.9, -35, .95)
         + (i === total - 1 ? `<g transform="translate(${cx},${cy + 1}) scale(.56)">${moonFace(MOON.happy)}</g>` : '');
       else g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#B98448"/><circle cx="${cx + 1.5}" cy="${cy + 2.5}" r="${r - 2}" fill="#D2A066"/>`
@@ -506,6 +513,14 @@
       + `<g fill="url(#toy-g-leaf)"><path d="M940,160 C900,140 884,96 898,62 C930,84 948,120 944,160Z"/><path d="M948,158 C936,110 950,62 982,40 C996,84 984,128 954,160Z"/><path d="M956,160 C972,120 1004,100 1040,104 C1030,140 996,160 958,164Z"/><path d="M938,164 C912,150 880,154 862,172 C888,186 920,182 940,168Z" opacity=".9"/></g>`
       + `<g stroke="#2F6142" stroke-width="2" fill="none" opacity=".5"><path d="M942,158 C926,124 912,96 900,68"/><path d="M952,158 C960,112 970,76 981,46"/><path d="M958,161 C986,136 1010,118 1036,106"/></g>`
       + `<path d="M908,160 H1000 L990,222 Q954,232 918,222Z" fill="url(#toy-g-pot)"/><rect x="902" y="152" width="104" height="16" rx="8" fill="#FFF9EE"/><rect x="902" y="162" width="104" height="6" rx="3" fill="#B9AA90" opacity=".5"/></svg>`;
+    // a small table lamp (evening scenes): maple foot, brass stem, a warm glowing shade. Pair it with --toy-lamp-x on the scene.
+    if (name === 'lamp') return `<svg class="toy-prop toy-lamp" width="${Math.round(size * .75)}" height="${size}" viewBox="0 0 150 200" aria-hidden="true">${shadow(86, 188, 60, 9, .55)}${shadow(76, 187, 40, 7, .95)}`
+      + `<circle cx="75" cy="62" r="74" fill="url(#toy-g-moonglow)" opacity=".8"/>`
+      + `<ellipse cx="75" cy="184" rx="36" ry="9" fill="url(#toy-g-maple-side)"/><ellipse cx="75" cy="180" rx="36" ry="8.5" fill="url(#toy-g-maple)"/><ellipse cx="64" cy="177" rx="14" ry="2.6" fill="#fff" opacity=".5"/>`
+      + `<rect x="70" y="100" width="10" height="80" rx="4" fill="#B8860F"/><rect x="71.5" y="100" width="3" height="80" rx="1.5" fill="#FBE08A" opacity=".8"/><ellipse cx="75" cy="122" rx="9" ry="7" fill="#C99A22"/><ellipse cx="72" cy="119.5" rx="3.4" ry="2" fill="#FFF3C4" opacity=".9"/>`
+      + `<ellipse cx="75" cy="104" rx="52" ry="9" fill="#E9A93C"/><path d="M40,22 H110 L128,104 Q75,116 22,104Z" fill="url(#toy-g-lampshade)"/><path d="M40,22 H110 L113,36 Q75,42 37,36Z" fill="#fff" opacity=".28"/>`
+      + `<ellipse cx="75" cy="22" rx="35" ry="6" fill="#F6CF78"/><ellipse cx="75" cy="22" rx="28" ry="4" fill="#FFF8DC"/><path d="M36,40 L27,92" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".55"/>`
+      + `<path d="M22,104 Q75,116 128,104" fill="none" stroke="#C98A1E" stroke-width="3" opacity=".7"/></svg>`;
     if (name === 'bowl') { const b = (c, t) => `<g transform="${t}">${wideBead(c)}</g>`;
       return `<svg class="toy-prop" width="${size}" height="${Math.round(size * .6)}" viewBox="962 664 200 120" aria-hidden="true">${shadow(1072, 756, 100, 20, .8)}`
         + `<path d="M976,700 Q980,760 1060,762 Q1140,760 1144,700Z" fill="url(#toy-g-maple-side)"/><path d="M976,700 Q980,756 1060,758 Q1140,756 1144,700Z" fill="url(#toy-g-maple)"/><ellipse cx="1060" cy="700" rx="84" ry="24" fill="#B98448"/><ellipse cx="1060" cy="704" rx="76" ry="19" fill="#8E5E2C"/>`
@@ -570,7 +585,7 @@
   }
 
   const TOY = {
-    colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
+    colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, stepPhase, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
     MOODS: Object.keys(BIX), MOON_MOODS: Object.keys(MOON), ICONS: ['practice', 'play', 'room', 'lock', 'close', 'back', 'backspace', 'check', 'speaker', 'star', 'book', 'eye', 'ear', 'flash', 'gear', 'retry', 'plus'],
     FRIENDS: { small: [[1, 4], [2, 3]], big: [[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]] },
   };

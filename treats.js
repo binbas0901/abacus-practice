@@ -168,7 +168,7 @@
     renderShop(); renderJar();
   }
   function open() {
-    const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 84 }); root.ToyRoom.bix(bx);
+    const bx = $('#bixShop'); if (!bx.querySelector('.bix')) F().Mascot.mount(bx, { size: 84 });
     const g = goal(), w = wallet();
     if (!g) F().Mascot.say(bx, 'Pick a treat to save for!', 0, 'shop_pick');
     else if (w.beads >= g.price) F().Mascot.say(bx, `You have enough for ${g.name}. Get it now, or keep saving. You choose!`, 0, null);

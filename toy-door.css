@@ -21,15 +21,6 @@
 .td-pop{animation:td-bounce .34s ease-out both}
 .td-shake{animation:td-shake .3s ease}
 
-/* ---------- Bix on the table (Fun.Mascot keeps the behaviour; the figurine is TOY.bix) ---------- */
-#door .bix.td-bixed,#lesson .bix.td-bixed{width:auto;height:auto;line-height:0;cursor:pointer;flex:none;-webkit-tap-highlight-color:transparent}
-#door .bix.td-bixed > svg,#lesson .bix.td-bixed > svg{display:none}
-.td-bixfig{display:block;line-height:0;transform-origin:50% 86%}
-.td-bixfig svg{display:block;width:var(--td-bix,180px);height:var(--td-bix,180px);overflow:visible}
-.bix.td-bixed.happy .td-bixfig{animation:td-hop .42s ease-out 2}
-.bix.td-bixed.cheer .td-bixfig{animation:td-hop .5s ease-out 3}
-.bix.td-bixed.oops .td-bixfig{animation:td-wob .55s ease-in-out 1}
-.bix.td-bixed.talking .td-bixfig{animation:td-talk .46s ease-in-out infinite}
 
 /* =====================================================================
    Practice door
@@ -51,9 +42,9 @@
   gap:clamp(16px,2.4vw,34px);align-items:end;padding:calc(var(--toy-wall-h) + 34px) var(--pad) 0}
 
 /* Bix and his paper bubble (bubble above, Bix on the table under it) */
-#door .td-bixspot.bixwrap{--td-bix:clamp(210px,21vw,270px);position:relative;display:flex;flex-direction:column-reverse;align-items:flex-start;gap:14px;
+#door .td-bixspot.bixwrap{--tb:clamp(210px,21vw,270px);position:relative;display:flex;flex-direction:column-reverse;align-items:flex-start;gap:14px;
   margin:-104px 0 0;min-width:0;align-self:end}
-#door .td-bixspot .bix{margin:calc(var(--td-bix)*-.2) 0 calc(var(--td-bix)*-.07) calc(var(--td-bix)*-.04)}
+#door .td-bixspot .bix{margin:calc(var(--tb)*-.2) 0 calc(var(--tb)*-.07) calc(var(--tb)*-.04)}
 #door .td-bixspot .bubble{visibility:hidden;position:relative;display:flex;align-items:center;gap:10px;box-sizing:border-box;width:100%;max-width:none;min-height:0;
   margin:0;padding:15px 16px 17px 20px;border:0;border-radius:24px;cursor:pointer;-webkit-tap-highlight-color:transparent;
   background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:600 clamp(20px,1.95vw,24px)/1.22 var(--toy-display);
@@ -213,7 +204,7 @@
 #lesson .friends span.on{background:#F2B632;box-shadow:0 0 0 3px #F2B632,2px 4px 5px rgba(var(--toy-shade),.35)}
 
 #lesson .lesson-floor{display:flex;align-items:flex-end;justify-content:space-between;gap:clamp(8px,1.4vw,20px);min-height:190px}
-#lesson .lesson-bix{--td-bix:clamp(200px,26vh,250px);padding:0;margin:calc(var(--td-bix)*-.22) 0 calc(var(--td-bix)*-.07) calc(var(--td-bix)*-.03);flex:none}
+#lesson .lesson-bix{--tb:clamp(200px,26vh,250px);padding:0;margin:calc(var(--tb)*-.22) 0 calc(var(--tb)*-.07) calc(var(--tb)*-.03);flex:none}
 #lesson .lesson-left{--pair-h:clamp(140px,20.5vh,200px)}
 #lesson .lesson-pair{position:absolute;right:0;bottom:0;width:calc(100% - 176px);display:flex;align-items:flex-end;justify-content:flex-end;line-height:0}
 #lesson .lesson-pair .toy-pair{display:block;flex:none;width:min(100%,calc(var(--pair-h)*1.88))}
@@ -237,7 +228,7 @@
   #door.td-door{--toy-window-x:clamp(250px,37vw,330px);--toy-wall-h:clamp(150px,17vh,210px)}
   #door .td-shelf .toy-prop:first-child{display:none}
   #door .td-stage{grid-template-columns:minmax(0,1fr);gap:clamp(20px,3vh,40px);align-content:center;align-items:center}
-  #door .td-bixspot.bixwrap{flex-direction:row;align-items:center;gap:26px;margin:0;--td-bix:clamp(170px,24vw,210px)}
+  #door .td-bixspot.bixwrap{flex-direction:row;align-items:center;gap:26px;margin:0;--tb:clamp(170px,24vw,210px)}
   #door .td-bixspot .bubble{width:auto;flex:0 1 420px;min-height:0;padding:18px 18px 20px 24px;font-size:24px}
   #door .td-bixspot .bubble::after{left:-24px;bottom:24px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
   #door .door-blocks{height:clamp(250px,30vh,360px);max-height:none;gap:clamp(14px,2.4vw,22px)}
@@ -269,6 +260,6 @@
 }
 @media (prefers-reduced-motion:reduce){
   #door.intro .td-toy,#door .td-bixspot .bubble.pop,#lesson .lesson-pair.has-pair .toy-pair,.td-pop,.td-shake,
-  .bix.td-bixed.happy .td-bixfig,.bix.td-bixed.cheer .td-bixfig,.bix.td-bixed.oops .td-bixfig,.bix.td-bixed.talking .td-bixfig{animation:none}
+  .td-noop{animation:none}
   #door .td-toy,#door .dp-bead{transition:none}
 }

@@ -53,9 +53,9 @@
   --toy-grain:repeating-linear-gradient(180deg,rgba(132,76,28,.07) 0 2px,rgba(132,76,28,0) 2px 7px,rgba(255,238,204,.1) 7px 8px,rgba(132,76,28,0) 8px 13px);
   --toy-felt-grain:linear-gradient(rgba(255,255,255,0),rgba(255,255,255,0));
   /* window (day) — static SVG, gradients only */
-  --toy-window:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 200'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23BFE4F2'/><stop offset='.7' stop-color='%23E9F5E6'/><stop offset='1' stop-color='%23FFF6D6'/></linearGradient><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23FFFDF7'/><stop offset='1' stop-color='%23EDE4D2'/></linearGradient><radialGradient id='a'><stop offset='.3' stop-color='%236FAE7A'/><stop offset='1' stop-color='%236FAE7A' stop-opacity='0'/></radialGradient><radialGradient id='b'><stop offset='.3' stop-color='%239CCB92'/><stop offset='1' stop-color='%239CCB92' stop-opacity='0'/></radialGradient><radialGradient id='u'><stop offset='.25' stop-color='%23FFF8D2'/><stop offset='1' stop-color='%23FFF8D2' stop-opacity='0'/></radialGradient><clipPath id='g'><rect x='32' y='0' width='356' height='160'/></clipPath></defs><rect x='24' y='8' width='396' height='180' rx='6' fill='%2351683F' opacity='.14'/><rect x='20' y='4' width='396' height='180' rx='6' fill='%2351683F' opacity='.12'/><rect x='16' y='0' width='388' height='176' fill='url(%23f)'/><rect x='32' y='0' width='356' height='160' fill='url(%23s)'/><g clip-path='url(%23g)'><circle cx='350' cy='16' r='80' fill='url(%23u)'/><circle cx='360' cy='132' r='96' fill='url(%23b)'/><circle cx='70' cy='152' r='84' fill='url(%23b)'/><circle cx='150' cy='176' r='78' fill='url(%23a)'/><circle cx='272' cy='184' r='70' fill='url(%23b)'/><rect x='32' y='0' width='356' height='9' fill='%236B7F5A' opacity='.18'/><rect x='32' y='0' width='8' height='160' fill='%236B7F5A' opacity='.16'/></g><rect x='203' y='0' width='14' height='162' fill='url(%23f)'/><rect x='32' y='70' width='356' height='13' fill='url(%23f)'/><rect x='217' y='0' width='3' height='160' fill='%239AA58A' opacity='.35'/><rect x='32' y='83' width='356' height='3' fill='%239AA58A' opacity='.35'/><rect x='6' y='174' width='420' height='14' rx='5' fill='%2351683F' opacity='.2'/><rect x='0' y='160' width='420' height='20' rx='5' fill='%23FFFDF7'/><rect x='0' y='172' width='420' height='8' rx='4' fill='%23D9CEB8'/></svg>");
+  --toy-window:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 200'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23BFE4F2'/><stop offset='.7' stop-color='%23E9F5E6'/><stop offset='1' stop-color='%23FFF6D6'/></linearGradient><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23FFFDF7'/><stop offset='1' stop-color='%23EDE4D2'/></linearGradient><radialGradient id='a'><stop offset='.3' stop-color='%236FAE7A'/><stop offset='1' stop-color='%236FAE7A' stop-opacity='0'/></radialGradient><radialGradient id='b'><stop offset='.3' stop-color='%239CCB92'/><stop offset='1' stop-color='%239CCB92' stop-opacity='0'/></radialGradient><radialGradient id='u'><stop offset='.25' stop-color='%23FFF8D2'/><stop offset='1' stop-color='%23FFF8D2' stop-opacity='0'/></radialGradient><clipPath id='g'><rect x='32' y='0' width='356' height='160'/></clipPath></defs><rect x='24' y='8' width='396' height='180' rx='6' fill='%2351683F' opacity='.14'/><rect x='20' y='4' width='396' height='180' rx='6' fill='%2351683F' opacity='.12'/><rect x='16' y='0' width='388' height='176' fill='url(%23f)'/><rect x='32' y='0' width='356' height='160' fill='url(%23s)'/><g clip-path='url(%23g)'><circle cx='350' cy='16' r='80' fill='url(%23u)'/><circle cx='360' cy='132' r='96' fill='url(%23b)'/><circle cx='70' cy='152' r='84' fill='url(%23b)'/><circle cx='150' cy='176' r='78' fill='url(%23a)'/><circle cx='272' cy='184' r='70' fill='url(%23b)'/><rect x='32' y='0' width='356' height='9' fill='%236B7F5A' opacity='.18'/><rect x='32' y='0' width='8' height='160' fill='%236B7F5A' opacity='.16'/></g><rect x='203' y='0' width='14' height='162' fill='url(%23f)'/><rect x='217' y='0' width='3' height='160' fill='%239AA58A' opacity='.35'/><rect x='6' y='174' width='420' height='14' rx='5' fill='%2351683F' opacity='.2'/><rect x='0' y='160' width='420' height='20' rx='5' fill='%23FFFDF7'/><rect x='0' y='172' width='420' height='8' rx='4' fill='%23D9CEB8'/></svg>");
   /* window (evening) */
-  --toy-window-eve:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 200'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23222C66'/><stop offset='.5' stop-color='%235A4E9A'/><stop offset='.82' stop-color='%23C9839A'/><stop offset='1' stop-color='%23F5B27C'/></linearGradient><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23F3E6CF'/><stop offset='1' stop-color='%23D9C6A6'/></linearGradient><radialGradient id='a'><stop offset='.35' stop-color='%23263A52'/><stop offset='1' stop-color='%23263A52' stop-opacity='0'/></radialGradient><clipPath id='g'><rect x='32' y='0' width='356' height='160'/></clipPath></defs><rect x='24' y='8' width='396' height='180' rx='6' fill='%23202A44' opacity='.16'/><rect x='20' y='4' width='396' height='180' rx='6' fill='%23202A44' opacity='.14'/><rect x='16' y='0' width='388' height='176' fill='url(%23f)'/><rect x='32' y='0' width='356' height='160' fill='url(%23s)'/><g clip-path='url(%23g)'><g fill='%23FFF6D0'><circle cx='250' cy='22' r='1.8'/><circle cx='300' cy='48' r='1.4'/><circle cx='346' cy='18' r='2'/><circle cx='372' cy='58' r='1.3'/><circle cx='270' cy='58' r='1.2'/><circle cx='60' cy='16' r='1.4'/><circle cx='176' cy='30' r='1.6'/><circle cx='330' cy='98' r='1.2'/><circle cx='236' cy='100' r='1.4'/><circle cx='52' cy='96' r='1.3'/></g><circle cx='360' cy='150' r='84' fill='url(%23a)'/><circle cx='70' cy='164' r='76' fill='url(%23a)'/><circle cx='160' cy='186' r='70' fill='url(%23a)'/><circle cx='272' cy='190' r='64' fill='url(%23a)'/><rect x='32' y='0' width='356' height='9' fill='%23141A3A' opacity='.3'/><rect x='32' y='0' width='8' height='160' fill='%23141A3A' opacity='.25'/></g><rect x='203' y='0' width='14' height='162' fill='url(%23f)'/><rect x='32' y='70' width='356' height='13' fill='url(%23f)'/><rect x='217' y='0' width='3' height='160' fill='%235A5270' opacity='.4'/><rect x='32' y='83' width='356' height='3' fill='%235A5270' opacity='.4'/><rect x='6' y='174' width='420' height='14' rx='5' fill='%23202A44' opacity='.25'/><rect x='0' y='160' width='420' height='20' rx='5' fill='%23F3E6CF'/><rect x='0' y='172' width='420' height='8' rx='4' fill='%23BFAE8E'/></svg>");
+  --toy-window-eve:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 430 200'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23222C66'/><stop offset='.5' stop-color='%235A4E9A'/><stop offset='.82' stop-color='%23C9839A'/><stop offset='1' stop-color='%23F5B27C'/></linearGradient><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%23F3E6CF'/><stop offset='1' stop-color='%23D9C6A6'/></linearGradient><radialGradient id='a'><stop offset='.35' stop-color='%23263A52'/><stop offset='1' stop-color='%23263A52' stop-opacity='0'/></radialGradient><clipPath id='g'><rect x='32' y='0' width='356' height='160'/></clipPath></defs><rect x='24' y='8' width='396' height='180' rx='6' fill='%23202A44' opacity='.16'/><rect x='20' y='4' width='396' height='180' rx='6' fill='%23202A44' opacity='.14'/><rect x='16' y='0' width='388' height='176' fill='url(%23f)'/><rect x='32' y='0' width='356' height='160' fill='url(%23s)'/><g clip-path='url(%23g)'><g fill='%23FFF6D0'><circle cx='250' cy='22' r='1.8'/><circle cx='300' cy='48' r='1.4'/><circle cx='346' cy='18' r='2'/><circle cx='372' cy='58' r='1.3'/><circle cx='270' cy='58' r='1.2'/><circle cx='60' cy='16' r='1.4'/><circle cx='176' cy='30' r='1.6'/><circle cx='330' cy='98' r='1.2'/><circle cx='236' cy='100' r='1.4'/><circle cx='52' cy='96' r='1.3'/></g><circle cx='360' cy='150' r='84' fill='url(%23a)'/><circle cx='70' cy='164' r='76' fill='url(%23a)'/><circle cx='160' cy='186' r='70' fill='url(%23a)'/><circle cx='272' cy='190' r='64' fill='url(%23a)'/><rect x='32' y='0' width='356' height='9' fill='%23141A3A' opacity='.3'/><rect x='32' y='0' width='8' height='160' fill='%23141A3A' opacity='.25'/></g><rect x='203' y='0' width='14' height='162' fill='url(%23f)'/><rect x='217' y='0' width='3' height='160' fill='%235A5270' opacity='.4'/><rect x='6' y='174' width='420' height='14' rx='5' fill='%23202A44' opacity='.25'/><rect x='0' y='160' width='420' height='20' rx='5' fill='%23F3E6CF'/><rect x='0' y='172' width='420' height='8' rx='4' fill='%23BFAE8E'/></svg>");
   /* light falling through the window onto the table: four skewed panes, layered for a soft edge */
   --toy-sun:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 410'><defs><linearGradient id='l' gradientUnits='userSpaceOnUse' x1='0' y1='0' x2='0' y2='400'><stop offset='0' stop-color='%23FFF6D8' stop-opacity='.5'/><stop offset='.7' stop-color='%23FFF3CC' stop-opacity='.3'/><stop offset='1' stop-color='%23FFF3CC' stop-opacity='0'/></linearGradient></defs><g transform='translate(8 0) skewX(40)'><g fill='url(%23l)'><rect x='0' y='0' width='172' height='150'/><rect x='190' y='0' width='172' height='150'/><rect x='0' y='172' width='172' height='226'/><rect x='190' y='172' width='172' height='226'/></g><g fill='url(%23l)' opacity='.5'><rect x='-5' y='-5' width='182' height='160' rx='6'/><rect x='185' y='-5' width='182' height='160' rx='6'/><rect x='-5' y='167' width='182' height='236' rx='6'/><rect x='185' y='167' width='182' height='236' rx='6'/></g><g fill='url(%23l)' opacity='.35'><rect x='-11' y='-11' width='194' height='172' rx='12'/><rect x='179' y='-11' width='194' height='172' rx='12'/><rect x='-11' y='161' width='194' height='248' rx='12'/><rect x='179' y='161' width='194' height='248' rx='12'/></g></g></svg>");
 }
@@ -88,23 +88,27 @@
 /* table only: no wall (dialogs, inner screens, grown-ups) */
 .toy-scene--table{--toy-wall-h:0px;--_light:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0))}
 .toy-scene--table::before{display:none}
-/* evening: dusk in the window, the wall in shade, a warm lamp pool on the table, the moon bright */
-.toy-scene--evening{--_win:var(--toy-window-eve);
-  --_wall-tint:radial-gradient(70% 120% at 62% 110%,rgba(255,190,110,.22),rgba(255,190,110,0) 70%),linear-gradient(160deg,rgba(46,48,112,.46),rgba(70,52,100,.42));
-  --_light:radial-gradient(closest-side,rgba(255,214,140,.5),rgba(255,200,120,.22) 55%,rgba(255,200,120,0));
-  --_table-tint:radial-gradient(90% 90% at 62% 30%,rgba(255,196,110,.16) 0,rgba(64,36,60,.2) 60%,rgba(40,24,56,.42) 100%);
+/* evening: dusk in the window, the wall in shade, the moon bright, and a lamp: put TOY.prop('lamp') on the table's back edge
+   at --toy-lamp-x (a length from the left); its warm light pools on the wall behind it and on the table in front of it */
+.toy-scene--evening{--_win:var(--toy-window-eve);--toy-lamp-x:62vw;
+  --_wall-tint:radial-gradient(320px 250px at var(--toy-lamp-x) var(--toy-lamp-wy,60%),rgba(255,218,146,.72),rgba(255,196,118,.28) 50%,rgba(255,190,110,0) 100%),linear-gradient(160deg,rgba(46,48,112,.46),rgba(70,52,100,.42));
+  --_light:radial-gradient(600px 360px at var(--toy-lamp-x) var(--toy-lamp-y,0px),rgba(255,224,156,.7),rgba(255,204,124,.3) 50%,rgba(255,200,120,0) 100%);
+  --_table-tint:radial-gradient(90% 90% at 50% 30%,rgba(255,196,110,.12) 0,rgba(64,36,60,.2) 60%,rgba(40,24,56,.42) 100%);
   --_vig:radial-gradient(110% 90% at 55% 34%,rgba(40,18,10,0) 40%,rgba(40,18,10,.4) 100%)}
-.toy-scene--evening::after{background-position:0 0,0 0,top,58% 4%,0 0,0 0,0 0;background-size:auto,auto,100% 12px,min(760px,84%) min(520px,80%),auto,512px 256px,auto}
+.toy-scene--evening::after{background-position:0 0,0 0,top,0 0,0 0,0 0,0 0;background-size:auto,auto,100% 12px,100% 100%,auto,512px 256px,auto}
 
-/* the moon's slot in the window (upper-left pane). Put TOY.skyMoon(mood, phase) inside .toy-scene. */
-.toy-sky-moon{position:absolute;z-index:0;--_h:calc(var(--toy-wall-h) - 16px);
-  width:calc(var(--_h)*.44);height:calc(var(--_h)*.44);
-  left:calc(var(--toy-window-x) + var(--_h)*.365);top:calc(var(--_h)*-.05);pointer-events:none;opacity:.66}
+/* the moon's slot = the left pane of the window (clipped to the glass, so she never crosses a bar). Put TOY.skyMoon(mood, phase) inside .toy-scene. */
+.toy-sky-moon{position:absolute;z-index:0;--_h:calc(var(--toy-wall-h) - 16px);overflow:hidden;pointer-events:none;
+  left:calc(var(--toy-window-x) + var(--_h)*.16);top:0;width:calc(var(--_h)*.855);height:calc(var(--_h)*.8)}
+.toy-sky-moon-in{position:absolute;left:50%;top:50%;width:calc(var(--_h)*1.0);height:calc(var(--_h)*1.0);transform:translate(-50%,-50%)}
+.toy-sky-moon .toy-moon,.toy-sky-moon svg{display:block;width:100%;height:100%;max-width:none}
+/* by day: a milky night side and a gentle glow; in the evening: periwinkle night side, full glow */
+.toy-moon-day{display:none}
 .toy-sky-moon .toy-moon-dark{display:none}
+.toy-sky-moon .toy-moon-day{display:inline}
+.toy-sky-moon .toy-moon-halo{opacity:.55}
 .toy-scene--evening .toy-sky-moon .toy-moon-dark{display:inline}
-.toy-sky-moon .toy-moon,.toy-sky-moon svg{display:block;width:100%;height:100%}
-.toy-sky-moon .toy-moon-halo{opacity:.25}
-.toy-scene--evening .toy-sky-moon{opacity:1}
+.toy-scene--evening .toy-sky-moon .toy-moon-day{display:none}
 .toy-scene--evening .toy-sky-moon .toy-moon-halo{opacity:1}
 .toy-scene--table .toy-sky-moon{display:none}
 
@@ -237,6 +241,36 @@
 .toy-bubble--side::after{left:-26px;bottom:22px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
 .toy-bubble--none::after{display:none}
 
+/* ---- Bix as a living mascot (Fun.Mascot in fun.js): .bixwrap > .bix (TOY.bix inside) + .bubble.toy-say ----
+   Size: --tb on the host (falls back to the size given to mount). Bubble sits beside him with a side tail; screens move it. */
+.bixwrap{position:relative;display:flex;align-items:center;gap:0;min-width:0;--bix:120px}
+.bixwrap > .bix{position:relative;width:var(--tb,var(--bix));height:var(--tb,var(--bix));flex:none;line-height:0;cursor:pointer;overflow:visible;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.bixwrap > .bix > .toy-bix{display:block;width:100%;height:100%;transform-origin:50% 88%}
+.bixwrap > .bix svg{display:block;width:100%;height:100%;max-width:none;overflow:visible}
+.bixwrap > .bix:focus-visible{outline:4px solid var(--toy-ink);outline-offset:-6px;border-radius:40px}
+.bix.happy > .toy-bix{animation:toy-hop .45s ease-out 2}
+.bix.cheer > .toy-bix{animation:toy-hop .5s ease-out 3}
+.bix.oops > .toy-bix{animation:toy-wob .55s ease-in-out 1}
+@keyframes toy-hop{0%,100%{transform:translateY(0) scale(1,1)}40%{transform:translateY(-7%) scale(.98,1.03)}80%{transform:translateY(0) scale(1.03,.97)}}
+@keyframes toy-wob{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+/* talking: his mouth opens and closes while a voice line plays (any Bix carrying .bix, mounted or drawn with Mascot.art) */
+.toy-bix-mouth{transform-box:fill-box;transform-origin:50% 12%}
+.bix.talking .toy-bix-mouth{animation:toy-talk .2s ease-in-out infinite alternate}
+@keyframes toy-talk{from{transform:scale(.94,.45)}to{transform:scale(1.04,1.14)}}
+.bixwrap .bubble{visibility:hidden;position:relative;display:flex;align-items:flex-end;gap:12px;box-sizing:border-box;min-width:0;max-width:440px;margin:0;padding:16px 26px 18px;border:0;border-radius:28px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:600 24px/1.25 var(--toy-display);text-align:left;
+  box-shadow:inset 0 2px 0 #fff,7px 12px 18px rgba(var(--toy-shade),.3)}
+.bixwrap .bubble.on{visibility:visible}
+.bixwrap .bubble.pop{animation:toy-saypop .34s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes toy-saypop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.bixwrap .bubble::before{content:none;display:none}
+.bixwrap .bubble::after{content:"";position:absolute;left:-26px;bottom:20px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
+.bixwrap .bubble .ws-text{flex:1;min-width:0}
+.bixwrap .bubble .ws-say{display:none;flex:none;line-height:0;opacity:.8;color:var(--toy-indigo);margin:0 -8px 0 0}
+.bixwrap .bubble.has-voice{cursor:pointer}
+.bixwrap .bubble.has-voice .ws-say{display:inline-flex}
+.bixwrap .bubble .toy-bubble-title{margin-bottom:2px}
+
 /* ============ drawings ============ */
 .toy-bix,.toy-buddy,.toy-pair,.toy-moon{display:inline-block;flex:none;line-height:0;vertical-align:middle}
 .toy-bix svg,.toy-buddy svg,.toy-pair svg,.toy-moon svg,.toy-bead,.toy-prop,.toy-rodprogress,.toy-moonphases{overflow:visible;max-width:100%}
@@ -278,6 +312,6 @@
   .toy-iconbtn{width:72px;height:72px}
 }
 @media (prefers-reduced-motion:reduce){
-  .toy-bix-breathe,.toy-lid,.toy-moon-halo,.toy-dialog{animation:none}
+  .toy-bix-breathe,.toy-lid,.toy-moon-halo,.toy-dialog,.bix > .toy-bix,.bix.talking .toy-bix-mouth,.bixwrap .bubble.pop{animation:none}
   .toy-block,.toy-key,.toy-start-dome,.toy-iconbtn{transition:none}
 }

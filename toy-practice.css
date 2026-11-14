@@ -201,9 +201,8 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
 #summary .tp-newchip{animation:tp-pop .38s cubic-bezier(.3,1.5,.5,1) 1.7s both}
 /* the moon gains a phase for the step just finished */
 #summary .tp-sky{display:contents}
-#summary .tp-sky .toy-sky-moon{opacity:.9}
 #summary .tp-sky .toy-sky-moon + .toy-sky-moon{opacity:0;animation:tp-moonin .9s ease 1.6s both}
-@keyframes tp-moonin{from{opacity:0}to{opacity:.9}}
+@keyframes tp-moonin{from{opacity:0}to{opacity:1}}
 #summary .tp-moons{position:absolute;right:var(--pad);bottom:26px;z-index:2;padding:8px 14px 10px;line-height:0}
 #summary .tp-moons .tp-moonstack{position:relative;display:block}
 #summary .tp-moons svg{display:block;width:158px}
@@ -347,7 +346,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #drill .tp-ear.pulse::after,#drill .tp-listen.reading .tp-ear,#drill .flash-num.pop,#drill .tp-readout.is-right,#drill .tp-readout.is-wrong,#drill .tp-bubble .tp-btxt.tp-fresh,#showme .tp-showcard{animation:none}
   #drill .tp-term,#drill .tp-switch,#drill .tp-readout{transition:none}
   #summary .tp-goldchip,#summary .tp-newchip,#summary .tp-fixmat,#summary .tp-catch .tp-b.in{animation:none}
-  #summary .tp-sky .toy-sky-moon + .toy-sky-moon{animation:none;opacity:.9}
+  #summary .tp-sky .toy-sky-moon + .toy-sky-moon{animation:none;opacity:1}
   #summary .tp-moons .after{animation:none}
 }
 body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wrong,body.ws-calm #drill .tp-listen.reading .tp-ear,body.ws-calm #summary .tp-catch .tp-b.in{animation:none}

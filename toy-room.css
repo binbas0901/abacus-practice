@@ -16,27 +16,15 @@
   background:var(--toy-grain) -90px -40px/512px 256px,linear-gradient(var(--toy-wood-lt),var(--toy-wood));
   box-shadow:inset 0 0 0 2px rgba(255,243,216,.8),0 3px 0 var(--toy-wood-deep),2px 6px 5px rgba(var(--toy-shade),.4)}
 
-/* Bix in these screens: Fun.Mascot mounts him, ToyRoom.bix() (games.js) swaps in the figurine; the bubble is a paper card */
-.tr-bixhost{display:flex;align-items:flex-end;gap:0;min-width:0}
-.tr-bixhost > .bix{width:var(--tb,120px);height:var(--tb,120px);flex:none;cursor:pointer;line-height:0;-webkit-tap-highlight-color:transparent}
-.tr-bixhost > .bix svg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 92%}
-.tr-bixhost .bix.happy svg{animation:tr-hop .45s ease-out 2}
-.tr-bixhost .bix.cheer svg{animation:tr-cheer .8s ease-in-out 2}
-.tr-bixhost .bix.oops svg{animation:tr-wob .55s ease-in-out 1}
-.tr-bixhost .bubble{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;gap:10px;visibility:hidden;min-width:0;max-width:min(540px,100%);
-  margin:0 0 calc(var(--tb,120px)*.36) 0;padding:13px 22px 15px;border-radius:24px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
+/* Bix in these screens (Fun.Mascot, kit rules in toy.css): he stands at the bottom edge, the bubble floats beside his head */
+.tr-bix,.tr-play-bix,.tr-gbix,.tr-shop-bix{align-items:flex-end}
+.tr-bix .bubble,.tr-play-bix .bubble,.tr-gbix .bubble,.tr-shop-bix .bubble{align-items:center;gap:10px;max-width:min(540px,100%);margin:0 0 calc(var(--tb,120px)*.36) 0;padding:13px 22px 15px;border-radius:24px;
   font:600 clamp(19px,2vw,23px)/1.3 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(var(--toy-shade),.3)}
-.tr-bixhost .bubble::before{content:"";display:block;position:absolute;left:-22px;bottom:14px;width:32px;height:32px;border:0;background:var(--toy-paper-dk);clip-path:polygon(100% 0,100% 78%,0 100%)}
-.tr-bixhost .bubble::after{content:none;display:none}
-.tr-bixhost .bubble.on{visibility:visible}
-.tr-bixhost .bubble.pop{animation:tr-pop .34s cubic-bezier(.2,1.4,.4,1) both}
-.tr-bixhost .bubble .ws-say{display:none;flex:none;line-height:0}
-.tr-bixhost .bubble.has-voice{cursor:pointer}
-.tr-bixhost .bubble.has-voice .ws-say{display:inline-flex}
+.tr-bix .bubble::after,.tr-play-bix .bubble::after,.tr-gbix .bubble::after,.tr-shop-bix .bubble::after{left:-22px;bottom:14px;width:32px;height:32px;background:var(--toy-paper-dk);clip-path:polygon(100% 0,100% 78%,0 100%)}
 /* Bix on the right, bubble to his left */
-.tr-bixhost.tr-flip{flex-direction:row-reverse}
-.tr-bixhost.tr-flip .bubble{margin:0 0 calc(var(--tb,120px)*.36) 0}
-.tr-bixhost.tr-flip .bubble::before{left:auto;right:-22px;clip-path:polygon(0 0,0 78%,100% 100%)}
+.tr-flip{flex-direction:row-reverse}
+.tr-flip .bubble{margin:0 0 calc(var(--tb,120px)*.36) 0}
+.tr-flip .bubble::after{left:auto;right:-22px;clip-path:polygon(0 0,0 78%,100% 100%)}
 
 @keyframes tr-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 @keyframes tr-fade{from{opacity:0}to{opacity:1}}
@@ -59,6 +47,10 @@
    ===================================================================== */
 #room{--toy-wall-h:clamp(200px,30vh,300px);--toy-window-x:clamp(240px,23.5vw,330px);--bw:min(30vw,43vh)}
 #room .tr-top{position:absolute;left:0;top:0}
+/* the lamp stands on the back edge of the table, left of the window; the scene's light pools follow --toy-lamp-x */
+#room{--toy-lamp-x:clamp(96px,10.5vw,150px)}
+.tr-lamp{position:absolute;z-index:0;left:var(--toy-lamp-x);top:calc(var(--toy-wall-h) + 10px);transform:translate(-50%,-100%);line-height:0;pointer-events:none}
+.tr-lamp svg{height:clamp(140px,calc(var(--toy-wall-h)*.7),200px);width:auto}
 /* the wall shelf, right of the window */
 .tr-shelfwrap{position:absolute;z-index:0;right:clamp(20px,4.4vw,64px);top:0;width:clamp(280px,29vw,380px);height:calc(var(--toy-wall-h) - 74px);display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}
 .tr-shelf-things{display:flex;align-items:flex-end;justify-content:space-around;padding:0 10px;margin-bottom:-7px;line-height:0}
@@ -394,6 +386,10 @@
 @media (orientation:portrait){
   /* the window moves to the right so the back button and title stay clear of it; the shelf hangs under the title */
   #room,#play{--toy-window-x:calc(100vw - (var(--toy-wall-h) - 16px)*2.15 - 18px)}
+  /* the lamp stands on the table beside the jar; its light pools around it, none on the wall */
+  #room{--toy-lamp-x:calc(100vw - 128px);--toy-lamp-y:calc(74vh - var(--toy-wall-h) - 150px);--toy-lamp-wy:900%}
+  .tr-lamp{top:74vh}
+  .tr-lamp svg{height:250px}
   #room{--toy-wall-h:clamp(220px,22vh,280px);--bw:min(40vw,23vh)}
   .tr-shelfwrap{right:auto;left:14px;width:clamp(230px,31vw,290px);height:calc(var(--toy-wall-h) - 44px)}
   .tr-shelf-things{transform:scale(.86);transform-origin:50% 100%}
@@ -433,7 +429,7 @@
   #shop .tcard.tpick .tart{height:112px} #shop .tcard.tpick .tart svg{width:112px;height:112px} #shop .tcard.tpick::after{top:109px}
 }
 @media (prefers-reduced-motion:reduce){
-  .tr-bixhost .bix svg,.tr-bixhost .bubble.pop,.tr-new.on,#garden .plot.bloom.today .g-in,#garden.wiggle svg,#jar.ready .jarsvg,.tr-wish.tr-nudge::after,.tr-ask-card.toy-paper,.pq-pair,
+  .tr-new.on,#garden .plot.bloom.today .g-in,#garden.wiggle svg,#jar.ready .jarsvg,.tr-wish.tr-nudge::after,.tr-ask-card.toy-paper,.pq-pair,
   #game .bub.in,#game .bub.popped,#game .bub.nope,#game .feedback.ok,#game .bd-num.pop,#game .gscrim,#game .gresult{animation:none}
   .beadfloat.tr-float{animation:tr-floatup 2.2s ease-in .2s both}
   .tr-thing,#play .gcard,.gc-lid,.gc-box,#shop .tcard.tpick,#game .bub.out,#game .rd-cover,#game .rd-cover.on span{transition:none}

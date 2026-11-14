@@ -11,27 +11,8 @@
 .th.toy-scene::before,.th.toy-scene::after,.tw.toy-scene::before,.tw.toy-scene::after,.tg.toy-scene::before,.tg.toy-scene::after,.to.toy-scene::before,.to.toy-scene::after{z-index:-2}
 #home.th,#who.tw,#gate.tg,#setup.to{min-height:0;padding:0}
 
-/* Toy Table Bix on top of Fun.Mascot's element (.bixwrap > .bix + .bubble); see toyBix() in app.js */
-.tb.bixwrap{--tb:220px;gap:0}
-.tb > .bix{position:relative;width:var(--tb);height:var(--tb);flex:none;line-height:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.tb > .bix > svg{display:none}
-.tb .tb-toy,.tb .tb-toy .toy-bix{display:block;width:100%;height:100%}
-.tb .tb-toy svg{display:block;width:100%;height:100%;overflow:visible;transform-origin:50% 88%}
-.tb > .bix:focus-visible{outline:4px solid var(--toy-ink);outline-offset:-6px;border-radius:40px}
-.tb > .bix.talking .tb-toy{animation:tb-talk .5s ease-in-out infinite;transform-origin:50% 88%}
-@keyframes tb-talk{0%,100%{transform:scale(1,1)}50%{transform:scale(1.012,1.03)}}
-/* his bubble: the kit's paper card with a tail */
-.tb .bubble.ws-bubble{visibility:hidden;position:relative;display:flex;align-items:flex-end;gap:12px;box-sizing:border-box;max-width:440px;margin:0;padding:16px 26px 18px;border-radius:28px;
-  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:600 24px/1.25 var(--toy-display);text-align:left;
-  box-shadow:inset 0 2px 0 #fff,7px 12px 18px rgba(var(--toy-shade),.3)}
-.tb .bubble.ws-bubble.on{visibility:visible}
-.tb .bubble.ws-bubble::before{display:none}
-.tb .bubble.ws-bubble::after{content:"";position:absolute;left:-26px;bottom:20px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
-.tb .bubble .ws-text{flex:1;min-width:0}
-.tb .bubble .ws-say{display:none;flex:none;line-height:0;opacity:.8;margin:0 -8px 0 0}
-.tb .bubble.has-voice{cursor:pointer}
-.tb .bubble.has-voice .ws-say{display:inline-flex}
-.tb .bubble .toy-bubble-title{margin-bottom:2px}
+/* Bix on these screens: Fun.Mascot (kit rules in toy.css); the default size here */
+.th-bix,.tw-bix,.tg-bix,.to-bix,.tn-bix{--tb:220px}
 
 /* =====================================================================
    HOME
@@ -44,8 +25,7 @@
   gap:0 calc(var(--u)*14);padding:0 calc(var(--u)*30) calc(var(--u)*15) calc(var(--u)*14);box-sizing:border-box;overflow:hidden}
 #home.th.active{display:grid}
 .th-sky{position:absolute;inset:0;pointer-events:none}
-#home .toy-sky-moon{opacity:1;transition:transform .5s ease-out}
-#home .toy-sky-moon .toy-moon-halo{opacity:.5}
+#home .toy-sky-moon-in{transition:transform .5s ease-out}
 .th-sparks{position:absolute;left:var(--toy-window-x);top:0;height:calc(var(--toy-wall-h) - 16px);width:calc((var(--toy-wall-h) - 16px)*2.15)}
 
 /* wall: name tag, shelf props, lock */
@@ -65,9 +45,9 @@
 /* the table */
 .th-table,.th-bottom,#bixHome.th-bix{display:contents}
 #bixHome > .bix{--tb:calc(var(--u)*344);grid-column:1;grid-row:2/4;align-self:end;justify-self:center;margin:0 calc(var(--u)*-18) calc(var(--u)*36) calc(var(--u)*-34)}
-#bixHome .bubble.ws-bubble{grid-column:2/4;grid-row:2;align-self:end;justify-self:start;z-index:2;max-width:min(calc(var(--u)*600),100%);
+#bixHome .bubble{grid-column:2/4;grid-row:2;align-self:end;justify-self:start;z-index:2;max-width:min(calc(var(--u)*600),100%);
   margin:0 0 calc(var(--u)*30) calc(var(--u)*-6);padding:calc(var(--u)*16) calc(var(--u)*28) calc(var(--u)*18);font-size:max(20px,calc(var(--u)*24))}
-#bixHome .bubble.ws-bubble::after{left:10px;bottom:-24px;width:56px;height:34px;background:var(--toy-paper-dk);clip-path:polygon(26% 0,100% 0,0 100%)}
+#bixHome .bubble::after{left:10px;bottom:-24px;width:56px;height:34px;background:var(--toy-paper-dk);clip-path:polygon(26% 0,100% 0,0 100%)}
 #bixHome .toy-bubble-title{font-size:max(24px,calc(var(--u)*31))}
 .th-bub-sub{display:block;text-wrap:balance;font:400 max(18px,calc(var(--u)*21))/1.35 var(--toy-body)}
 
@@ -131,7 +111,7 @@
 .th-ver{display:none}
 
 /* all three done: a small celebration. Full moon with her stars, the window sparkles, Bix stands proud. */
-#home.is-done .toy-sky-moon{transform:translateY(calc(var(--u)*8)) scale(1.1);transform-origin:50% 0}
+#home.is-done .toy-sky-moon-in{transform:translate(-50%,-50%) scale(1.1)}
 #home.is-done .toy-sky-moon .toy-moon-halo{opacity:.85}
 
 /* portrait iPad: Bix and his bubble, the rod, then Start between the loose beads and the bowl, doors at the bottom */
@@ -145,8 +125,8 @@
   .th-shelf .toy-prop:last-child{width:calc(var(--u)*150)}
   .th-lock{top:calc(var(--u)*20)}
   #bixHome > .bix{--tb:calc(var(--u)*330);grid-row:2;margin:calc(var(--u)*10) calc(var(--u)*-30) 0}
-  #bixHome .bubble.ws-bubble{grid-column:2/4;grid-row:2;align-self:center;margin:calc(var(--u)*30) 0 0 calc(var(--u)*24)}
-  #bixHome .bubble.ws-bubble::after{left:-26px;bottom:22px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
+  #bixHome .bubble{grid-column:2/4;grid-row:2;align-self:center;margin:calc(var(--u)*30) 0 0 calc(var(--u)*24)}
+  #bixHome .bubble::after{left:-26px;bottom:22px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
   .th-today{grid-column:1/-1;grid-row:3;justify-self:center;width:calc(var(--u)*600);margin:calc(var(--u)*34) 0 0}
   #home .th-start{grid-column:1/-1;grid-row:4;margin:calc(var(--u)*40) 0 calc(var(--u)*30);--d:calc(var(--u)*240)}
   .th-loose{grid-row:4;align-self:center}
@@ -166,7 +146,7 @@
 .tw-shelf{position:absolute;right:calc(var(--u)*126);top:0;height:calc(var(--toy-wall-h) + var(--u)*20);display:flex;align-items:flex-end;gap:calc(var(--u)*12);pointer-events:none;line-height:0}
 .tw-shelf .toy-prop:first-child{width:calc(var(--u)*156);height:auto}
 .tw-shelf .toy-prop:last-child{width:calc(var(--u)*176);height:auto}
-.tw-bix .bubble.ws-bubble{margin:0 0 calc(var(--u)*20) calc(var(--u)*8);font-size:max(24px,calc(var(--u)*32));font-weight:700;padding:calc(var(--u)*18) calc(var(--u)*30) calc(var(--u)*20);max-width:none}
+.tw-bix .bubble{margin:0 0 calc(var(--u)*20) calc(var(--u)*8);font-size:max(24px,calc(var(--u)*32));font-weight:700;padding:calc(var(--u)*18) calc(var(--u)*30) calc(var(--u)*20);max-width:none}
 .tw-mat{padding:calc(var(--u)*30) calc(var(--u)*34) calc(var(--u)*38);max-width:100%;box-sizing:border-box}
 .tw-list{display:flex;flex-wrap:wrap;gap:calc(var(--u)*30) calc(var(--u)*26);justify-content:center}
 #who .who-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:calc(var(--u)*6);box-sizing:border-box;
@@ -185,7 +165,7 @@
   #who.tw{--u:min(.121951vw,.084746vh)}
   .tw-bix.bixwrap{--tb:calc(var(--u)*250);margin-left:calc(var(--u)*-30)}
   .tw-shelf{right:calc(var(--u)*18)} .tw-shelf .toy-prop:first-child{display:none}
-  .tw-bix .bubble.ws-bubble{font-size:max(24px,calc(var(--u)*30))}
+  .tw-bix .bubble{font-size:max(24px,calc(var(--u)*30))}
   #who .who-card{width:calc(var(--u)*204)}
   .tw-mat{padding:calc(var(--u)*30) calc(var(--u)*30) calc(var(--u)*38)}
   .tw-list{gap:calc(var(--u)*30) calc(var(--u)*22)}
@@ -202,8 +182,8 @@
 .tg-kid{display:grid;grid-template-columns:auto auto;align-items:end;justify-items:center;column-gap:6px}
 #bixGate.tg-bix{display:contents;--tb:190px}
 #bixGate > .bix{grid-column:1;grid-row:2;margin:0 -14px -6px -22px}
-.tg-bix .bubble.ws-bubble{grid-column:1/3;grid-row:1;justify-self:start;max-width:360px;margin:0 0 26px 30px;font-size:23px}
-.tg-bix .bubble.ws-bubble::after{left:34px;bottom:-24px;width:56px;height:34px;background:var(--toy-paper-dk);clip-path:polygon(26% 0,100% 0,0 100%)}
+.tg-bix .bubble{grid-column:1/3;grid-row:1;justify-self:start;max-width:360px;margin:0 0 26px 30px;font-size:23px}
+.tg-bix .bubble::after{left:34px;bottom:-24px;width:56px;height:34px;background:var(--toy-paper-dk);clip-path:polygon(26% 0,100% 0,0 100%)}
 .tg-art{grid-column:2;grid-row:2}
 .tg-art{line-height:0}
 .tg-art svg{display:block;width:clamp(170px,19vw,230px);height:auto;overflow:visible}
@@ -248,7 +228,7 @@
   #bixGate.tg-bix{--tb:220px}
   .tg-card{width:500px;min-height:370px}
   .tg-art svg{width:250px}
-  .tg-bix .bubble.ws-bubble{font-size:26px;max-width:400px}
+  .tg-bix .bubble{font-size:26px;max-width:400px}
   .tg-q{font-size:33px}
 }
 
@@ -265,7 +245,7 @@
 .to-body{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(12px,2.2vh,26px);box-sizing:border-box;
   padding:calc(var(--toy-wall-h) - 70px) 30px 30px;max-width:none;width:100%}
 .to-bix.bixwrap{--tb:clamp(230px,33vh,330px);flex:none;align-items:center;margin-left:-40px;max-width:100%}
-#bixSetup .bubble.ws-bubble{margin:0 0 14px 6px;font-size:clamp(22px,2.4vw,28px);max-width:min(520px,calc(100vw - 300px))}
+#bixSetup .bubble{margin:0 0 14px 6px;font-size:clamp(22px,2.4vw,28px);max-width:min(520px,calc(100vw - 300px))}
 #setup[data-step=suCheck] .to-bix.bixwrap,#setup[data-step=suPick] .to-bix.bixwrap{--tb:clamp(130px,17vh,170px)}
 #setup[data-step=suCheck] .to-body,#setup[data-step=suPick] .to-body{justify-content:flex-start;align-items:center;padding-top:calc(var(--toy-wall-h) - 64px);gap:clamp(8px,1.4vh,16px)}
 #setup[data-step=suCheck] .to-bix.bixwrap,#setup[data-step=suPick] .to-bix.bixwrap{align-self:flex-start;margin-left:clamp(10px,6vw,90px)}
@@ -273,7 +253,7 @@
 #setup[data-step=suDone] .to-bix.bixwrap{--tb:clamp(170px,23vh,240px)}
 #setup[data-step=suDone] .to-body{gap:clamp(8px,1.6vh,20px);padding-bottom:34px}
 #setup[data-step=suDone] .su-step{gap:clamp(14px,2.2vh,24px)}
-#setup[data-step=suCheck] .to-bix .bubble.ws-bubble,#setup[data-step=suPick] .to-bix .bubble.ws-bubble{font-size:21px;padding:12px 22px 14px;margin-bottom:6px}
+#setup[data-step=suCheck] .to-bix .bubble,#setup[data-step=suPick] .to-bix .bubble{font-size:21px;padding:12px 22px 14px;margin-bottom:6px}
 #setup .su-step{display:none;flex-direction:column;align-items:center;gap:clamp(16px,2.6vh,26px);width:100%;min-height:0}
 #setup .su-step.on{display:flex}
 .to-h{padding:12px 28px 14px}
@@ -353,7 +333,7 @@
 @media (orientation:portrait){
   #setup.to{--toy-wall-h:clamp(150px,19vh,230px)}
   .to-body{gap:26px}
-  .to-bix .bubble.ws-bubble{max-width:calc(100vw - 290px)}
+  .to-bix .bubble{max-width:calc(100vw - 290px)}
   .to-card{width:min(420px,100%);min-height:0;flex-direction:row;text-align:left;gap:18px;padding:18px 22px 20px;display:grid;grid-template-columns:112px 1fr;align-items:center}
   .to-card .su-art{grid-row:1/3;height:104px}
   .to-card b{align-self:end} .to-card small{align-self:start}
@@ -396,8 +376,8 @@
   .to-p{font-size:22px} .to-install{font-size:20px} .to-note{font-size:19px}
 }
 /* the grown-ups' calm setting: no idle motion */
-body.ws-calm .tb .toy-bix-breathe,body.ws-calm .tb .toy-lid,body.ws-calm #home .toy-moon-halo,body.ws-calm #who .toy-moon-halo,body.ws-calm #setup .toy-moon-halo{animation:none}
+body.ws-calm .toy-bix-breathe,body.ws-calm .toy-lid,body.ws-calm #home .toy-moon-halo,body.ws-calm #who .toy-moon-halo,body.ws-calm #setup .toy-moon-halo{animation:none}
 @media (prefers-reduced-motion:reduce){
-  .tb > .bix.talking .tb-toy,.tb .tb-toy svg,#todaySteps .step.just .th-bead,.tg-shake,.to-pop,.tn-card{animation:none}
-  #home .toy-sky-moon,#home .toy-tag,#who .who-card,.tg-holdbtn,.to-card,#setup .su-skill{transition:none}
+  #todaySteps .step.just .th-bead,.tg-shake,.to-pop,.tn-card{animation:none}
+  #home .toy-sky-moon-in,#home .toy-tag,#who .who-card,.tg-holdbtn,.to-card,#setup .su-skill{transition:none}
 }

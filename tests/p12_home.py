@@ -29,7 +29,7 @@ async def main():
 
         # ---------- home ----------
         steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
-        check('home: Bix + greeting bubble + grown-ups lock', await pg.locator('#bixHome .bix.ws-bix').count()==1 and 'Mia' in await pg.text_content('#bixHome .bubble') and await pg.locator('#home #grownups[aria-label]').count()==1)
+        check('home: Bix + greeting bubble + grown-ups lock', await pg.locator('#bixHome .bix > .toy-bix').count()==1 and 'Mia' in await pg.text_content('#bixHome .bubble') and await pg.locator('#home #grownups[aria-label]').count()==1)
         check('home: Today with 3 lacquered beads on the rod; only the next one glows',
               len(steps)==3 and 'next' in steps[0] and 'later' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.now').count()==1 and await pg.locator('#todaySteps svg.toy-bead').count()==3, steps)
         check('home: one big Start and three doors (Practice / Play / My Room with bead chip)',
@@ -125,7 +125,7 @@ async def main():
 
         # ---------- reduced motion ----------
         await pg.emulate_media(reduced_motion='reduce'); await pg.wait_for_timeout(100)
-        anim=await pg.evaluate("[...document.querySelectorAll('#home .toy-bix-breathe, #home .toy-lid, #home .toy-moon-halo, #home .tb-toy svg, #home .th-bead, #home .ws-bix-body')].map(e=>getComputedStyle(e).animationName)")
+        anim=await pg.evaluate("[...document.querySelectorAll('#home .toy-bix-breathe, #home .toy-lid, #home .toy-moon-halo, #home .bix > .toy-bix, #home .toy-bix-mouth, #home .th-bead')].map(e=>getComputedStyle(e).animationName)")
         check('reduced motion: Bix, the moon and the beads hold still', len(anim)>=4 and all(a=='none' for a in anim), anim)
         await pg.emulate_media(reduced_motion='no-preference')
         await ctx.close()

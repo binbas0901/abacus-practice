@@ -378,21 +378,8 @@ document.addEventListener('click', e=>{
   setTimeout(()=>{ if (!onButton && !greeted && $('#home').classList.contains('active')) renderHome(); }, 120);
 }, true);
 /* ---- Toy Table look for home, who, gate and first-run setup (TOY.* in toykit.js, styles in toy-home.css) ---- */
-// Fun.Mascot (fun.js) still mounts the Workshop Bix and owns his bubble, taps and voice. On the rebuilt screens this
-// draws TOY.bix over him and follows Mascot's moods and reactions; `rest` is his resting pose on that screen.
-const TOY_BIX_MOOD = { cheer:'cheer', think:'think', concerned:'oops', wow:'wow', sleepy:'sleepy' };
-function toyBix(el, rest, opts){
-  if (!el) return;
-  if (!el.querySelector('.bix')) Fun.Mascot.mount(el, Object.assign({size:96, keep:true}, opts||{}));
-  const bx=el.querySelector('.bix'); el.classList.add('tb'); if (rest) el.dataset.rest=rest;
-  let host=bx.querySelector('.tb-toy');
-  const draw=()=>{ const m = bx.classList.contains('cheer') ? 'cheer' : bx.classList.contains('oops') ? 'oops' : TOY_BIX_MOOD[bx.dataset.mood] || el.dataset.rest || 'happy';
-    if (host.dataset.m!==m){ host.dataset.m=m; host.innerHTML=TOY.bix(m, 320); } };
-  if (!host){ host=document.createElement('span'); host.className='tb-toy'; host.setAttribute('aria-hidden','true'); bx.appendChild(host);
-    new MutationObserver(draw).observe(bx, {attributes:true, attributeFilter:['class','data-mood']}); }
-  draw();
-}
-window.ToyBix = toyBix;
+// Bix everywhere is Fun.Mascot (fun.js), which draws TOY.bix; rest(el, mood) mounts him once and sets his resting pose.
+const toyBix = (el, rest, opts)=>Fun.Mascot.rest(el, rest, Object.assign({size:96, keep:true}, opts||{}));
 // Today's steps are three lacquer beads on a rod: 1 red, 2 mustard, 3 indigo (the same colours as their number chips).
 // A finished bead turns teal with a tick; the next one glows.
 const STEP_COLORS = ['red','mustard','indigo'], KID_COLORS = ['red','indigo','teal','mustard'], NUM_WORD = ['No','One','Two','Three','Four','Five'];
@@ -406,7 +393,7 @@ function stepBead(s, nextI){
 const HOME_SPARKS = `<svg class="th-sparks" viewBox="0 0 430 200" aria-hidden="true">`
   + [[52,44,9],[118,26,6],[246,40,10],[306,104,7],[362,36,8],[88,118,6],[270,132,5]].map(([x,y,r],i)=>`<path d="M${x},${y-r} Q${x+r*.18},${y-r*.18} ${x+r},${y} Q${x+r*.18},${y+r*.18} ${x},${y+r} Q${x-r*.18},${y+r*.18} ${x-r},${y} Q${x-r*.18},${y-r*.18} ${x},${y-r}Z" fill="${i%3===1?'#F7C843':'#FFFDF6'}"/>`).join('') + `</svg>`;
 function homeMoon(done, total){
-  const full = done>=total, phase = full ? 1 : .36 + .39*done/Math.max(1,total-1), key = done+'/'+total, sky=$('#homeSky');
+  const full = done>=total, phase = TOY.stepPhase(done, total), key = done+'/'+total, sky=$('#homeSky');
   if (sky.dataset.k===key) return; sky.dataset.k=key;
   sky.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', phase) + (full ? HOME_SPARKS : '');
 }
@@ -523,7 +510,7 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')) renderHome();
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); if (!bp.querySelector('.bix')) Fun.Mascot.mount(bp,{size:84}); ToyRoom.bix(bp); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
+function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); goPlay(); });
@@ -551,7 +538,7 @@ $('#doorRoom').addEventListener('click', ()=>{ Speaker.unlock(); goRoom(); });
 // The moon in the window of these screens: she fills as today's steps get done and is proud when they all are.
 function toySky(sel){
   const el = typeof sel==='string' ? $(sel) : sel; if (!el) return; const st=todaySteps(), tot=st.length||3, done=st.filter(x=>x.done).length, full=st.length>0 && done===st.length;
-  el.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', full ? 1 : 0.4 + 0.45*done/tot);
+  el.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', TOY.stepPhase(done, tot));
 }
 ToyRoom.sky = toySky;
 // The sticker book lies open on the table; the first stickers she has earned are stuck on its pages (n = how many she has).
@@ -573,7 +560,7 @@ function bookSVG(n){
 }
 // On the wall shelf: the rainbow, a few standing books and the bead bowl.
 const SHELF_BOOKS = `<svg class="tr-books" width="96" height="84" viewBox="0 0 96 84" aria-hidden="true">${[['red',4,18,16,66,0],['mustard',22,8,18,76,0],['teal',42,24,15,60,0],['plum',60,14,17,70,9]].map(b=>`<g transform="rotate(${b[5]} ${b[1]+b[3]} 84)"><rect x="${b[1]}" y="${b[2]}" width="${b[3]}" height="${b[4]}" rx="3" fill="url(#toy-lac-${b[0]})"/><rect x="${b[1]+b[3]-4}" y="${b[2]}" width="4" height="${b[4]}" rx="2" fill="#1A0606" opacity=".22"/><rect x="${b[1]+3}" y="${b[2]+8}" width="${b[3]-8}" height="5" rx="2" fill="#FFFDF6" opacity=".85"/><rect x="${b[1]+2}" y="${b[2]+2}" width="3" height="${b[4]-4}" rx="1.5" fill="#fff" opacity=".35"/></g>`).join('')}</svg>`;
-$('#roomShelfArt').innerHTML = TOY.prop('rainbow', 124) + SHELF_BOOKS + TOY.prop('bowl', 116);
+$('#roomShelfArt').innerHTML = TOY.prop('rainbow', 124) + SHELF_BOOKS + TOY.prop('bowl', 116); $('#roomLamp').innerHTML = TOY.prop('lamp', 200);
 $('#exitRoom').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitAlbum').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitShop').innerHTML = TOY.icon('back', 30, 'currentColor');
@@ -593,7 +580,7 @@ function renderRoom(){
 }
 function goRoom(){
   renderRoom(); show('room');
-  const br=$('#bixRoom'); if (!br.querySelector('.bix')) Fun.Mascot.mount(br, {size:110, keep:true}); ToyRoom.bix(br);
+  const br=$('#bixRoom'); toyBix(br, 'happy', {size:110});
   const [text, vid] = Treats.jarLine(); Fun.Mascot.say(br, text, 0, vid);
 }
 $('#exitRoom').addEventListener('click', ()=>{ renderHome(); show('home'); });
@@ -679,17 +666,6 @@ function doorDrillNode(m, n){
 function pathName(n){ return PATH_NAMES[n.id] || n.short || n.title; }
 function lessonTarget(n){ return hasLesson(n) ? n : NODES.slice(0, NODE_IDX[n.id]).reverse().find(x=>x.demos) || n; }
 /* Toy Table pieces shared by the door, the path and lessons (local helpers; the drawings come from TOY). */
-// Bix: Fun.Mascot keeps the behaviour (tap, voice, reactions); the figurine on the table is TOY.bix and follows his mood.
-const TOY_MOOD_D = { concerned:'oops' };
-function toyBixD(el, size, opts){
-  if (!el) return;
-  if (!el.querySelector('.bix')) Fun.Mascot.mount(el, Object.assign({size}, opts||{}));
-  const bx=el.querySelector('.bix'); if (!bx || bx.querySelector('.toy-bix')) return;
-  const fig=document.createElement('span'); fig.className='td-bixfig'; bx.appendChild(fig); bx.classList.add('td-bixed');
-  const draw=()=>{ const m=bx.dataset.mood || bx.dataset.base || 'happy'; if (fig.dataset.m===m) return; fig.dataset.m=m; fig.innerHTML=TOY.bix(TOY_MOOD_D[m]||m, size); };
-  draw(); new MutationObserver(draw).observe(bx, {attributes:true, attributeFilter:['data-mood']});
-  const say=el.querySelector('.ws-say'); if (say) say.innerHTML=TOY.icon('speaker', 26, 'currentColor');
-}
 function replay(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 $('#exitDoor').innerHTML=TOY.icon('back', 32, 'currentColor'); $('#exitLesson').innerHTML=TOY.icon('back', 32, 'currentColor');
 
@@ -702,7 +678,7 @@ function renderDoor(){
   const props=$('#doorProps'); if (!props.innerHTML) props.innerHTML=TOY.prop('rainbow', 150)+TOY.prop('plant', 170);
   toySky($('#doorSky'));
   renderDoorPath();
-  const bd=$('#bixDoor'); toyBixD(bd, 190, {keep:true});
+  const bd=$('#bixDoor'); toyBix(bd, 'happy', {size:190});
   bixSay(bd, 'How do you want to play with numbers?', 'door_ask');
   $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
 }
@@ -794,7 +770,7 @@ function startLesson(n, from){
   lessonAb.reset();
   L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
-  toyBixD($('#bixLesson'), 170, {bubble:false}); toySky($('#lessonSky'));
+  toyBix($('#bixLesson'), 'happy', {size:170, keep:false, bubble:false}); toySky($('#lessonSky'));
   // Room under the soroban is kept for the friends only in lessons where a friend rule can come up.
   let friendly=false; try{ friendly=[...(n.demos||[]), ...(n.guided||[])].some(pr=>friendOfSteps(lessonStep(n, pr).steps)); }catch(e){}
   $('#lesson').classList.toggle('may-pair', friendly); $('#lesson').dataset.rods=rods;
@@ -926,8 +902,7 @@ $('#drillBowl').innerHTML = TOY.prop('bowl', 150);
 $('#rvPack .bow').innerHTML = WS.bead('red',64)+WS.bead('red',64);
 // Bix on the practice screens: the toy figurine + a paper bubble. He talks with a recorded line when one exists.
 // He thinks while she works, cheers when it is right and is sheepish (never sad) when it is not.
-const TOY_MOOD = { concerned:'oops' };
-function bixArt(mood, size, opts){ return TOY.bix(TOY_MOOD[mood]||mood, size, opts).replace('class="toy-bix ', 'class="toy-bix bix '); }
+const bixArt = Fun.Mascot.art;   // a Bix drawing that can talk, for the practice screens (they place him themselves)
 // A rod bead (tall, seen on its rod): teal = right, red = one to fix, mustard = the one she is on, wood = still to come.
 function rodBead(color, h, dim){ return TOY.bead(color, h, {tall:true, shadow:false, dim:!!dim}); }
 // The answer-tool switch is a little thing on the table to pick up: a soroban ("Use the beads") or a set of keys ("Type it instead").
@@ -1331,7 +1306,7 @@ function todayMoon(kind){
 function drawMoon(sky, plaque, kind){
   const m=todayMoon(kind), name=TOY.moonName;
   if (!m){ sky.innerHTML=TOY.skyMoon('calm', .5); if (plaque) plaque.hidden=true; return; }
-  const full=m.after>=m.total, ph=n=>n/m.total;
+  const full=m.after>=m.total, ph=n=>TOY.stepPhase(n, m.total);
   sky.innerHTML = m.after>m.before ? TOY.skyMoon('calm', ph(m.before))+TOY.skyMoon(full?'proud':'happy', ph(m.after)) : TOY.skyMoon(full?'proud':m.after?'happy':'calm', ph(m.after));
   if (!plaque) return;
   plaque.hidden=false; plaque.setAttribute('role','img'); plaque.setAttribute('aria-label', `${name}: ${m.after} of ${m.total} today`);

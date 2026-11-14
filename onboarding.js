@@ -17,8 +17,8 @@
 
   function open(from) {
     const my = ++token; App().show('setup');
-    root.ToyBix(bix(), 'wave', { size: 104, keep: false });   // Toy Table Bix over Fun.Mascot (see app.js)
-    if (!$('#setupSky').innerHTML) { $('#setupSky').innerHTML = root.TOY.skyMoon('calm', .36); $('#setupShelf').innerHTML = root.TOY.prop('rainbow', 150) + root.TOY.prop('plant', 170); }
+    root.Fun.Mascot.rest(bix(), 'wave', { size: 104, keep: false });
+    if (!$('#setupSky').innerHTML) { $('#setupSky').innerHTML = root.TOY.skyMoon('calm', root.TOY.stepPhase(0, 3)); $('#setupShelf').innerHTML = root.TOY.prop('rainbow', 150) + root.TOY.prop('plant', 170); }
     if (from === 'level' || from === 'check') { state.name = App().settings.name || ''; state.keepName = true; if (from === 'check') check(); else toLevel(); return; }
     state = { name: '', keepName: false };
     $('#suNameIn').value = ''; step('suName'); say("Hi! I'm Bix! What's your name?");

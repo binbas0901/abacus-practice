@@ -1,4 +1,4 @@
-// Fun layer: Bix the bead mascot (drawn by the Workshop kit), sticker album, the garden flower pot, confetti.
+// Fun layer: Bix the bead mascot (drawn by the Toy Table kit, TOY.bix), sticker album, the garden flower pot, confetti.
 // Reads the app through window.App at call time (app.js defines it before boot).
 (function (root) {
   'use strict';
@@ -12,17 +12,16 @@
   function save() { Store.set('fun', data); }
   function replace(d) { Object.keys(data).forEach(k => delete data[k]); Object.assign(data, { stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, d || {}); save(); }
 
-  /* ---------------- Bix, the bead mascot: drawn by the Workshop kit (WS.bix) ---------------- */
-  // Moods come from kit.js: happy | cheer | think | concerned | wow | sleepy. The older reaction names map onto them.
-  const MOODS = ['happy', 'cheer', 'think', 'concerned', 'wow', 'sleepy'];
-  const REACT = { happy: 'happy', cheer: 'cheer', oops: 'concerned' };
-  function bixSVG(mood, size) { return root.WS.bix(MOODS.includes(mood) ? mood : 'happy', size || 96).replace('class="ws-bix ', 'class="bix ws-bix '); }
-  // Swap the drawing inside an existing Bix (keeps the element, its click handler and the .talking class).
+  /* ---------------- Bix, the bead mascot: the Toy Table figurine (TOY.bix) ---------------- */
+  // Moods are the kit's: happy | wave | cheer | think | oops | sleepy | wow | proud ("concerned" is the old name for oops).
+  const MOODS = ['happy', 'wave', 'cheer', 'think', 'oops', 'sleepy', 'wow', 'proud'];
+  const norm = m => (m === 'concerned' ? 'oops' : MOODS.includes(m) ? m : null);
+  // art(mood, size, opts): a Bix drawing that can talk (class "bix"), for screens that place him themselves.
+  function art(mood, size, opts) { return root.TOY.bix(norm(mood) || 'happy', size || 120, opts).replace('class="toy-bix ', 'class="toy-bix bix '); }
+  // Swap the drawing inside a mounted Bix (keeps the element, its click handler and the .talking class).
   function setMood(s, mood) {
-    if (!s || !MOODS.includes(mood)) return;
-    const t = document.createElement('div'); t.innerHTML = root.WS.bix(mood, 96);
-    const svg = t.querySelector('svg'), old = s.querySelector('svg'); if (!svg || !old) return;
-    old.replaceWith(svg); MOODS.forEach(m => s.classList.remove('ws-bix-' + m)); s.classList.add('ws-bix-' + mood); s.dataset.mood = mood;
+    mood = norm(mood); if (!s || !mood) return;
+    if (s.dataset.mood !== mood || !s.firstChild) { s.innerHTML = root.TOY.bix(mood, 320); s.dataset.mood = mood; }
   }
   /* ---------------- Bix's voice (pre-recorded lines, see tools/make_bix_voice.py) ---------------- */
   const LINES = () => root.BIX_LINES || {};
@@ -93,9 +92,10 @@
     mount(el, opts = {}) {
       if (!el) return;
       el.classList.add('bixwrap'); if (opts.size) el.style.setProperty('--bix', opts.size + 'px');
-      const say = root.WS.icon('speaker', 22, root.WS.colors.indigo);
-      el.innerHTML = bixSVG(opts.mood || 'happy', opts.size) + (opts.bubble === false ? '' : `<div class="bubble ws-bubble" aria-live="polite"><span class="ws-text"></span><span class="ws-say">${say}</span></div>`);
-      const bx = el.querySelector('.bix'); bx.dataset.base = opts.mood || 'happy';
+      const say = root.TOY.icon('speaker', 24, 'currentColor'), base = norm(opts.mood) || 'happy';
+      el.innerHTML = '<span class="bix"></span>' + (opts.bubble === false ? '' : `<div class="bubble toy-say" aria-live="polite"><span class="ws-text"></span><span class="ws-say">${say}</span></div>`);
+      setMood(el.querySelector('.bix'), base);
+      const bx = el.querySelector('.bix'); bx.dataset.base = base;
       bx.setAttribute('role', 'button'); bx.setAttribute('aria-label', 'Bix'); bx.tabIndex = 0;
       bx.addEventListener('click', () => {
         Mascot.react(el, 'happy'); const a = App(); if (a) a.Sfx.boing();
@@ -109,12 +109,16 @@
     // react(el, state, ms): a short reaction (hop, cheer, wobble) with the matching face; then back to his resting mood.
     react(el, state, ms = 1300) {
       const s = el && el.querySelector('.bix'); if (!s) return;
-      const mood = REACT[state] || (MOODS.includes(state) ? state : 'happy'), anim = REACT[state] ? state : (state === 'concerned' ? 'oops' : 'happy');
+      const anim = state === 'cheer' ? 'cheer' : (state === 'oops' || state === 'concerned') ? 'oops' : 'happy';
+      const mood = state === 'happy' ? s.dataset.base : norm(state) || s.dataset.base;     // a tap hops in his resting pose
       s.classList.remove('happy', 'cheer', 'oops'); setMood(s, mood); void s.getBoundingClientRect(); s.classList.add(anim);
       clearTimeout(s._t); s._t = setTimeout(() => { s.classList.remove(anim); setMood(s, s.dataset.base || 'happy'); }, ms);
     },
-    // mood(el, mood): change his resting face (e.g. 'think' while waiting, 'sleepy' at night).
-    mood(el, mood) { const s = el && el.querySelector('.bix'); if (!s || !MOODS.includes(mood)) return; s.dataset.base = mood; setMood(s, mood); },
+    // mood(el, mood): change his resting pose (e.g. 'think' while waiting, 'proud' when today is done).
+    mood(el, mood) { const s = el && el.querySelector('.bix'); mood = norm(mood); if (!s || !mood) return; s.dataset.base = mood; if (!s.classList.contains('cheer') && !s.classList.contains('oops')) setMood(s, mood); },
+    // rest(el, mood, opts): mount Bix once (or keep him) and set his resting pose.
+    rest(el, mood, opts) { if (!el) return; if (!el.querySelector('.bix')) Mascot.mount(el, Object.assign({ mood }, opts || {})); else if (mood) Mascot.mood(el, mood); },
+    art,
     // say(el, text, ms, voiceId, replayId): show the speech bubble; if a voice line id is given, Bix says it out loud too.
     // replayId: the line that goes with this caption when it is not spoken right now (the bubble's speaker plays it on tap).
     say(el, text, ms = 3500, vid, replayId) {
