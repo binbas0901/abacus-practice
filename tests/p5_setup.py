@@ -75,5 +75,16 @@ async def main():
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(900)
         check('existing device goes straight home', await pg.locator('#home.active').count()==1 and await pg.locator('#setup.active').count()==0)
         await ctx.close()
+        # portrait iPad: all three "abacus at home?" cards (and the three starting-point cards) fit on the page
+        ctx = await b.new_context(viewport={'width':820,'height':1180}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800)
+        await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', 'June'); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.wait_for_timeout(400)
+        FIT="(sel)=>[...document.querySelectorAll(sel+' .to-card')].map(e=>{ const r=e.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom), r.top>=0 && r.bottom<=innerHeight-8 && r.height>=64]; })"
+        cards = await pg.evaluate(FIT, '#suAbacus')
+        check('portrait setup: Yes / No / Not sure all fit on the page', len(cards)==3 and all(c[2] for c in cards), cards)
+        await pg.screenshot(path='/tmp/su_abacus_portrait.png'); await pg.click('[data-abacus=unsure]'); await pg.wait_for_selector('#suLevel.on'); await pg.wait_for_timeout(400)
+        cards = await pg.evaluate(FIT, '#suLevel')
+        check('portrait setup: the three starting-point cards fit on the page', len(cards)==3 and all(c[2] for c in cards), cards)
+        await ctx.close()
         print('errors:', errs); await b.close()
 asyncio.run(main())

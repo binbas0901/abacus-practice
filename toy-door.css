@@ -206,6 +206,21 @@
 #lesson #lessonNext.td-next{min-width:clamp(180px,17vw,220px);min-height:92px;padding:6px 24px 4px;font-size:clamp(28px,2.9vw,34px);justify-content:center}
 #lesson #lessonHint{justify-content:center;min-height:66px}
 
+/* the lesson soroban is tapped in "Your turn", so it is as big as the table allows: it takes the width Bix's side leaves, limited by the height
+   (bead pitch about 47px at 1180x820, was 39). --abr = the drawing's width / height for its number of rods. */
+#lesson{--abr:1.519} #lesson[data-rods="1"]{--abr:.658} #lesson[data-rods="2"]{--abr:1.089} #lesson[data-rods="4"]{--abr:1.949} #lesson[data-rods="5"]{--abr:2.38} #lesson[data-rods="6"]{--abr:2.81} #lesson[data-rods="7"]{--abr:3.24}
+#lesson{--ab-room:150px} #lesson.may-pair{--ab-room:226px}
+#lesson .lesson-left{flex:1 1 0;align-items:center}
+#lesson .lesson-ab{width:min(100%,calc((100vh - var(--toy-wall-h) - var(--ab-room))*var(--abr)))}
+#lesson .lesson-ab .abx{width:100%}
+#lesson .lesson-ab .abx-svg,#lesson.may-pair .lesson-ab .abx-svg{width:100%;height:auto;max-width:none;max-height:none}
+#lesson .lesson-side{flex:0 1 clamp(430px,36.5vw,620px)}
+#lesson .friends{gap:clamp(5px,.6vw,12px)}
+#lesson .friends span b{width:clamp(32px,2.9vw,40px);height:clamp(32px,2.9vw,40px);font-size:20px}
+#lesson .lesson-left{--pair-h:clamp(124px,16vh,200px)}
+#lesson .lesson-bix{--tb:clamp(176px,23vh,250px)}
+#lesson #lessonNext.td-next{min-width:clamp(168px,15vw,220px)}
+
 /* =====================================================================
    other iPad sizes
    ===================================================================== */
@@ -225,18 +240,22 @@
 
   #lesson.td-lesson{--toy-wall-h:clamp(130px,14.5vh,176px);--toy-window-x:clamp(96px,13.5vw,120px)}
   #lesson .lesson-body{flex-direction:column;justify-content:center;gap:clamp(18px,2.6vh,34px)}
-  #lesson .lesson-ab{flex:none;width:auto;max-width:100%}
+  #lesson .lesson-ab{flex:none;max-width:100%}
   #lesson .lesson-left{align-self:center;max-width:100%}
-  #lesson .lesson-ab .abx-svg{max-height:calc(100vh - var(--toy-wall-h) - 580px)}
+  #lesson{--ab-room:540px} #lesson.may-pair{--ab-room:540px}
+  #lesson .lesson-left{flex:0 1 auto;width:100%}
+  #lesson .lesson-side{flex:none}
+  #lesson .lesson-bix{--tb:clamp(200px,26vh,250px)}
   /* three rods: the friends stand beside the soroban; wider sorobans keep them underneath, as in landscape */
   #lesson[data-rods="3"] .lesson-left{flex-direction:row;align-items:flex-end;justify-content:center;gap:14px}
   #lesson[data-rods="3"] .lesson-ab{flex:0 1 auto;min-width:0}
+  #lesson[data-rods="3"] .lesson-left{align-items:center}
   #lesson[data-rods="3"] .abx-readout{align-self:center;margin:0}
-  #lesson[data-rods="3"] .lesson-pair{position:static;width:auto;flex:0 0 clamp(200px,31vw,300px);min-width:0;margin-bottom:34px}
+  #lesson[data-rods="3"] .lesson-pair{position:static;width:auto;flex:0 0 clamp(170px,21vw,300px);min-width:0;margin-bottom:34px}
   #lesson[data-rods="3"] .lesson-pair:empty{display:none}
   #lesson[data-rods="3"] .lesson-pair .toy-pair{width:100%;max-width:calc(var(--pair-h)*1.88)}
   #lesson.may-pair:not([data-rods="3"]) .lesson-left{--pair-h:150px}
-  #lesson.may-pair:not([data-rods="3"]) .lesson-ab .abx-svg{max-height:calc(100vh - var(--toy-wall-h) - 690px)}
+  #lesson.may-pair:not([data-rods="3"]){--ab-room:690px}
   #lesson .lesson-side{flex:none;width:100%;max-width:700px;gap:clamp(20px,2.4vh,30px)}
   #lesson .caption{min-height:clamp(214px,20vh,250px)}
 }
@@ -245,7 +264,7 @@
   #door .td-pathtitle{font-size:27px} #door .door-all{font-size:19px;min-height:50px}
   #door .dp-name{font-size:21px;max-width:170px} #door .dp-node.cur .dp-name{font-size:26px}
   #door .dp-learn.toy-block{font-size:24px;min-height:72px}
-  #lesson .lesson-side{flex-basis:700px}
+  #lesson .lesson-side{flex-basis:520px}
 }
 @media (prefers-reduced-motion:reduce){
   #door.intro .td-toy,#door .td-bixspot .bubble.pop,#lesson .lesson-pair.has-pair .toy-pair,.td-pop,.td-shake,

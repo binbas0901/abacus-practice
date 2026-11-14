@@ -347,6 +347,8 @@
   .to-card b{align-self:end} .to-card small{align-self:start}
   .to-card b:last-child{grid-row:1/3;align-self:center}
   .to-cards{flex-direction:column;align-items:center}
+  .to-cards-3 .to-card{min-height:0}   /* portrait: three short rows, so "Not sure" fits on the page */
+  .to-cards{gap:clamp(14px,1.8vh,24px)}
   .to-checkbody{flex-direction:column;gap:22px}
   #suProb.to-prob{flex-direction:row;align-items:baseline;gap:16px;transform:none}
   #suProb .term{width:auto}

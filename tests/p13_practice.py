@@ -239,10 +239,10 @@ async def main():
         await pg.click('#exitDrill'); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_selector('#flashGo', state='visible'); await shot(pg, 'flash_ready')
         check('Flash: keypad + Check disabled (dimmed) until the numbers have flashed', await pg.evaluate(off))
         check('Flash: card, answer tool and Check all fit on screen', await pg.evaluate(fit))
-        await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=20000); await shot(pg, 'flash_ask')
-        check('Flash: "= ?" -> keypad + Check live', await pg.evaluate("!document.querySelector('#checkBtn').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
+        await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').classList.contains('ask')", timeout=20000); await shot(pg, 'flash_ask')
+        check('Flash: numbers done (no "= ?", the slot shows the one "?") -> keypad + Check live', await pg.evaluate("document.querySelector('#flashNum').textContent.trim()==='' && !document.querySelector('#checkBtn').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
         d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(900)
-        check('Flash: Ready -> flash -> "= ?" -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
+        check('Flash: Ready -> flash -> ask -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
         await ctx.close()
 
         # ===== 4. fix pass 2: every iPad size (landscape, portrait, 12.9" Pro) =====
@@ -332,6 +332,19 @@ async def main():
                 f = await dl.value
                 check('standalone app without a share sheet: the PNG is downloaded instead', label == 'Save picture' and f.suggested_filename.endswith('.png') and not await pg.evaluate("window.__printed"), (label, f.suggested_filename))
             check('child targets >= 60px on the certificate', not await pg.evaluate(SMALL, '#certificate'), await pg.evaluate(SMALL, '#certificate'))
+            await ctx.close()
+        # ===== on-screen beads are big enough to tap (B3): bead slot height with a 3-rod soroban =====
+        for (vw, vh, need) in ((1180, 820, 56), (820, 1180, 52), (1366, 1024, 64)):
+            ctx = await b.new_context(viewport={'width': vw, 'height': vh}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(SEED)
+            await pg.goto(f'http://localhost:{PORT}/index.html'); await pg.wait_for_timeout(500)
+            await pg.evaluate("s=>localStorage.setItem('abacus.settings', JSON.stringify(s))", base); await pg.reload(); await pg.wait_for_timeout(600)
+            await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
+            await pg.evaluate("__drillSet([3,9,1,9],null,'beads')"); await pg.wait_for_timeout(500)
+            g = await pg.evaluate("""(()=>{ const r=s=>{ const e=document.querySelector(s); return e&&e.getBoundingClientRect(); }; const hit=r('#abHost .abx-rod[data-rod="0"] .abx-bead[data-kind="e"] .abx-hit'), ab=r('#abHost .abx-svg'), bd=r('#drill .tp-board'), ck=r('#checkBtn'), bx=r('#bixDrill .tp-bubble'), sw=r('#toolSwitch');
+              const over=(a,b)=>a.left<b.right-2&&b.left<a.right-2&&a.top<b.bottom-2&&b.top<a.bottom-2;
+              return { h:hit.height, w:hit.width, inside: ab.left>=0&&ab.right<=innerWidth&&ab.bottom<=innerHeight, clash:[over(ab,bd),over(ab,ck),over(ab,bx),over(ab,sw),over(bd,bx),over(ck,bx)], sw:Math.min(sw.width,sw.height), ck:ck.width, scroll:document.documentElement.scrollHeight>innerHeight+1 }; })()""")
+            check(f'{vw}x{vh} beads: each bead slot is >= {need}px tall (was 37), the soroban stays on the table and nothing overlaps it; switch and Check stay >= 64px',
+                  g['h'] >= need and g['w'] >= 64 and g['inside'] and not any(g['clash']) and g['sw'] >= 64 and g['ck'] >= 64 and not g['scroll'], g)
             await ctx.close()
         print('errors:', errs); print('RESULT', sum(res), '/', len(res)); await b.close()
 asyncio.run(main())

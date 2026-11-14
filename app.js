@@ -973,6 +973,7 @@ const Tool = {
   apply(){
     const beads=this.kind==='beads';
     $('#answerTool').classList.toggle('beads', beads); $('#answerTool').classList.toggle('keys', !beads);
+    $('#drill').classList.toggle('tb', beads);   // beads layout: a narrow clipboard and a big soroban (toy-practice.css)
     $('#readoutLabel').textContent = beads ? 'beads show' : '';
     const sw=$('#toolSwitch'), to=beads?'keys':'beads'; if (sw.dataset.to!==to){ sw.dataset.to=to; sw.innerHTML=switchArt(to); }
     if (beads && problems[idx]) this.ensureAb(this.rodsForSet());
@@ -1198,7 +1199,7 @@ async function flash(p){
   const my=++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
   $('#flashMsg').textContent='Watch…'; $('#flashGo').style.display='none'; $('#flashAgain').style.display='none'; flashDots(p.terms.length, 0); await sleep(600);
   for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); flashLen(el, t); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
-  if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='= ?';
+  if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='';   /* the answer slot already shows "?" (no third question mark) */
   $('#flashMsg').textContent = Tool.kind==='beads' ? 'What did you get? Show it on the beads.' : 'What did you get? Tap it in.'; $('#flashAgain').style.display = LT ? 'none' : ''; locked=false; Tool.setReady(true);
 }
 $('#flashAgain').addEventListener('click', ()=>{ if (mode==='flash' && problems[idx]) flash(problems[idx]); });
@@ -1372,7 +1373,7 @@ async function showMe(p){
   if (Tool.kind==='beads' && Tool.ab && $('#drill').classList.contains('active')) return showMeHere(p);
   $('#showme').classList.add('active');
   const rods=Tool.rodsForSet();
-  if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.1, readOnly:true}); }
+  if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.75, readOnly:true}); }
   $('#showmeBix').innerHTML=bixArt('happy', 96, {still:true});
   const probHtml=(k)=>p.op==='mul' ? `${p.terms[0]} <i>×</i> ${p.terms[1]}` : p.terms.map((t,i)=>`<span class="${i===k?'cur':''}">${i===0?t:(t<0?'<i class="minus">−</i>'+(-t):'<i class="plus">+</i>'+t)}</span>`).join('');
   const run = async()=>{ const my=++showToken; $('#showmeProb').innerHTML=probHtml(-1);
