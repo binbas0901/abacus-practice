@@ -225,6 +225,21 @@ async def main():
         check('Switch child is a real quiet button, at least 60px tall', sk[1]>=60 and sk[0]>=120, sk)
         await pg.click('#switchKid'); await pg.wait_for_selector('#who.active')
         check('Switch child -> back to the picker', True)
+        # ---------- Juni by day: tinted unlit side, curved terminator at every phase, steps tell apart, inside one pane ----------
+        moon=await pg.evaluate("""(()=>{ const lit=n=>{ const d=document.createElement('div'); d.innerHTML=TOY.skyMoon('calm', TOY.stepPhase(n,3)); const p=d.querySelector('path[fill="url(#toy-lac-moon)"]'); return p?p.getAttribute('d'):''; };
+          const paths=[0,1,2,3].map(lit), arcs=paths.slice(0,3).map(d=>{ const m=d.match(/A([0-9.]+),([0-9.]+) 0 0 [01] [^A]*$/); return m? +m[1]/+m[2] : 0; });
+          const stop=[...document.querySelectorAll('#toy-g-moonday stop')].map(e=>e.getAttribute('stop-color'));
+          const lum=h=>{ const v=parseInt(h.slice(1),16); return (.299*(v>>16)+.587*(v>>8&255)+.114*(v&255))/255; };
+          const sky=document.querySelector('#whoSky .toy-sky-moon'), day=sky.querySelector('.toy-moon-day'), who=sky.querySelector('path[fill="url(#toy-lac-moon)"]').getAttribute('d');
+          return { distinct:new Set(paths).size, arcs, lum:stop.map(lum), dayShown: !day || getComputedStyle(day).display!=='none', whoFull: who===lit(3) }; })()""")
+        check('Juni by day: 0/1/2/3 are four different shapes, the terminator is a curve at every phase (also at half), the unlit side is tinted (not near-white); the who-picker shows a neutral full moon',
+              moon['distinct']==4 and all(a>=.19 for a in moon['arcs']) and all(l<.84 for l in moon['lum']) and moon['whoFull'], moon)
+        for scr, go in (('home',"App.goHome()"),('room',"App.goRoom()"),('game',"void Games.open('reader')")):
+            await pg.evaluate(go); await pg.wait_for_timeout(900)
+            box=await pg.evaluate("""(id)=>{ const s=document.querySelector('#'+id+'.active'), m=s&&s.querySelector('.toy-sky-moon'); if(!m) return null; const cs=getComputedStyle(s), h=parseFloat(cs.getPropertyValue('--toy-wall-h'));
+              const pane=m.getBoundingClientRect(), disc=[...m.querySelectorAll('svg circle')].find(c=>c.getAttribute('stroke')).getBoundingClientRect();
+              return [disc.left>=pane.left-1, disc.right<=pane.right+1, disc.top>=pane.top-1, disc.bottom<=pane.bottom+1, getComputedStyle(m).overflow]; }""", scr)
+            check(f'{scr}: Juni sits inside one window pane (never across the bars)', bool(box) and all(box[:4]) and box[4]=='hidden', box)
         await ctx.close()
         print('errors:', errs); print('RESULT', sum(res),'/',len(res)); await b.close()
 asyncio.run(main())

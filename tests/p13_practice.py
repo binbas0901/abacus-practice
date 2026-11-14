@@ -1,4 +1,4 @@
-# Practice screen (stream B): on-screen beads + method feedback, keypad path, end of set, fix the red ones,
+# Practice screen (stream B): on-screen beads + method feedback, keypad path, end of set, fix the ones to polish,
 # show me on the beads, level test -> certificate, and the hasAbacus default.
 # Optional: SHOTS=/dir saves screenshots of each screen; VP=1180x820 sets the viewport.
 import asyncio, os, re, json
@@ -95,7 +95,7 @@ async def main():
         e = digit(cur, 0) % 5
         await tap(pg, 0, 'e', e if e < 4 else 0)
         await pg.click('#checkBtn'); await pg.wait_for_timeout(300); st = (await drill(pg))['strip']
-        check('beads, wrong answer -> red bead to fix later', 'bad' in st[2], st)
+        check('beads, wrong answer -> walnut bead to polish later', 'bad' in st[2], st)
         await pg.wait_for_timeout(900)
         # the rest with the keypad
         await pg.click('#toolSwitch'); await pg.wait_for_timeout(200)
@@ -105,18 +105,20 @@ async def main():
         await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(500)
         head = await pg.text_content('#sumScore'); text = await pg.text_content('#summary')
         check('end of set: "8 green beads!" headline, no N/10 score', head.strip() == '8 green beads!' and not re.search(r'\d+\s*/\s*\d+', text), head)
-        check('end of set: 10 beads (8 green dropped in the bowl, 2 red on the mat)', await pg.evaluate("document.querySelectorAll('#sumStars .tp-b:not(.tp-gold), #sumFix .tp-b').length") == 10 and await pg.evaluate("document.querySelectorAll('#sumStars .tp-b.in:not(.tp-gold)').length") == 8 and await pg.evaluate("document.querySelectorAll('#sumFix .tp-b').length") == 2)
-        check('end of set: golden bead chip + "Fix the red ones" + "I\'m done"', await pg.locator('#sumGold').is_visible() and 'golden bead' in await pg.text_content('#sumGold')
+        check('end of set: 10 beads (8 green dropped in the bowl, 2 to polish on the mat)', await pg.evaluate("document.querySelectorAll('#sumStars .tp-b:not(.tp-gold), #sumFix .tp-b').length") == 10 and await pg.evaluate("document.querySelectorAll('#sumStars .tp-b.in:not(.tp-gold)').length") == 8 and await pg.evaluate("document.querySelectorAll('#sumFix .tp-b').length") == 2)
+        check('end of set: golden bead chip + the Fix button + "I\'m done"', await pg.locator('#sumGold').is_visible() and 'golden bead' in await pg.text_content('#sumGold')
               and await pg.locator('#fixBtn').is_visible() and await pg.locator('#homeBtn').is_visible())
+        nored = await pg.evaluate("[/\\bred\\b/i.test(document.querySelector('#summary').innerText), document.querySelector('#fixBtn').classList.contains('toy-block--red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-walnut'), !!document.querySelector('#summary .tp-fixcap') && document.querySelector('#summary .tp-fixcap').getClientRects().length>0]")
+        check('end of set: red never means wrong (no "red" in the words, Fix button not red, beads to polish are raw walnut on a labelled mat)', nored == [False, False, False, True, True], nored)
         await shot(pg, 'end_of_set')
         check('child targets >= 60px on the end of set', not await pg.evaluate(SMALL, '#summary'), await pg.evaluate(SMALL, '#summary'))
         await pg.wait_for_timeout(2600)
         check('end of set: no floating "+n" toast over the headline / bead rod (rewards go to the top-right chip)', await pg.evaluate("""()=>[...document.querySelectorAll('.beadfloat')].every(f=>getComputedStyle(f).display==='none')"""))
         await collect_all(pg)
-        # fix the red ones
+        # fix the ones to polish
         await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(2500)
         d = await drill(pg)
-        check('fix: "Fixing" rod with only the red ones', await pg.locator('#fixLabel').is_visible() and await pg.evaluate("document.querySelectorAll('#strip .tp-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
+        check('fix: "Fixing" rod with only the ones to polish', await pg.locator('#fixLabel').is_visible() and await pg.evaluate("document.querySelectorAll('#strip .tp-b').length") == 2 and d['reviewing'] and d['idx'] == 2)
         check('fix: Bix "This one was tricky. Want me to show you first?" + indigo Show me', 'tricky' in await bubble(pg) and await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'fix')
         check('child targets >= 60px on the practice screen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
@@ -134,7 +136,7 @@ async def main():
         await pg.click('#checkBtn'); await pg.wait_for_timeout(300)
         check('fix: right answer -> that bead turns green', 'fixed' in (await drill(pg))['strip'][2])
         await pg.wait_for_timeout(900)
-        # second red one with the keypad: wrong -> show me card -> right
+        # second one to polish with the keypad: wrong -> show me card -> right
         await pg.click('#toolSwitch'); await pg.wait_for_timeout(200); d = await drill(pg)
         await keypad(pg, d['answer'] + 1); await pg.wait_for_selector('#showme.active', timeout=8000); await pg.wait_for_timeout(2400); await shot(pg, 'showme_card')
         check('Show me card uses the practice soroban (AbacusInput, read-only demo)', await pg.evaluate("!!document.querySelector('#showmeAbacus .abx.abx-readonly .abx-svg') && !document.querySelector('#showmeAbacus .abx-rod[tabindex]')"))
@@ -237,10 +239,10 @@ async def main():
         await pg.click('#exitDrill'); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_selector('#flashGo', state='visible'); await shot(pg, 'flash_ready')
         check('Flash: keypad + Check disabled (dimmed) until the numbers have flashed', await pg.evaluate(off))
         check('Flash: card, answer tool and Check all fit on screen', await pg.evaluate(fit))
-        await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=20000); await shot(pg, 'flash_ask')
-        check('Flash: "= ?" -> keypad + Check live', await pg.evaluate("!document.querySelector('#checkBtn').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
+        await pg.click('#flashGo'); await pg.wait_for_function("document.querySelector('#flashNum').classList.contains('ask')", timeout=20000); await shot(pg, 'flash_ask')
+        check('Flash: numbers done (no "= ?", the slot shows the one "?") -> keypad + Check live', await pg.evaluate("document.querySelector('#flashNum').textContent.trim()==='' && !document.querySelector('#checkBtn').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
         d = await drill(pg); await keypad(pg, d['answer']); await pg.wait_for_timeout(900)
-        check('Flash: Ready -> flash -> "= ?" -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
+        check('Flash: Ready -> flash -> ask -> answer -> next problem', (await drill(pg))['idx'] == 1 and 'ok' in (await drill(pg))['strip'][0])
         await ctx.close()
 
         # ===== 4. fix pass 2: every iPad size (landscape, portrait, 12.9" Pro) =====
@@ -287,8 +289,9 @@ async def main():
             await pg.wait_for_timeout(900); d = await drill(pg)
             check(f'{tag}: next problem -> answer box back to plain', not await pg.evaluate("document.querySelector('#readout').classList.contains('is-right')"))
             await keypad(pg, d['answer'] + 1); await pg.wait_for_timeout(220)
-            st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .tp-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
-            check(f'{tag}: wrong answer -> answer box red-rimmed (is-wrong) + its rod bead red with a gentle wobble, instantly', 'is-wrong' in st[0] and 'bad' in st[1] and 'tp-wob' in st[1] and st[2] == 'rgb(255, 231, 222)', st)
+            st = await pg.evaluate("(()=>{ const r=document.querySelector('#readout'), c=document.querySelector('#strip .tp-b.cur'), cs=getComputedStyle(r), plain=document.querySelector('#strip .tp-b:not(.cur):not(.ok):not(.bad)'); return [r.className, c.className, cs.backgroundColor, cs.borderTopStyle, cs.borderTopColor, c.innerHTML.includes('toy-lac-walnut'), document.querySelector('#strip').innerHTML.includes('toy-lac-red'), !plain || plain.innerHTML.includes('toy-lac-wood')]; })()")
+            check(f'{tag}: wrong answer -> "not yet": answer box stays neutral and dashed (is-wrong wobble, no red) + its rod bead raw walnut with a gentle wobble, instantly; no red bead on the rod',
+                  'is-wrong' in st[0] and 'bad' in st[1] and 'tp-wob' in st[1] and st[2] != 'rgb(255, 231, 222)' and st[3] == 'dashed' and st[4] != 'rgb(229, 64, 47)' and st[5] and not st[6] and st[7], st)
             await pg.wait_for_timeout(1000)
             await pg.evaluate("__drillSet([1,1],null,'beads')"); await pg.wait_for_timeout(200)
             await tap(pg, 0, 'e', 1); await pg.click('#checkBtn'); await pg.wait_for_timeout(120)
@@ -329,6 +332,19 @@ async def main():
                 f = await dl.value
                 check('standalone app without a share sheet: the PNG is downloaded instead', label == 'Save picture' and f.suggested_filename.endswith('.png') and not await pg.evaluate("window.__printed"), (label, f.suggested_filename))
             check('child targets >= 60px on the certificate', not await pg.evaluate(SMALL, '#certificate'), await pg.evaluate(SMALL, '#certificate'))
+            await ctx.close()
+        # ===== on-screen beads are big enough to tap (B3): bead slot height with a 3-rod soroban =====
+        for (vw, vh, need) in ((1180, 820, 56), (820, 1180, 52), (1366, 1024, 64)):
+            ctx = await b.new_context(viewport={'width': vw, 'height': vh}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(SEED)
+            await pg.goto(f'http://localhost:{PORT}/index.html'); await pg.wait_for_timeout(500)
+            await pg.evaluate("s=>localStorage.setItem('abacus.settings', JSON.stringify(s))", base); await pg.reload(); await pg.wait_for_timeout(600)
+            await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
+            await pg.evaluate("__drillSet([3,9,1,9],null,'beads')"); await pg.wait_for_timeout(500)
+            g = await pg.evaluate("""(()=>{ const r=s=>{ const e=document.querySelector(s); return e&&e.getBoundingClientRect(); }; const hit=r('#abHost .abx-rod[data-rod="0"] .abx-bead[data-kind="e"] .abx-hit'), ab=r('#abHost .abx-svg'), bd=r('#drill .tp-board'), ck=r('#checkBtn'), bx=r('#bixDrill .tp-bubble'), sw=r('#toolSwitch');
+              const over=(a,b)=>a.left<b.right-2&&b.left<a.right-2&&a.top<b.bottom-2&&b.top<a.bottom-2;
+              return { h:hit.height, w:hit.width, inside: ab.left>=0&&ab.right<=innerWidth&&ab.bottom<=innerHeight, clash:[over(ab,bd),over(ab,ck),over(ab,bx),over(ab,sw),over(bd,bx),over(ck,bx)], sw:Math.min(sw.width,sw.height), ck:ck.width, scroll:document.documentElement.scrollHeight>innerHeight+1 }; })()""")
+            check(f'{vw}x{vh} beads: each bead slot is >= {need}px tall (was 37), the soroban stays on the table and nothing overlaps it; switch and Check stay >= 64px',
+                  g['h'] >= need and g['w'] >= 64 and g['inside'] and not any(g['clash']) and g['sw'] >= 64 and g['ck'] >= 64 and not g['scroll'], g)
             await ctx.close()
         print('errors:', errs); print('RESULT', sum(res), '/', len(res)); await b.close()
 asyncio.run(main())

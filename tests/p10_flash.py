@@ -9,7 +9,7 @@ async def main():
         await pg.evaluate("App.startMode('flash')"); await pg.wait_for_timeout(1000); await pg.screenshot(path='/tmp/fl_1_ready.png')
         print('before:', await pg.text_content('#flashMsg'), '| pad locked:', await pg.evaluate("1"))
         await pg.tap('#flashGo'); await pg.wait_for_timeout(600+1200*1+500); await pg.screenshot(path='/tmp/fl_2_second.png'); print('during:', await pg.text_content('#flashNum'))
-        await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=20000); await pg.screenshot(path='/tmp/fl_3_ask.png')
+        await pg.wait_for_function("document.querySelector('#flashNum').classList.contains('ask')", timeout=20000); await pg.screenshot(path='/tmp/fl_3_ask.png')
         print('after:', await pg.text_content('#flashMsg'))
         d=await pg.evaluate("window.__drill()"); print('terms', d)
         for ch in str(d['answer']): await pg.tap(f'#pad [data-k="{ch}"]')

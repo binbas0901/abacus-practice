@@ -38,7 +38,7 @@
 #home .toy-tag-name{max-width:calc(var(--u)*150);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-bottom:1px}
 #home #grownups.th-lock{position:absolute;right:0;top:calc(var(--u)*26);width:max(64px,calc(var(--u)*64));height:max(64px,calc(var(--u)*64));padding:0 0 2px;border-radius:50%;font-size:0;color:var(--toy-walnut);
   background:var(--toy-grain) -200px -100px/512px 256px,linear-gradient(var(--toy-wood-lt),var(--toy-wood))}
-.th-shelf{position:absolute;right:calc(var(--u)*96);bottom:calc(var(--u)*-20);display:flex;align-items:flex-end;gap:calc(var(--u)*12);pointer-events:none;line-height:0}
+.th-shelf{position:absolute;right:calc(var(--u)*96);bottom:calc(var(--u)*-3);display:flex;align-items:flex-end;gap:calc(var(--u)*12);pointer-events:none;line-height:0}
 .th-shelf .toy-prop:first-child{width:calc(var(--u)*156);height:auto}
 .th-shelf .toy-prop:last-child{width:calc(var(--u)*176);height:auto}
 
@@ -246,7 +246,7 @@
 #setup.to{--toy-wall-h:clamp(140px,22vh,230px)}
 #setup.to.active{display:flex;flex-direction:column}
 #setup.to[data-step=suCheck],#setup.to[data-step=suPick]{--toy-wall-h:clamp(104px,14.6vh,160px);--toy-window-x:calc(100vw - (var(--toy-wall-h) - 16px)*2.15 - clamp(40px,9vw,130px))}
-.to-shelf{position:absolute;right:clamp(60px,10vw,130px);top:0;height:calc(var(--toy-wall-h) + 20px);display:flex;align-items:flex-end;gap:12px;pointer-events:none;line-height:0}
+.to-shelf{position:absolute;right:clamp(60px,10vw,130px);top:0;height:calc(var(--toy-wall-h) + 3px);display:flex;align-items:flex-end;gap:12px;pointer-events:none;line-height:0}
 .to-shelf .toy-prop:first-child{width:clamp(120px,13vw,156px);height:auto}
 .to-shelf .toy-prop:last-child{width:clamp(136px,15vw,176px);height:auto}
 #setup[data-step=suCheck] .to-shelf,#setup[data-step=suPick] .to-shelf{display:none}
@@ -259,6 +259,7 @@
 #setup[data-step=suCheck] .to-bix.bixwrap,#setup[data-step=suPick] .to-bix.bixwrap{align-self:flex-start;margin-left:clamp(10px,6vw,90px)}
 #setup[data-step=suAbacus] .to-bix.bixwrap,#setup[data-step=suLevel] .to-bix.bixwrap{--tb:clamp(200px,28vh,280px)}
 #setup[data-step=suDone] .to-bix.bixwrap{--tb:clamp(170px,23vh,240px)}
+#setup[data-step=suDone] .to-shelf .toy-prop:first-child{display:none}   /* Bix's bubble reaches the shelf here: only the plant stays, nothing hides behind the bubble */
 #setup[data-step=suDone] .to-body{gap:clamp(8px,1.6vh,20px);padding-bottom:34px}
 #setup[data-step=suDone] .su-step{gap:clamp(14px,2.2vh,24px)}
 #setup[data-step=suCheck] .to-bix .bubble,#setup[data-step=suPick] .to-bix .bubble{font-size:21px;padding:12px 22px 14px;margin-bottom:6px}
@@ -304,6 +305,10 @@
 .to-skill-t{min-width:0}
 .to-skill-t b{display:block;font:600 21px/1.15 var(--toy-display)}
 .to-skill-t small{display:block;margin-top:2px;font:400 16px/1.3 var(--toy-body);color:var(--toy-ink-soft)}
+/* a two-line title with a two-line note must fit inside its card (rows used to be 78px and the text spilled out) */
+#setup .su-skill{min-height:100px;padding-top:6px;padding-bottom:8px}
+.to-skill-t b{font-size:20px;line-height:1.12}
+.to-skill-t small{font-size:15px;line-height:1.22}
 /* level check */
 .to-checkhead{display:flex;align-items:center;justify-content:center;gap:clamp(14px,2vw,26px);flex-wrap:wrap}
 .to-lname{padding:10px 22px 12px;font:600 24px/1.1 var(--toy-display)}
@@ -330,6 +335,18 @@
 #suPad .toy-keypad-mat{padding:16px 18px 18px}
 #suPad .toy-key{font-size:clamp(30px,4.2vh,40px)}
 .to-go{grid-column:2;grid-row:2;margin-bottom:8px}
+/* the level check uses the practice sheet: the sum, a rule and the answer slot on one clipboard; keys as big as in practice */
+.to-sheet{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-width:210px;padding:18px 22px 16px;transform:rotate(-1deg)}
+#suProb.to-prob{min-width:0;padding:0;transform:none}
+.to-rule{height:5px;border-radius:3px;background:var(--toy-ink)}
+.to-sheet .to-ansrow{justify-content:flex-end}
+.to-sheet .to-answer{min-width:110px;height:84px;font-size:56px;color:var(--toy-ink);letter-spacing:0}
+.to-sheet .to-fb{right:auto;left:0}
+.to-entry{align-items:end}
+#suPad{grid-row:1;--toy-key-w:clamp(84px,7.8vw,108px);--toy-key-h:clamp(68px,calc((100vh - 404px)/4),118px);--toy-key-gap:12px}
+#suPad .toy-key{font-size:clamp(34px,4.6vh,44px)}
+.to-go{grid-row:1}
+
 /* done */
 .to-done{box-sizing:border-box;width:min(680px,100%);padding:26px 34px 24px;text-align:center;border-radius:14px;transform:rotate(-.6deg)}
 .to-done .toy-h1{margin-bottom:10px}
@@ -347,10 +364,17 @@
   .to-card b{align-self:end} .to-card small{align-self:start}
   .to-card b:last-child{grid-row:1/3;align-self:center}
   .to-cards{flex-direction:column;align-items:center}
+  .to-cards-3 .to-card{min-height:0}   /* portrait: three short rows, so "Not sure" fits on the page */
+  .to-cards{gap:clamp(14px,1.8vh,24px)}
   .to-checkbody{flex-direction:column;gap:22px}
-  #suProb.to-prob{flex-direction:row;align-items:baseline;gap:16px;transform:none}
+  #suProb.to-prob{flex-direction:row;align-items:baseline;justify-content:flex-end;gap:16px;transform:none}
+  .to-sheet{flex-direction:row;align-items:center;gap:18px;min-width:min(560px,86vw)}
+  .to-sheet #suProb{flex:1}
+  .to-rule{display:none}
   #suProb .term{width:auto}
-  #suPad{--toy-key-w:clamp(84px,13vw,110px);--toy-key-h:clamp(70px,7.4vh,92px)}
+  #suPad{--toy-key-w:clamp(96px,14.6vw,124px);--toy-key-h:clamp(70px,calc((100vh - 800px)/4),112px)}
+  .to-sheet .to-ansrow::before{content:"=";margin-right:14px;font:700 54px/1 var(--toy-display);color:var(--toy-ink)}
+  .to-sheet .to-fb{left:auto;right:calc(100% + 8px)}
 }
 
 /* ---------- "What's your name?" dialog (tap Bix on the home table) ---------- */
@@ -378,8 +402,8 @@
   #suProb .term{font-size:92px}
   .to-answer{min-width:270px;height:100px;font-size:60px}
   .to-skills{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
-  #setup .su-skill{min-height:88px}
-  .to-skill-t b{font-size:23px} .to-skill-t small{font-size:18px}
+  #setup .su-skill{min-height:112px}
+  .to-skill-t b{font-size:22px} .to-skill-t small{font-size:17px}
   .to-skillmat{width:min(1200px,100%)}
   .to-done{width:760px;padding:32px 40px 30px}
   .to-p{font-size:22px} .to-install{font-size:20px} .to-note{font-size:19px}

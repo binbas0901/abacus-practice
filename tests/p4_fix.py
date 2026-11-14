@@ -13,7 +13,7 @@ async def ready(pg, m):
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000)
     else:
         await pg.wait_for_selector('#flashGo', state='visible', timeout=30000); await pg.click('#flashGo')
-        await pg.wait_for_function("document.querySelector('#flashNum').textContent==='= ?'", timeout=30000)
+        await pg.wait_for_function("document.querySelector('#flashNum').classList.contains('ask')", timeout=30000)
 async def answer(pg, v):
     for ch in str(v): await pg.click(f'#pad [data-k="{ch}"]')
     await pg.click('#pad [data-k=go]')

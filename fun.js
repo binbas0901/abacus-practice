@@ -170,7 +170,7 @@
     const open = () => {
       if (pack.classList.contains('open')) return;
       pack.classList.add('open'); const a = App(); if (a) a.Sfx.sparkle();
-      $('#rvName').textContent = `${s.packName} sticker` + (s.isNew ? ' — NEW!' : ` — you have ${s.n}`);
+      $('#rvName').textContent = `${s.packName} sticker` + (s.isNew ? ' — New!' : ` — you have ${s.n}`);
       setTimeout(() => { $('#rvOk').style.visibility = 'visible'; }, 350);
     };
     pack.onclick = open; $('#rvOk').onclick = () => { ov.classList.remove('active'); item.res(s); setTimeout(next, 250); };

@@ -99,7 +99,7 @@
 #drill .tp-readout[data-len="4"] b{font-size:50px} #drill .tp-readout[data-len="5"] b{font-size:42px} #drill .tp-readout[data-len="6"] b{font-size:35px}
 #drill .tp-readout.is-right{border-style:solid;border-color:var(--toy-teal-dk);background:radial-gradient(circle at 30% 22%,#8FEBD9 0,#1FA595 46%,#137A70 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
 #drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(10,74,69,.45)}
-#drill .tp-readout.is-wrong{border-color:var(--toy-red);background:#FFE7DE;animation:tp-no .46s ease both}
+#drill .tp-readout.is-wrong{animation:tp-no .46s ease both}   /* "not yet": the slot stays neutral and dashed, it only wobbles (red never means wrong) */
 @keyframes tp-yes{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
 @keyframes tp-no{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
 #drill:has(#answerTool.waiting) .tp-readout{opacity:.45}
@@ -177,7 +177,7 @@
 #showme .tp-showtext b{color:var(--toy-indigo)}
 #showme .tp-showbtns{display:flex;gap:16px;align-items:center;padding-bottom:8px}
 #showme .tp-showab{line-height:0}
-#showme .abx-svg{width:auto;height:min(400px,62vh);max-width:54vw}
+#showme .abx-svg{width:auto;height:auto;max-height:min(540px,68vh);max-width:calc(96vw - 452px)}   /* as big as the card allows, never stretched */
 
 /* ============ end of set ============ */
 #summary.tp-sum{--pad:28px;--bw:clamp(320px,38vw,520px);--sbix:clamp(200px,22vw,290px);--toy-window-x:clamp(40px,5vw,90px);padding:0;gap:0;box-sizing:border-box;align-items:stretch;text-align:left}
@@ -206,7 +206,9 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
 #summary .tp-sumbixcol{position:relative;justify-self:end;align-self:end;display:flex;flex-direction:column;align-items:flex-start;gap:22px;max-width:360px}
 #summary .tp-sumbub{display:flex;align-items:center;gap:12px;padding:16px 16px 18px 24px;max-width:100%;min-width:0}
 #summary .tp-sumnote{margin:0;font:600 clamp(19px,2vw,22px)/1.3 var(--toy-display);color:var(--toy-ink)}
-#summary .tp-saybtn{flex:none;width:60px;height:60px;margin-right:-4px}
+#summary .tp-saybtn{flex:none;width:64px;height:64px;margin-right:-4px}
+/* a wide bubble (two or three lines, not five short ones): it may reach over the table beside Bix, above the bowl */
+#summary .tp-sumbub{position:relative;z-index:4;box-sizing:border-box;width:calc(100% + clamp(90px,11vw,170px));max-width:none;margin-right:calc(clamp(90px,11vw,170px)*-1)}
 #summary .tp-sumbix{line-height:0;cursor:pointer;margin-left:22px}
 #summary .tp-sumbix svg{width:var(--sbix);height:var(--sbix)}
 /* the beads she earned drop into a wooden bowl; the red ones wait on a little felt mat */
@@ -220,6 +222,8 @@ body:has(#summary.active) .beadfloat,body:has(#drill.active) .beadfloat{display:
   72%{transform:translate(0,0) rotate(var(--r,0deg))}84%{transform:translate(0,-7px) rotate(var(--r,0deg))}100%{transform:translate(0,0) rotate(var(--r,0deg));opacity:1}}
 #summary .tp-fixside{align-self:end;justify-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:14px;margin-bottom:14px}
 #summary .tp-fixmat{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;justify-content:center;max-width:250px;padding:18px 20px;border-radius:24px;animation:tp-pop .4s cubic-bezier(.3,1.4,.5,1) .9s both}
+#summary .tp-fixcap{font-size:20px;min-height:36px;padding:3px 16px;margin-left:6px;animation:tp-pop .4s cubic-bezier(.3,1.4,.5,1) .9s both}
+#summary .tp-fixcap:has(+ .tp-fixmat:empty){display:none}
 #summary .tp-fixmat::before{inset:7px;border-radius:17px}
 #summary .tp-fixmat:empty{display:none}
 #summary .tp-fixmat .tp-b{line-height:0}
@@ -268,6 +272,47 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #certificate *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
+/* ============ answering on the beads: the soroban gets the table ============
+   The beads are what she taps, so they must be big (bead pitch >= 56px with 3 rods at 1180x820). The wall is low, the clipboard is narrow
+   and stands on the left under the tool switch; the soroban fills the rest; Bix, his bubble and the check dome sit in a row under it. */
+#drill.tp.tb{--toy-wall-h:106px;--board:232px;--foot:124px;--bix:118px;--prop:104px;--ans-h:84px;--th-max:84px;--tf-max:70px;--abh:calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 40px)}
+#drill.tb .tp-top{padding-top:16px}
+#drill.tb .tp-topright{margin-top:-6px}
+#drill.tb .tp-rodwrap,#drill.tb .tp-rod{height:76px}
+#drill.tb .tp-post{height:66px}
+#drill.tb .tp-body{grid-template-columns:var(--board) auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;gap:8px var(--gap);margin-top:12px;margin-bottom:10px;
+  grid-template-areas:"sw ab ab ab" "board ab ab ab" "board show bix check"}
+#drill.tb .tp-bixcol,#drill.tb .tp-props,#drill.tb .tp-tool,#drill.tb .tp-foot{display:contents}
+#drill.tb .tp-switch{grid-area:sw;flex-direction:row;justify-self:start;align-self:center;gap:10px;min-height:64px}
+#drill.tb .tp-switch svg{width:auto;height:64px}
+#drill.tb .tp-board{grid-area:board;padding:38px 12px 12px}
+#drill.tb .tp-board::after{left:10px;right:9px;top:36px;bottom:8px}
+#drill.tb .tp-sheet{padding:14px 14px 12px}
+#drill.tb .tp-readout{flex-direction:column;gap:0;padding:4px 8px}
+#drill.tb .tp-readout .tp-rolabel{font-size:15px}
+#drill.tb .tp-readout b{font-size:48px}
+#drill.tb .tp-abacus{grid-area:ab;display:flex;align-self:center;justify-self:center;width:100%;height:var(--abh);min-height:0}
+#drill.tb .tp-abacus .abx{height:100%;align-items:center;justify-content:center}
+#drill.tb .tp-abacus .abx-svg{width:auto;height:100%;max-width:100%;max-height:none}
+#drill.tb .tp-showme{grid-area:show;align-self:center;margin:0}
+#drill.tb .tp-bix{grid-area:bix;flex-direction:row-reverse;align-items:center;justify-content:flex-end;gap:22px;min-width:0;align-self:end;height:var(--foot)}
+#drill.tb .tp-bixfig{margin:0 0 0 4px}
+#drill.tb .tp-bubble{flex:0 1 340px;width:auto;min-width:0;height:84px}
+#drill.tb .tp-bubble.toy-bubble--left::after{left:-19px;bottom:22px;width:34px;height:34px;clip-path:polygon(100% 0,100% 72%,0 100%)}
+#drill.tb .tp-check{grid-area:check;align-self:end;justify-self:end}
+#drill.tb .tp-bowl{display:none}
+#drill.tb .tp-tool.demo .tp-check{opacity:.45;pointer-events:none}
+#drill.tb .tp-tool.demo .tp-abacus{pointer-events:none}
+
+/* long rows on the beads: the sheet needs the whole height, so the tool switch joins the row under the soroban */
+@media (orientation:landscape){
+  #drill.tb.long .tp-body{grid-template-columns:var(--board) auto auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"board ab ab ab ab" "board sw show bix check"}
+  #drill.tb.long .tp-switch{flex-direction:column;gap:4px;align-self:end;min-width:0}
+  #drill.tb.long .tp-switch svg{height:52px}
+  #drill.tb.long .tp-switch .toy-chip{font-size:17px;padding:2px 10px}
+  #drill.tb.long .tp-bubble{flex-basis:300px}
+}
+
 /* ============ portrait iPad ============ */
 @media (orientation:portrait){
   #drill.tp{--toy-wall-h:176px;--row1:clamp(340px,38vh,460px);--bixcol:minmax(0,1fr);--board:310px;--bix:150px;--prop:128px;--foot:150px;--th-max:86px;--tf-max:74px;--ans-h:84px;
@@ -287,6 +332,23 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #drill .tp-ear{width:92px;height:92px}
   #drill .tp-ear svg{width:50px;height:50px}
   #drill .tp-listen,#drill .tp-flash{gap:8px}
+  /* beads: Bix and the sheet share the top, the soroban takes the full width under them, the tool switch and the check dome sit in the last row */
+  #drill.tp.tb{--toy-wall-h:120px;--board:300px;--bix:128px;--foot:128px;--prop:104px;--abh:min(calc((100vw - 2*var(--pad))*.684),calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 330px))}
+  #drill.tb .tp-body{grid-template-columns:auto auto minmax(0,1fr) var(--board);grid-template-rows:minmax(0,1fr) auto auto;gap:14px 16px;
+    grid-template-areas:"bix bix bix board" "ab ab ab ab" "sw show . check"}
+  #drill.tb .tp-bix{flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:16px;height:auto;align-self:stretch}
+  #drill.tb .tp-bubble{flex:none;width:100%;height:88px}
+  #drill.tb .tp-bubble.toy-bubble--left::after{left:34px;bottom:-24px;width:56px;height:34px;clip-path:polygon(26% 0,100% 0,0 100%)}
+  #drill.tb .tp-switch{align-self:center}
+  #drill.tb .tp-readout{flex-direction:row;gap:10px}
+  /* long rows on the beads: the tall sheet keeps the left side, so the soroban only gets the width beside it */
+  #drill.tb.long{--board:250px;--abh:min(calc((100vw - 2*var(--pad) - var(--board) - 16px)*.684),calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 330px))}
+  #drill.tb.long .tp-body{grid-template-columns:var(--board) auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"board bix bix bix" "board ab ab ab" "sw show . check"}
+  #drill.tb.long .tp-board{grid-column:auto;grid-row:auto;grid-area:board}
+  #drill.tb.long .tp-bixcol{display:contents}
+  #drill.tb.long .tp-bix{grid-area:bix;flex-direction:column;align-items:flex-start;gap:16px}
+  #drill.tb.long .tp-bubble.toy-bubble--left::after{left:34px;right:auto;bottom:-24px;width:56px;height:34px;clip-path:polygon(26% 0,100% 0,0 100%)}
   /* long rows: the sheet takes the whole left side; Bix, the keys and the check dome stack on the right */
   #drill.tp.long{--toy-wall-h:120px;--board:270px;--th-max:76px;--tf-max:62px;--toy-key-w:clamp(88px,13vw,112px);--bix:112px;--prop:110px}
   #drill.long .tp-body{grid-template-columns:var(--board) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
@@ -303,13 +365,13 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #showme .tp-showcard{flex-direction:column;gap:18px;padding:24px}
   #showme .tp-showleft{width:min(560px,84vw)}
   #showme .tp-showtext{min-height:60px}
-  #showme .abx-svg{height:auto;width:min(620px,84vw);max-width:none;max-height:38vh}
+  #showme .abx-svg{max-height:min(520px,calc(100vh - 560px));max-width:86vw}
   #summary.tp-sum{--bw:clamp(360px,56vw,520px);--sbix:clamp(210px,30vw,280px);--toy-window-x:40px}
   #summary .tp-headslot{left:0;right:0;bottom:auto;top:calc(100% + 34px)}
   #summary .tp-sumstage{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-rows:auto auto;gap:34px 16px;padding-top:120px}
   #summary .tp-sumbixcol{grid-column:1 / -1;justify-self:center;flex-direction:row-reverse;align-items:flex-end;max-width:100%;gap:26px}
   #summary .tp-sumbub.toy-bubble--left::after{left:-22px;bottom:26px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
-  #summary .tp-sumbub{margin-bottom:40px}
+  #summary .tp-sumbub{width:auto;max-width:100%;margin:0 0 40px}
   #summary .tp-sumbix{margin:0}
   #summary .tp-catch{grid-column:2}
   #summary .tp-sumbtns{gap:18px;padding-bottom:44px}
@@ -338,7 +400,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   .tp-pop,.tp-wob,.tp .bix.talking .toy-bix-breathe,.tp-show .bix.talking .toy-bix-breathe{animation:none}
   #drill .tp-ear.pulse::after,#drill .tp-listen.reading .tp-ear,#drill .flash-num.pop,#drill .tp-readout.is-right,#drill .tp-readout.is-wrong,#drill .tp-bubble .tp-btxt.tp-fresh,#showme .tp-showcard{animation:none}
   #drill .tp-term,#drill .tp-switch,#drill .tp-readout{transition:none}
-  #summary .tp-goldchip,#summary .tp-newchip,#summary .tp-fixmat,#summary .tp-catch .tp-b.in{animation:none}
+  #summary .tp-goldchip,#summary .tp-newchip,#summary .tp-fixmat,#summary .tp-fixcap,#summary .tp-catch .tp-b.in{animation:none}
   #summary .tp-sky .toy-sky-moon + .toy-sky-moon{animation:none;opacity:1}
   #summary .tp-moons .after{animation:none}
 }

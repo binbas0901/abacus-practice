@@ -219,7 +219,7 @@
 
   // ---------------------------------------------------------------- view (DOM / SVG)
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const G = { P: 34, BW: 58, ROD: 136, FR: 22, PADX: 14, HH: 74, BM: 14, EH: 176 };
+  const G = { P: 34, BW: 58, ROD: 136, FR: 22, PADX: 14, HH: 80, BM: 14, EH: 182, EDGE: 8 };   // EDGE: resting beads keep clear of the tray's inner edge
   G.beamY = G.FR + G.HH; G.earthTop = G.beamY + G.BM; G.H = G.earthTop + G.EH + G.FR;
   // A lacquered bead seen from the side: a double cone with soft edges (116 x 32).
   const LENS = 'M-15,-16 H15 Q23,-16 30,-13.2 L52,-4.4 Q59,0 52,4.4 L30,13.2 Q23,16 15,16 H-15 Q-23,16 -30,13.2 L-52,4.4 Q-59,0 -52,-4.4 L-30,-13.2 Q-23,-16 -15,-16Z';
@@ -237,7 +237,7 @@
       + '</defs></svg>';
     document.body.insertBefore(holder.firstChild, document.body.firstChild);
   }
-  function heavenY(on) { return on ? G.beamY - G.P / 2 - 1 : G.FR + 3 + G.P / 2; }
+  function heavenY(on) { return on ? G.beamY - G.P / 2 - 1 : G.FR + G.EDGE + G.P / 2; }
   function earthY(k, on) { return G.earthTop + 1 + G.P / 2 + k * G.P + (on ? 0 : G.P + 3); }
 
   function el(tag, attrs, parent) {

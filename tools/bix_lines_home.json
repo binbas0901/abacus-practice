@@ -1,5 +1,6 @@
 {
-  "_about": "Bix lines added by the Workshop home/setup screens. Built into a small extra pack per voice (audio/bix-<voice>-home.js) by tools/make_bix_pack.py, so the main recordings stay unchanged.",
+  "_about": "Bix lines added by the Workshop home/setup screens. Built into a small extra pack per voice (audio/bix-<voice>-home.js) by tools/make_bix_pack.py, so the main recordings stay unchanged. sum_great was re-recorded here (it used to say \"red ones\"); its old take is left unused in the main file and its sprite entry there was removed.",
+  "sum_great": "Great job! Want to polish these with me?",
   "who_ask": "Who's practising today?",
   "ask_abacus": "Do you have an abacus at home?"
 }

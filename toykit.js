@@ -12,7 +12,7 @@
 //   TOY.buddy(n, size, mood, opts)     number friends 1-9; mood happy | wave | cheer | wow | oops | sleepy | think
 //                                      opts.prop: 'glasses' | 'magnifier' | 'book'
 //   TOY.pair(a, b, size)               two friends holding hands, with the number they make together
-//   TOY.bead(color, size, {dim,tall})  red | mustard | indigo | teal | plum | wood
+//   TOY.bead(color, size, {dim,tall})  red | mustard | indigo | teal | plum | wood | walnut
 //   TOY.rodProgress(done, total, cur)  progress beads on a brass rod
 //   TOY.icon(name, size, color, opts)  see TOY.ICONS
 //   TOY.bubble(html, {title, tail})    tail: 'left' | 'right' | 'side' | 'none'
@@ -35,6 +35,7 @@
     teal:    { hi: '#95EDDC', mid: '#1FA595', lo: '#137A70', deep: '#0C5A54', arm: '#1B978A', ink: '#FFFFFF', line: '#083F3B', mouth: '#06302D', blush: '#FF9FA8' },
     plum:    { hi: '#DDB4F5', mid: '#9255C4', lo: '#6A3596', deep: '#4A2270', arm: '#8549B6', ink: '#FFFFFF', line: '#35164F', mouth: '#2A1040', blush: '#FF9FA8' },
     moon:    { hi: '#FFFFF6', mid: '#FBEFC2', lo: '#EDD288', deep: '#CFA650', arm: '#F3DFA0', ink: '#4A2C10', line: '#7A5A22', mouth: '#4A3212', blush: '#FFB09A' },
+    walnut:  { hi: '#D9AE80', mid: '#A26C3C', lo: '#7A4A24', deep: '#5A3416', arm: '#8E5C30', ink: '#FFFFFF', line: '#4A2A10', mouth: '#3A1E06', blush: '#F0B090' },   // raw walnut: a bead to polish ("not yet"), never red
     wood:    { hi: '#FFF3DC', mid: '#EFD2A4', lo: '#D2A670', deep: '#B08448', arm: '#DDB580', ink: '#4A2C10', line: '#7A4A24', mouth: '#4A2C10', blush: '#F0B090' },
   };
   const INK = '#2B3674', FACE = '#2A1614';
@@ -60,7 +61,7 @@
       + '<linearGradient id="toy-g-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7FB487"/><stop offset="1" stop-color="#3E7A54"/></linearGradient>'
       + '<linearGradient id="toy-g-pot" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FBF4E8"/><stop offset="1" stop-color="#CDBFA8"/></linearGradient>'
       + '<radialGradient id="toy-g-moonnight" cx=".5" cy=".5" r=".75" fx=".3" fy=".22"><stop offset="0" stop-color="#B9C0EC"/><stop offset=".5" stop-color="#949DD6"/><stop offset="1" stop-color="#6C75B4"/></radialGradient>'
-      + '<radialGradient id="toy-g-moonday" cx=".5" cy=".5" r=".75" fx=".3" fy=".22"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#E6F0F4"/><stop offset="1" stop-color="#C9DCE6"/></radialGradient>'
+      + '<radialGradient id="toy-g-moonday" cx=".5" cy=".5" r=".75" fx=".3" fy=".22"><stop offset="0" stop-color="#C6CEEC"/><stop offset=".55" stop-color="#A3AEDA"/><stop offset="1" stop-color="#7F8BC2"/></radialGradient>'
       + '<linearGradient id="toy-g-lampshade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9A8"/><stop offset=".55" stop-color="#FFF6CF"/><stop offset="1" stop-color="#F8C866"/></linearGradient>'
       + '<radialGradient id="toy-g-moonglow"><stop offset=".5" stop-color="#FFF6C8" stop-opacity=".9"/><stop offset=".72" stop-color="#FFEEA8" stop-opacity=".3"/><stop offset="1" stop-color="#FFE9A0" stop-opacity="0"/></radialGradient>'
       + '<radialGradient id="toy-g-moondim" cx=".5" cy=".5" r=".7" fx=".34" fy=".26"><stop offset="0" stop-color="#EDE6D6"/><stop offset=".6" stop-color="#D4CAB6"/><stop offset="1" stop-color="#B3A78F"/></radialGradient>'
@@ -157,7 +158,7 @@
     happy: ['M-56,-46 Q-40,-55 -22,-48', 'M24,-51 Q42,-60 58,-50'],
     cheer: ['M-60,-56 Q-40,-70 -18,-60', 'M20,-62 Q42,-73 62,-58'],
     think: ['M-58,-47 Q-40,-51 -20,-45', 'M22,-60 Q42,-73 62,-60'],
-    oops: ['M-60,-46 Q-44,-56 -22,-55', 'M24,-58 Q46,-60 62,-50'],
+    oops: ['M-58,-46 Q-41,-55 -22,-50', 'M24,-56 Q43,-65 61,-55'],
     wow: ['M-60,-62 Q-40,-76 -18,-66', 'M20,-68 Q42,-80 62,-66'],
     sleepy: ['M-62,-30 Q-44,-42 -22,-39', 'M24,-40 Q46,-44 64,-32'],
     proud: ['M-58,-40 Q-40,-51 -20,-45', 'M22,-47 Q42,-54 60,-43'],
@@ -171,7 +172,7 @@
     cheer: `<path d="M-36,22 Q2,34 42,20 Q44,70 3,72 Q-36,70 -36,22Z" fill="${R.mouth}"/><path d="M-31,25 Q2,37 38,23 L37,31 Q3,46 -29,34Z" fill="#fff"/>`
       + `<path d="M-16,65 Q3,50 26,61 Q16,72 3,72 Q-9,72 -16,65Z" fill="#FF8D86"/><path d="M-39,20 Q2,35 44,17" fill="none" stroke="${R.mouth}" stroke-width="4.5" stroke-linecap="round"/>`,
     think: `<path d="M2,37 Q18,47 32,35" fill="none" stroke="${R.mouth}" stroke-width="5.5" stroke-linecap="round"/><path d="M32,29 Q38,33 35,40" fill="none" stroke="${R.line}" stroke-width="3.5" stroke-linecap="round"/>`,
-    oops: `<path d="M-24,38 Q-13,29 -2,38 Q9,47 20,38 Q26,33 31,36" fill="none" stroke="${R.mouth}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+    oops: `<path d="M-10,39 Q8,49 27,33" fill="none" stroke="${R.mouth}" stroke-width="5.5" stroke-linecap="round"/><path d="M27,27 Q33,31 30,38" fill="none" stroke="${R.line}" stroke-width="3.5" stroke-linecap="round"/>`,   // sheepish: a small crooked smile, never a frown
     sleepy: `<ellipse cx="2" cy="42" rx="15" ry="18" fill="${R.mouth}"/><path d="M-9,53 Q2,44 13,53 Q8,60 2,60 Q-4,60 -9,53Z" fill="#FF8D86"/><path d="M-8,29 Q2,26 12,29" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>`,
     wow: `<ellipse cx="3" cy="44" rx="15" ry="19" fill="${R.mouth}"/><path d="M-8,56 Q3,46 14,56 Q9,63 3,63 Q-3,63 -8,56Z" fill="#FF8D86"/>`,
     proud: `<path d="M-30,30 Q4,58 40,26" fill="none" stroke="${R.mouth}" stroke-width="6" stroke-linecap="round"/><path d="M-36,25 Q-30,26 -28,33" fill="none" stroke="${R.line}" stroke-width="3.5" stroke-linecap="round"/>`
@@ -208,7 +209,7 @@
       fx: `<g fill="#FFFDF6" stroke="#E6DAC0" stroke-width="2"><circle cx="100" cy="-84" r="6"/><circle cx="116" cy="-106" r="9.5"/><circle cx="134" cy="-140" r="19"/></g>`
         + `<path d="M127,-146 q1,-9 9,-8 q7,1 5,8 q-2,4 -6,6 v3" fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="135" cy="-129" r="2.6" fill="${INK}"/>` },
     oops: { back: ['shrugL'], front: ['headR'], eyes: { px: -10, py: 4 }, brow: 'oops', mouth: 'oops', tilt: -5,
-      fx: `<path d="M-92,-96 q-10,14 -1,20 q9,-6 1,-20Z" fill="#BFE4F2" stroke="#7FB9D6" stroke-width="2" stroke-linejoin="round"/><path d="M-118,-70 q-7,10 -1,14 q7,-4 1,-14Z" fill="#BFE4F2" stroke="#7FB9D6" stroke-width="2" stroke-linejoin="round"/>` },
+      fx: '' },   // no sweat drops: he scratches his head and grins
     sleepy: { back: ['hangL'], front: ['yawnR'], eyes: { t: 'arcDown' }, brow: 'sleepy', mouth: 'sleepy', tilt: -6, sink: 3,
       fx: zed(84, -98, 13, .9) + zed(108, -128, 17, .75) + zed(136, -164, 21, .55) },
     wow: { back: ['outL', 'outR'], eyes: { s: 1.16, ps: .7, py: -1 }, brow: 'wow', mouth: 'wow', lift: 5,
@@ -350,7 +351,7 @@
   function litPath(r, p, cx, cy) {
     cx = cx || 0; cy = cy || 0;
     if (p >= .995) return `M${cx - r},${cy} a${r},${r} 0 1 0 ${2 * r},0 a${r},${r} 0 1 0 ${-2 * r},0Z`;
-    const tx = r1(Math.abs(1 - 2 * p) * r);
+    const tx = p <= 0 || p >= 1 ? r : r1(Math.max(.2, Math.abs(1 - 2 * p)) * r);   // the terminator is always a curve: an exact half leans crescent, never a straight split
     return `M${cx},${cy - r} A${r},${r} 0 0 1 ${cx},${cy + r} A${tx},${r} 0 0 ${p < .5 ? 0 : 1} ${cx},${cy - r}Z`;
   }
   const ML = LAC.moon, MEYE = '#3A2A1A';
@@ -379,7 +380,7 @@
   // a little star companion with a face
   const starPal = (cx, cy, r) => `<g transform="translate(${cx},${cy})">${star(1, 1.5, r, '#B8860F')}${star(0, 0, r, '#F7C843')}<ellipse cx="${r1(-r * .3)}" cy="${r1(-r * .42)}" rx="${r1(r * .3)}" ry="${r1(r * .13)}" transform="rotate(-30 ${r1(-r * .3)} ${r1(-r * .42)})" fill="#fff" opacity=".8"/>`
     + `<circle cx="${r1(-r * .24)}" cy="${r1(r * .02)}" r="${r1(r * .11)}" fill="${MEYE}"/><circle cx="${r1(r * .24)}" cy="${r1(r * .02)}" r="${r1(r * .11)}" fill="${MEYE}"/><path d="M${r1(-r * .16)},${r1(r * .26)} Q0,${r1(r * .44)} ${r1(r * .16)},${r1(r * .26)}" fill="none" stroke="${MEYE}" stroke-width="${r1(r * .11)}" stroke-linecap="round"/></g>`;
-  // The face is always whole and centred: her night side is a soft matte (periwinkle at night, milky by day), light enough
+  // The face is always whole and centred: her night side is a soft matte (periwinkle at night, a paler blue-grey by day), light enough
   // for the eyes to read, so every phase from a thin crescent to full keeps her expression.
   function moon(mood, size, opts) {
     const key = MOON[mood] ? mood : 'calm', M = MOON[key]; size = size || 120; opts = opts || {};
@@ -403,7 +404,7 @@
       + `<g class="toy-moon-face" transform="translate(0,${cy + 2}) scale(1.08)">${moonFace(M)}</g>${fx2}</svg></span>`;
   }
   // Today's steps as a phase: a real crescent, then half, gibbous, and full when every step is done (she never shrinks).
-  const stepPhase = (done, total) => (total > 0 && done >= total ? 1 : .24 + .52 * Math.min(1, done / Math.max(1, total - 1)));
+  const stepPhase = (done, total) => (total > 0 && done >= total ? 1 : .2 + .58 * Math.min(1, done / Math.max(1, total - 1)));
   const skyMoon = (mood, phase) => `<div class="toy-sky-moon"><div class="toy-sky-moon-in">${moon(mood || 'calm', 160, { sky: true, stars: false, phase: phase == null ? 1 : phase })}</div></div>`;
   // Progress as phases: moon i shows (i+1)/total of the disc; finished ones are glazed and glow, the rest are matte.
   function moonPhases(done, total, opts) {
@@ -450,8 +451,8 @@
       + `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="5" fill="#DDBB86"/><rect x="10" y="10" width="${W - 20}" height="7" fill="#3A1E06" opacity=".16"/>${g}`
       + `<rect x="10" y="${beam - 4}" width="${W - 20}" height="9" fill="#6A3F1E"/><rect x="10" y="${beam - 4}" width="${W - 20}" height="3" fill="#E9BE86" opacity=".5"/></svg>`;
   }
-  // rod beads by state: done = teal (right), now = mustard (the one she is on), fix = red, todo = bare wood
-  const STATE_LAC = { done: 'teal', now: 'mustard', fix: 'red', todo: 'wood' };
+  // rod beads by state: done = teal (right), now = mustard (the one she is on), fix = raw walnut (one to polish), todo = bare wood
+  const STATE_LAC = { done: 'teal', now: 'mustard', fix: 'walnut', todo: 'wood' };
   function bead(color, size, opts) {
     opts = opts || {}; size = size || 64;
     const c = opts.dim ? 'wood' : (LAC[color] ? color : 'red');
@@ -493,7 +494,8 @@
     star: c => `<path d="M12,3.4 l2.6,5.4 5.9,.8 -4.3,4.1 1.05,5.9 L12,16.8 6.75,19.6 7.8,13.7 3.5,9.6 9.4,8.8Z" fill="${c}"/>`,
     book: (c, a) => `<path d="M12,7.2 C10,5.6 7,5.1 3.5,5.6 V17.8 C7,17.3 10,17.9 12,19.4 C14,17.9 17,17.3 20.5,17.8 V5.6 C17,5.1 14,5.6 12,7.2Z"/><path d="M12,7.2 V19.4"/><path d="M15,9.6 q1.6,-.7 3,-.7M15,12.6 q1.6,-.7 3,-.7" stroke="${a}" stroke-width="1.8"/>`,
     eye: (c, a) => `<path d="M2.5,12 C5,7.6 8.5,5.6 12,5.6 S19,7.6 21.5,12 C19,16.4 15.5,18.4 12,18.4 S5,16.4 2.5,12Z"/><circle cx="12" cy="12" r="3.3" fill="${c}"/><circle cx="10.9" cy="10.9" r="1.1" fill="${a}" stroke="none"/>`,
-    ear: (c, a) => `<path d="M6.6,10 a5.6,5.6 0 1 1 11.2,0 c0,4.4 -4.6,4.8 -4.6,8.4 a3,3 0 0 1 -6,0"/><path d="M9.8,10.4 a2.6,2.6 0 0 1 5.2,0 c0,1.6 -1.6,2 -2,3.2" stroke="${a}" stroke-width="2"/>`,
+    // a solid outer ear with its inner fold, and two sound waves arriving (the old open outline read as a question mark)
+    ear: (c, a) => `<path d="M9.4,3.4 C5.5,3.4 3.4,6.3 3.4,9.6 c0,2.6 1.3,4 2.3,5.6 c.9,1.5 .7,3 1.5,4.2 c1,1.5 3.4,1.6 4.6,.2 c1.2,-1.4 .6,-2.8 1.8,-4.2 c1.3,-1.5 2.3,-3 2.3,-5.6 C15.9,6.1 13.3,3.4 9.4,3.4Z" fill="${c}" stroke-width="1.6"/><path d="M6.9,9.7 a2.8,2.8 0 0 1 5.6,0 c0,1.6 -1.4,2 -1.9,3.2 c-.3,.8 -.9,1.2 -1.7,1" stroke="${a}" stroke-width="1.9"/><path d="M18.4,7.6 a4.2,4.2 0 0 1 0,5.6" stroke-width="2.2"/><path d="M20.8,5.4 a7.4,7.4 0 0 1 0,10" stroke="${a}" stroke-width="2.2"/>`,
     flash: (c, a) => `<path d="M13.6,2.8 L5.2,13.4 H11 L10.2,21.2 L18.8,10.2 H12.8Z" fill="${a}"/>`,
     gear: (c, a) => `<g stroke-width="3.2">${[0, 45, 90, 135].map(r => `<path d="M12,3.2 V20.8" transform="rotate(${r} 12 12)"/>`).join('')}</g><circle cx="12" cy="12" r="5.6" fill="${c}"/><circle cx="12" cy="12" r="2.3" fill="${a}" stroke="none"/>`,
     retry: () => `<path d="M4.5,12 a7.5,7.5 0 1 0 2.4,-5.5"/><path d="M4,4.6 V9 H8.4"/>`,
