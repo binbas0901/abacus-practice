@@ -49,7 +49,7 @@ async def main():
         await pg.screenshot(path='/tmp/p3_pop.png')
         popped=0
         for _ in range(200):
-            if await pg.locator('.gresult').count(): break
+            if await pg.locator('.gresult, #stickerReveal.active').count(): break
             ans = await pg.evaluate("(()=>{const q=document.querySelector('.pq-a'), f=document.querySelector('.pq-f'); return q? (+f.textContent - +q.textContent) : null})()")
             if ans is not None:
                 bub = pg.locator(f'.bub[data-v="{ans}"]:not(.popped)')
@@ -61,8 +61,9 @@ async def main():
         t = await collect(pg); await pg.wait_for_selector('.gresult')
         await pg.screenshot(path='/tmp/p3_pop_result.png')
         check('Friend Pop plays, scores, gives sticker', popped>0 and int(''.join(ch for ch in score if ch.isdigit()) or 0)>0, f"{score} | {await pg.text_content('.gr-big')} | {t}")
-        await pg.click('.gresult [data-a=done]'); await pg.wait_for_selector('#play.active'); await pg.screenshot(path='/tmp/p3_play.png')
-        await pg.click('#exitPlay'); await pg.wait_for_timeout(300)
+        await pg.click('.gresult [data-a=done]'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(300)   # a Today-step game goes back home (not to the Play hub)
+        steps = await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className.includes("done"))')
+        check('step 2 ticked, back home after the game', steps==[True,True,False], steps)
 
         # Step 3: drill -> summary sticker + today-complete gold
         await pg.click('#todayGo'); await pg.wait_for_selector('#drill.active')

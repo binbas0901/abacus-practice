@@ -128,12 +128,19 @@ async def main():
         check('games.js has no countdown / best-time code', not re.search(r'gameSeconds|setBar|Date\.now\(\)\s*-\s*t0|best times?|seconds\b|\bsec\b', src))
         await pg.evaluate("App.gamePops=2"); await pg.click('.gcard[data-game=pop]'); await pg.wait_for_selector('#game.active')
         for _ in range(150):
-            if await pg.locator('.gresult').count(): break
+            if await pg.locator('.gresult, #stickerReveal.active').count(): break
             ans=await pg.evaluate("(()=>{const q=document.querySelector('.pq-a'), f=document.querySelector('.pq-f'); return q? (+f.textContent - +q.textContent) : null})()")
             if ans is not None and await pg.locator(f'.bub[data-v="{ans}"]:not(.popped)').count():
                 try: await pg.locator(f'.bub[data-v="{ans}"]:not(.popped)').first.dispatch_event('pointerdown')
                 except Exception: pass
             await pg.wait_for_timeout(80)
+        # the sticker present comes first, on its own; the result card follows once it has been collected
+        await pg.wait_for_selector('#stickerReveal.active', timeout=10000)
+        check('Friend Pop: the sticker present comes alone, the result card after it', await pg.locator('#game .gresult').count()==0)
+        for _ in range(4):
+            await pg.click('#rvPack', force=True); await pg.wait_for_timeout(400); await pg.click('#rvOk'); await pg.wait_for_timeout(400)
+            try: await pg.wait_for_selector('#stickerReveal.active', timeout=1500)
+            except Exception: break
         await pg.wait_for_selector('.gresult', timeout=10000)
         txt=await pg.text_content('.gresult')
         sc=await pg.evaluate("(()=>{const s=document.querySelector('#game .gscrim'), r=s&&s.getBoundingClientRect(), st=document.querySelector('#gameStage').getBoundingClientRect(), bg=s&&getComputedStyle(s).backgroundColor; return s? {covers: r.left<=st.left && r.top<=st.top && r.right>=st.right && r.bottom>=st.bottom, bg, card: !!s.querySelector('.gresult')} : null})()")
