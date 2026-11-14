@@ -167,7 +167,7 @@ async def main():
             for ch in str(v): await pg.click(f'#pad [data-k="{ch}"]')
             await pg.click('#pad [data-k=go]'); await pg.wait_for_timeout(1050)
         await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(400)
-        check('summary with one to fix: the button says "Fix the red one"', (await pg.text_content('#fixBtn')).strip()=='Fix the red one', await pg.text_content('#fixBtn'))
+        check('summary with one to fix: the button says "Fix this with Bix"', (await pg.text_content('#fixBtn')).strip()=='Fix this with Bix', await pg.text_content('#fixBtn'))
         await pg.screenshot(path='/tmp/p15_fix_one.png'); await collect_all(pg, 5000); await pg.click('#homeBtn'); await pg.wait_for_timeout(300)
         await pg.evaluate("App.gamePops=3; void Games.open('pop')"); await pg.wait_for_selector('#game.active'); await pg.wait_for_selector('#popField .bub.still')
         async def spots(): return await pg.eval_on_selector_all('#popField .bub','els=>els.map(e=>{const r=e.getBoundingClientRect(); return [e.dataset.v, Math.round(r.x), Math.round(r.y), Math.round(r.width)]})')

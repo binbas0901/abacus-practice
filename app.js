@@ -1407,7 +1407,7 @@ function finish(){
   $('#sumNew').hidden = !leveled; $('#sumNew').innerHTML = leveled ? TOY.icon('star', 30, '#C98A16')+'<span>New skill!</span>' : '';
   // one obvious next step: fix the ones to polish; then the level test; else play again — always beside "I'm done"
   $('#fixBtn').style.display = toFix.length ? '' : 'none';
-  { const fl=$('#fixBtn .toy-block-label'); if (fl) fl.textContent = toFix.length===1 ? 'Fix the red one' : 'Fix the red ones'; }
+  { const fl=$('#fixBtn .toy-block-label'); if (fl) fl.textContent = toFix.length===1 ? 'Fix this with Bix' : 'Fix these with Bix'; }
   $('#testBtn').style.display = pendingTest && !toFix.length ? '' : 'none';
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
