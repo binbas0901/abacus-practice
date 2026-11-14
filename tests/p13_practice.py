@@ -334,7 +334,7 @@ async def main():
             check('child targets >= 60px on the certificate', not await pg.evaluate(SMALL, '#certificate'), await pg.evaluate(SMALL, '#certificate'))
             await ctx.close()
         # ===== on-screen beads are big enough to tap (B3): bead slot height with a 3-rod soroban =====
-        for (vw, vh, need) in ((1180, 820, 56), (820, 1180, 52), (1366, 1024, 64)):
+        for (vw, vh, need) in ((1180, 820, 56), (820, 1180, 56), (1366, 1024, 64)):
             ctx = await b.new_context(viewport={'width': vw, 'height': vh}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(SEED)
             await pg.goto(f'http://localhost:{PORT}/index.html'); await pg.wait_for_timeout(500)
             await pg.evaluate("s=>localStorage.setItem('abacus.settings', JSON.stringify(s))", base); await pg.reload(); await pg.wait_for_timeout(600)

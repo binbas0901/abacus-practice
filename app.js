@@ -1032,9 +1032,10 @@ const Tool = {
   ensureAb(rods){
     if (this.ab && this.rods===rods) return this.ab;
     if (this.ab) this.ab.destroy();
-    this.rods=rods;
+    this.rods=rods; $('#drill').dataset.rods=rods;   // the layout knows how wide the soroban is (toy-practice.css)
     this.ab = AbacusInput.create($('#abHost'), { rods, showReadout:false, scale:1.3,
       onBead:()=>Sfx.tap(), onChange:(v)=>this.changed(v) });
+    const vb=this.ab.el.querySelector('svg').viewBox.baseVal; $('#drill').style.setProperty('--abk', (vb.height/vb.width).toFixed(3));   // the soroban's own height/width, so the layout can size it without stretching
     return this.ab;
   },
   apply(){

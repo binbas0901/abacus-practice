@@ -18,15 +18,16 @@
 
 .abx-bead { cursor: pointer; transition: transform 120ms cubic-bezier(.2, .8, .3, 1); }
 .abx-hit { fill: transparent; }
-.abx-beadcast { fill: #3A1E06; opacity: .22; pointer-events: none; }
-.abx-lens { fill: #E3BE8A; }
+.abx-beadcast { fill: #3A1E06; opacity: .2; pointer-events: none; }
+.abx-lens { fill: #E3BE8A; }   /* resting: warm unpainted wood under clear lacquer */
 .abx-lac { fill: #E5402F; opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }
 .abx-bead[data-kind="h"] .abx-lac { fill: #F2B632; }
 .abx-bead.on .abx-lac { opacity: 1; }
-.abx-shade { fill: #1A0606; opacity: .16; pointer-events: none; }
-.abx-bead.on .abx-shade { opacity: .26; }
-.abx-shine { fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; opacity: .45; pointer-events: none; }
-.abx-spec { fill: #fff; opacity: .78; pointer-events: none; }
+.abx-shade { fill: #2A1204; opacity: .24; pointer-events: none; }
+.abx-bead.on .abx-shade { opacity: .28; }
+.abx-shine { fill: none; stroke: #fff; stroke-width: 1.1; stroke-linecap: round; opacity: .55; pointer-events: none; }
+.abx-bloom { fill: none; pointer-events: none; }
+.abx-spec { fill: #fff; opacity: .85; pointer-events: none; }
 .abx-hole { fill: #2A0D08; opacity: .32; pointer-events: none; }
 
 .abx-rod:focus { outline: none; }

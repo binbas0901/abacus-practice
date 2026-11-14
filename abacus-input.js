@@ -219,11 +219,13 @@
 
   // ---------------------------------------------------------------- view (DOM / SVG)
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const G = { P: 34, BW: 58, ROD: 136, FR: 22, PADX: 14, HH: 80, BM: 14, EH: 182, EDGE: 8 };   // EDGE: resting beads keep clear of the tray's inner edge
+  // Proportions of a real soroban: beads are bicones about 1.7 times as wide as tall, sitting close on rods that stand close together.
+  // P is the vertical pitch (what the finger aims at), BW x BH the drawn bead; the invisible hit slot is a whole rod spacing wide.
+  const G = { P: 34, BW: 55, BH: 32, ROD: 66, FR: 20, PADX: 10, HH: 80, BM: 14, EH: 182, EDGE: 8 };   // EDGE: resting beads keep clear of the tray's inner edge
   G.beamY = G.FR + G.HH; G.earthTop = G.beamY + G.BM; G.H = G.earthTop + G.EH + G.FR;
-  // A lacquered bead seen from the side: a double cone with soft edges (116 x 32).
-  const LENS = 'M-15,-16 H15 Q23,-16 30,-13.2 L52,-4.4 Q59,0 52,4.4 L30,13.2 Q23,16 15,16 H-15 Q-23,16 -30,13.2 L-52,4.4 Q-59,0 -52,-4.4 L-30,-13.2 Q-23,-16 -15,-16Z';
-  const LENS_LOW = 'M-58,0 Q0,7 58,0 Q57,2.4 52,4.4 L30,13.2 Q23,16 15,16 H-15 Q-23,16 -30,13.2 L-52,4.4 Q-57,2.4 -58,0Z';
+  // A lacquered bead seen from the side, lying on its rod: a double cone with a sharp middle ridge (55 x 32), the kit's bead shape (TOY.bead).
+  const LENS = 'M-6.5,-16 H6.5 Q11,-16 14.4,-13.2 Q21.6,-7.6 26.3,-2.5 Q28.7,0 26.3,2.5 Q21.6,7.6 14.4,13.2 Q11,16 6.5,16 H-6.5 Q-11,16 -14.4,13.2 Q-21.6,7.6 -26.3,2.5 Q-28.7,0 -26.3,-2.5 Q-21.6,-7.6 -14.4,-13.2 Q-11,-16 -6.5,-16Z';
+  const LENS_LOW = 'M-27.5,0 Q0,3.8 27.5,0 Q27.6,1.2 26.3,2.5 Q21.6,7.6 14.4,13.2 Q11,16 6.5,16 H-6.5 Q-11,16 -14.4,13.2 Q-21.6,7.6 -26.3,2.5 Q-27.6,1.2 -27.5,0Z';
   // Shared gradients (lacquer, walnut frame, tray, rods): one hidden <svg> per page, so every abacus reuses them.
   function ensureDefs() {
     if (typeof document === 'undefined' || document.getElementById('abx-defs') || !document.body) return;
@@ -231,8 +233,9 @@
     const lin = (id, x2, y2, stops) => `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}">${stops.map(st => `<stop offset="${st[0]}" stop-color="${st[1]}"/>`).join('')}</linearGradient>`;
     const holder = document.createElement('div');
     holder.innerHTML = '<svg id="abx-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>'
-      + lac('abx-lac-red', '#FF8F70', '#E5402F', '#B52323', '#8A181D') + lac('abx-lac-gold', '#FFE9A6', '#F2B632', '#C98A16', '#9E690D') + lac('abx-lac-wood', '#FFF3DC', '#EFD2A4', '#D2A670', '#B08448')
-      + lin('abx-g-frame', 0, 1, [[0, '#93603A'], [.5, '#7A4A24'], [1, '#643A1A']]) + lin('abx-g-tray', 0, 1, [[0, '#E9D0A2'], [1, '#D3AE78']])
+      + lac('abx-lac-red', '#FF8F70', '#E5402F', '#B52323', '#8A181D') + lac('abx-lac-gold', '#FFE9A6', '#F2B632', '#C98A16', '#9E690D') + lac('abx-lac-wood', '#FFF1D6', '#EDCB98', '#CB9A60', '#9C6C38')
+      + lin('abx-g-frame', 0, 1, [[0, '#93603A'], [.5, '#7A4A24'], [1, '#643A1A']]) + lin('abx-g-tray', 0, 1, [[0, '#DDBE8C'], [1, '#C59E68']])
+      + '<radialGradient id="abx-g-soft"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".6" stop-color="#fff" stop-opacity=".24"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'
       + lin('abx-g-rod', 1, 0, [[0, '#F8E2B4'], [.5, '#DDB678'], [1, '#A47840']]) + lin('abx-g-beam', 0, 1, [[0, '#8A5730'], [1, '#5C3618']])
       + '</defs></svg>';
     document.body.insertBefore(holder.firstChild, document.body.firstChild);
@@ -288,19 +291,21 @@
         const r = model.rods - 1 - j;                 // leftmost drawn first; rod 0 = ones at the right
         const x = G.FR + G.PADX + G.ROD / 2 + j * G.ROD;
         const g = el('g', readOnly ? { class: 'abx-rod', role: 'group', 'data-rod': r } : { class: 'abx-rod', role: 'group', 'data-rod': r, tabindex: r === 0 ? 0 : -1 }, rodsG);
-        el('rect', { x: x - 4, y: G.FR, width: 8, height: G.H - 2 * G.FR, class: 'abx-rodline', style: 'fill:url(#abx-g-rod) #DDB678' }, g);
+        el('rect', { x: x - 3, y: G.FR, width: 6, height: G.H - 2 * G.FR, class: 'abx-rodline', style: 'fill:url(#abx-g-rod) #DDB678' }, g);
         const beads = [];
         const mk = (kind, k) => {
           const b = el('g', { class: 'abx-bead', 'data-kind': kind, 'data-k': k, 'aria-hidden': 'true' }, g);
-          el('rect', { x: -G.ROD / 2 + 2, y: -G.P / 2, width: G.ROD - 4, height: G.P, class: 'abx-hit' }, b);
+          el('rect', { x: -G.ROD / 2, y: -G.P / 2, width: G.ROD, height: G.P, class: 'abx-hit' }, b);   // the tap slot: wider than the drawn bead
           // lacquer: natural wood at rest; a red (earth) or golden (heaven) coat fades in when the bead counts
-          el('path', { d: LENS, class: 'abx-beadcast', transform: 'translate(3 4)' }, b);
+          el('path', { d: LENS, class: 'abx-beadcast', transform: 'translate(2.2 3.4)' }, b);
           el('path', { d: LENS, class: 'abx-lens', style: 'fill:url(#abx-lac-wood) #E3BE8A' }, b);
           el('path', { d: LENS, class: 'abx-lac', style: kind === 'h' ? 'fill:url(#abx-lac-gold) #F2B632' : 'fill:url(#abx-lac-red) #E5402F' }, b);
+          // lacquer shading, as on the kit's beads: the lower cone falls into shade under the ridge, a soft bloom and one hard specular sit top-left
           el('path', { d: LENS_LOW, class: 'abx-shade' }, b);
-          el('path', { d: 'M-56,0 Q0,7 56,0', class: 'abx-shine' }, b);
-          el('ellipse', { cx: -14, cy: -9.5, rx: 17, ry: 3.2, transform: 'rotate(-5 -14 -9.5)', class: 'abx-spec' }, b);
-          el('ellipse', { cx: 0, cy: -15.4, rx: 7, ry: 1.7, class: 'abx-hole' }, b);
+          el('path', { d: 'M-26.8,0 Q0,3.8 26.8,0', class: 'abx-shine' }, b);
+          el('ellipse', { cx: -9, cy: -7.6, rx: 13, ry: 6, transform: 'rotate(-14 -9 -7.6)', class: 'abx-bloom', style: 'fill:url(#abx-g-soft) none' }, b);
+          el('ellipse', { cx: -9.5, cy: -9, rx: 6.2, ry: 1.9, transform: 'rotate(-14 -9.5 -9)', class: 'abx-spec' }, b);
+          el('ellipse', { cx: 0, cy: -15.3, rx: 4.6, ry: 1.3, class: 'abx-hole' }, b);
           beads.push(b); return b;
         };
         const h = mk('h', 0); const es = [0, 1, 2, 3].map(k => mk('e', k));

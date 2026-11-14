@@ -273,9 +273,10 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
 }
 
 /* ============ answering on the beads: the soroban gets the table ============
-   The beads are what she taps, so they must be big (bead pitch >= 56px with 3 rods at 1180x820). The wall is low, the clipboard is narrow
-   and stands on the left under the tool switch; the soroban fills the rest; Bix, his bubble and the check dome sit in a row under it. */
-#drill.tp.tb{--toy-wall-h:106px;--board:232px;--foot:124px;--bix:118px;--prop:104px;--ans-h:84px;--th-max:84px;--tf-max:70px;--abh:calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 40px)}
+   The beads are what she taps, so they must be big (bead pitch >= 56px with 3 rods at 1180x820). The wall is low, the clipboard stands on
+   the left under the tool switch with the sum written large; the soroban keeps its true shape (never stretched) in the middle of the rest;
+   Bix, his bubble and the check dome sit in a row under it. */
+#drill.tp.tb{--toy-wall-h:106px;--board:clamp(232px,27vw,372px);--foot:124px;--bix:118px;--prop:104px;--ans-h:84px;--th-max:clamp(84px,11.8vh,124px);--tf-max:clamp(70px,10vh,106px);--abh:calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 40px)}
 #drill.tb .tp-top{padding-top:16px}
 #drill.tb .tp-topright{margin-top:-6px}
 #drill.tb .tp-rodwrap,#drill.tb .tp-rod{height:76px}
@@ -288,9 +289,9 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
 #drill.tb .tp-board{grid-area:board;padding:38px 12px 12px}
 #drill.tb .tp-board::after{left:10px;right:9px;top:36px;bottom:8px}
 #drill.tb .tp-sheet{padding:14px 14px 12px}
-#drill.tb .tp-readout{flex-direction:column;gap:0;padding:4px 8px}
-#drill.tb .tp-readout .tp-rolabel{font-size:15px}
-#drill.tb .tp-readout b{font-size:48px}
+#drill.tb .tp-readout{gap:12px;padding:4px 14px}
+#drill.tb .tp-readout .tp-rolabel{font-size:17px}
+#drill.tb .tp-readout b{font-size:56px}
 #drill.tb .tp-abacus{grid-area:ab;display:flex;align-self:center;justify-self:center;width:100%;height:var(--abh);min-height:0}
 #drill.tb .tp-abacus .abx{height:100%;align-items:center;justify-content:center}
 #drill.tb .tp-abacus .abx-svg{width:auto;height:100%;max-width:100%;max-height:none}
@@ -315,8 +316,8 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
 
 /* ============ portrait iPad ============ */
 @media (orientation:portrait){
-  #drill.tp{--toy-wall-h:176px;--row1:clamp(340px,38vh,460px);--bixcol:minmax(0,1fr);--board:310px;--bix:150px;--prop:128px;--foot:150px;--th-max:86px;--tf-max:74px;--ans-h:84px;
-    --toy-window-x:84px;--toy-key-w:clamp(96px,14.6vw,124px);--toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - var(--row1) - 186px)/4),112px)}
+  #drill.tp{--toy-wall-h:150px;--row1:clamp(340px,42vh,500px);--bixcol:minmax(0,1fr);--board:310px;--bix:150px;--prop:128px;--foot:150px;--th-max:86px;--tf-max:74px;--ans-h:84px;
+    --toy-window-x:84px;--toy-key-w:clamp(96px,17vw,150px);--toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - var(--row1) - 186px)/4),112px)}
   #drill .tp-top{padding-top:22px}
   #drill .tp-rodwrap{width:min(300px,37vw)}
   #drill[data-mode=listen],#drill[data-mode=flash]{--ans-h:70px}
@@ -332,8 +333,8 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #drill .tp-ear{width:92px;height:92px}
   #drill .tp-ear svg{width:50px;height:50px}
   #drill .tp-listen,#drill .tp-flash{gap:8px}
-  /* beads: Bix and the sheet share the top, the soroban takes the full width under them, the tool switch and the check dome sit in the last row */
-  #drill.tp.tb{--toy-wall-h:120px;--board:300px;--bix:128px;--foot:128px;--prop:104px;--abh:min(calc((100vw - 2*var(--pad))*.684),calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 330px))}
+  /* beads, a wide soroban (5 rods and more): Bix and the sheet share the top, the soroban takes the full width under them, the tool switch and the check dome sit in the last row */
+  #drill.tp.tb{--toy-wall-h:120px;--board:300px;--bix:128px;--foot:128px;--prop:104px;--abh:min(calc((100vw - 2*var(--pad))*var(--abk,1.27)),calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 330px))}
   #drill.tb .tp-body{grid-template-columns:auto auto minmax(0,1fr) var(--board);grid-template-rows:minmax(0,1fr) auto auto;gap:14px 16px;
     grid-template-areas:"bix bix bix board" "ab ab ab ab" "sw show . check"}
   #drill.tb .tp-bix{flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:16px;height:auto;align-self:stretch}
@@ -341,8 +342,18 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #drill.tb .tp-bubble.toy-bubble--left::after{left:34px;bottom:-24px;width:56px;height:34px;clip-path:polygon(26% 0,100% 0,0 100%)}
   #drill.tb .tp-switch{align-self:center}
   #drill.tb .tp-readout{flex-direction:row;gap:10px}
+  /* beads, the usual 3 or 4 rods: a real soroban is taller than wide, so the sheet stands beside it with the sum written large;
+     Bix and his bubble share the row above, the tool switch and the check dome the row below */
+  #drill.tp.tb:is([data-rods="3"],[data-rods="4"]):not(.long){--board:clamp(236px,33vw,300px);--bix:118px;--top:118px;
+    --abh:min(calc((100vw - 2*var(--pad) - var(--board) - 16px)*var(--abk,1.27)),calc(var(--vh) - var(--toy-wall-h) - var(--top) - var(--foot) - 64px))}
+  #drill.tb:is([data-rods="3"],[data-rods="4"]):not(.long) .tp-body{grid-template-columns:var(--board) auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;
+    grid-template-areas:"bix bix bix bix" "board ab ab ab" "sw show . check"}
+  #drill.tb:is([data-rods="3"],[data-rods="4"]):not(.long) .tp-board{align-self:center;height:var(--abh)}
+  #drill.tb:is([data-rods="3"],[data-rods="4"]):not(.long) .tp-bix{flex-direction:row-reverse;align-items:center;justify-content:flex-end;gap:22px;height:var(--top);align-self:end}
+  #drill.tb:is([data-rods="3"],[data-rods="4"]):not(.long) .tp-bubble{flex:0 1 520px;width:auto;height:88px}
+  #drill.tb:is([data-rods="3"],[data-rods="4"]):not(.long) .tp-bubble.toy-bubble--left::after{left:-19px;bottom:22px;width:34px;height:34px;clip-path:polygon(100% 0,100% 72%,0 100%)}
   /* long rows on the beads: the tall sheet keeps the left side, so the soroban only gets the width beside it */
-  #drill.tb.long{--board:250px;--abh:min(calc((100vw - 2*var(--pad) - var(--board) - 16px)*.684),calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 330px))}
+  #drill.tb.long{--board:250px;--abh:min(calc((100vw - 2*var(--pad) - var(--board) - 16px)*var(--abk,1.27)),calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 330px))}
   #drill.tb.long .tp-body{grid-template-columns:var(--board) auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;
     grid-template-areas:"board bix bix bix" "board ab ab ab" "sw show . check"}
   #drill.tb.long .tp-board{grid-column:auto;grid-row:auto;grid-area:board}

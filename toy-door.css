@@ -211,7 +211,7 @@
 
 /* the lesson soroban is tapped in "Your turn", so it is as big as the table allows: it takes the width Bix's side leaves, limited by the height
    (bead pitch about 47px at 1180x820, was 39). --abr = the drawing's width / height for its number of rods. */
-#lesson{--abr:1.463} #lesson[data-rods="1"]{--abr:.634} #lesson[data-rods="2"]{--abr:1.049} #lesson[data-rods="4"]{--abr:1.878} #lesson[data-rods="5"]{--abr:2.293} #lesson[data-rods="6"]{--abr:2.707} #lesson[data-rods="7"]{--abr:3.122}
+#lesson{--abr:.791} #lesson[data-rods="1"]{--abr:.387} #lesson[data-rods="2"]{--abr:.589} #lesson[data-rods="4"]{--abr:.994} #lesson[data-rods="5"]{--abr:1.196} #lesson[data-rods="6"]{--abr:1.399} #lesson[data-rods="7"]{--abr:1.601}
 #lesson{--ab-room:150px} #lesson.may-pair{--ab-room:226px}
 #lesson .lesson-left{flex:1 1 0;align-items:center}
 #lesson .lesson-ab{width:min(100%,calc((100vh - var(--toy-wall-h) - var(--ab-room))*var(--abr)))}
@@ -223,6 +223,17 @@
 #lesson .lesson-left{--pair-h:clamp(124px,16vh,200px)}
 #lesson .lesson-bix{--tb:clamp(176px,23vh,250px)}
 #lesson #lessonNext.td-next{min-width:clamp(168px,15vw,220px)}
+
+/* up to three rods the soroban is taller than wide, so the friends stand beside it (not under it) and the beads get the whole height */
+@media (orientation:landscape){
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]),#lesson.may-pair:is([data-rods="1"],[data-rods="2"],[data-rods="3"]){--ab-room:116px}
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]) .lesson-left{flex-direction:row;align-items:center;justify-content:center;gap:clamp(10px,1.6vw,24px)}
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]) .lesson-ab{flex:0 1 auto;min-width:0}
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]) .abx-readout{align-self:center;margin:6px 0 0}
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]) .lesson-pair{position:static;width:auto;flex:0 1 clamp(150px,15vw,240px);min-width:0;align-self:flex-end;margin-bottom:52px}
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]) .lesson-pair:empty{display:none}
+  #lesson:is([data-rods="1"],[data-rods="2"],[data-rods="3"]) .lesson-pair .toy-pair{width:100%;max-width:calc(var(--pair-h)*1.88)}
+}
 
 /* =====================================================================
    other iPad sizes
