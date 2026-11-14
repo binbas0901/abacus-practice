@@ -7,6 +7,7 @@
 .abx-cast2 { opacity: .12; }
 .abx-frame { fill: #7A4A24; }
 .abx-frame-shadow { fill: #4A2A10; }
+.abx-grain { pointer-events: none; opacity: .9; }
 .abx-bevel { fill: none; stroke: #D9A66A; stroke-width: 2; opacity: .55; }
 .abx-inner { fill: #DDBB86; }
 .abx-innershade { fill: #3A1E06; opacity: .16; pointer-events: none; }

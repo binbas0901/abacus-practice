@@ -275,6 +275,7 @@
       el('rect', { x: 5, y: 10, width: W, height: G.H, rx: 16, class: 'abx-cast' }, svg);
       el('rect', { x: 0, y: 6, width: W, height: G.H, rx: 14, class: 'abx-frame-shadow' }, svg);
       el('rect', { x: 0, y: 0, width: W, height: G.H, rx: 14, class: 'abx-frame', style: 'fill:url(#abx-g-frame) #7A4A24' }, svg);
+      el('rect', { x: 0, y: 0, width: W, height: G.H, rx: 14, class: 'abx-grain', style: 'fill:url(#toy-p-grain) none' }, svg);   // the kit's wood-grain tile, when the Toy kit is on the page
       el('rect', { x: 2, y: 2, width: W - 4, height: G.H - 4, rx: 12, class: 'abx-bevel' }, svg);
       el('rect', { x: G.FR, y: G.FR, width: W - 2 * G.FR, height: G.H - 2 * G.FR, rx: 4, class: 'abx-inner', style: 'fill:url(#abx-g-tray) #DDBB86' }, svg);
       el('rect', { x: G.FR, y: G.FR, width: W - 2 * G.FR, height: 9, class: 'abx-innershade' }, svg);

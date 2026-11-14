@@ -13,26 +13,8 @@
   const T = () => root.TOY;
   const TI = (n, sz, c, o) => T() ? T().icon(n, sz, c, o) : '';
   // A soroban bead lying flat (the kit's wide bead), for local drawings: the treat jar, the mini soroban.
-  const WB = 'M-8,-13 H8 Q12,-13 15,-10.5 L22.5,-2.5 Q25,0 22.5,2.5 L15,10.5 Q12,13 8,13 H-8 Q-12,13 -15,10.5 L-22.5,2.5 Q-25,0 -22.5,-2.5 L-15,-10.5 Q-12,-13 -8,-13Z';
-  const wideBead = c => `<path d="${WB}" fill="url(#toy-lac-${c})"/>`
-    + `<path d="M-24.5,0 Q0,3.5 24.5,0 Q25,1 22.5,2.5 L15,10.5 Q12,13 8,13 H-8 Q-12,13 -15,10.5 L-22.5,2.5 Q-25,1 -24.5,0Z" fill="#1A0606" opacity="${c === 'wood' ? .14 : .28}"/>`
-    + `<path d="M-23,0 Q0,3.5 23,0" fill="none" stroke="#fff" stroke-width="1.2" opacity=".5"/><ellipse cx="-6" cy="-7.5" rx="8" ry="2.4" transform="rotate(-8 -6 -7.5)" fill="#fff" opacity=".8"/>`;
-  const shadowE = (cx, cy, rx, ry, op) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#toy-g-shadow)" opacity="${op}"/>`;
-  // A little soroban showing a number: walnut frame, brass rods, mustard heaven beads, red earth beads (unused beads are bare wood).
-  function miniSoroban(n, h) {
-    const d = String(n).split('').map(Number), step = 62, W = d.length * step + 24, H = 236, beam = 70;
-    let g = '';
-    d.forEach((v, i) => {
-      const x = 12 + step / 2 + i * step, five = v >= 5, e = v % 5;
-      g += `<rect x="${x - 2.5}" y="12" width="5" height="${H - 24}" fill="url(#toy-g-brass)"/>`;
-      g += `<g transform="translate(${x},${five ? beam - 15 : 28})">${wideBead(five ? 'mustard' : 'wood')}</g>`;
-      for (let k = 0; k < 4; k++) { const on = k < e, y = on ? beam + 23 + k * 27 : H - 26 - (3 - k) * 27; g += `<g transform="translate(${x},${y})">${wideBead(on ? 'red' : 'wood')}</g>`; }
-    });
-    return `<svg class="tr-soroban" height="${h}" width="${Math.round(h * (W + 14) / (H + 18))}" viewBox="-2 -2 ${W + 14} ${H + 18}" aria-hidden="true">${shadowE(W / 2 + 10, H + 6, W / 2 + 2, 9, .7)}`
-      + `<rect x="0" y="6" width="${W}" height="${H}" rx="12" fill="#5A3416"/><rect x="0" y="0" width="${W}" height="${H}" rx="12" fill="#7A4A24"/><rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="10" fill="none" stroke="#B98448" stroke-width="2" opacity=".6"/>`
-      + `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="5" fill="#F3DFBA"/><rect x="10" y="10" width="${W - 20}" height="7" fill="#3A1E06" opacity=".16"/>${g}`
-      + `<rect x="10" y="${beam - 4}" width="${W - 20}" height="9" fill="#5A3416"/><rect x="10" y="${beam - 4}" width="${W - 20}" height="3" fill="#9A6A3A"/></svg>`;
-  }
+  // Shared drawings come from the kit (TOY.parts, TOY.soroban).
+  const wideBead = c => T().parts.wideBead(c), shadowE = (cx, cy, rx, ry, op) => T().parts.shadow(cx, cy, rx, ry, op), miniSoroban = (n, h) => T().soroban(n, h, { cls: 'tr-soroban' });
   root.ToyRoom = { wideBead, miniSoroban, shadowE };
 
   // art(size): the picture on the game's toy box, built from kit parts; mark(): the small one beside its title; block: its lacquer colour.

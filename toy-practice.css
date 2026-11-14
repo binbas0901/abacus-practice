@@ -60,6 +60,8 @@
 #drill .tp-switch:active{transform:translateY(4px)}
 #drill .tp-switch:focus-visible{outline:4px solid var(--toy-ink);outline-offset:4px;border-radius:16px}
 #drill .tp-switch svg{display:block;overflow:visible;width:var(--prop,176px);height:auto}
+#drill .tp-switch .tp-switch-ab{line-height:0}
+#drill .tp-switch .tp-switch-ab svg{width:auto;height:calc(var(--prop,176px)*.68);transform:rotate(-3deg)}
 #drill .tp-switch .toy-chip{font-size:19px;min-height:32px;padding:2px 14px;white-space:nowrap}
 #drill .tp-showme{align-self:flex-start;margin-top:6px;min-width:0;padding-left:14px;padding-right:16px;white-space:nowrap}
 #drill.fixing{--prop:128px}

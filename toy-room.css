@@ -281,11 +281,6 @@
 .tr-gbix .bubble .ws-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 
 /* the practice soroban in the games wears the Toy Table materials */
-#game .abx-frame{fill:#7A4A24} #game .abx-frame-shadow{fill:#5A3416} #game .abx-inner{fill:#F3DFBA} #game .abx-rodline{fill:#C99A38} #game .abx-beam{fill:#5A3416} #game .abx-dot{fill:#F3DFBA}
-#game .abx-lens{fill:url(#toy-lac-wood);stroke:rgba(58,30,6,.32)}
-#game .abx-bead.on .abx-lens{fill:url(#toy-lac-red)}
-#game .abx-bead[data-kind="h"].on .abx-lens{fill:url(#toy-lac-mustard)}
-#game .abx-shine{stroke:rgba(255,255,255,.55)}
 #game .abx-svg{border-radius:26px;box-shadow:8px 20px 20px rgba(var(--toy-shade),.36)}
 
 /* ---- Friend Pop: a number friend waits; its partner floats by in a bubble ---- */

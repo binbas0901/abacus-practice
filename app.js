@@ -909,9 +909,7 @@ function rodBead(color, h, dim){ return TOY.bead(color, h, {tall:true, shadow:fa
 function switchArt(to){
   const sh='<ellipse cx="70" cy="101" rx="66" ry="9" fill="url(#toy-g-shadow)" opacity=".8"/>';
   if (to==='beads'){
-    const bead=(x,y,c)=>`<g transform="translate(${x},${y}) scale(.62,.5)"><path d="M-8,-13 H8 Q12,-13 15,-10.5 L22.5,-2.5 Q25,0 22.5,2.5 L15,10.5 Q12,13 8,13 H-8 Q-12,13 -15,10.5 L-22.5,2.5 Q-25,0 -22.5,-2.5 L-15,-10.5 Q-12,-13 -8,-13Z" fill="url(#toy-lac-${c})"/><ellipse cx="-6" cy="-7" rx="8" ry="2.6" fill="#fff" opacity=".75"/></g>`;
-    let rods=''; [38,70,102].forEach(x=>{ rods+=`<rect x="${x-1.5}" y="14" width="3" height="76" fill="#E6C690"/>`+bead(x,23,'mustard')+[0,1,2,3].map(k=>bead(x,56+k*8.6,'red')).join(''); });
-    return `<svg width="140" height="110" viewBox="0 0 140 110" aria-hidden="true">${sh}<g transform="rotate(-3 70 55)"><rect x="12" y="10" width="116" height="90" rx="9" fill="#55331A"/><rect x="12" y="6" width="116" height="90" rx="9" fill="#7A4A24"/><rect x="13.5" y="7.5" width="113" height="87" rx="8" fill="none" stroke="#B98448" stroke-width="1.5" opacity=".6"/><rect x="21" y="14" width="98" height="74" rx="4" fill="#DDBB86"/><rect x="21" y="14" width="98" height="5" fill="#3A1E06" opacity=".22"/>${rods}<rect x="21" y="31" width="98" height="6" fill="#6A3F1E"/><circle cx="70" cy="34" r="1.6" fill="#FFF3D6"/></g></svg><span class="toy-chip">Use the beads</span>`;
+    return `<span class="tp-switch-ab">${TOY.soroban(123, 104)}</span><span class="toy-chip">Use the beads</span>`;
   }
   let keys=''; for (let r=0;r<3;r++) for (let c=0;c<3;c++){ const x=29+c*28, y=14+r*26; keys+=`<rect x="${x}" y="${y+4}" width="24" height="20" rx="5" fill="#B98448"/><rect x="${x}" y="${y}" width="24" height="20" rx="5" fill="url(#toy-g-maple)"/><rect x="${x+2}" y="${y+2}" width="20" height="5" rx="2.5" fill="#FFF6E2" opacity=".6"/>`; }
   return `<svg width="140" height="110" viewBox="0 0 140 110" aria-hidden="true">${sh}<g transform="rotate(-3 70 55)"><rect x="18" y="8" width="104" height="92" rx="14" fill="#B5A688"/><rect x="18" y="5" width="104" height="92" rx="14" fill="#F4ECDC"/><rect x="23" y="10" width="94" height="82" rx="10" fill="none" stroke="#B89B6E" stroke-width="1.6" stroke-dasharray="5 4" opacity=".8"/>${keys}</g></svg><span class="toy-chip">Type it instead</span>`;
@@ -1095,7 +1093,7 @@ function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now();
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred(); Tool.apply();
-  setStages(); show('drill');
+  setStages(); toySky('#drillSky'); show('drill');
 }
 async function startDrill(m, n){
   mode=m; drillNode=n; reviewing=false; locked=false; listenArmed=false; Speaker.turn=0; Speaker.unlock(); stopTest(); LT=null;
@@ -1358,7 +1356,7 @@ function finish(){
 $('#fixBtn').addEventListener('click', ()=>{
   reviewQueue=problems.map((p,i)=>results[i]===false&&!p._fixed?i:-1).filter(i=>i>=0); if(!reviewQueue.length) return;
   Speaker.unlock(); reviewing=true; idx=reviewQueue[0]; t0=Date.now();
-  setStages(); show('drill');
+  setStages(); toySky('#drillSky'); show('drill');
   presentProblem();            // same mode as the drill: Listen re-reads the problem, Look shows it, Flash re-flashes it
   PB.say(reviewQueue.length===1 ? 'Let\'s fix this one!' : `Let's fix these ${reviewQueue.length}!`, 'happy', mode==='listen' ? null : (reviewQueue.length===1 ? 'fix_one' : 'fix_start'), 2200);
 });

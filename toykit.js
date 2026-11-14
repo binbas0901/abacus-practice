@@ -109,6 +109,10 @@
     try {
       const root = document.documentElement.style, grain = makeGrain(), felt = makeFelt();
       if (grain) root.setProperty('--toy-grain', `url(${grain})`);
+      // the same tile as an SVG pattern, for wood drawn in SVG (the soroban frame): fill="url(#toy-p-grain)"
+      if (grain) { const d = document.querySelector('#toy-defs defs'), ns = 'http://www.w3.org/2000/svg', pt = document.createElementNS(ns, 'pattern'), im = document.createElementNS(ns, 'image');
+        pt.setAttribute('id', 'toy-p-grain'); pt.setAttribute('patternUnits', 'userSpaceOnUse'); pt.setAttribute('width', 512); pt.setAttribute('height', 256);
+        im.setAttribute('href', grain); im.setAttribute('width', 512); im.setAttribute('height', 256); pt.appendChild(im); d.appendChild(pt); }
       if (felt) root.setProperty('--toy-felt-grain', `url(${felt})`);
     } catch (e) { /* toy.css has a plain fallback */ }
   }
@@ -429,6 +433,23 @@
     + `<path d="M0,-63 Q9,0 0,63" fill="none" stroke="#fff" stroke-width="3" opacity=".38"/>`
     + soft(-22, -14, 13, 32, 44, .8) + spec(-27, -13, 2.8, 11, 44, .9)
     + `<ellipse cx="-45.5" cy="0" rx="3.4" ry="10" fill="#2A0D08" opacity="${c === 'wood' ? .3 : .5}"/>`;
+  // A little soroban showing a number: the same object as the practice soroban (abacus-input.js) at icon size -
+  // walnut frame with grain, tan tray, brass rods, mustard heaven beads, red earth beads; resting beads are bare wood.
+  function soroban(n, h, opts) {
+    opts = opts || {}; h = h || 120;
+    const d = String(n).split('').map(Number), step = 62, W = d.length * step + 24, H = 236, beam = 70;
+    let g = '';
+    d.forEach((v, i) => {
+      const x = 12 + step / 2 + i * step, five = v >= 5, e = v % 5;
+      g += `<rect x="${x - 2.5}" y="12" width="5" height="${H - 24}" fill="url(#toy-g-brass)"/>`;
+      g += `<g transform="translate(${x},${five ? beam - 15 : 28})">${wideBead(five ? 'mustard' : 'wood')}</g>`;
+      for (let k = 0; k < 4; k++) { const on = k < e, y = on ? beam + 23 + k * 27 : H - 26 - (3 - k) * 27; g += `<g transform="translate(${x},${y})">${wideBead(on ? 'red' : 'wood')}</g>`; }
+    });
+    return `<svg class="toy-soroban${opts.cls ? ' ' + opts.cls : ''}" height="${h}" width="${Math.round(h * (W + 14) / (H + 18))}" viewBox="-2 -2 ${W + 14} ${H + 18}" aria-hidden="true">${shadow(W / 2 + 10, H + 6, W / 2 + 2, 9, .7)}`
+      + `<rect x="0" y="6" width="${W}" height="${H}" rx="12" fill="#4A2A10"/><rect x="0" y="0" width="${W}" height="${H}" rx="12" fill="#7A4A24"/><rect x="0" y="0" width="${W}" height="${H}" rx="12" fill="url(#toy-p-grain)" opacity=".9"/><rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="10" fill="none" stroke="#D9A66A" stroke-width="2" opacity=".55"/>`
+      + `<rect x="10" y="10" width="${W - 20}" height="${H - 20}" rx="5" fill="#DDBB86"/><rect x="10" y="10" width="${W - 20}" height="7" fill="#3A1E06" opacity=".16"/>${g}`
+      + `<rect x="10" y="${beam - 4}" width="${W - 20}" height="9" fill="#6A3F1E"/><rect x="10" y="${beam - 4}" width="${W - 20}" height="3" fill="#E9BE86" opacity=".5"/></svg>`;
+  }
   function bead(color, size, opts) {
     opts = opts || {}; size = size || 64;
     const c = opts.dim ? 'wood' : (LAC[color] ? color : 'red');
@@ -585,7 +606,7 @@
   }
 
   const TOY = {
-    colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, stepPhase, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
+    colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, stepPhase, soroban, parts: { wideBead, tallBead, shadow }, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
     MOODS: Object.keys(BIX), MOON_MOODS: Object.keys(MOON), ICONS: ['practice', 'play', 'room', 'lock', 'close', 'back', 'backspace', 'check', 'speaker', 'star', 'book', 'eye', 'ear', 'flash', 'gear', 'retry', 'plus'],
     FRIENDS: { small: [[1, 4], [2, 3]], big: [[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]] },
   };

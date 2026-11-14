@@ -152,17 +152,6 @@
 #lesson .lesson-ab .abx{display:flex;gap:14px}
 #lesson .lesson-ab .abx-svg{width:auto;height:auto;max-width:100%;max-height:calc(100vh - var(--toy-wall-h) - 150px);border-radius:16px;
   box-shadow:10px 20px 22px rgba(var(--toy-shade),.4)}
-#lesson .abx-frame-shadow{fill:#4A2A12}
-#lesson .abx-frame{fill:#7A4A24;stroke:#9C6436;stroke-width:2.5}
-#lesson .abx-inner{fill:#F3E0B8;stroke:#4A2A12;stroke-opacity:.35;stroke-width:3}
-#lesson .abx-beam{fill:#6A3E1E}
-#lesson .abx-rodline{fill:url(#toy-g-post)}
-#lesson .abx-dot{fill:#FFF3D8}
-#lesson .abx-lens{fill:url(#toy-g-maple-side);stroke:rgba(74,42,18,.55);stroke-width:1.6;transition:none}
-#lesson .abx-bead.on .abx-lens{fill:url(#toy-lac-red);stroke:rgba(90,10,16,.55)}
-#lesson .abx-bead[data-kind="h"].on .abx-lens{fill:url(#toy-lac-mustard);stroke:rgba(122,78,8,.6)}
-#lesson .abx-shine{stroke:rgba(255,255,255,.5);stroke-width:4}
-#lesson .abx-bead.on .abx-shine{stroke:rgba(255,255,255,.75)}
 #lesson .abx-rod.hl .abx-rodline{fill:#F2B632;stroke:#F2B632;stroke-width:8}
 #lesson .abx-rod:focus-visible .abx-rodline{fill:var(--toy-indigo)}
 #lesson .abx-readout{display:inline-flex;align-items:center;gap:10px;align-self:center;margin:6px 0 0;padding:5px 22px 6px;border-radius:999px;
