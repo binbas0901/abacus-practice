@@ -282,24 +282,9 @@ button{font:inherit;border:0;cursor:pointer;color:inherit;background:none}
 .menu-card .intro{color:var(--ink-2);font-size:18px;line-height:1.45}
 
 /* sticker reveal */
-#stickerReveal{position:fixed;inset:0;background:rgba(28,37,71,.6);display:none;align-items:center;justify-content:center;z-index:70}
-#stickerReveal.active{display:flex}
-.rv-card{background:var(--sky-2);border-radius:36px;padding:28px 36px;display:flex;flex-direction:column;align-items:center;gap:16px;box-shadow:var(--lift);animation:pop .35s cubic-bezier(.2,1.6,.4,1);min-width:360px}
-.rv-title{font-family:var(--display);font-weight:800;font-size:32px;line-height:1}
-.rv-pack{width:210px;height:210px;border-radius:36px;position:relative;font-size:96px;display:flex;align-items:center;justify-content:center;animation:wiggle 1.2s ease-in-out infinite;
   background:repeating-linear-gradient(135deg,var(--grape) 0 22px,#7E64FF 22px 44px);box-shadow:0 9px 0 var(--grape-d)}
-.rv-pack::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:30px;margin-left:-15px;background:var(--sun);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
-.rv-pack.gold{background:repeating-linear-gradient(135deg,var(--sun) 0 22px,#FFD45A 22px 44px);box-shadow:0 9px 0 var(--sun-d),0 0 44px rgba(255,194,26,.8)} .rv-pack.gold::after{background:var(--tomato)}
-.rv-pack .rv-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:18px;z-index:1}
-.rv-pack .bow{position:absolute;top:-34px;left:50%;margin-left:-48px;font-size:96px;line-height:1;filter:drop-shadow(0 4px 0 rgba(0,0,0,.12))} .rv-pack small{font-family:var(--display);font-weight:800;font-size:18px;color:#fff;background:rgba(28,37,71,.35);border-radius:10px;padding:2px 10px}
-.rv-face{display:none;font-size:124px;line-height:1}
-.rv-face.gold{filter:drop-shadow(0 0 14px var(--sun))}
-.rv-pack.open{animation:flip .5s ease both;background:var(--paper);box-shadow:0 9px 0 var(--line)} .rv-pack.open::after{display:none}
-.rv-pack.open.gold{box-shadow:0 9px 0 var(--sun-d),0 0 0 6px var(--sun),0 0 44px rgba(255,194,26,.8)}
-.rv-pack.open .rv-wrap{display:none} .rv-pack.open .rv-face{display:block;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
 @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-4deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-2deg)}}
 @keyframes flip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
-.rv-name{font-family:var(--display);font-weight:700;font-size:19px;color:var(--ink-2);min-height:26px}
 
 /* =====================================================================
    ALBUM — a sticker book with die-cut stickers

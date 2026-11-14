@@ -266,7 +266,7 @@ body.ws-calm .confetti.ws-confetti{display:none}
 #stickerReveal .rv-pack.open{cursor:default}
 #stickerReveal .rv-pack.open .rv-wrap{display:none}
 #stickerReveal .rv-pack.open .rv-face{display:block;animation:toy-saypop .45s cubic-bezier(.2,1.5,.4,1) both}
-#stickerReveal .rv-hint{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);font-size:20px;line-height:1.2;white-space:nowrap}
+#stickerReveal .rv-hint{position:absolute;z-index:2;left:50%;bottom:-8px;transform:translateX(-50%);font-size:20px;line-height:1.2;white-space:nowrap}
 #stickerReveal .rv-name{min-height:28px;font:600 22px/1.25 var(--toy-display);color:var(--toy-ink-soft,var(--toy-ink));text-align:center}
 #stickerReveal .rv-pack.open .rv-hint,#stickerReveal .rv-card:has(.rv-pack:not(.open)) .rv-name,#stickerReveal .rv-card:has(.rv-pack:not(.open)) #rvOk{display:none}
 #stickerReveal #rvOk{gap:10px}
