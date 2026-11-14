@@ -400,8 +400,14 @@
   #game{--toy-wall-h:clamp(172px,15.6vh,200px);--toy-window-x:calc(100vw - (var(--toy-wall-h) - 16px)*2.15 - 20px)}
   #game .tr-top{flex-wrap:wrap;align-content:center;row-gap:8px;padding-right:calc((var(--toy-wall-h) - 16px)*2.15 + 34px);padding-bottom:6px}
   .tr-gscore{margin-left:10px}
-  #game.tr-game .rd-wrap{flex-direction:column;gap:12px}
-  #game .rd-ab .abx-svg{height:min(400px,calc(100vh - 800px));max-width:70vw}
+  /* Bead Detective: the soroban stands tall on the left (bead pitch 56-68px, as in landscape on a big iPad); her answer, the keys and the
+     check button are one column on the right, so the beads never have to shrink to make room above the keys */
+  #game.tr-game .rd-wrap{flex-direction:row;align-items:center;gap:clamp(20px,3vw,30px);padding:0 14px}
+  #game .rd-ab .abx-svg{height:min(660px,calc(100vh - 530px));max-width:none}
+  #game .rd-ab [data-rods="3"] .abx-svg{height:min(660px,calc(100vh - 530px),calc((100vw - 388px)*1.2558))}   /* three rods: as wide as the keys allow (324/258 = the drawing's height/width) */
+  #game .rd-right{gap:14px}
+  #game .rd-slip{flex-direction:column;gap:10px}   /* "Yes!" / "It was 123" sits under her answer (its row is always kept, so the keys never move) */
+  #game .rd-right .toy-keypad-wrap{flex-direction:column;align-items:center;gap:18px}
   #game .toy-keypad{--toy-key-h:clamp(60px,6.4vh,84px);--toy-key-w:clamp(72px,11vw,100px)}
   #game .bd-wrap{flex-direction:column;gap:22px}
   #game .bd-q{flex-direction:row;gap:22px}
