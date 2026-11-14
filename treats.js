@@ -57,7 +57,7 @@
       <circle cx="116" cy="13" r="11" fill="url(#toy-g-maple-side)"/><circle cx="115" cy="11" r="10" fill="url(#toy-g-maple)"/><ellipse cx="111" cy="7" rx="4" ry="2.2" fill="#fff" opacity=".7"/></svg>`;
   }
   function renderJar() {
-    const el = $('#jar'); if (!el) return; const w = wallet(), g = goal(), W = root.WS, K = root.TOY;
+    const el = $('#jar'); if (!el) return; const w = wallet(), g = goal(), K = root.TOY;
     const cap = g ? g.price : 30, frac = Math.max(0, Math.min(1, w.beads / cap));
     const shown = w.beads > 0 ? Math.max(1, Math.round(frac * JAR_FULL)) : 0, ready = !!(g && w.beads >= g.price);
     el.innerHTML = jarSVG(shown, !!g)
@@ -65,7 +65,7 @@
       + `<span class="jar-sub jar-tag${ready ? ' ready' : ''}${g ? '' : ' none'}">${g ? `<span class="jt-ic">${treatArt(g, 44)}</span><span class="jt-name">${esc(g.name)}</span>` : `<span class="jt-ic">${K.icon('star', 30, '#C98A16')}</span><span class="jt-name">Pick a treat</span>`}</span>`;
     el.classList.toggle('ready', ready);
     el.setAttribute('aria-label', `Treat jar: ${w.beads} golden beads` + (g ? `, saving for ${g.name}` : ''));
-    const chip = $('#roomBeads'); if (chip) chip.innerHTML = `${W.bead('ochre', 26)}<b>${w.beads}</b>`;
+    const chip = $('#roomBeads'); if (chip) chip.innerHTML = `${K.bead('mustard', 30, { shadow: false })}<b>${w.beads}</b>`;
   }
   // What Bix says in My Room about the jar: [caption, voice line id]. The caption always contains the spoken line.
   function jarLine() {
@@ -97,10 +97,16 @@
       + `<rect x="43" y="26" width="14" height="62" fill="url(#toy-lac-red)"/><path d="M50 26 C36 4 16 10 28 22 Q38 28 50 26Z M50 26 C64 4 84 10 72 22 Q62 28 50 26Z" fill="url(#toy-lac-red)"/><circle cx="50" cy="25" r="6" fill="#B52323"/>` + hi(28, 31, 10, 2.6, -8),
   };
   const PIC_OF = { '\u{1F36A}': 'cookie', '\u{1F4D6}': 'book', '\u{1F4DA}': 'book', '\u{1F3B2}': 'dice', '\u{1F37D}': 'plate', '\u{1F6DD}': 'park', '\u{1F333}': 'park', '\u{1F366}': 'icecream', '\u{1F368}': 'icecream' };
+  // A stored treat keeps its emoji as a key only; what shows is always a drawing: one of the treat pictures above,
+  // else the matching sticker drawing (TOY.picOf), else the wrapped present.
   function treatArt(t, size) {
-    const key = PIC_OF[String(t && t.emoji || '').replace(/️/g, '')] || 'gift';
-    return `<svg class="tr-pic" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">${PICS[key]()}</svg>`;
+    const ch = String(t && t.emoji || '').replace(/[\uFE0F\u200D]/g, ''), key = PIC_OF[ch], alt = !key && root.TOY.picOf ? root.TOY.picOf(ch) : null;
+    if (alt) return root.TOY.pic(alt, size).replace('class="toy-pic"', 'class="toy-pic tr-pic"');
+    return `<svg class="tr-pic" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">${PICS[key || 'gift']()}</svg>`;
   }
+  // The pictures a grown-up can choose for a treat (value = the stored key, label = a plain word).
+  const PICK = [['\u{1F381}', 'Present'], ['\u{1F36A}', 'Snack'], ['\u{1F4D6}', 'Story'], ['\u{1F3B2}', 'Game'], ['\u{1F37D}', 'Dinner'], ['\u{1F6DD}', 'Park'], ['\u{1F366}', 'Ice cream'],
+    ['\u{1F355}', 'Pizza'], ['\u{1F9C1}', 'Cupcake'], ['\u{1F36D}', 'Lollipop'], ['\u{26BD}', 'Ball'], ['\u{1F9F8}', 'Teddy'], ['\u{1F388}', 'Balloon'], ['\u{1FA81}', 'Kite'], ['\u{1F3A1}', 'Fair'], ['\u{2B50}', 'Star']];
 
   /* ---------- the treat list ("Treats") ---------- */
   // One big card comes first and is the only one with buttons: the saving goal, or (with no goal) the cheapest treat she can
@@ -186,18 +192,19 @@
     const tb = $('#tpList'); tb.innerHTML = '';
     list().forEach((t, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><input class="txt" style="width:58px;min-width:0;text-align:center;font-size:22px" value="${t.emoji}" data-f="emoji"></td><td><input class="txt" value="${esc(t.name)}" data-f="name"></td><td><input class="txt" type="number" min="1" style="width:80px;min-width:0" value="${t.price}" data-f="price" aria-label="Price in golden beads"> <span class="tp-bead">${root.TOY.bead('mustard', 34, { label: 'golden beads' })}</span></td><td><button class="btn small ghost" data-del>Remove</button></td>`;
-      tr.querySelectorAll('input').forEach(inp => inp.onchange = () => { const f = inp.dataset.f; t[f] = f === 'price' ? Math.max(1, parseInt(inp.value, 10) || 1) : (inp.value.trim() || t[f]); App().saveSettings(); renderJar(); if (App().renderChecklist) App().renderChecklist(); });
+      const cur = String(t.emoji || '').replace(/[\uFE0F\u200D]/g, ''), known = PICK.some(o => o[0] === cur);
+      tr.innerHTML = `<td><span class="tp-pick"><span class="tp-pic">${treatArt(t, 44)}</span><select class="txt" data-f="emoji" aria-label="Picture for ${esc(t.name)}">${(known ? PICK : [[cur, 'Present']].concat(PICK.slice(1))).map(o => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select></span></td><td><input class="txt" value="${esc(t.name)}" data-f="name"></td><td><input class="txt" type="number" min="1" style="width:80px;min-width:0" value="${t.price}" data-f="price" aria-label="Price in golden beads"> <span class="tp-bead">${root.TOY.bead('mustard', 34, { label: 'golden beads' })}</span></td><td><button class="btn small ghost" data-del>Remove</button></td>`;
+      tr.querySelectorAll('input, select').forEach(inp => inp.onchange = () => { const f = inp.dataset.f; t[f] = f === 'price' ? Math.max(1, parseInt(inp.value, 10) || 1) : (inp.value.trim() || t[f]); if (f === 'emoji') tr.querySelector('.tp-pic').innerHTML = treatArt(t, 44); App().saveSettings(); renderJar(); if (App().renderChecklist) App().renderChecklist(); });
       tr.querySelector('[data-del]').onclick = async () => { if (!await root.TOY.confirm(`Remove ${t.name}?`, 'It comes off the treat list. Tickets already bought stay.', { ok: 'Remove', cancel: 'Keep', danger: true })) return; list().splice(i, 1); if (w.goal === t.id) w.goal = null; App().saveSettings(); F().save(); renderParent(); renderJar(); };
       tb.appendChild(tr);
     });
     const open = w.tickets.filter(x => !x.given), done = w.tickets.filter(x => x.given).slice(-8).reverse();
-    $('#tpTickets').innerHTML = (open.length ? open.map(x => `<div class="ticket">${x.emoji} ${esc(x.name)} <span class="note">${new Date(x.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span> <button class="btn small" data-give="${x.id}">Given</button></div>`).join('') : '<div class="note">Nothing waiting.</div>')
-      + (done.length ? `<div class="note" style="margin-top:8px">Recently given: ${done.map(x => x.emoji).join(' ')}</div>` : '');
+    $('#tpTickets').innerHTML = (open.length ? open.map(x => `<div class="ticket"><span class="tp-pic">${treatArt(x, 34)}</span>${esc(x.name)} <span class="note">${new Date(x.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span> <button class="btn small" data-give="${x.id}">Given</button></div>`).join('') : '<div class="note">Nothing waiting.</div>')
+      + (done.length ? `<div class="note tp-given" style="margin-top:8px">Recently given: ${done.map(x => `<span class="tp-pic" title="${esc(x.name)}">${treatArt(x, 30)}</span>`).join('')}</div>` : '');
     $('#tpTickets').querySelectorAll('[data-give]').forEach(b => b.onclick = () => { const k = w.tickets.find(x => x.id === b.dataset.give); if (k) { k.given = true; k.givenAt = new Date().toISOString(); F().save(); renderParent(); } });
   }
   function bindParent() {
-    $('#tpAdd').onclick = () => { const ids = new Set(list().map(t => t.id)); let i = 1; while (ids.has('t' + i)) i++; list().push({ id: 't' + i, emoji: '🎁', name: 'New treat', price: 10 }); App().saveSettings(); renderParent(); };
+    $('#tpAdd').onclick = () => { const ids = new Set(list().map(t => t.id)); let i = 1; while (ids.has('t' + i)) i++; list().push({ id: 't' + i, emoji: '\u{1F381}', name: 'New treat', price: 10 }); App().saveSettings(); renderParent(); };
     $('#tpDefaults').onclick = async () => { if (!await root.TOY.confirm('Reset the treat list?', 'This puts back the original six treats and removes any you added or changed.', { ok: 'Reset list', cancel: 'Keep my list' })) return; App().settings.treats = DEFAULT_TREATS.map(t => Object.assign({}, t)); App().saveSettings(); renderParent(); renderJar(); };
     document.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => { const w = wallet(); w.beads = Math.max(0, w.beads + parseInt(b.dataset.adj, 10)); F().save(); renderParent(); renderJar(); });
   }

@@ -15,11 +15,7 @@
 
 
 <link rel="stylesheet" href="styles.css?v=3.13">
-<link rel="stylesheet" href="workshop.css?v=3.13">
 <link rel="stylesheet" href="abacus-input.css?v=3.13">
-<!-- stream A --><link rel="stylesheet" href="screens-home.css?v=3.13">
-<!-- stream B --><link rel="stylesheet" href="screens-practice.css?v=3.13">
-<!-- stream C --><link rel="stylesheet" href="screens-door.css?v=3.13">
 <link rel="stylesheet" href="toy.css?v=3.13">
 <link rel="stylesheet" href="toy-home.css?v=3.13">
 <link rel="stylesheet" href="toy-practice.css?v=3.13">
@@ -204,11 +200,6 @@
     <div class="tp-topright">
       <span class="toy-chip tp-fixlabel" id="fixLabel" hidden>Fixing</span>
       <div class="tp-rodwrap"><i class="tp-post"></i><div class="tp-rod" id="strip" role="list" aria-label="Problems in this set"></div><i class="tp-post"></i></div>
-      <button class="toy-iconbtn tp-speedbtn" id="speedBtn" aria-label="Speed (grown-ups)" aria-expanded="false" hidden><span class="pr-ic" data-ic="gear" data-sz="26"></span></button>
-    </div>
-    <div class="tp-speed toy-paper" id="speedPop" hidden>
-      <div class="speed" id="listenSpeed"><span>slow</span><input type="range" id="gapSlider" step="0.25" aria-label="Seconds between numbers"><span>fast</span><span class="tp-speedval" id="gapVal"></span></div>
-      <div class="speed" id="flashSpeed"><span>slow</span><input type="range" id="flashSlider" min="0.3" max="3" step="0.1" aria-label="Seconds each number shows"><span>fast</span><span class="tp-speedval" id="flashVal"></span></div>
     </div>
   </div>
   <div class="tp-body">
@@ -298,7 +289,7 @@
   <div class="tp-showab" id="showmeAbacus"></div>
 </div></div>
 
-<div id="stickerReveal" role="dialog" aria-label="A sticker for you"><div class="rv-card ws-card"><div class="rv-title" id="rvTitle"></div><button class="rv-pack" id="rvPack" aria-label="Open the present"><span class="rv-wrap"><span class="bow"></span><small>Tap to open</small></span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="ws-btn jade" id="rvOk"><span class="pr-ic" data-ic="book"></span>Add to my album</button></div></div>
+<div id="stickerReveal" role="dialog" aria-label="A sticker for you"><div class="rv-card toy-paper"><div class="rv-title toy-h2" id="rvTitle"></div><button class="rv-pack" id="rvPack" aria-label="Open the present"><span class="rv-wrap" id="rvWrap"></span><span class="rv-hint toy-chip" id="rvHint">Tap to open</span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="toy-block toy-block--teal toy-block--sm" id="rvOk"><span id="rvOkIc"></span>Add to my album</button></div></div>
 
 <div id="nameAsk" class="askm tn"><div class="toy-paper tn-card"><div id="bixName" class="tn-bix"></div><div class="toy-h1 tn-t">What’s your name?</div><input id="nameAskIn" class="to-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" aria-label="Your name"><div class="tn-row"><button type="button" class="toy-block toy-block--wood toy-block--sm" id="nameAskNo"><span class="toy-block-label">Later</span></button><button type="button" class="toy-block toy-block--teal toy-block--sm" id="nameAskOk"><span class="toy-block-label">That’s me!</span></button></div></div></div>
 
@@ -461,8 +452,8 @@
 
 </div>
 <script src="store.js?v=3.13"></script>
-<script src="kit.js?v=3.13"></script>
 <script src="toykit.js?v=3.13"></script>
+<script src="toystickers.js?v=3.13"></script>
 <script src="engine.js?v=3.13"></script>
 <script src="soroban.js?v=3.13"></script>
 <script src="curriculum.js?v=3.13"></script>

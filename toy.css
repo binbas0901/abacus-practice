@@ -241,6 +241,30 @@
 .toy-bubble--side::after{left:-26px;bottom:22px;width:36px;height:40px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 70%,0 100%)}
 .toy-bubble--none::after{display:none}
 
+/* ---- confetti (Fun.confetti): in front of the table, behind everything on it; never over text or buttons ---- */
+.ws-confetti-host{isolation:isolate}
+.ws-confetti-host > .confetti.ws-confetti,body > .confetti.ws-confetti{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+body.ws-calm .confetti.ws-confetti{display:none}
+@media (prefers-reduced-motion:reduce){ .confetti.ws-confetti{display:none} }
+
+/* ---- the sticker reveal (Fun.give): a wrapped present on a paper card; tap it and the sticker is inside ---- */
+#stickerReveal{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(58,30,6,.55);font-family:var(--toy-display);color:var(--toy-ink)}
+#stickerReveal.active{display:flex}
+#stickerReveal .rv-card{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:min(440px,90vw);padding:30px 44px 32px;border-radius:var(--toy-r-lg);animation:toy-saypop .36s cubic-bezier(.2,1.4,.4,1) both}
+#stickerReveal .rv-title{margin:0;text-align:center}
+#stickerReveal .rv-pack{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;width:240px;height:240px;cursor:pointer;line-height:0;-webkit-tap-highlight-color:transparent}
+#stickerReveal .rv-pack:focus-visible{outline:4px solid var(--toy-ink);outline-offset:4px;border-radius:24px}
+#stickerReveal .rv-wrap{display:block;transform-origin:50% 90%;animation:toy-wiggle 1.6s ease-in-out infinite}
+#stickerReveal .rv-face{display:none}
+#stickerReveal .rv-pack.open{cursor:default}
+#stickerReveal .rv-pack.open .rv-wrap{display:none}
+#stickerReveal .rv-pack.open .rv-face{display:block;animation:toy-saypop .45s cubic-bezier(.2,1.5,.4,1) both}
+#stickerReveal .rv-hint{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);font-size:20px;line-height:1.2;white-space:nowrap}
+#stickerReveal .rv-name{min-height:28px;font:600 22px/1.25 var(--toy-display);color:var(--toy-ink-soft,var(--toy-ink));text-align:center}
+#stickerReveal .rv-pack.open .rv-hint,#stickerReveal .rv-card:has(.rv-pack:not(.open)) .rv-name,#stickerReveal .rv-card:has(.rv-pack:not(.open)) #rvOk{display:none}
+#stickerReveal #rvOk{gap:10px}
+@keyframes toy-wiggle{0%,60%,100%{transform:rotate(0)}70%{transform:rotate(-4deg)}80%{transform:rotate(4deg)}90%{transform:rotate(-2deg)}}
+
 /* ---- Bix as a living mascot (Fun.Mascot in fun.js): .bixwrap > .bix (TOY.bix inside) + .bubble.toy-say ----
    Size: --tb on the host (falls back to the size given to mount). Bubble sits beside him with a side tail; screens move it. */
 .bixwrap{position:relative;display:flex;align-items:center;gap:0;min-width:0;--bix:120px}
@@ -312,6 +336,6 @@
   .toy-iconbtn{width:72px;height:72px}
 }
 @media (prefers-reduced-motion:reduce){
-  .toy-bix-breathe,.toy-lid,.toy-moon-halo,.toy-dialog,.bix > .toy-bix,.bix.talking .toy-bix-mouth,.bixwrap .bubble.pop{animation:none}
+  .toy-bix-breathe,.toy-lid,.toy-moon-halo,.toy-dialog,.bix > .toy-bix,.bix.talking .toy-bix-mouth,.bixwrap .bubble.pop,#stickerReveal .rv-card,#stickerReveal .rv-wrap,#stickerReveal .rv-pack.open .rv-face{animation:none}
   .toy-block,.toy-key,.toy-start-dome,.toy-iconbtn{transition:none}
 }

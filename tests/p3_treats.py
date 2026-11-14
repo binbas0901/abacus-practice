@@ -54,12 +54,12 @@ async def main():
         # edit list
         await pg.fill('#tpList tr:nth-child(1) input[data-f=price]', '2'); await pg.dispatch_event('#tpList tr:nth-child(1) input[data-f=price]','change')
         await pg.click('#tpAdd'); last='#tpList tr:last-child'
-        await pg.fill(f'{last} input[data-f=emoji]','🛝'); await pg.dispatch_event(f'{last} input[data-f=emoji]','change')
+        await pg.select_option(f'{last} select[data-f=emoji]','🛝')   # the picture is chosen by name (drawn pictures, no emoji on screen)
         await pg.fill(f'{last} input[data-f=name]','Library visit'); await pg.dispatch_event(f'{last} input[data-f=name]','change')
         await pg.fill(f'{last} input[data-f=price]','15'); await pg.dispatch_event(f'{last} input[data-f=price]','change')
         st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         check('grown-up edits price + adds non-food treat', st['treats'][0]['price']==2 and st['treats'][-1]['name']=='Library visit', [(t['emoji'],t['name'],t['price']) for t in st['treats']])
         await pg.click('#parentDone'); await pg.click('#doorRoom'); await pg.click('#jar'); await pg.wait_for_selector('#shop.active')
-        check('shop reflects edits', 'Library visit' in await pg.text_content('#shopCards'))
+        check('shop reflects edits; no emoji anywhere on the shop or grown-ups treat list', 'Library visit' in await pg.text_content('#shopCards') and not re.search('[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B50]', (await pg.inner_text('#shop')) + (await pg.evaluate("document.querySelector('#guTreats').innerText"))))
         print('errors:', errs); await b.close()
 asyncio.run(main())

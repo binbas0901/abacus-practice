@@ -44,11 +44,6 @@
 #drill .tp-b.cur::before{content:"";position:absolute;left:50%;top:50%;width:230%;height:150%;transform:translate(-50%,-50%);z-index:-1;
   background:radial-gradient(closest-side,rgba(255,243,176,.95),rgba(255,226,138,.45) 55%,rgba(255,226,138,0))}
 #drill .tp-b.cur.ok::before,#drill .tp-b.cur.bad::before{opacity:.5}
-#drill .tp-speedbtn{flex:none;width:52px;height:52px}
-#drill .tp-speed{position:absolute;right:var(--pad);top:calc(50% + 34px);z-index:20;padding:14px 18px;border-radius:14px}
-#drill .tp-speed .speed{display:flex;align-items:center;gap:10px;font:400 18px/1 var(--toy-body);color:var(--toy-ink)}
-#drill .tp-speed input[type=range]{width:220px;height:44px;accent-color:var(--toy-indigo)}
-#drill .tp-speedval{min-width:44px;text-align:right;font:600 18px/1 var(--toy-display)}
 
 /* --- on the table --- */
 #drill .tp-body{flex:1;min-height:0;margin:16px var(--pad) 20px;display:grid;grid-template-columns:var(--bixcol) var(--board) minmax(0,1fr);gap:var(--gap);align-items:stretch}

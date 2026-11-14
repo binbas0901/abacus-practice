@@ -644,7 +644,7 @@ document.addEventListener('click', e=>{
   const el=b.closest('[data-line]'); if (!el) return; try{ const [t,id]=JSON.parse(el.dataset.line); Speaker.unlock(); bixSay(el, t, id); }catch(err){}
 });
 function mountBix(el, size){ if (el && !el.querySelector('.bix, .ws-bix')) Fun.Mascot.mount(el, {size, keep:true}); }
-const BACK_ICON = ()=>WS.icon('back', 30, 'currentColor', 3);
+const BACK_ICON = ()=>TOY.icon('back', 30, 'currentColor', {stroke:3});
 $$('.c-top .exit').forEach(b=>{ if (!b.innerHTML.trim()) b.innerHTML=BACK_ICON(); });
 
 /* ---- Practice door: Look / Listen / Flash for the current skill, and "My path" ---- */
@@ -893,13 +893,12 @@ let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=
 let LT=null, pendingTest=null;   // LT: level test in progress {test, answers, start, tick}; pendingTest: node id whose test Bix offers
 // Icons for static markup (index.html marks them with data-ic). The Toy Table screens (.tp) use the toy kit's icons;
 // a name the toy kit does not have yet (print, share) falls back to the Workshop drawing.
-const TOY_IC = new Set(TOY.ICONS);
-function tpIcon(n, sz, stroke){ return TOY_IC.has(n) ? TOY.icon(n, sz, 'currentColor', stroke ? {stroke} : {}) : WS.icon(n, sz); }
+function tpIcon(n, sz, stroke){ return TOY.icon(n, sz, 'currentColor', stroke ? {stroke} : {}); }
 function paintIcons(root){ (root||document).querySelectorAll('.pr-ic[data-ic]').forEach(el=>{ if (el.firstChild) return; const n=el.dataset.ic, sz=+(el.dataset.sz||0)||(n==='check'?32:n==='speaker'?26:28);
-  el.innerHTML = el.closest('.tp, .tp-show') ? tpIcon(n, sz, +el.dataset.stroke||0) : WS.icon(n, sz); }); }
+  el.innerHTML = tpIcon(n, sz, +el.dataset.stroke||0); }); }
 paintIcons();
 $('#drillBowl').innerHTML = TOY.prop('bowl', 150);
-$('#rvPack .bow').innerHTML = WS.bead('red',64)+WS.bead('red',64);
+$('#rvOkIc').innerHTML = TOY.icon('book', 30, 'currentColor');
 // Bix on the practice screens: the toy figurine + a paper bubble. He talks with a recorded line when one exists.
 // He thinks while she works, cheers when it is right and is sheepish (never sad) when it is not.
 const bixArt = Fun.Mascot.art;   // a Bix drawing that can talk, for the practice screens (they place him themselves)
@@ -1111,15 +1110,7 @@ function setStages(){
   $('#listenStage').style.display = mode==='listen'?'':'none';
   $('#flashStage').style.display = mode==='flash'?'':'none';
   $('#drill').dataset.mode = mode; $('#drill').classList.toggle('lt', !!LT);
-  const speed = (mode==='listen'||mode==='flash') && !LT;
-  $('#speedBtn').hidden=!speed; $('#speedPop').hidden=true; $('#speedBtn').setAttribute('aria-expanded','false');
-  $('#listenSpeed').style.display = mode==='listen'?'flex':'none'; $('#flashSpeed').style.display = mode==='flash'?'flex':'none';
-  if (mode==='listen') setupGapSlider(); if (mode==='flash') setupFlashSlider();
 }
-// The speed sliders are a grown-up control: closing is free, opening goes through the grown-ups gate (and comes straight back here).
-$('#speedBtn').addEventListener('click', ()=>{ const p=$('#speedPop'), b=$('#speedBtn');
-  if (!p.hidden){ p.hidden=true; b.setAttribute('aria-expanded','false'); return; }
-  openGate(()=>{ p.hidden=false; b.setAttribute('aria-expanded','true'); }); });
 function endDrill(){ dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
 function stopTest(){ /* the level test keeps a silent, generous time measure only (LT.start); nothing ticks on screen */ }
 function setEntry(v){ entry=v; Tool.readout(); }
@@ -1194,8 +1185,6 @@ async function dictate(p){
   finally{ clearTimeout(watchdog); }
 }
 $('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; dictate(p); });
-function setupGapSlider(){ const s=$('#gapSlider'); s.min=settings.gapMin; s.max=settings.gapMax; s.value=settings.gap; s.style.direction='rtl'; $('#gapVal').textContent=settings.gap+'s'; s.oninput=()=>{ settings.gap=parseFloat(s.value); $('#gapVal').textContent=settings.gap+'s'; saveSettings(); }; }
-function setupFlashSlider(){ const s=$('#flashSlider'); s.value=settings.flashSec; s.style.direction='rtl'; $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; s.oninput=()=>{ settings.flashSec=parseFloat(s.value); $('#flashVal').textContent=settings.flashSec.toFixed(1)+'s'; saveSettings(); }; }
 // Flash: she taps Ready (after clearing her abacus), numbers pop up one at a time with their + / − sign, then she answers.
 function flashDots(n, on){ const w=n>8?22:30; $('#flashDots').innerHTML = Array.from({length:n},(_,i)=>TOY.bead('teal', w, {dim:i>=on, shadow:false})).join(''); }
 function flashLen(el, t){ el.style.setProperty('--len', Math.max(2, String(Math.abs(t)).length+1)); }

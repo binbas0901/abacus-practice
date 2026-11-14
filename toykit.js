@@ -497,6 +497,10 @@
     retry: () => `<path d="M4.5,12 a7.5,7.5 0 1 0 2.4,-5.5"/><path d="M4,4.6 V9 H8.4"/>`,
     plus: () => `<path d="M12,5.5 V18.5 M5.5,12 H18.5" stroke-width="3.2"/>`,
   };
+  // print (a printer with a sheet), share (an arrow leaving a tray), keypad (nine wooden keys)
+  ICON.print = (col, acc) => `<path d="M7,9 V4 H17 V9"/><rect x="3.5" y="9" width="17" height="8.5" rx="2.2"/><rect x="7" y="14" width="10" height="6.5" rx="1" fill="${acc}"/><circle cx="17" cy="12" r=".9" fill="${col}" stroke="none"/>`;
+  ICON.share = () => `<path d="M12,15 V4 M7.5,8 L12,3.5 L16.5,8"/><path d="M5,12.5 V18.5 Q5,20.5 7,20.5 H17 Q19,20.5 19,18.5 V12.5"/>`;
+  ICON.keypad = (col) => [5.5, 12, 18.5].map(y => [5.5, 12, 18.5].map(x => `<rect x="${x - 2.1}" y="${y - 2.1}" width="4.2" height="4.2" rx="1.2" fill="${col}" stroke="none"/>`).join('')).join('');
   ICON.soroban = ICON.practice; ICON.home = ICON.room; ICON.bolt = ICON.flash; ICON.abacus = ICON.practice;
   function icon(name, size, color, opts) {
     size = size || 28; color = color || 'currentColor'; opts = opts || {};
@@ -607,7 +611,7 @@
 
   const TOY = {
     colors: LAC, defs, bix, moon, moonName: 'Juni', moonPhases, skyMoon, stepPhase, soroban, parts: { wideBead, tallBead, shadow }, buddy, pair, bead, rodProgress, icon, bubble, block, start, tag, iconButton, prop, keypad, confirm,
-    MOODS: Object.keys(BIX), MOON_MOODS: Object.keys(MOON), ICONS: ['practice', 'play', 'room', 'lock', 'close', 'back', 'backspace', 'check', 'speaker', 'star', 'book', 'eye', 'ear', 'flash', 'gear', 'retry', 'plus'],
+    MOODS: Object.keys(BIX), MOON_MOODS: Object.keys(MOON), ICONS: ['practice', 'play', 'room', 'lock', 'close', 'back', 'backspace', 'check', 'speaker', 'star', 'book', 'eye', 'ear', 'flash', 'gear', 'retry', 'plus', 'print', 'share', 'keypad'],
     FRIENDS: { small: [[1, 4], [2, 3]], big: [[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]] },
   };
   if (typeof window !== 'undefined') {

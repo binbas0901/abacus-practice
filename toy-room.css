@@ -209,9 +209,8 @@
 #album .ab-page.full .ab-got{background:#D5F1EC;color:var(--toy-teal-deep)}
 #album .ab-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 #album .slot{all:unset;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;justify-self:center;width:100%;max-width:78px;aspect-ratio:1;border-radius:50%;border:3px dashed #D2C4A6;background:#F6EEDC}
-#album .slot.has{border:0;background:#fff;font-size:42px;line-height:1;box-shadow:inset 0 -3px 0 rgba(217,206,184,.6),2px 5px 6px rgba(var(--toy-shade),.3)}
-#album .slot.has span{display:inline-block;filter:none}
-#album .slot.gold{box-shadow:0 0 0 4px var(--toy-mustard),2px 5px 6px rgba(var(--toy-shade),.3)}
+#album .slot.has{border:0;background:none;max-width:86px;line-height:0}
+#album .slot.has svg{display:block;width:100%;height:100%;overflow:visible}
 #album .slot b{position:absolute;right:-4px;bottom:-4px;padding:2px 7px;border-radius:999px;background:var(--toy-indigo);color:#fff;font:600 13px/1.2 var(--toy-display)}
 #albumCount b{font-weight:700}
 #albumCount .ab-of{margin-left:2px;font:500 18px/1 var(--toy-display)}

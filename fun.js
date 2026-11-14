@@ -83,7 +83,7 @@
   const TAP_LINES = [
     '4 and 6 are big friends. Together they make 10!', '2 and 3 are small friends. They make 5!', 'The top bead is worth 5. Each bottom bead is 1.',
     'Thumb pushes beads up. Pointer finger pushes them down!', '7 needs 3 to make 10!', '9 needs 1 to make 10!', '1 and 4 make 5. Small friends!',
-    'Hee hee, that tickles!', 'Beads are my cousins 😄', 'Work left to right, like reading!', 'Close your eyes and picture the beads. That is mental math!', '5 and 5 are friends with each other!',
+    'Hee hee, that tickles!', 'Beads are my cousins!', 'Work left to right, like reading!', 'Close your eyes and picture the beads. That is mental math!', '5 and 5 are friends with each other!',
   ];
   const NO_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;   // bubbles are captions: no emoji
   const caption = t => String(t == null ? '' : t).replace(NO_EMOJI, '').replace(/\s+([!?.,])/g, '$1').replace(/\s{2,}/g, ' ').trim();
@@ -134,14 +134,9 @@
   };
 
   /* ---------------- stickers ---------------- */
-  const PACKS = [
-    { id: 'animals', name: 'Animals', items: ['🦊', '🐼', '🐨', '🐯', '🦁', '🐸', '🐵', '🦄', '🦉', '🐢', '🦋', '🐰'] },
-    { id: 'ocean', name: 'Ocean', items: ['🐳', '🐬', '🦈', '🐠', '🐡', '🦀', '🐚', '🦑', '🐧', '🦭', '🐙', '🦞'] },
-    { id: 'space', name: 'Space', items: ['🚀', '🪐', '🌙', '⭐️', '☄️', '🛸', '🌍', '🌞', '🌈', '🔭', '🌠', '🛰️'] },
-    { id: 'treats', name: 'Treats', items: ['🍓', '🍉', '🍩', '🧁', '🍪', '🍭', '🍦', '🥨', '🍒', '🥝', '🍕', '🥞'] },
-    { id: 'toys', name: 'Toys', items: ['🎈', '🎨', '🧸', '🪁', '🎸', '🏰', '🎠', '🎡', '⚽️', '🎁', '🪀', '🎪'] },
-  ];
-  const ALL = PACKS.flatMap(p => p.items.map((e, i) => ({ id: p.id + ':' + i, emoji: e, pack: p.id, packName: p.name })));
+  // The drawn sticker set lives in toystickers.js (TOY.STICKERS); ids stay "pack:index", so collected stickers keep working.
+  const PACKS = root.TOY.STICKERS;
+  const ALL = PACKS.flatMap(p => p.items.map((k, i) => ({ id: p.id + ':' + i, key: k, pack: p.id, packName: p.name })));
   const BYID = Object.fromEntries(ALL.map(s => [s.id, s]));
   function count() { return Object.keys(data.stickers).filter(k => BYID[k]).length; }
   function draw(gold) {
@@ -164,7 +159,7 @@
     const ov = $('#stickerReveal'); const pack = $('#rvPack'), face = $('#rvFace');
     $('#rvTitle').textContent = item.title || (s.gold ? 'A GOLD sticker!' : 'You earned a sticker!');
     BixVoice.play(item.voice || (s.gold ? 'gift_gold' : 'gift'), null);
-    face.textContent = s.emoji; face.classList.toggle('gold', s.gold);
+    face.innerHTML = root.TOY.sticker(s.id, 230, { gold: s.gold }); $('#rvWrap').innerHTML = root.TOY.present(230, { gold: s.gold });
     $('#rvName').textContent = ''; $('#rvOk').style.visibility = 'hidden';
     pack.classList.remove('open'); pack.classList.toggle('gold', s.gold); ov.classList.add('active');
     const open = () => {
@@ -175,7 +170,7 @@
     };
     pack.onclick = open; $('#rvOk').onclick = () => { ov.classList.remove('active'); item.res(s); setTimeout(next, 250); };
   }
-  // The sticker book: one page per pack. Stickers are content, so they stay emoji; empty spots are soft maple circles.
+  // The sticker book: one page per pack. Stickers are drawn (TOY.sticker); empty spots are soft dashed circles.
   function renderAlbum() {
     $('#albumCount').innerHTML = `${root.TOY.icon('star', 26, '#C98A16')}<b>${count()}</b><span class="ab-of">of ${ALL.length}</span>`;
     const box = $('#albumPages'); box.innerHTML = '';
@@ -183,7 +178,7 @@
       const got = p.items.filter((_, i) => data.stickers[p.id + ':' + i]).length;
       const pg = document.createElement('div'); pg.className = 'apage ab-page' + (got === p.items.length ? ' full' : '');
       pg.innerHTML = `<div class="ahead ab-head"><h2>${p.name}</h2><span class="ab-got">${got} of ${p.items.length}</span></div><div class="agrid ab-grid">` +
-        p.items.map((e, i) => { const id = p.id + ':' + i, n = data.stickers[id]; return n ? `<div class="slot has${data.gold[id] ? ' gold' : ''}"><span>${e}</span>${n > 1 ? `<b>×${n}</b>` : ''}</div>` : `<div class="slot" aria-label="not found yet"></div>`; }).join('') + '</div>';
+        p.items.map((e, i) => { const id = p.id + ':' + i, n = data.stickers[id]; return n ? `<div class="slot has${data.gold[id] ? ' gold' : ''}">${root.TOY.sticker(id, 86, { gold: !!data.gold[id] })}${n > 1 ? `<b>×${n}</b>` : ''}</div>` : `<div class="slot" aria-label="not found yet"></div>`; }).join('') + '</div>';
       box.appendChild(pg);
     }
   }
@@ -255,7 +250,7 @@
     if (calm) return null;
     const host = document.querySelector('.screen.active') || document.body;
     const box = document.createElement('div'); box.className = 'confetti ws-confetti'; box.setAttribute('aria-hidden', 'true');
-    const K = root.WS ? root.WS.colors : {}, colors = [K.red, K.ochre, K.jade, K.indigo, K.bulb, '#F28FA6'].filter(Boolean);
+    const colors = ['#E5402F', '#F2B632', '#1FA595', '#3F52A8', '#9255C4', '#FBEFC2'];   // the kit's lacquer colours
     n = Math.min(n, 60);
     for (let i = 0; i < n; i++) {
       // only the outer edges (left and right 18%), drifting outwards: the middle, where text and buttons live, stays clear
@@ -271,6 +266,5 @@
   }
 
   // Small, non-interactive Bix (e.g. a "you are here" marker).
-  function bixMini(mood) { return root.WS.bix(mood || 'happy', 46).replace('class="ws-bix ', 'class="bixmini ws-bix '); }
-  root.Fun = { data, save, replace, Mascot, give, potSVG, renderAlbum, renderGarden, confetti, ALL, PACKS, count, bixMini, BixVoice };
+  root.Fun = { data, save, replace, Mascot, give, potSVG, renderAlbum, renderGarden, confetti, ALL, PACKS, count, BixVoice };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -222,6 +222,10 @@
 #parent.gu .gu-tick{display:inline-flex;color:var(--toy-teal-dk);line-height:0}
 #parent.gu .tp-bead{display:inline-flex;vertical-align:middle;line-height:0;margin-left:4px}
 #parent.gu .tptable td:last-child{text-align:right}
+#parent.gu .tp-pick{display:inline-flex;align-items:center;gap:8px}
+#parent.gu .tp-pic{display:inline-flex;line-height:0;vertical-align:middle;flex:none}
+#parent.gu .tp-pick select{min-width:0;width:118px;min-height:44px;font-size:16px}
+#parent.gu .tp-given{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #parent.gu .tptable input[data-f=name]{width:100%}
 
 /* set-up checklist: ruled rows with a status bead */
