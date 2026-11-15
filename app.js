@@ -10,15 +10,34 @@ const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]))
 /* ---------------- storage ---------------- */
 const DEFAULTS = {
   count:10, operands:0, sfx:true, speakFeedback:true, name:'',
-  gap:2, gapMin:0.5, gapMax:6, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
-  flashSec:1.0, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:5,
+  termGap:0.65, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
+  flashSec:1.0, flashGap:0.2, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:5,
 };
 // All saving goes through store.js: family-wide settings are shared, progress and treats are per child.
 function load(k, d){ return Store.get(k, d); }
 function save(k, v){ Store.set(k, v); }
 let settings = Store.loadSettings(DEFAULTS);
-if ((settings.settingsVersion||1) < 5){ settings = Object.assign({}, DEFAULTS, {voice:settings.voice||'device', gap:settings.gap||2, name:settings.name||''}); }
+if ((settings.settingsVersion||1) < 5){ settings = Object.assign({}, DEFAULTS, {voice:settings.voice||'device', name:settings.name||''}); }
 function saveSettings(){ Store.saveSettings(settings); }
+/* Speed settings, one source of truth for the speed panel on the Listen / Flash screens and for Grown-ups. Per child.
+     voiceRate  how fast the numbers are said: 70%-150% in steps of 10; 100% is the recording exactly as it is
+     termGap    silence between one number and the next (and before "equals"): 0.05 s - 1.20 s in steps of 0.05
+     flashSec   how long each Flash number stays;  flashGap  the blank between two Flash numbers                    */
+const SPEED = {
+  voiceRate:{ min:0.7, max:1.5, step:0.1, def:1, fmt:v=>Math.round(v*100)+'%', label:'How fast Bix says the numbers', lowIsFast:false },
+  termGap:{ min:0.05, max:1.2, step:0.05, def:0.65, fmt:v=>v.toFixed(2)+'s', label:'Pause between numbers', lowIsFast:true },
+  flashSec:{ min:0.3, max:3, step:0.1, def:1, fmt:v=>v.toFixed(1)+'s', label:'How long each number shows', lowIsFast:true },
+  flashGap:{ min:0.05, max:1, step:0.05, def:0.2, fmt:v=>v.toFixed(2)+'s', label:'Pause between numbers', lowIsFast:true },
+};
+function snapSpeed(k, v){ const s=SPEED[k]; v=parseFloat(v); if (!isFinite(v)) v=s.def; return +Math.min(s.max, Math.max(s.min, s.min+Math.round((v-s.min)/s.step)*s.step)).toFixed(2); }
+// Before v4.2 the Listen pace was "seconds from the start of one number to the start of the next" (settings.gap, 0.5-12,
+// default 2). It is now the silence between numbers: an untouched 2 becomes the new default 0.65 s, anything else loses
+// the 0.9 s a spoken number takes on average and goes to the nearest step. Done once per child (termGap is then saved).
+(()=>{ const had=Store.loadSettings({});
+  if (had.termGap==null) settings.termGap = (had.gap==null || had.gap===2) ? SPEED.termGap.def : snapSpeed('termGap', had.gap-0.9);
+  Object.keys(SPEED).forEach(k=>{ settings[k]=snapSpeed(k, settings[k]); });
+  delete settings.gap; delete settings.gapMin; delete settings.gapMax;
+})();
 let history = load('history', []);
 let days = load('days', {});
 // progress: {current:nodeId, nodes:{id:{lesson:bool, mastered:'auto'|'parent'|null, hist:[{ok,day}]}}}
@@ -137,6 +156,25 @@ function wavBytes(buf, a=0, b=null, gain=1){
   for(let i=0;i<n;i++){ const v=Math.max(-1,Math.min(1,d[a+i]*gain)); wav.setInt16(44+i*2, v<0?v*32768:v*32767, true); }
   return wav.buffer;
 }
+// Speak faster or slower WITHOUT changing the pitch (a plain playbackRate would make the voice squeak or growl).
+// Overlap-add with a small search for the best-matching continuation (WSOLA): 30 ms frames, half overlapped.
+// x: samples, sr: sample rate, rate: 1.5 = one and a half times as fast. Returns new samples, x itself at 100%.
+function stretchSamples(x, sr, rate){
+  if (Math.abs(rate-1)<0.005) return x;
+  const N=Math.round(sr*0.03)&~1, Hs=N>>1, Ha=Hs*rate, D=Math.round(sr*0.008), st=sr>30000?2:1;
+  if (x.length<N*2) return x;
+  const w=new Float32Array(N); for (let i=0;i<N;i++) w[i]=0.5-0.5*Math.cos(2*Math.PI*i/N);
+  const outLen=Math.max(1, Math.round(x.length/rate)), y=new Float32Array(outLen+N);
+  for (let i=0;i<N;i++) y[i]=x[i]*(i<Hs?1:w[i]);   // the first half frame is kept whole (no fade-in)
+  let prev=0;
+  for (let k=1;;k++){
+    const target=Math.round(k*Ha), nat=prev+Hs; if (target+N+D>=x.length || nat+N>=x.length || k*Hs+N>y.length) break;
+    let best=0, bestC=-Infinity;
+    for (let d=-D; d<=D; d+=st){ const a=target+d; if (a<0) continue; let c=0; for (let i=0;i<N;i+=st) c+=x[a+i]*x[nat+i]; if (c>bestC){ bestC=c; best=d; } }
+    prev=target+best; const o=k*Hs; for (let i=0;i<N;i++) y[o+i]+=x[prev+i]*w[i];
+  }
+  return y.subarray(0, outLen);
+}
 function b64(ab){ const u=new Uint8Array(ab); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null, u.subarray(i,i+0x8000)); return btoa(s); }
 function unb64(s){ const r=atob(s), u=new Uint8Array(r.length); for(let i=0;i<r.length;i++) u[i]=r.charCodeAt(i); return u.buffer; }
 
@@ -212,7 +250,7 @@ const Speaker = {
     this.loading[key]=(async()=>{ try{
       const c=this.ensureCtx(); const stored=await ClipStore.getProfile(pid); const out={}; const bad=[];
       for (const [w,v] of Object.entries(stored)){ try{ out[w]=await decode(c, await clipBytes(v)); }catch(e){ bad.push(w); } }
-      this.recs[pid]=out; this.recLoaded[pid]=true;
+      this.recs[pid]=out; this.recLoaded[pid]=true; this.fitted={};
       const missing=RECORD_WORDS.filter(w=>!out[w]);
       Diag.add(`${profileName(pid)}: ${RECORD_WORDS.length-missing.length}/${RECORD_WORDS.length} words loaded`+(bad.length?`, failed: ${bad.join(', ')}`:'')+(missing.length&&missing.length<RECORD_WORDS.length?`, missing: ${missing.join(', ')}`:''));
     }catch(e){ Diag.add('load failed for '+profileName(pid)+': '+(e&&e.message||e)); } delete this.loading[key]; })();
@@ -241,29 +279,43 @@ const Speaker = {
     if (k==='rec'){ if (!this.activePid || !this.isComplete(this.activePid)) this.pickReader(false); return !!this.activePid; }
     return k==='sprite' && !!this.sprite[settings.voice];
   },
+  // One clip at audio-clock time t, at the chosen voice speed; returns how long it lasts. At 100% the recording is played
+  // exactly as it is (for a sprite: its slice [off, off+dur]). At any other speed the clip is first made longer or shorter
+  // with the pitch kept (stretchSamples) and then played whole at normal rate, so nothing is cut early or late.
+  fitted:{}, fitRate:1,
+  playClip(key, buf, t, off, dur){
+    const c=this.ctx, rate=snapSpeed('voiceRate', settings.voiceRate); let b=buf, whole=off===undefined;
+    if (rate!==1){
+      if (this.fitRate!==rate){ this.fitted={}; this.fitRate=rate; }
+      b=this.fitted[key];
+      if (!b){ const sr=buf.sampleRate, a=whole?0:Math.round(off*sr), n=whole?buf.length:Math.round(dur*sr), y=stretchSamples(buf.getChannelData(0).subarray(a, a+n), sr, rate); b=c.createBuffer(1, y.length, sr); b.getChannelData(0).set(y); this.fitted[key]=b; }
+      whole=true;
+    }
+    const s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); if (whole) s.start(t); else s.start(t, off, dur); this.playing.push(s);
+    return whole ? b.duration : dur;
+  },
   // Schedule one term at audio-clock time `when`; returns end time. Only when canSchedule().
   scheduleTerm(d, first, when){
-    const c=this.ctx; let t=Math.max(when||0, c.currentTime+0.02); const rate=settings.voiceRate||1;
+    const c=this.ctx; let t=Math.max(when||0, c.currentTime+0.02);
     if (this.kind()==='rec'){
       const r=this.recs[this.activePid];
-      for (const w of termTokens(d, first)){ const b=r[w]; if(!b) continue; const s=c.createBufferSource(); s.buffer=b; s.playbackRate.value=rate; s.connect(c.destination); s.start(t); this.playing.push(s); t+=b.duration/rate+0.06; }
+      for (const w of termTokens(d, first)){ const b=r[w]; if(!b) continue; t+=this.playClip('rec:'+this.activePid+':'+w, b, t)+0.06; }
     } else {
       const buf=this.sprite[settings.voice], m=this.spriteMap[settings.voice];
       const a=Math.abs(d), pre=first?'n':d<0?'m':(settings.sayPlus?'p':'n');
       const ids = a<100 ? [pre+a] : [pre+Math.floor(a/100),'hundred'].concat(a%100?['n'+(a%100)]:[]);
-      for (const id of ids){ const sp=m[id]; if(!sp) continue; const s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; s.connect(c.destination); s.start(t, sp[0], sp[1]); this.playing.push(s); t+=sp[1]/rate+0.05; }
+      for (const id of ids){ const sp=m[id]; if(!sp) continue; t+=this.playClip(settings.voice+':'+id, buf, t, sp[0], sp[1])+0.05; }
     }
     return t;
   },
   // "equals" after the last number, on the audio clock at `when`, at the Listen voice speed. Returns [end time, source],
   // or null when no clip is loaded (the caller then uses the device voice).
   scheduleEquals(when){
-    const c=this.ctx, t=Math.max(when||0, c.currentTime+0.02), rate=settings.voiceRate||1;
-    const play=(buf, off, dur)=>{ const s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; s.connect(c.destination); if (off===undefined) s.start(t); else s.start(t, off, dur); this.playing.push(s); return t+(off===undefined ? buf.duration : dur)/rate; };
+    const c=this.ctx, t=Math.max(when||0, c.currentTime+0.02);
     const own = this.kind()==='rec' && (this.recs[this.activePid]||{}).equals;
-    if (own) return [play(own), 'own recording'];
+    if (own) return [t+this.playClip('rec:'+this.activePid+':equals', own, t), 'own recording'];
     const x=this.extra, sp=x && x.map.equals;
-    return sp ? [play(x.buf, sp[0], sp[1]), 'built-in clip'] : null;
+    return sp ? [t+this.playClip('extra:equals', x.buf, t, sp[0], sp[1]), 'built-in clip'] : null;
   },
   schedulePhrase(word, when){ // feedback words ('yes', 'not quite') for clip voices
     const c=this.ctx; const t=Math.max(when||0,c.currentTime+0.02);
@@ -281,7 +333,7 @@ const Speaker = {
       const go=()=>{
         try{ speechSynthesis.resume(); }catch(e){}
         const u=new SpeechSynthesisUtterance(text); const v=this.deviceVoice(); if (v) u.voice=v;
-        u.rate=settings.voiceRate||1; u.pitch=1;
+        u.rate=snapSpeed('voiceRate', settings.voiceRate); u.pitch=1;   // the device voice keeps its pitch at any rate
         let done=false, started=false; const fin=(why)=>{ if(!done){done=true;res(why);} }; u.onstart=()=>{started=true;}; u.onend=()=>fin(started?'ok':'ended-without-start'); u.onerror=(e)=>fin('error '+(e&&e.error)); setTimeout(()=>fin(started?'ok(timeout)':'TIMEOUT never started'), 2500+text.length*70);
         this.lastUtt=u; speechSynthesis.speak(u);
       };
@@ -1245,7 +1297,7 @@ function drillConfig(n){
     if (!n.drill.flash || settings.flashN!==DEFAULTS.flashN){ c.operands=settings.flashN; delete c.operandsMax; } }
   return c;
 }
-function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec) ? d.flashSec : settings.flashSec; }
+function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec && !settings.flashOwn) ? d.flashSec : settings.flashSec; }   // a skill's own pace, until someone picks one
 function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now();
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
@@ -1272,8 +1324,9 @@ function setStages(){
   $('#listenStage').style.display = mode==='listen'?'':'none';
   $('#flashStage').style.display = mode==='flash'?'':'none';
   $('#drill').dataset.mode = mode; $('#drill').classList.toggle('lt', !!LT);
+  SpeedPanel.close(); $('#speedGear').hidden = !(mode==='listen' || mode==='flash') || !!LT;   // the speed gear: Listen and Flash sets only
 }
-function endDrill(){ dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
+function endDrill(){ SpeedPanel.close(); dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
 function stopTest(){ /* the level test keeps a silent, generous time measure only (LT.start); nothing ticks on screen */ }
 function setEntry(v){ entry=v; Tool.readout(); }
 // The keypad takes one digit more than the answer has (room for a slip, not for a row of digits).
@@ -1289,7 +1342,7 @@ function baseLine(){
 }
 function baseMood(){ return LT ? 'happy' : 'think'; }   // Bix thinks along while she works
 function presentProblem(){
-  const p=problems[idx]; $('#feedback').textContent='';
+  const p=problems[idx]; $('#feedback').textContent=''; submitting=false;
   Tool.apply(); Tool.reset();
   $('#showMeBtn').style.display = reviewing && !LT ? '' : 'none'; $('#drill').classList.toggle('fixing', reviewing && !LT);
   renderStrip();
@@ -1301,10 +1354,49 @@ function presentProblem(){
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
 }
-let dictateToken=0, listenArmed=false;
+let dictateToken=0, listenArmed=false, submitting=false;   // submitting: an answer is being marked (the speed gear waits)
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
   locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
-  const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
+  const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ SpeedPanel.close(); b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
+  if (idx===0 && !reviewing && !LT) SpeedPanel.open('listen', b);   // a new set starts at the speed panel; its Start is this button
+}
+// Say a problem: "seven", "plus five", "minus two", "equals" - with settings.termGap of silence after each number (and
+// before "equals") and at settings.voiceRate. Used by Listen and by "Try it" in the speed panel. alive() turns false
+// when the reading was stopped; returns false then. window.__lastSchedule = [[start, end], ...] in seconds, for tests.
+async function speakTerms(p, alive, pulse){
+  const gap=snapSpeed('termGap', settings.termGap); pulse=pulse||(()=>{});
+  let scheduled=false;
+  if (Speaker.kind()!=='device'){
+    await Speaker.prepare(); if (!alive()) return false;
+    try{ if (Speaker.ctx && Speaker.ctx.state!=='running') await Promise.race([Speaker.ctx.resume(), sleep(1500)]); }catch(e){}
+    scheduled = p.op!=='mul' && Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';   // clips have no "times": mul problems use the device voice
+    Diag.add(`clips ready=${Speaker.canSchedule()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} -> ${scheduled?'audio clock':'device voice fallback'}`);
+  }
+  if (scheduled){
+    // On the audio clock: each number starts `gap` seconds after the one before it has finished. No overlap at any speed.
+    let prevEnd=Speaker.ctx.currentTime+0.3, lastEnd=prevEnd; const sched=[];
+    p.terms.forEach((d,i)=>{
+      const when = i===0 ? prevEnd : prevEnd+gap;
+      const end = Speaker.scheduleTerm(d, i===0, when);
+      sched.push([when,end]); prevEnd=end; lastEnd=end;
+      setTimeout(()=>{ if(alive()) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
+    });
+    // "equals" follows the last number after the same silence.
+    const eqWhen=prevEnd+gap, eq=Speaker.scheduleEquals(eqWhen);
+    if (eq){ sched.push([eqWhen, eq[0]]); lastEnd=eq[0]; setTimeout(()=>{ if(alive()) pulse((eq[0]-eqWhen)*1000); }, Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); }
+    window.__lastSchedule=sched.map(([w,e])=>[+(w-sched[0][0]).toFixed(3), +(e-sched[0][0]).toFixed(3)]);
+    Diag.add('schedule: '+sched.map(([w,e])=>`${(w-sched[0][0]).toFixed(2)}–${(e-sched[0][0]).toFixed(2)}`).join(', '));
+    Diag.add('equals: '+(eq ? eq[1] : 'device voice'));
+    if (eq) await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
+    else { await sleep(Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); if (!alive()) return false; pulse(800); const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
+  } else {
+    const words=i=>p.op==='mul' ? (i===0 ? termText(p.terms[0],true) : 'times '+termText(p.terms[i],true)) : termText(p.terms[i],i===0);
+    const t0=performance.now(), sched=[]; window.__lastSchedule=sched;
+    const one=async text=>{ pulse(800); const a=(performance.now()-t0)/1000; const r=await Speaker.sayDevice(text); sched.push([+a.toFixed(3), +((performance.now()-t0)/1000).toFixed(3)]); Diag.add(`said "${text}" ${r}`); };
+    for (let i=0;i<p.terms.length;i++){ if(!alive()) return false; await one(words(i)); await sleep(gap*1000); }   // the silence starts when the voice has finished
+    if (!alive()) return false; await one('equals');
+  }
+  return alive();
 }
 async function dictate(p){
   Fun.BixVoice.stop();
@@ -1313,42 +1405,13 @@ async function dictate(p){
   if (my!==dictateToken) return;
   $('#listenMsg').textContent = p._reader ? `${profileName(p._reader)} is reading…` : 'Listen…';
   $('#listenStage').classList.add('reading');
-  const gap=settings.gap; const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
+  const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
   const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
-  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, ((p.terms.length+1)*gap+12)*1000);
+  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, ((p.terms.length+1)*(settings.termGap+4)+12)*1000);
   try{
     Speaker.stop();
     Diag.add(`dictate start voice=${settings.voice} kind=${Speaker.kind()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} tts=${('speechSynthesis' in window)?('voices '+speechSynthesis.getVoices().length+(speechSynthesis.speaking?' speaking':'')+(speechSynthesis.paused?' paused':'')):'n/a'}`);
-    let scheduled=false;
-    if (Speaker.kind()!=='device'){
-      await Speaker.prepare(); if (my!==dictateToken) return;
-      try{ if (Speaker.ctx && Speaker.ctx.state!=='running') await Promise.race([Speaker.ctx.resume(), sleep(1500)]); }catch(e){}
-      scheduled = p.op!=='mul' && Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';   // clips have no "times": mul problems use the device voice
-      Diag.add(`clips ready=${Speaker.canSchedule()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} -> ${scheduled?'audio clock':'device voice fallback'}`);
-    }
-    if (scheduled){
-      // Each number starts `gap` seconds after the previous one started, but never before the
-      // previous one has finished speaking (+ a short breath). No overlap at any speed.
-      const MIN_PAUSE = 0.25;
-      let prevStart=null, prevEnd=Speaker.ctx.currentTime+0.3, lastEnd=prevEnd; const sched=[];
-      p.terms.forEach((d,i)=>{
-        const when = i===0 ? prevEnd : Math.max(prevStart+gap, prevEnd+MIN_PAUSE);
-        const end = Speaker.scheduleTerm(d, i===0, when);
-        sched.push([when,end]); prevStart=when; prevEnd=end; lastEnd=end;
-        setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
-      });
-      // "equals" follows the last number in the same rhythm as one number follows another.
-      const eqWhen=Math.max(prevStart+gap, prevEnd+MIN_PAUSE), eq=Speaker.scheduleEquals(eqWhen);
-      if (eq){ sched.push([eqWhen, eq[0]]); lastEnd=eq[0]; setTimeout(()=>{ if(my===dictateToken) pulse((eq[0]-eqWhen)*1000); }, Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); }
-      Diag.add('schedule: '+sched.map(([w,e])=>`${(w-sched[0][0]).toFixed(2)}–${(e-sched[0][0]).toFixed(2)}`).join(', '));
-      Diag.add('equals: '+(eq ? eq[1] : 'device voice'));
-      if (eq) await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
-      else { await sleep(Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); if (my!==dictateToken) return; pulse(800); const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
-    } else {
-      const words=i=>p.op==='mul' ? (i===0 ? termText(p.terms[0],true) : 'times '+termText(p.terms[i],true)) : termText(p.terms[i],i===0);
-      for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(words(i)); Diag.add(`said "${words(i)}" ${r}`); const spent=(Date.now()-started)/1000; await sleep(Math.max(150,(gap-spent)*1000)); }
-      if (my!==dictateToken) return; pulse(800); { const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
-    }
+    if (!await speakTerms(p, ()=>my===dictateToken, pulse)) return;
     if (my!==dictateToken) return; await sleep(settings.answerPause*1000);
     finishUI();
   }catch(e){ Diag.add('dictate error '+(e&&e.message||e)); finishUI(); }
@@ -1363,12 +1426,80 @@ function armFlash(p){
   ++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.className='flash-num hint'; el.innerHTML=TOY.icon('flash', 72);
   flashDots(p.terms.length, 0); $('#flashAgain').style.display='none';
   $('#flashMsg').textContent = idx===0 && !reviewing ? 'Clear your abacus. Numbers pop up one at a time.' : 'Clear your abacus, then tap Ready.';
-  const b=$('#flashGo'); b.style.display=''; b.onclick=()=>{ b.style.display='none'; Speaker.unlock(); flash(p); };
+  const b=$('#flashGo'); b.style.display=''; b.onclick=()=>{ SpeedPanel.close(); b.style.display='none'; Speaker.unlock(); flash(p); };
+  if (idx===0 && !reviewing && !LT) SpeedPanel.open('flash', b);
 }
+/* ---- Speed panel: how fast the numbers come, on the Listen and Flash screens ----
+   Two controls per mode (SPEED): Listen = voice speed + pause between numbers, Flash = time on screen + pause between
+   numbers. Each is a bead on a brass rod with the exact value on a chip, wooden - / + discs (one step), a tortoise at
+   the slow end and a hare at the fast end. Values are settings.* (per child), the same ones Grown-ups edits.
+   Before a set: opened by armListen / armFlash, and the set's own Ready button sits in the panel as "Start".
+   During a set: the gear disc opens it (no grown-ups gate - the owner's decision); whatever is being said or flashed
+   stops, and Done starts the current problem again from its first number. "Try it" plays 3 + 4 - 2 at the chosen speed. */
+const SPEED_ART = {
+  tortoise: sz=>`<svg width="${sz}" height="${Math.round(sz*.75)}" viewBox="0 0 48 36" aria-hidden="true"><ellipse cx="24" cy="33.5" rx="18" ry="2" fill="rgba(58,30,6,.18)"/><rect x="10" y="24" width="8" height="8" rx="3.5" fill="#7DBE7B"/><rect x="28" y="24" width="8" height="8" rx="3.5" fill="#7DBE7B"/><path d="M36,22 q8,-7 10,0 q0,5 -6,5 h-5z" fill="#8FCB8C"/><circle cx="42.6" cy="20.6" r="1.2" fill="#28357A"/><path d="M5,27 Q4,8 21,8 Q38,8 38,27 Z" fill="#1FA595"/><path d="M5,27 Q4,8 21,8 Q38,8 38,27" fill="none" stroke="#16897C" stroke-width="1.6"/><path d="M12,14 q8,-5 17,-1" fill="none" stroke="#B6F5EA" stroke-width="2.2" stroke-linecap="round" opacity=".7"/><path d="M14,27 L18,17 H25 L29,27 M18,17 L15,11 M25,17 L28,11" fill="none" stroke="#16897C" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  hare: sz=>`<svg width="${sz}" height="${Math.round(sz*.75)}" viewBox="0 0 48 36" aria-hidden="true"><ellipse cx="24" cy="33.5" rx="17" ry="2" fill="rgba(58,30,6,.18)"/><path d="M2,15 h7 M1,21 h9 M3,27 h6" stroke="#B58A2A" stroke-width="2" stroke-linecap="round"/><circle cx="13" cy="21" r="3.6" fill="#FFFDF6" stroke="#C99A38" stroke-width="1.2"/><ellipse cx="25" cy="23" rx="12" ry="8.4" fill="#F1C24E"/><ellipse cx="18" cy="30.6" rx="7" ry="2.6" fill="#D9A22E"/><ellipse cx="34" cy="31" rx="4.6" ry="2.2" fill="#D9A22E"/><ellipse cx="33.5" cy="7.5" rx="2.7" ry="7.5" transform="rotate(-24 33.5 7.5)" fill="#F1C24E"/><ellipse cx="39" cy="7" rx="2.7" ry="7.5" transform="rotate(-6 39 7)" fill="#E9B43C"/><circle cx="39" cy="17" r="6.6" fill="#F1C24E"/><circle cx="41.4" cy="15.8" r="1.3" fill="#28357A"/><circle cx="45.2" cy="18.4" r="1.1" fill="#C0552F"/><path d="M19,18 q6,-4 12,-2" fill="none" stroke="#FFF1B8" stroke-width="2" stroke-linecap="round" opacity=".8"/></svg>`,
+};
+const SpeedPanel = {
+  kind:null, go:null, home:null, resume:null, tok:0,
+  isOpen(){ return !$('#speedPop').hidden; },
+  keys(){ return this.kind==='flash' ? ['flashSec','flashGap'] : ['voiceRate','termGap']; },
+  value(k){ return snapSpeed(k, k==='flashSec' ? flashSeconds() : settings[k]); },
+  set(k, v){ v=snapSpeed(k, v); if (v!==this.value(k)){ settings[k]=v; if (k==='flashSec') settings.flashOwn=true; saveSettings(); this.stopTry(); Sfx.tap(); } this.paint(k); },
+  paint(k){ const el=$(`#spCtrls [data-k="${k}"]`), s=SPEED[k], v=this.value(k), r=el.querySelector('input'); el.querySelector('.sp-val').textContent=s.fmt(v); r.value=v; r.setAttribute('aria-valuetext', s.fmt(v)); el.querySelector('[data-d="-1"]').disabled=v<=s.min; el.querySelector('[data-d="1"]').disabled=v>=s.max; },
+  build(){
+    $('#spCtrls').innerHTML=this.keys().map(k=>{ const s=SPEED[k], lo=s.lowIsFast?'hare':'tortoise', hi=s.lowIsFast?'tortoise':'hare', nm=n=>n==='hare'?'fast':'slow';
+      return `<div class="sp-ctrl" data-k="${k}"><label class="sp-label" for="sp_${k}">${s.label}</label><output class="sp-val" for="sp_${k}"></output><div class="sp-row">`
+        + `<button type="button" class="toy-iconbtn sp-step" data-d="-1" aria-label="${s.label}: one step down">${TOY.icon('minus', 30, 'currentColor')}</button><span class="sp-end" data-end="${nm(lo)}">${SPEED_ART[lo](50)}</span>`
+        + `<input type="range" id="sp_${k}" min="${s.min}" max="${s.max}" step="${s.step}">`
+        + `<span class="sp-end" data-end="${nm(hi)}">${SPEED_ART[hi](50)}</span><button type="button" class="toy-iconbtn sp-step" data-d="1" aria-label="${s.label}: one step up">${TOY.icon('plus', 30, 'currentColor')}</button></div></div>`; }).join('');
+    this.keys().forEach(k=>this.paint(k));
+  },
+  open(kind, goBtn){
+    if (this.isOpen()) this.close();
+    this.kind=kind; this.build(); const pop=$('#speedPop'), flashK=kind==='flash';
+    if (!$('#bixSpeed').firstChild) $('#bixSpeed').innerHTML=TOY.bix('happy', 92, {still:true});
+    $('#spSub').textContent = (flashK ? 'How fast should the numbers pop up?' : 'How fast should I say the numbers?') + (goBtn ? ' Then tap Start.' : ' Then tap Done.');
+    $('#spPreview').hidden=!flashK; $('#spPreview').textContent=''; $('#spTry .pr-ic').innerHTML=TOY.icon(flashK ? 'eye' : 'speaker', 28, 'currentColor'); $('#spTry').querySelector('.toy-block-label').textContent='Try it';
+    if (goBtn){ this.go=goBtn; this.home={parent:goBtn.parentNode, next:goBtn.nextSibling}; this.goLabel=goBtn.querySelector('.toy-block-label').textContent; goBtn.querySelector('.toy-block-label').textContent='Start'; $('#spGoSlot').appendChild(goBtn); }
+    $('#spDone').hidden=!!goBtn; pop.hidden=false; $('#drill').classList.add('sp-open'); $('#speedGear').setAttribute('aria-expanded','true');
+  },
+  close(){
+    if (!this.isOpen()) return; this.stopTry();
+    if (this.go){ this.go.querySelector('.toy-block-label').textContent=this.goLabel; this.home.parent.insertBefore(this.go, this.home.next); this.go=null; }
+    this.resume=null; $('#speedPop').hidden=true; $('#drill').classList.remove('sp-open'); $('#speedGear').setAttribute('aria-expanded','false');
+  },
+  done(){ const r=this.resume; this.close(); Speaker.unlock(); if (r) r(); },
+  // The gear: stop what is being said / flashed, show the panel; Done starts the same problem again from the top.
+  gear(){
+    if (this.isOpen()){ if (!this.go) this.done(); return; }
+    const p=problems[idx]; if (LT || demoing || submitting || !p || !(mode==='listen' || mode==='flash') || !$('#drill').classList.contains('active')) return;
+    const waiting = $(mode==='listen' ? '#listenGo' : '#flashGo').style.display!=='none';   // still at "Ready": nothing to stop
+    if (!waiting){
+      dictateToken++; Speaker.stop(); Fun.BixVoice.stop(); locked=true; Tool.setReady(false);
+      if (mode==='listen'){ $('#listenStage').classList.remove('reading'); $('#listenMsg').textContent='Paused'; $('#replayBtn').disabled=true; }
+      else { const el=$('#flashNum'); el.textContent=''; el.className='flash-num'; $('#flashMsg').textContent='Paused'; $('#flashAgain').style.display='none'; }
+    }
+    Sfx.tap(); this.open(mode, null); this.resume = waiting ? null : ()=>{ if (mode==='listen') dictate(p); else flash(p); };
+  },
+  async tryIt(){
+    const my=++this.tok, alive=()=>my===this.tok && this.isOpen(), sample={terms:[3,4,-2]}; Speaker.unlock(); Speaker.stop(); Fun.BixVoice.stop();
+    if (this.kind==='flash'){ const el=$('#spPreview'); for (let i=0;i<3;i++){ if (!alive()) return; el.innerHTML=flashSign(sample.terms[i], i); await sleep(this.value('flashSec')*1000); if (!alive()) return; el.textContent=''; await sleep(this.value('flashGap')*1000); } return; }
+    await speakTerms(sample, alive);
+  },
+  stopTry(){ this.tok++; Speaker.stop(); $('#spPreview').textContent=''; },
+  init(){
+    $('#spCtrls').addEventListener('click', e=>{ const b=e.target.closest('.sp-step'); if (!b) return; const k=b.closest('.sp-ctrl').dataset.k; this.set(k, this.value(k)+(+b.dataset.d)*SPEED[k].step); });
+    $('#spCtrls').addEventListener('input', e=>{ const c=e.target.closest('.sp-ctrl'); if (c) this.set(c.dataset.k, e.target.value); });
+    $('#spTry').addEventListener('click', ()=>this.tryIt()); $('#spDone').addEventListener('click', ()=>this.done()); $('#speedGear').addEventListener('click', ()=>this.gear());
+    document.addEventListener('keydown', e=>{ if (e.key==='Escape' && this.isOpen() && !this.go) this.done(); });
+  },
+};
+SpeedPanel.init();
 async function flash(p){
   const my=++dictateToken; locked=true; Tool.setReady(false); const el=$('#flashNum'); el.textContent=''; el.className='flash-num';
   $('#flashMsg').textContent='Watch…'; $('#flashGo').style.display='none'; $('#flashAgain').style.display='none'; flashDots(p.terms.length, 0); await sleep(600);
-  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); flashLen(el, t); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(180); }
+  for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const t=p.terms[i]; el.className='flash-num pop'+(t<0?' neg':''); flashLen(el, t); el.innerHTML=flashSign(t,i,p); flashDots(p.terms.length, i+1); await sleep(flashSeconds()*1000); el.textContent=''; el.className='flash-num'; await sleep(settings.flashGap*1000); }
   if(my!==dictateToken) return; el.className='flash-num ask'; el.textContent='';   /* the answer slot already shows "?" (no third question mark) */
   $('#flashMsg').textContent = Tool.kind==='beads' ? 'What did you get? Show it on the beads.' : 'What did you get? Tap it in.'; $('#flashAgain').style.display = LT ? 'none' : ''; locked=false; Tool.setReady(true);
 }
@@ -1383,7 +1514,7 @@ async function submit(){
   const val=Tool.value(); const p=problems[idx];
   if (val===null){ shake(); return; }
   if (Tool.kind==='beads' && !Tool.ab.moves().length && val===0){ PB.say('Move the beads first, then tap Check.', 'think', null, 2200); shake(); return; }
-  locked=true; const fb=$('#feedback');
+  locked=true; submitting=true; const fb=$('#feedback');
   if (LT){   // level test: no right/wrong on the screen, just on to the next one
     LT.answers[idx]={value:val, atMs:Date.now()-LT.start}; results[idx]=val===p.answer; Sfx.pop(); fb.textContent='Got it.';
     await sleep(350); return next();
@@ -1480,7 +1611,7 @@ function finish(){
   endDrill(); const correct=results.filter(r=>r===true).length; const secs=Math.round((Date.now()-t0)/1000); let leveled=false;
   if (!reviewing){
     const checked=problems.filter(p=>p._method!==undefined);
-    history.unshift({ at:new Date().toISOString(), mode, node:drillNode.id, count:problems.length, correct, secs, gap:mode==='listen'?settings.gap:null,
+    history.unshift({ at:new Date().toISOString(), mode, node:drillNode.id, count:problems.length, correct, secs, gap:mode==='listen'?settings.termGap:null,
       op:drillNode.drill&&drillNode.drill.op, tool:Tool.kind, methodChecked:checked.length, methodOk:checked.filter(p=>p._method).length,
       missed: problems.map((p,i)=>results[i]===false?{terms:p.terms,answer:p.answer,given:p._given,rules:p.rulesUsed,op:p.op}:null).filter(Boolean) });
     history=history.slice(0,200); save('history',history); days[todayKey()]=true; save('days',days);
@@ -1765,7 +1896,7 @@ $('#gateOk').addEventListener('click', ()=>{
 $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
 
 /* ---------------- parent ---------------- */
-function bindRange(id,key,fmt){ const el=$(id), v=$(id+'V'); el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]); el.oninput=()=>{ settings[key]=parseFloat(el.value); v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); }; }
+function bindRange(id,key,fmt){ const el=$(id), v=$(id+'V'); el.value=settings[key]; v.textContent=(fmt||(x=>x))(settings[key]); el.oninput=()=>{ settings[key]=SPEED[key] ? snapSpeed(key, el.value) : parseFloat(el.value); if (key==='flashSec') settings.flashOwn=true; v.textContent=(fmt||(x=>x))(settings[key]); saveSettings(); }; }
 function bindSwitch(id,key,after){ const el=$(id); el.classList.toggle('on',!!settings[key]); el.onclick=()=>{ settings[key]=!settings[key]; el.classList.toggle('on',settings[key]); saveSettings(); if(after) after(); }; }
 // One glance at whether this device is set up well. Each row: status, what it means, and a button to fix it.
 async function renderChecklist(){
@@ -1921,8 +2052,10 @@ async function renderParent(){
   $('#sBixTest').onclick=async()=>{ Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play(['intro_hi','tap_3','tap_4','sum_amazing'][Math.floor(Math.random()*4)]); };
   $('#levelAgain').onclick=()=>{ Recorder.stop(); Setup.open('check'); };
   bindRange('#sCount','count'); bindRange('#sOperands','operands',x=>x===0?'auto':x); bindSwitch('#sSfx','sfx'); bindSwitch('#sSpeakFb','speakFeedback');
-  const s=x=>x+' s'; bindRange('#sGap','gap',s); bindRange('#sGapMin','gapMin',s); bindRange('#sGapMax','gapMax',s); bindSwitch('#sSayPlus','sayPlus');
-  bindRange('#sRate','voiceRate',x=>x.toFixed(2)+'×'); bindRange('#sPause','answerPause',s); bindRange('#sFlash','flashSec',x=>x.toFixed(1)+' s'); bindRange('#sFlashN','flashN');
+  const s=x=>x+' s'; bindSwitch('#sSayPlus','sayPlus');
+  // The four speed settings are the ones the speed panel on the Listen / Flash screens edits (SPEED): same steps, same units.
+  bindRange('#sGap','termGap',SPEED.termGap.fmt); bindRange('#sRate','voiceRate',SPEED.voiceRate.fmt); bindRange('#sFlash','flashSec',SPEED.flashSec.fmt); bindRange('#sFlashGap','flashGap',SPEED.flashGap.fmt);
+  bindRange('#sPause','answerPause',s); bindRange('#sFlashN','flashN');
   fillVoiceSelect(); $('#sVoice').onchange=async()=>{ settings.voice=$('#sVoice').value; saveSettings(); Speaker.activePid=null; await Speaker.prepare(); fillVoiceSelect(); $('#diagLog').textContent=Diag.lines.join('\n'); renderChecklist(); };
   $('#sVoiceTest').onclick=async()=>{ Speaker.unlock(); Speaker.stop(); await Speaker.prepare(); Speaker.pickReader(); if (Speaker.activePid) Diag.add('test: '+profileName(Speaker.activePid)+' reading'); const seq=[[7,true],[3,false],[-4,false],[12,false]];
     if (Speaker.canSchedule()){ const t0=Speaker.ctx.currentTime+0.1; seq.forEach(([d,f],i)=>Speaker.scheduleTerm(d,f,t0+i*1.3)); } else { for (const [d,f] of seq){ await Speaker.sayDevice(termText(d,f)); await sleep(300); } } };

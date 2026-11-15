@@ -416,3 +416,41 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #summary .tp-moons .after{animation:none}
 }
 body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wrong,body.ws-calm #drill .tp-listen.reading .tp-ear,body.ws-calm #summary .tp-catch .tp-b.in{animation:none}
+
+/* =====================================================================
+   SPEED PANEL (Listen and Flash): a sheet of paper over the table, below the wall so the X, the gear and the bead rod
+   stay in reach. Each control: label + big value chip, then  - disc | slow/fast picture | bead on a brass rod | picture | + disc
+   ===================================================================== */
+#drill .tp-gear{flex:none;margin-left:14px}
+#drill .tp-gear[hidden]{display:none}
+#drill.sp-open .tp-gear{box-shadow:inset 0 0 0 3px var(--toy-mustard-dk),0 2px 0 var(--toy-wood-deep);transform:translateY(4px)}
+#drill .sp{position:absolute;left:0;right:0;top:var(--toy-wall-h);bottom:0;z-index:20;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:10px 24px 18px;background:rgba(58,30,6,.5)}
+#drill .sp[hidden]{display:none}
+#drill .sp-card{box-sizing:border-box;width:min(800px,100%);max-height:100%;padding:20px 28px 22px;border-radius:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 0 rgba(58,30,6,.25),8px 22px 26px rgba(var(--toy-shade),.45)}
+#drill .sp-head{display:flex;align-items:center;gap:14px;min-height:0}
+#drill .sp-bix{flex:none;line-height:0;margin:-6px 0 -4px -6px}
+#drill .sp-title{margin:0;font:600 32px/1.1 var(--toy-display);color:var(--toy-ink)}
+#drill .sp-sub{margin:4px 0 0;font:400 19px/1.3 var(--toy-body);color:var(--toy-ink-soft)}
+#drill .sp-ctrls{display:flex;flex-direction:column;gap:12px}
+#drill .sp-ctrl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 16px;padding:12px 16px 14px;border-radius:14px;background:linear-gradient(#FBF4E2,#F3E8CF);box-shadow:inset 0 0 0 1px rgba(122,74,36,.2)}
+#drill .sp-label{font:600 24px/1.2 var(--toy-display);color:var(--toy-ink)}
+#drill .sp-val{box-sizing:border-box;min-width:138px;padding:8px 12px 5px;border-radius:12px;text-align:center;font:700 40px/1 var(--toy-display);font-variant-numeric:tabular-nums;color:var(--toy-ink);background:#FFFDF6;box-shadow:inset 0 0 0 3px var(--toy-mustard-dk),inset 2px 4px 5px rgba(var(--toy-shade),.1)}
+#drill .sp-row{grid-column:1/3;display:flex;align-items:center;gap:12px;min-width:0}
+#drill .sp-step{flex:none}
+#drill .sp-step:disabled{opacity:.4;cursor:default}
+#drill .sp-end{flex:none;line-height:0}
+#speedPop input[type=range]{width:auto;height:64px;touch-action:none}
+#speedPop input[type=range]::-webkit-slider-thumb{width:42px;height:58px;margin-top:-24px}
+#speedPop input[type=range]::-moz-range-thumb{width:42px;height:58px}
+#drill .sp-preview{height:64px;display:flex;align-items:center;justify-content:center;border-radius:14px;font:700 48px/1 var(--toy-display);color:var(--toy-ink);background:#FFFDF6;box-shadow:inset 0 0 0 2px rgba(122,74,36,.2)}
+#drill .sp-preview[hidden]{display:none}
+#drill .sp-preview b{margin-right:6px;font-weight:700}
+#drill .sp-foot{display:flex;align-items:center;justify-content:center;gap:20px;padding-top:2px}
+#drill .sp-foot [hidden]{display:none}
+#drill .sp-goslot:empty{display:none}
+#drill .sp-goslot .toy-block{min-width:240px;min-height:76px;font-size:28px}
+@media (min-width:1300px) and (min-height:960px){
+  #drill .sp-card{width:900px;padding:28px 36px 30px;gap:20px}
+  #drill .sp-title{font-size:38px} #drill .sp-sub{font-size:22px} #drill .sp-label{font-size:28px} #drill .sp-val{font-size:46px;min-width:160px}
+  #drill .sp-ctrl{padding:16px 20px 18px}
+}

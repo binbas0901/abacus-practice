@@ -197,6 +197,7 @@
   <div id="drillSky" aria-hidden="true"></div>
   <div class="tp-top">
     <button class="toy-iconbtn" id="exitDrill" aria-label="Leave practice"><span class="pr-ic" data-ic="close" data-sz="30"></span></button>
+    <button class="toy-iconbtn tp-gear" id="speedGear" aria-label="Speed" aria-haspopup="dialog" hidden><span class="pr-ic" data-ic="gear" data-sz="30"></span></button>
     <div class="tp-topright">
       <span class="toy-chip tp-fixlabel" id="fixLabel" hidden>Polishing</span>
       <div class="tp-rodwrap"><i class="tp-post"></i><div class="tp-rod" id="strip" role="list" aria-label="Problems in this set"></div><i class="tp-post"></i></div>
@@ -238,6 +239,19 @@
       </div>
       </div>
       <div class="tp-sr" id="feedback" aria-live="polite"></div>
+    </div>
+  </div>
+  <!-- Speed panel (Listen and Flash): before a set (with Start) and from the gear during one (with Done). SpeedPanel in app.js. -->
+  <div class="sp" id="speedPop" role="dialog" aria-labelledby="spTitle" hidden>
+    <div class="toy-paper sp-card">
+      <div class="sp-head"><span class="sp-bix" id="bixSpeed" aria-hidden="true"></span><div><h2 class="sp-title" id="spTitle">Pick your speed</h2><p class="sp-sub" id="spSub"></p></div></div>
+      <div class="sp-ctrls" id="spCtrls"></div>
+      <div class="sp-preview" id="spPreview" aria-live="polite" hidden></div>
+      <div class="sp-foot">
+        <button type="button" class="toy-block toy-block--wood toy-block--sm" id="spTry"><span class="pr-ic" data-ic="speaker" data-sz="28"></span><span class="toy-block-label">Try it</span></button>
+        <span class="sp-goslot" id="spGoSlot"></span>
+        <button type="button" class="toy-block toy-block--teal toy-block--sm" id="spDone"><span class="pr-ic" data-ic="check" data-sz="28"></span><span class="toy-block-label">Done</span></button>
+      </div>
     </div>
   </div>
 </section>
@@ -374,7 +388,8 @@
     <h2 id="guPracticeH">Practice</h2>
     <div class="field gu-slide"><label for="sCount">Problems per set</label><div><input type="range" id="sCount" min="5" max="20" step="1"><span class="val" id="sCountV"></span></div></div>
     <div class="field gu-slide"><label for="sOperands">Numbers per problem<span class="hint">0 = use each skill's own default (3–4)</span></label><div><input type="range" id="sOperands" min="0" max="8" step="1"><span class="val" id="sOperandsV"></span></div></div>
-    <div class="field gu-slide"><label for="sFlash">Flash: seconds each number stays</label><div><input type="range" id="sFlash" min="0.3" max="3" step="0.1"><span class="val" id="sFlashV"></span></div></div>
+    <div class="field gu-slide"><label for="sFlash">Flash: seconds each number stays<span class="hint">The child can also change this on the Flash screen.</span></label><div><input type="range" id="sFlash" min="0.3" max="3" step="0.1"><span class="val" id="sFlashV"></span></div></div>
+    <div class="field gu-slide"><label for="sFlashGap">Flash: pause between numbers</label><div><input type="range" id="sFlashGap" min="0.05" max="1" step="0.05"><span class="val" id="sFlashGapV"></span></div></div>
     <div class="field gu-slide"><label for="sFlashN">Flash: numbers per problem</label><div><input type="range" id="sFlashN" min="2" max="8" step="1"><span class="val" id="sFlashNV"></span></div></div>
     <div class="field"><label>Sound effects</label><button class="switch" id="sSfx" aria-label="Sound effects"></button></div>
     <div class="field"><label>Spoken feedback ("Yes!" / "Not quite")</label><button class="switch" id="sSpeakFb" aria-label="Spoken feedback"></button></div>
@@ -395,9 +410,8 @@
     <div class="field"><label>Bix talks out loud<span class="hint">Greetings, jokes, cheers and tips. Bix stays quiet while numbers are being read in Listen mode.</span></label><button class="switch" id="sBixTalks" aria-label="Bix talks out loud"></button></div>
     <div class="field"><label for="sBixVoice">Bix's voice</label><div><select id="sBixVoice"></select> <button class="btn small ghost" id="sBixTest">Test</button></div></div>
     <h3>Listening</h3>
-    <div class="field gu-slide"><label for="sGap">Seconds between numbers<span class="hint">Start of one number to the start of the next. A number never starts before the last one has finished, so very low values mean "as fast as the words allow".</span></label><div><input type="range" id="sGap" min="0.5" max="12" step="0.25"><span class="val" id="sGapV"></span></div></div>
-    <div class="field gu-slide"><label for="sGapMin">Fastest they may choose</label><div><input type="range" id="sGapMin" min="0.5" max="12" step="0.25"><span class="val" id="sGapMinV"></span></div></div>
-    <div class="field gu-slide"><label for="sGapMax">Slowest they may choose</label><div><input type="range" id="sGapMax" min="0.5" max="12" step="0.25"><span class="val" id="sGapMaxV"></span></div></div>
+    <div class="field gu-slide"><label for="sGap">Pause between numbers<span class="hint">The silence after one number before the next is said, and before “equals”. The child can also change this, and the voice speed, on the Listen screen: these are the same two settings.</span></label><div><input type="range" id="sGap" min="0.05" max="1.2" step="0.05"><span class="val" id="sGapV"></span></div></div>
+    <div class="field gu-slide"><label for="sRate">Voice speed<span class="hint">100% is the voice as it was recorded. Faster or slower keeps the pitch.</span></label><div><input type="range" id="sRate" min="0.7" max="1.5" step="0.1"><span class="val" id="sRateV"></span></div></div>
     <div class="field"><label>Say "plus" before added numbers<span class="hint">Off = only "minus" is spoken</span></label><button class="switch" id="sSayPlus" aria-label="Say plus before added numbers"></button></div>
     <div class="field"><label for="sVoice">Voice<span class="hint">"Recorded" voices are family members' own recordings. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">Test</button></div></div>
     <div class="recpanel" id="recPanel">
@@ -410,7 +424,6 @@
       </div>
       <div class="note" id="recStatus"></div>
     </div>
-    <div class="field gu-slide"><label for="sRate">Voice speed<span class="hint">1.00× is most natural; higher also raises the pitch</span></label><div><input type="range" id="sRate" min="0.8" max="1.5" step="0.05"><span class="val" id="sRateV"></span></div></div>
     <div class="field gu-slide"><label for="sPause">Pause before "Your answer?"</label><div><input type="range" id="sPause" min="0" max="5" step="0.5"><span class="val" id="sPauseV"></span></div></div>
   </section>
 

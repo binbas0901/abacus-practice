@@ -21,7 +21,7 @@ ok = True
 def check(name, cond, detail=''):
     global ok; ok = ok and bool(cond); print(('PASS' if cond else 'FAIL'), name, detail)
 async def listen(pg, voice, gap=1, rate=1.0, node=None, nopack=False):
-    await pg.evaluate("([v,g,r,n])=>{const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice=v; st.profiles=[{id:'p1',name:'Mom'}]; st.gap=g; st.gapMin=0.5; st.voiceRate=r; st.answerPause=0.5; st.sayPlus=true; st.speakFeedback=false; st.sfx=false; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st)); if(n){ const pr=JSON.parse(window.__legacy('progress')||'{}'); pr.current=n; localStorage.setItem('abacus.progress',JSON.stringify(pr)); } }", [voice, gap, rate, node])
+    await pg.evaluate("([v,g,r,n])=>{const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice=v; st.profiles=[{id:'p1',name:'Mom'}]; st.termGap=g; st.voiceRate=r; st.answerPause=0.5; st.sayPlus=true; st.speakFeedback=false; st.sfx=false; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st)); if(n){ const pr=JSON.parse(window.__legacy('progress')||'{}'); pr.current=n; localStorage.setItem('abacus.progress',JSON.stringify(pr)); } }", [voice, gap, rate, node])
     await pg.reload(); await pg.wait_for_timeout(400); await pg.evaluate(HOOK)
     if nopack: await pg.evaluate("App.Speaker.prepare().then(()=>{ App.Speaker.extra=null; App.Speaker.loadExtra=async()=>{}; })")   # as if audio/voice-ljspeech-extra.js could not be fetched
     await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo')
@@ -44,14 +44,14 @@ async def main():
         # (headless Chrome has no speech engine, so each utterance times out; only the order and the settings are checked here)
 
         # 2) built-in clips (Linda): the last clip is "equals" from the small pack, one gap after the last number started
-        for gap, rate in [(1.5, 1.0), (0.5, 1.4)]:
+        for gap, rate in [(1.2, 1.0), (0.3, 1.4)]:
             r = await listen(pg, 'ljspeech', gap=gap, rate=rate); st = r['starts']; log = '\n'.join(r['log'])
             eqlen = await pg.evaluate("App.Speaker.extra && App.Speaker.extra.map.equals[1]")
             check(f'clips gap={gap} rate={rate}: audio clock, "equals" from the built-in clip', 'audio clock' in log and 'equals: built-in clip' in log, '')
-            check(f'clips gap={gap} rate={rate}: last sound is the "equals" clip', len(st) >= 3 and eqlen and abs(st[-1][2] - eqlen) < 1e-3, 'clip %.3fs' % (st[-1][2] if st else 0))
-            check(f'clips gap={gap} rate={rate}: "equals" at the voice speed', abs(st[-1][3] - rate) < 1e-6)
-            # rhythm: equals starts max(gap after the last number started, a breath after it ended), like every other number
-            want = max(st[-2][0] + gap, st[-2][1] + 0.25); check(f'clips gap={gap} rate={rate}: same gap before "equals" as between numbers', abs(st[-1][0] - want) < 0.08 and st[-1][0] >= st[-2][1] - 1e-3, 'equals at +%.2fs after the last number started (gap %.2f)' % (st[-1][0] - st[-2][0], gap))
+            check(f'clips gap={gap} rate={rate}: last sound is the "equals" clip, at the voice speed with the pitch kept (playback rate 1)', len(st) >= 3 and eqlen and abs(st[-1][2] - eqlen / rate) < 0.01 and st[-1][3] == 1, 'clip %.3fs' % (st[-1][2] if st else 0))
+            # rhythm: the silence before "equals" is the pause between numbers (settings.termGap)
+            sch = await pg.evaluate("window.__lastSchedule"); gp = [round(b0 - a1, 3) for (a0, a1), (b0, b1) in zip(sch, sch[1:])]
+            check(f'clips gap={gap} rate={rate}: same pause before "equals" as between numbers', all(abs(x - gap) < 0.02 for x in gp) and abs(st[-1][0] - st[-2][1] - gap - 0.05) < 0.03, str(gp))
 
         # 3) a recorded voice without its own "equals": still complete, reads on the audio clock, built-in clip says equals
         await pg.evaluate(SEED + "(false)")
@@ -65,8 +65,8 @@ async def main():
         check('my voice (with equals): own recording says "equals", last', 'equals: own recording' in log and abs(st[-1][2] - 0.77) < 0.01, 'last clip %.3fs' % st[-1][2])
         # (a recorded number is several words, "plus" + "seven": take the start of each number from the schedule in the sound log)
         sch = [[float(x) for x in pair.split('–')] for pair in [l for l in r['log'] if 'schedule:' in l][-1].split('schedule: ')[1].split(', ')]
-        gaps = [b0 - a0 for (a0, a1), (b0, b1) in zip(sch, sch[1:])]
-        check('my voice (with equals): same gap before "equals" as between numbers', len(sch) >= 3 and all(abs(g - gaps[0]) < 0.02 for g in gaps) and abs(sch[-1][1] - sch[-1][0] - 0.77) < 0.02, 'starts %s' % [round(x[0], 2) for x in sch])
+        gaps = [b0 - a1 for (a0, a1), (b0, b1) in zip(sch, sch[1:])]
+        check('my voice (with equals): same pause before "equals" as between numbers', len(sch) >= 3 and all(abs(g - 1) < 0.03 for g in gaps) and abs(sch[-1][1] - sch[-1][0] - 0.77) < 0.02, 'pauses %s' % [round(x, 2) for x in gaps])
 
         # 5) the recorder offers "equals" as a 34th word and says what happens without it
         await pg.evaluate(SEED + "(false)"); await pg.reload(); await pg.wait_for_timeout(400)

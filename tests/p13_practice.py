@@ -166,7 +166,7 @@ async def main():
         await collect_all(pg)
         await pg.click('#testBtn'); await pg.wait_for_selector('#drill.active'); d = await drill(pg)
         check('level test runs in the practice layout with NO visible time beads or countdown (timing is silent)', d['levelTest'] and not await pg.locator('#testTime').count()
-              and await pg.evaluate("document.querySelectorAll('#drill .tp-top svg').length") == len(d['strip']) + 1
+              and await pg.evaluate("document.querySelectorAll('#drill .tp-top svg').length - document.querySelectorAll('#speedGear svg').length") == len(d['strip']) + 1 and not await pg.is_visible('#speedGear')
               and not re.search(r'second|time left|hurry', await pg.text_content('#drill'), re.I) and not await pg.locator('#showMeBtn').is_visible())
         await shot(pg, 'level_test')
         n = len(d['strip'])
@@ -223,13 +223,16 @@ async def main():
         await pg.click('#exitDrill')
         # listen + flash screens (layout)
         await pg.evaluate("App.startMode('listen')"); await pg.wait_for_selector('#listenGo', state='visible')
-        check('Listen: numbers hidden, listening card + Ready; no speed control on the child screen (it lives in Grown-ups)', await pg.evaluate("getComputedStyle(document.getElementById('problemArea')).display==='none'")
-              and await pg.locator('#speedBtn, #speedPop, #gapSlider').count()==0 and await pg.locator('#parent #sGap').count()==1 and await pg.locator('#parent #sFlash').count()==1)
+        # v4.2: the speed panel is back on the child's screen (owner's decision, no grown-ups gate): it opens before a set
+        # with the set's own Start button in it, and a gear disc reopens it; Grown-ups edits the same settings. See p20_speed.
+        check('Listen: numbers hidden; the speed panel (2 controls, Start) is on the child screen, the gear too, and the same settings are in Grown-ups', await pg.evaluate("getComputedStyle(document.getElementById('problemArea')).display==='none'")
+              and await pg.is_visible('#speedPop') and await pg.locator('#speedPop .sp-ctrl').count()==2 and await pg.locator('#speedPop #listenGo').count()==1 and await pg.is_visible('#speedGear')
+              and await pg.locator('#parent #sGap').count()==1 and await pg.locator('#parent #sRate').count()==1 and await pg.locator('#parent #sFlash').count()==1)
         await shot(pg, 'listen_ready')
         check('child targets >= 60px on Listen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
         fit = "(()=>{ const els=['#checkBtn','#toolSwitch','#listenStage','#flashStage'].map(q=>document.querySelector(q)).concat([...document.querySelectorAll('#answerTool .abx-svg, #padKeys .toy-keypad')]).filter(e=>e.getClientRects().length); return els.every(e=>{ const r=e.getBoundingClientRect(); return r.bottom<=innerHeight && r.right<=innerWidth && r.left>=0; }); })()"
         for k in range(2):
-            ok = await pg.evaluate(fit); await pg.click('#toolSwitch'); await pg.wait_for_timeout(150)
+            ok = await pg.evaluate(fit); await pg.evaluate("document.querySelector('#toolSwitch').click()"); await pg.wait_for_timeout(150)   # (the speed panel is over the table until Start)
             check(f'Listen ({(await drill(pg))["tool"]=="keys" and "beads" or "keys"}): card, answer tool and Check all fit on screen', ok)
         off = "document.querySelector('#checkBtn').disabled && [...document.querySelectorAll('#pad [data-k]')].filter(b=>b.dataset.k!=='go').every(b=>b.disabled) && document.querySelector('#answerTool').classList.contains('waiting')"
         check('Listen: keypad + Check disabled (dimmed) before the numbers are read', await pg.evaluate(off))

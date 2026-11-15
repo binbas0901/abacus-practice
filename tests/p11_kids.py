@@ -28,7 +28,7 @@ async def main():
         check('history and days kept', len(await pg.evaluate("Store.get('history')"))==1 and '2026-11-10' in await pg.evaluate("Store.get('days')"))
         check('stickers, beads, garden kept', fun.get('stickers',{}).get('s1')==1 and fun.get('beads')==17)
         check('custom treats kept (per child)', s.get('treats',[{}])[0].get('name')=='Chick-fil-A')
-        check('voice profiles and settings kept (family)', s.get('profiles',[{}])[0].get('name')=='Dad' and s.get('voice')=='ljspeech' and s.get('gap')==1.5)
+        check('voice profiles and settings kept (family)', s.get('profiles',[{}])[0].get('name')=='Dad' and s.get('voice')=='ljspeech' and s.get('termGap')==0.6)   # v4.2: the old start-to-start 1.5 s is now a 0.60 s pause
         check('one-time backup of old data saved', await pg.evaluate("!!localStorage.getItem('abacus.backup.v3')"))
         check('old keys cleared', await pg.evaluate("['settings','progress','history','days','fun'].every(k=>localStorage.getItem('abacus.'+k)===null)"))
         check('home shows, no switch button with one child', await pg.is_visible('#home') and not await pg.is_visible('#switchKid'))

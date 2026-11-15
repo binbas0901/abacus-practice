@@ -500,6 +500,7 @@
     gear: (c, a) => `<g stroke-width="3.2">${[0, 45, 90, 135].map(r => `<path d="M12,3.2 V20.8" transform="rotate(${r} 12 12)"/>`).join('')}</g><circle cx="12" cy="12" r="5.6" fill="${c}"/><circle cx="12" cy="12" r="2.3" fill="${a}" stroke="none"/>`,
     retry: () => `<path d="M4.5,12 a7.5,7.5 0 1 0 2.4,-5.5"/><path d="M4,4.6 V9 H8.4"/>`,
     plus: () => `<path d="M12,5.5 V18.5 M5.5,12 H18.5" stroke-width="3.2"/>`,
+    minus: () => `<path d="M5.5,12 H18.5" stroke-width="3.2"/>`,
   };
   // print (a printer with a sheet), share (an arrow leaving a tray), keypad (nine wooden keys)
   ICON.print = (col, acc) => `<path d="M7,9 V4 H17 V9"/><rect x="3.5" y="9" width="17" height="8.5" rx="2.2"/><rect x="7" y="14" width="10" height="6.5" rx="1" fill="${acc}"/><circle cx="17" cy="12" r=".9" fill="${col}" stroke="none"/>`;
