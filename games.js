@@ -173,7 +173,7 @@
       $('#popHint').textContent = `${t.a} and ${v} make ${t.F}!`;
       setTimeout(() => { busy = false; if (!ended && tok === token) { newTarget(); if (calm) grid(); } }, calm ? 700 : 950);
     }
-    // Reduced motion: nothing drifts. Every friend of the family waits in a still grid, shuffled for each new question.
+    // Reduced motion: nothing drifts. Every friend (1-4 for small friends, 1-9 for big) waits in a still grid, shuffled for each new question.
     function grid() {
       if (!layout()) return;
       bubbles.forEach(b => b.el.remove()); bubbles = [];

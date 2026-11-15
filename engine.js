@@ -274,8 +274,8 @@
   const LEVELS = {
     direct_add:  { label: 'Direct add',           allowedRules: ['direct'], requiredRules: [], operands: 4, digits: 1, maxTotal: 9,  allowSubtraction: false },
     direct_sub:  { label: 'Direct add & subtract', allowedRules: ['direct'], requiredRules: [], operands: 4, digits: 1, maxTotal: 9,  allowSubtraction: true },
-    five_family: { label: '5 family (small friends)', allowedRules: ['direct','five'], requiredRules: ['five'], operands: 4, digits: 1, maxTotal: 9, allowSubtraction: true },
-    ten_family:  { label: '10 family (big friends)', allowedRules: ['direct','five','ten'], requiredRules: ['ten'], operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true },
+    five_family: { label: 'Small friends (make 5)', allowedRules: ['direct','five'], requiredRules: ['five'], operands: 4, digits: 1, maxTotal: 9, allowSubtraction: true },
+    ten_family:  { label: 'Big friends (make 10)', allowedRules: ['direct','five','ten'], requiredRules: ['ten'], operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true },
     combined:    { label: 'Combined (both friends)', allowedRules: ['direct','five','ten','combined'], requiredRules: ['combined'], operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true },
     two_digit:   { label: '2-digit mixed',         allowedRules: ['direct','five','ten','combined'], requiredRules: [], operands: 5, digits: 2, maxTotal: 999, allowSubtraction: true },
   };

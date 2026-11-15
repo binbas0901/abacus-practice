@@ -207,8 +207,8 @@
     combined: [
       (n, d, f, op) => { const k = d >= 6 && d <= 9 ? d : 7, g = FRIEND10[k], s = FRIEND5[g];
         return { title: 'Two tricks in one move', text: op === 'sub'
-          ? `Some problems need both friends. Try 14 − ${k} together: take 10 from the tens rod (big friend: give back ${g}). But adding ${g} on the ones rod needs the small friend too: add the 5-bead, take away ${s}. Ask ${n} to say each step out loud slowly; speed comes later.`
-          : `Some problems need both friends. Try 5 + ${k} together: add 10 on the tens rod (big friend: take away ${g}). But taking ${g} from the 5-bead needs the small friend too: take away the 5-bead, add back ${s}. Ask ${n} to say each step out loud slowly; speed comes later.`,
+          ? `Some problems need both friends. (Classes call these combination, mixed-friend or family formulas.) Try 14 − ${k} together: take 10 from the tens rod (big friend: give back ${g}). But adding ${g} on the ones rod needs the small friend too: add the 5-bead, take away ${s}. Ask ${n} to say each step out loud slowly; speed comes later.`
+          : `Some problems need both friends. (Classes call these combination, mixed-friend or family formulas.) Try 5 + ${k} together: add 10 on the tens rod (big friend: take away ${g}). But taking ${g} from the 5-bead needs the small friend too: take away the 5-bead, add back ${s}. Ask ${n} to say each step out loud slowly; speed comes later.`,
           why: 'This is the trickiest move on the abacus. Slow, spoken steps beat fast guessing every time.' }; },
       (n) => ({ title: 'Both friends quiz', text: `Say a number from 1 to 4; ${n} says its small friend (makes 5) AND its big friend (makes 10). Example: 3 → "2 and 7". Do all four.`, why: 'The combined move needs both pairs at once, so practising them side by side helps most.' }),
       (n) => ({ title: 'Slow-motion replay', text: `After practice, pick one red (missed) problem and tap "Show me" together. Pause after each step and ask ${n}: "Which friend was that, the small one or the big one?"`, why: 'Watching the beads and naming each trick untangles which of the two steps went wrong.' }),

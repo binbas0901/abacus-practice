@@ -40,6 +40,11 @@
   function compileNode(spec) { return Object.assign({ mastery: MASTERY }, spec, { drill: compileDrill(spec.drill) }); }
 
   // --- Skill nodes (data) ----------------------------------------------------
+  // Words: SMALL FRIENDS make 5 (1&4, 2&3), BIG FRIENDS make 10 (1&9, 2&8, 3&7, 4&6, 5&5), and the third group of
+  // formulas - a big-friend move that needs a small-friend move inside it - is what classes call combination,
+  // mixed-friend or family formulas ("Both friends together" here). "Family" is a kind of formula, never a set of
+  // numbers; the field `family` below (5 | 10) only says which friend pairs a lesson shows.
+  // Every demo / guided example must stay inside what the skill teaches: curriculum.test.js checks it.
   // Node fields used by the app: id, title, short, icon, kind ('numbers' | 'flash'), intro, family,
   // (icon is the id of a drawn picture, TOY.pic in toystickers.js: no emoji anywhere.)
   // lesson / demos / guided, drill (generateSet2 config + allow/require move specs).
@@ -75,7 +80,7 @@
       drill: { operands: 4, digits: 1, maxTotal: 9, allowSubtraction: true, allow: ['direct', 'five:add', 'five:sub'], require: ['five:sub'] } },
     { id: 'bf_add_a', title: 'Big friends: +9 +8 +7 +6', short: 'Big + (6–9)', icon: 'star', family: 10,
       intro: 'Not enough room on the rod? Add 10 on the next rod and take away the big friend. 1↔9, 2↔8, 3↔7, 4↔6, 5↔5 make 10.',
-      demos: [[8, 9], [7, 8], [4, 7], [9, 6]], guided: [[2, 9], [3, 8], [5, 7], [4, 6], [9, 9], [15, 8]],
+      demos: [[8, 9], [7, 8], [4, 7], [9, 6]], guided: [[2, 9], [3, 8], [3, 7], [4, 6], [9, 9], [14, 8]],   // (5 + 7 and 15 + 8 need both friends: not yet)
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: false, allow: ['direct', 'five:add', 'ten:add:6-9'], require: ['ten:add:6-9'] } },
     { id: 'bf_add_b', title: 'Big friends: +5 +4 +3 +2 +1', short: 'Big + (1–5)', icon: 'star', family: 10,
       intro: 'Same trick with smaller numbers: add 10, take away the big friend.',
@@ -83,15 +88,17 @@
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: false, allow: ['direct', 'five:add', 'ten:add'], require: ['ten:add:1-5'] } },
     { id: 'bf_sub_a', title: 'Big friends: −9 −8 −7 −6', short: 'Big − (6–9)', icon: 'moon', family: 10,
       intro: 'Not enough beads to take away? Take 10 from the next rod and add back the big friend.',
-      demos: [[10, -9], [11, -8], [13, -7], [15, -6]], guided: [[10, -8], [12, -9], [14, -7], [11, -6], [20, -9], [16, -8]],
+      demos: [[10, -9], [11, -8], [16, -7], [15, -6]], guided: [[10, -8], [12, -9], [11, -7], [10, -6], [20, -9], [16, -8]],   // (13 − 7, 14 − 7, 11 − 6 need both friends: not yet)
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true, allow: ['direct', 'five:add', 'five:sub', 'ten:add', 'ten:sub:6-9'], require: ['ten:sub:6-9'] } },
     { id: 'bf_sub_b', title: 'Big friends: −5 −4 −3 −2 −1', short: 'Big − (1–5)', icon: 'moon', family: 10,
       intro: 'Same trick with smaller numbers: take 10, add back the big friend.',
       demos: [[10, -1], [11, -2], [10, -3], [12, -4], [10, -5]], guided: [[10, -2], [11, -3], [13, -4], [10, -4], [14, -5], [21, -2]],
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true, allow: ['direct', 'five:add', 'five:sub', 'ten:add', 'ten:sub'], require: ['ten:sub:1-5'] } },
     { id: 'combined', title: 'Both friends together', short: 'Both', icon: 'yoyo',
-      intro: 'Sometimes the big-friend step needs a small-friend step inside it. Two tricks, one move.',
-      demos: [[6, 7], [5, 8], [12, -7], [11, -6]], guided: [[6, 6], [7, 7], [5, 9], [13, -7], [14, -6], [12, -8]],
+      intro: 'Adding 6, 7, 8 or 9 and the big friend will not come off? Use the small friend inside the big-friend move. Taking away works the same way. Two tricks, one move.',
+      // For grown-ups (Grown-ups > Practice, under "Current skill"): what classes call this group of formulas.
+      parentNote: 'Both friends together: a big-friend move that needs a small-friend move inside it (+6 = +1 −5 +10 … +9 = +4 −5 +10; −6 = −10 +5 −1 … −9 = −10 +5 −4). Classes call these combination, mixed-friend or family formulas.',
+      demos: [[6, 7], [5, 8], [12, -7], [11, -6]], guided: [[6, 6], [7, 7], [5, 9], [13, -7], [14, -6], [13, -8]],   // (12 − 8 is a plain big friend)
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true, allowedRules: ['direct', 'five', 'ten', 'combined'], require: ['combined'] } },
     { id: 'two_digit', title: 'Two-digit numbers', short: '2-digit', icon: 'lion',
       intro: 'Work left to right: tens rod first, then units. Every rod uses the same friends.',

@@ -922,7 +922,7 @@ $('#exitDoor').addEventListener('click', ()=>{ Fun.BixVoice.stop(); renderHome()
 $('#doorAll').addEventListener('click', ()=>openGate('skills'));
 
 /* ---- lesson: Bix shows each trick on a wooden soroban, then she tries it ---- */
-// Number friends in lessons: the family as small lacquer chips in Bix's bubble, and the pair a step is about
+// Number friends in lessons: the lesson's friend pairs as small lacquer chips in Bix's bubble, and the pair a step is about
 // standing on the table next to Bix, holding hands around what they make.
 function friendsHtml(n){
   const ps = n.family===5 ? TOY.FRIENDS.small : n.family===10 ? TOY.FRIENDS.big : [];
@@ -2035,6 +2035,7 @@ async function renderParent(){
   renderReport();
   for (const pp of profiles()) { try{ await Speaker.loadRec(pp.id, true); }catch(e){} }
   const sel=$('#sNode'); sel.innerHTML=''; let og=null; NODES.forEach(n=>{ const lv=levelOf(n); if (!og || og.dataset.lv!=lv){ og=document.createElement('optgroup'); og.label='Level '+lv; og.dataset.lv=lv; sel.appendChild(og); } const o=document.createElement('option'); o.value=n.id; o.textContent=n.title; og.appendChild(o); }); sel.value=progress.current;
+  { const nt=$('#sNodeNote'), t=(C.BY_ID[progress.current]||{}).parentNote||''; nt.textContent=t; nt.hidden=!t; }   // what a class would call this skill
   sel.onchange=()=>{ setTimeout(renderChecklist,0); progress.current=sel.value; const ci=curIdx(); NODES.forEach((n,i)=>{ const st=node(n.id); if(i<ci){ if(!st.mastered) st.mastered='parent'; st.lesson=true; } else if (st.mastered==='parent'){ st.mastered=null; } }); saveProgress(); renderParent(); };
   $('#sName').value=settings.name||''; $('#sName').onchange=()=>{ settings.name=$('#sName').value.trim(); saveSettings(); renderChecklist(); };
   renderChecklist(); renderChildren();
