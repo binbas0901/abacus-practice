@@ -2,6 +2,7 @@
 
 - Live app: main, v4.0 (Toy Table look), released 2026-11-14. v3.13 was the last Workshop-look build.
 - Branch `toy-open` (off main), v4.1, not yet on main: voice and screen both say "polish" (new pack audio/bix-<voice>-polish.js, both voices, built by `python3 tools/make_bix_pack.py polish tools/bix_lines_polish.json sweet boy`; fun.js plays packs before the main recording), the home bubble's moon sentence is spoken (the clips say "Juni": re-record if the moon is renamed, until then they are skipped for any other name), portrait lesson and Bead Detective sorobans at 56-68px bead pitch. Suites p16_polish, p17_portrait.
+- Branch `toy-v42` (off main), v4.2, from the owner's first real-iPad test: Listen says "equals" after the last number on every voice path (device voice: spoken; Linda clips and recorded voices: on the audio clock, one gap after the last number; a recorded voice uses its own "equals" if the person recorded it - optional 34th word - else the built-in clip audio/voice-ljspeech-extra.js built by `python3 tools/make_voice_extra.py`, else the device voice). Suite p18_equals.
 - New look: branch `toy-int` = kit (toy.css, toykit.js, toystickers.js) + all screens merged, 19/19 suites green at ebcd74b.
 - Review 4 (independent): 1 P0, 9 P1, 19 P2. Fixes in progress on two branches off toy-int:
   - `toy-fixA` (behaviour): day-one blank drill (P0), lesson demo race, lesson skip, Boy voice offline, restore dialog, sticker-over-result, small behaviour items.

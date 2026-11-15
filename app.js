@@ -55,11 +55,16 @@ const Sfx = {
      'rec:turns'   take turns: a different recorded person reads each problem
      'device'      the iPad/Mac built-in voice (auto-picks the best English one), or 'device:<voiceURI>'
      'ljspeech'    bundled synthetic voice (audio/voice-ljspeech.js), fallback when nothing else is available
+   After the last number every voice says "equals": the person's own recording, else the built-in clip
+   (audio/voice-ljspeech-extra.js, also used by 'ljspeech'), else the device voice.
    Clip voices are scheduled on the Web Audio clock so pacing is exact.                   */
 const SPRITES = { ljspeech:'Built-in synthetic (Linda)' };
 const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
 const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
-const RECORD_WORDS = [...ONES, ...TENS.slice(2), 'hundred', 'plus', 'minus', 'yes', 'not quite'];
+const RECORD_WORDS = [...ONES, ...TENS.slice(2), 'hundred', 'plus', 'minus', 'yes', 'not quite'];   // a voice is usable once these 33 are recorded
+// Words a person can also record. Without them their voice still reads the numbers; "equals" (said after the last
+// number in Listen) then comes from the built-in clip, audio/voice-ljspeech-extra.js, or failing that the device voice.
+const RECORD_EXTRA = ['equals'], RECORD_ALL = RECORD_WORDS.concat(RECORD_EXTRA);
 function numberWords(n){ const out=[]; if(n>=100){ out.push(ONES[Math.floor(n/100)],'hundred'); n%=100; if(!n) return out; } if(n<20) out.push(ONES[n]); else { out.push(TENS[Math.floor(n/10)]); if(n%10) out.push(ONES[n%10]); } return out; }
 function termTokens(d, first){ const w=numberWords(Math.abs(d)); if(first) return w; if(d<0) return ['minus',...w]; return settings.sayPlus ? ['plus',...w] : w; }
 function termText(d, first){ return termTokens(d, first).join(' '); }
@@ -140,8 +145,16 @@ const Speaker = {
   },
   async prepare(){ // load whatever the current voice needs
     const k=this.kind();
-    if (k==='rec'){ for (const pid of this.recPids()) await this.loadRec(pid); return; }
-    if (k==='sprite') return this.loadSprite(settings.voice);
+    if (k==='rec'){ for (const pid of this.recPids()) await this.loadRec(pid); return this.loadExtra(); }
+    if (k==='sprite'){ await this.loadSprite(settings.voice); return this.loadExtra(); }
+  },
+  // One voice file: audio/voice-<key>.js calls window.__VOICE_LOADED(key, {sprite}, mp3 base64).
+  voiceFile(key, ms){ return new Promise((res,rej)=>{ const prev=window.__VOICE_LOADED; window.__VOICE_LOADED=(k,m,b)=>{ if(k===key) res({map:m,b64:b}); else if (prev) prev(k,m,b); }; const s=document.createElement('script'); s.src='audio/voice-'+key+'.js'; s.onerror=()=>rej(new Error('no voice file')); document.head.appendChild(s); setTimeout(()=>rej(new Error('timeout')),ms); }); },
+  // The small pack with the built-in "equals" (kept apart from the big number sprite, which is never rebuilt).
+  async loadExtra(){
+    if (this.extra) return; if (this.loading.extra) return this.loading.extra;
+    this.loading.extra=(async()=>{ try{ const c=this.ensureCtx(); const {map,b64}=await this.voiceFile('ljspeech-extra', 15000); this.extra={ buf:await decode(c, unb64(b64)), map:map.sprite }; }catch(e){ Diag.add('extra words not loaded: '+(e&&e.message||e)); } delete this.loading.extra; })();
+    return this.loading.extra;
   },
   async loadRec(pid, force){
     if (this.recLoaded[pid] && !force) return;
@@ -168,7 +181,7 @@ const Speaker = {
     if (this.loading[key]) return this.loading[key];
     this.loading[key]=(async()=>{ try{
       const c=this.ensureCtx();
-      const {map,b64}=await new Promise((res,rej)=>{ window.__VOICE_LOADED=(k,m,b)=>{ if(k===key) res({map:m,b64:b}); }; const s=document.createElement('script'); s.src='audio/voice-'+key+'.js'; s.onerror=()=>rej(new Error('no voice file')); document.head.appendChild(s); setTimeout(()=>rej(new Error('timeout')),60000); });
+      const {map,b64}=await this.voiceFile(key, 60000);
       this.sprite[key]=await decode(c, unb64(b64)); this.spriteMap[key]=map.sprite;
     }catch(e){ console.warn('sprite load failed', key, e); } delete this.loading[key]; })();
     return this.loading[key];
@@ -191,6 +204,16 @@ const Speaker = {
       for (const id of ids){ const sp=m[id]; if(!sp) continue; const s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; s.connect(c.destination); s.start(t, sp[0], sp[1]); this.playing.push(s); t+=sp[1]/rate+0.05; }
     }
     return t;
+  },
+  // "equals" after the last number, on the audio clock at `when`, at the Listen voice speed. Returns [end time, source],
+  // or null when no clip is loaded (the caller then uses the device voice).
+  scheduleEquals(when){
+    const c=this.ctx, t=Math.max(when||0, c.currentTime+0.02), rate=settings.voiceRate||1;
+    const play=(buf, off, dur)=>{ const s=c.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; s.connect(c.destination); if (off===undefined) s.start(t); else s.start(t, off, dur); this.playing.push(s); return t+(off===undefined ? buf.duration : dur)/rate; };
+    const own = this.kind()==='rec' && (this.recs[this.activePid]||{}).equals;
+    if (own) return [play(own), 'own recording'];
+    const x=this.extra, sp=x && x.map.equals;
+    return sp ? [play(x.buf, sp[0], sp[1]), 'built-in clip'] : null;
   },
   schedulePhrase(word, when){ // feedback words ('yes', 'not quite') for clip voices
     const c=this.ctx; const t=Math.max(when||0,c.currentTime+0.02);
@@ -242,7 +265,7 @@ function fillVoiceSelect(){
 /* ---------------- voice recorder (parent mode) ---------------- */
 const Recorder = {
   stream:null, rec:null, chunks:[], idx:0, clips:{}, pid:null,
-  async select(pid){ this.pid=pid; settings.recPid=pid; saveSettings(); this.clips = pid ? await ClipStore.getProfile(pid) : {}; const first=RECORD_WORDS.findIndex(w=>!this.clips[w]); this.idx = first<0 ? 0 : first; this.render(); },
+  async select(pid){ this.pid=pid; settings.recPid=pid; saveSettings(); this.clips = pid ? await ClipStore.getProfile(pid) : {}; const first=RECORD_ALL.findIndex(w=>!this.clips[w]); this.idx = first<0 ? 0 : first; this.render(); },
   async start(){
     if (!this.pid){ $('#recStatus').textContent='Add a person first.'; return false; }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder){ $('#recStatus').textContent='Recording needs Safari on the hosted link, not a local file.'; return false; }
@@ -253,10 +276,12 @@ const Recorder = {
   render(){
     const has=!!this.pid; $('#recBody').style.display = has ? '' : 'none';
     if (!has) return;
-    const w=RECORD_WORDS[this.idx]; $('#recWord').textContent=w; $('#recCount').textContent=(this.idx+1)+' / '+RECORD_WORDS.length;
-    const done=RECORD_WORDS.filter(x=>this.clips[x]).length, all=done===RECORD_WORDS.length, nm=profileName(this.pid);
-    $('#recStatus').textContent = all
-      ? `${nm}: all ${RECORD_WORDS.length} words recorded. To redo one, find it with the arrows` + (this.stream ? ' and hold to record.' : ', tap "Start recording", then hold.')
+    const w=RECORD_ALL[this.idx]; $('#recWord').textContent=w; $('#recCount').textContent=(this.idx+1)+' / '+RECORD_ALL.length;
+    const done=RECORD_WORDS.filter(x=>this.clips[x]).length, all=done===RECORD_WORDS.length, nm=profileName(this.pid), more=RECORD_EXTRA.filter(x=>!this.clips[x]);
+    $('#recStatus').textContent = all && more.length
+      ? `${nm}: all ${RECORD_WORDS.length} number words recorded. One more: “${more[0]}”, said after the last number` + (RECORD_EXTRA.includes(w) ? (this.stream ? '. Hold the button and say it.' : '. Tap "Start recording", then hold.') : '. Find it with the arrows.') + ' Until then the built-in voice says it.'
+      : all
+      ? `${nm}: all ${RECORD_ALL.length} words recorded. To redo one, find it with the arrows` + (this.stream ? ' and hold to record.' : ', tap "Start recording", then hold.')
       : `${nm}: ${done} of ${RECORD_WORDS.length} recorded.` + (this.stream ? (this.clips[w] ? ' This word is done; hold to redo it.' : ' Hold the button and say the word.') : ' Tap "Start recording" to use the microphone.');
     $('#recPlay').disabled=!this.clips[w];
   },
@@ -266,16 +291,20 @@ const Recorder = {
     await new Promise(res=>{ rec.onstop=res; rec.stop(); }); $('#recBtn').classList.remove('on');
     const blob=new Blob(this.chunks,{type:rec.mimeType||'audio/mp4'});
     const bytes = await this.clean(blob);
-    const pid=this.pid, w=RECORD_WORDS[this.idx]; const val={buf:bytes, type:'audio/wav'}; await ClipStore.put(pid, w, val); this.clips[w]=val;
+    const pid=this.pid, w=RECORD_ALL[this.idx]; const wasDone=RECORD_WORDS.every(x=>this.clips[x]); const val={buf:bytes, type:'audio/wav'}; await ClipStore.put(pid, w, val); this.clips[w]=val;
     Speaker.recLoaded[pid]=false; this.render(); await this.play();
     if (RECORD_WORDS.every(x=>this.clips[x])){
       await Speaker.loadRec(pid, true);
       if (Speaker.kind()!=='rec') { settings.voice='rec:'+pid; saveSettings(); }
       fillVoiceSelect(); renderProfiles();
-      $('#recStatus').textContent = Speaker.isComplete(pid) ? `All ${RECORD_WORDS.length} words recorded for ${profileName(pid)}. Pick the voice above and tap Test to hear it.` : 'Some words could not be read back; see Sound check.';
+      if (!Speaker.isComplete(pid)){ $('#recStatus').textContent='Some words could not be read back; see Sound check.'; return; }
+      // The numbers are done: offer "equals" next (optional), once, straight after the last number word.
+      const more=RECORD_ALL.findIndex(x=>!this.clips[x]);
+      if (more>=0 && !wasDone){ this.idx=more; this.render(); return; }
+      if (more<0) $('#recStatus').textContent=`All ${RECORD_ALL.length} words recorded for ${profileName(pid)}. Pick the voice above and tap Test to hear it.`;
       return;
     }
-    const nxt=RECORD_WORDS.findIndex((x,i)=>i>this.idx && !this.clips[x]); this.idx = nxt>=0 ? nxt : Math.min(RECORD_WORDS.length-1, this.idx+1); this.render();
+    const nxt=RECORD_ALL.findIndex((x,i)=>i>this.idx && !this.clips[x]); this.idx = nxt>=0 ? nxt : Math.min(RECORD_ALL.length-1, this.idx+1); this.render();
   },
   // decode, trim silence, normalise, store as 24 kHz WAV (small, decodes everywhere)
   async clean(blob){
@@ -288,8 +317,8 @@ const Recorder = {
       return wavBytes(buf, a, b, peak>0 ? 0.9/peak : 1);
     }catch(e){ Diag.add('clean failed, keeping raw: '+(e&&e.message||e)); return raw; }
   },
-  async play(){ const w=RECORD_WORDS[this.idx]; const v=this.clips[w]; if(!v) return; const c=Speaker.ensureCtx(); try{ if (c.state!=='running') await c.resume(); const buf=await decode(c, await clipBytes(v)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){ Diag.add('playback failed for '+w+': '+(e&&e.message||e)); } },
-  prev(){ this.idx=Math.max(0,this.idx-1); this.render(); }, next(){ this.idx=Math.min(RECORD_WORDS.length-1,this.idx+1); this.render(); },
+  async play(){ const w=RECORD_ALL[this.idx]; const v=this.clips[w]; if(!v) return; const c=Speaker.ensureCtx(); try{ if (c.state!=='running') await c.resume(); const buf=await decode(c, await clipBytes(v)); const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination); s.start(); await new Promise(r=>setTimeout(r, buf.duration*1000)); }catch(e){ Diag.add('playback failed for '+w+': '+(e&&e.message||e)); } },
+  prev(){ this.idx=Math.max(0,this.idx-1); this.render(); }, next(){ this.idx=Math.min(RECORD_ALL.length-1,this.idx+1); this.render(); },
   stop(){ if(this.stream){ this.stream.getTracks().forEach(t=>t.stop()); this.stream=null; } },
 };
 async function renderProfiles(){
@@ -1235,7 +1264,7 @@ async function dictate(p){
   $('#listenStage').classList.add('reading');
   const gap=settings.gap; const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
   const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
-  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, (p.terms.length*gap+12)*1000);
+  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, ((p.terms.length+1)*gap+12)*1000);
   try{
     Speaker.stop();
     Diag.add(`dictate start voice=${settings.voice} kind=${Speaker.kind()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} tts=${('speechSynthesis' in window)?('voices '+speechSynthesis.getVoices().length+(speechSynthesis.speaking?' speaking':'')+(speechSynthesis.paused?' paused':'')):'n/a'}`);
@@ -1257,11 +1286,17 @@ async function dictate(p){
         sched.push([when,end]); prevStart=when; prevEnd=end; lastEnd=end;
         setTimeout(()=>{ if(my===dictateToken) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
       });
+      // "equals" follows the last number in the same rhythm as one number follows another.
+      const eqWhen=Math.max(prevStart+gap, prevEnd+MIN_PAUSE), eq=Speaker.scheduleEquals(eqWhen);
+      if (eq){ sched.push([eqWhen, eq[0]]); lastEnd=eq[0]; setTimeout(()=>{ if(my===dictateToken) pulse((eq[0]-eqWhen)*1000); }, Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); }
       Diag.add('schedule: '+sched.map(([w,e])=>`${(w-sched[0][0]).toFixed(2)}–${(e-sched[0][0]).toFixed(2)}`).join(', '));
-      await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
+      Diag.add('equals: '+(eq ? eq[1] : 'device voice'));
+      if (eq) await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
+      else { await sleep(Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); if (my!==dictateToken) return; pulse(800); const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
     } else {
       const words=i=>p.op==='mul' ? (i===0 ? termText(p.terms[0],true) : 'times '+termText(p.terms[i],true)) : termText(p.terms[i],i===0);
-      for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(words(i)); Diag.add(`said "${words(i)}" ${r}`); const spent=(Date.now()-started)/1000; if(i<p.terms.length-1) await sleep(Math.max(150,(gap-spent)*1000)); }
+      for (let i=0;i<p.terms.length;i++){ if(my!==dictateToken) return; const started=Date.now(); pulse(800); const r=await Speaker.sayDevice(words(i)); Diag.add(`said "${words(i)}" ${r}`); const spent=(Date.now()-started)/1000; await sleep(Math.max(150,(gap-spent)*1000)); }
+      if (my!==dictateToken) return; pulse(800); { const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
     }
     if (my!==dictateToken) return; await sleep(settings.answerPause*1000);
     finishUI();
