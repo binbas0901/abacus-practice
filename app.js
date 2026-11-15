@@ -33,6 +33,56 @@ if (!firstRun && C.advanceCurrent){ const nx=C.advanceCurrent(progress.current, 
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
+/* ---------------- typing into a box on an iPad ----------------
+   iOS opens the keyboard only for a focus made while a touch is being handled (finger lift, click). A focus() from a
+   timer or an animation frame gives the box the focus WITHOUT a keyboard, and after that a tap on the box opens
+   nothing either, because the box already has the focus. So on a touch device a box is only ever focused inside a tap:
+     Typing.focus(el)      now, if a tap is being handled (or the device has no touch screen); otherwise not at all
+     Typing.afterTap(el)   now if possible, else at the next finger lift (the end of the press that opened the box)
+   A tap on a box that has the focus but no keyboard takes the focus away and gives it back, which opens the keyboard.
+   While the keyboard is up, html.kb-up is set and --vv-h / --vv-top give the part of the screen above it, so the
+   screen with the box can lay itself out there (styles.css, toy-home.css). window.__kb(px) fakes a keyboard in tests. */
+const Typing = {
+  touch: navigator.maxTouchPoints>0, pending:null, fake:null,
+  isBox(el){ return !!el && (el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && !/^(range|checkbox|radio|button|submit|file|color)$/.test(el.type))) && !el.readOnly && !el.disabled; },
+  inTap(){ const e=window.event; return !!e && e.isTrusted && /^(touchend|mouseup|click|keydown|keyup)$/.test(e.type); },
+  focus(el){ if (!el || (this.touch && !this.inTap())) return false; el.focus(); return document.activeElement===el; },
+  afterTap(el, still){ this.pending=null; if (!this.focus(el)) this.pending={el, still}; },
+  keyboard(){ if (this.fake!==null) return this.fake; const v=window.visualViewport; return v ? Math.max(0, innerHeight - v.height*v.scale) : 0; },
+  onTap(e){
+    const p=this.pending, live=q=>q.el.isConnected && q.el.offsetParent!==null && (!q.still || q.still());
+    if (p){ this.pending=null; if (live(p)){ this.focus(p.el); this.again={el:p.el, still:p.still, t:Date.now()}; } }
+    // The same tap goes on (mouse events, click) and may take the focus to what was tapped: give it back to the box.
+    else if (this.again && e.type!=='touchend'){ const g=this.again; if (e.type==='click') this.again=null; if (Date.now()-g.t<1000 && live(g) && document.activeElement!==g.el && !this.isBox(document.activeElement)) this.focus(g.el); }
+    const t=e.target;
+    if (e.type==='touchend' && this.isBox(t) && document.activeElement===t && this.keyboard()<=120){ t.blur(); t.focus(); }
+  },
+  layout(){
+    const d=document.documentElement, v=window.visualViewport, kb=this.keyboard(), a=document.activeElement, up=kb>120 && this.isBox(a);
+    d.classList.toggle('kb-up', up);
+    if (!up){ this.slides=0; d.classList.remove('kb-short'); d.style.removeProperty('--vv-h'); d.style.removeProperty('--vv-top'); return; }
+    const h=Math.round(innerHeight-kb), top=this.fake===null && v ? Math.max(0, Math.round(v.offsetTop)) : 0;
+    d.classList.toggle('kb-short', h<620); d.style.setProperty('--vv-h', h+'px'); d.style.setProperty('--vv-top', top+'px');
+    // iOS slides the page up to show the box; the screen now fits above the keyboard, so slide it back.
+    if (top>0 && this.fake===null && (this.slides=(this.slides||0)+1)<=3) window.scrollTo(0,0);
+    // In the Grown-ups page (it scrolls) bring the box into the part that is left.
+    if (a.closest('#parent')){ const r=a.getBoundingClientRect(); if (r.bottom>top+h-12 || r.top<top+60) a.scrollIntoView({block:'center', behavior:'instant'}); }
+  },
+  init(){
+    ['touchend','mouseup','click'].forEach(ev=>document.addEventListener(ev, e=>this.onTap(e), true));
+    // A button beside the box (Open, Next, That's me) must not take the focus from it: the keyboard would close and the
+    // screen move back under the finger before the tap lands. (Safari on iOS leaves the focus alone; other browsers do not.)
+    document.addEventListener('mousedown', e=>{ const a=document.activeElement, bt=e.target.closest && e.target.closest('button');
+      if (this.again && Date.now()-this.again.t<1000 && a===this.again.el && !this.isBox(e.target)) return e.preventDefault();   // the tap that opened the box
+      if (bt && this.isBox(a) && bt.closest('#gate, #nameAsk, #setup')===a.closest('#gate, #nameAsk, #setup') && a.closest('#gate, #nameAsk, #setup')) e.preventDefault(); }, true);
+    const lay=()=>this.layout(), soon=()=>{ lay(); setTimeout(lay, 120); setTimeout(lay, 450); };
+    document.addEventListener('focusin', soon); document.addEventListener('focusout', soon); window.addEventListener('resize', lay);
+    if (window.visualViewport){ visualViewport.addEventListener('resize', lay); visualViewport.addEventListener('scroll', lay); }
+    window.__kb=px=>{ this.fake = px==null ? null : px; this.layout(); };
+  },
+};
+Typing.init(); window.Typing=Typing;
+
 /* ---------------- sound effects ---------------- */
 const Diag = { lines:[], add(m){ const t=new Date().toLocaleTimeString(); this.lines.unshift(t+' '+m); this.lines=this.lines.slice(0,40); const el=document.getElementById('diagLog'); if(el) el.textContent=this.lines.join('\n'); } };
 window.addEventListener('error', e=>Diag.add('ERROR '+e.message)); window.addEventListener('unhandledrejection', e=>Diag.add('REJECT '+(e.reason&&e.reason.message||e.reason)));
@@ -519,16 +569,17 @@ $('#homeShelf').innerHTML = TOY.prop('rainbow', 150) + TOY.prop('plant', 170);
 $('#homeLoose').innerHTML = TOY.bead('mustard', 64) + TOY.bead('teal', 72) + TOY.bead('indigo', 58);
 $('#homeBowl').innerHTML = TOY.prop('bowl', 190);
 // Tapping Bix on the home screen asks for a name if the device doesn't have one yet.
-$('#bixHome').addEventListener('pointerup', e=>{ if (settings.name || !e.target.closest('.bix')) return; setTimeout(openNameAsk, 250); });
+// (The box opens while the tap is still being handled, so that the keyboard may open with it: see Typing.)
+$('#bixHome').addEventListener('pointerup', e=>{ if (settings.name || !e.target.closest('.bix') || $('#nameAsk').classList.contains('active')) return; openNameAsk(); });
 function openNameAsk(){
   Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me.", 0, 'ask_name');
   toyBix($('#bixName'), 'happy', {bubble:false});
-  $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); setTimeout(()=>$('#nameAskIn').focus(),200);
+  $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); Typing.afterTap($('#nameAskIn'), ()=>$('#nameAsk').classList.contains('active'));
 }
-function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ $('#nameAskIn').focus(); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
+function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ Typing.focus($('#nameAskIn')); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
 $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
-$('#nameAskNo').addEventListener('click', ()=>$('#nameAsk').classList.remove('active'));
+$('#nameAskNo').addEventListener('click', ()=>{ $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); });
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
 // Each kind of Today step: [icon name, label]. (On the home rod the bead colour comes from its place: STEP_COLORS.)
 const STEP_INFO = { lesson:['book','Learn'], visual:['eye','Look'], listen:['ear','Listen'], flash:['bolt','Flash'], game:['game','Game'] };
@@ -1671,7 +1722,10 @@ function gateQuestion(){
   $('#gateA').value='';
 }
 // Step 1 -> 2: show the question (after a full hold; tests may call window.__gateHold()).
-function gateReveal(){ const c=$('#gateCard'); if (c.dataset.step==='ask') return; c.dataset.step='ask'; c.setAttribute('aria-labelledby','gateQ'); $('#gateMsg').textContent=''; gateQuestion(); setTimeout(()=>$('#gateA').focus(),50); }
+function gateReveal(){ const c=$('#gateCard'); if (c.dataset.step==='ask') return; c.dataset.step='ask'; c.setAttribute('aria-labelledby','gateQ'); $('#gateMsg').textContent=''; gateQuestion();
+  // The finger is still on the Hold button here. The box gets the focus when it lifts (a touch iOS accepts for opening
+  // the keyboard); with a mouse or a keyboard, straight away. Never from a timer: see Typing.
+  Typing.afterTap($('#gateA'), ()=>$('#gate').classList.contains('active') && c.dataset.step==='ask'); }
 window.__gateHold=gateReveal;
 const GateHold={ t0:0, raf:0,
   start(){ if (this.t0 || $('#gateCard').dataset.step!=='hold') return; this.t0=performance.now(); $('#gateHold').classList.add('holding'); $('#gateMsg').textContent=''; $('#gateHoldL').textContent='Keep holding…'; this.tick(); },
@@ -1699,13 +1753,14 @@ function openGate(next){
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
   toySky('#gateSky'); show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
 }
-function leaveGate(){ gateCb=null; GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
+function leaveGate(){ gateCb=null; $('#gateA').blur(); GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
 $('#gateOk').addEventListener('click', ()=>{
   if ($('#gateCard').dataset.step!=='ask') return;
-  if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer && gateCb){ const cb=gateCb; gateCb=null; Fun.BixVoice.stop(); GateHold.reset(); show(gateFrom); cb(); return; }   // a grown-up action, then back where we were
-  if($('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
-  else { const c=$('#gateCard'); c.classList.remove('tg-shake'); void c.offsetWidth; c.classList.add('tg-shake'); gateQuestion(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; setTimeout(()=>$('#gateA').focus(),50); }
+  const right=$('#gateA').value.trim()!=='' && parseInt($('#gateA').value,10)===gateAnswer; if (right) $('#gateA').blur();   // the keyboard goes away with the gate
+  if(right && gateCb){ const cb=gateCb; gateCb=null; Fun.BixVoice.stop(); GateHold.reset(); show(gateFrom); cb(); return; }   // a grown-up action, then back where we were
+  if(right){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); }
+  else { const c=$('#gateCard'); c.classList.remove('tg-shake'); void c.offsetWidth; c.classList.add('tg-shake'); gateQuestion(); $('#gateMsg').textContent='That wasn’t it. Here is a new number to try.'; Typing.focus($('#gateA')); }
 });
 $('#gateA').addEventListener('keydown', e=>{ if(e.key==='Enter') $('#gateOk').click(); });
 

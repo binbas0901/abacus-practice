@@ -28,11 +28,13 @@
       const wait = () => root.Fun.BixVoice.busy() ? setTimeout(wait, 200) : (my === token && $('#suName').classList.contains('on') && say("What's your name? Type it in for me!", 0, 'intro_name'));
       setTimeout(wait, 900); };
     $('#setup').addEventListener('click', () => { App().unlock(); setTimeout(hello, 60); }, { once: true });
-    setTimeout(() => { if (my === token) $('#suNameIn').focus(); }, 300);
+    // No keyboard is asked for here on an iPad: a focus outside a tap would leave the box focused without one (see Typing in app.js).
+    setTimeout(() => { if (my === token) root.Typing.focus($('#suNameIn')); }, 300);
   }
   function nameGo() {
     const n = $('#suNameIn').value.trim().replace(/\s+/g, ' ').slice(0, 20);
-    if (!n) { say('Type your name first!', 2500); root.Fun.Mascot.react(bix(), 'oops'); $('#suNameIn').focus(); return; }
+    if (!n) { say('Type your name first!', 2500); root.Fun.Mascot.react(bix(), 'oops'); root.Typing.focus($('#suNameIn')); return; }
+    $('#suNameIn').blur();
     state.name = n; App().Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy'); toAbacus();
   }
 

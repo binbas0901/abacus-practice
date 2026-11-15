@@ -31,6 +31,11 @@
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+/* Boxes people type in are never caught by the "no text selection" rule above (iOS will not type into such a box). */
+input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea{-webkit-user-select:text;user-select:text;touch-action:manipulation}
+/* Keyboard up (Typing in app.js): the screen with the box, and a dialog with one, use only the part above the keyboard. */
+html.kb-up #gate.active,html.kb-up #setup.active,html.kb-up #parent.active{flex:none;height:var(--vv-h);min-height:0;margin-top:var(--vv-top)}
+html.kb-up .askm{top:var(--vv-top);bottom:auto;height:var(--vv-h)}
 html,body{margin:0;height:100%;overflow:hidden;color:var(--ink);font-family:var(--text);font-size:18px;line-height:1.35;touch-action:manipulation;overscroll-behavior:none;
   background:linear-gradient(180deg,#CFE4FF 0%,var(--sky) 38%,var(--sky-2) 100%)}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}

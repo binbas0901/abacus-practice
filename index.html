@@ -88,7 +88,7 @@
     <div class="su-step to-step" id="suName">
       <h2 class="to-sr">What’s your name?</h2>
       <div class="toy-felt to-namemat">
-        <input id="suNameIn" class="to-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" aria-label="Your name">
+        <input id="suNameIn" class="to-input" type="text" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Your name" aria-label="Your name">
         <button type="button" class="toy-block toy-block--teal to-next" id="suNameGo"><span class="toy-block-label">Next</span><span class="su-ic-next"></span></button>
       </div>
     </div>
@@ -291,7 +291,7 @@
 
 <div id="stickerReveal" role="dialog" aria-label="A sticker for you"><div class="rv-card toy-paper"><div class="rv-title toy-h2" id="rvTitle"></div><button class="rv-pack" id="rvPack" aria-label="Open the present"><span class="rv-wrap" id="rvWrap"></span><span class="rv-hint toy-chip" id="rvHint">Tap to open</span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="toy-block toy-block--teal toy-block--sm" id="rvOk"><span id="rvOkIc"></span>Add to my album</button></div></div>
 
-<div id="nameAsk" class="askm tn"><div class="toy-paper tn-card"><div id="bixName" class="tn-bix"></div><div class="toy-h1 tn-t">What’s your name?</div><input id="nameAskIn" class="to-input" maxlength="20" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Your name" aria-label="Your name"><div class="tn-row"><button type="button" class="toy-block toy-block--wood toy-block--sm" id="nameAskNo"><span class="toy-block-label">Later</span></button><button type="button" class="toy-block toy-block--teal toy-block--sm" id="nameAskOk"><span class="toy-block-label">That’s me!</span></button></div></div></div>
+<div id="nameAsk" class="askm tn"><div class="toy-paper tn-card"><div id="bixName" class="tn-bix"></div><div class="toy-h1 tn-t">What’s your name?</div><input id="nameAskIn" class="to-input" type="text" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Your name" aria-label="Your name"><div class="tn-row"><button type="button" class="toy-block toy-block--wood toy-block--sm" id="nameAskNo"><span class="toy-block-label">Later</span></button><button type="button" class="toy-block toy-block--teal toy-block--sm" id="nameAskOk"><span class="toy-block-label">That’s me!</span></button></div></div></div>
 
 
 <section id="gate" class="screen toy-scene toy-scene--calm tg">
@@ -307,7 +307,7 @@
       </div>
       <div class="tg-ask">
         <div class="tg-q" id="gateQ"></div>
-        <input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="?" aria-label="Your answer">
+        <input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="?" aria-label="Your answer">
         <button type="button" class="toy-block toy-block--teal toy-block--sm tg-open" id="gateOk"><span class="toy-block-label">Open</span></button>
       </div>
       <div class="tg-msg" id="gateMsg" role="status" aria-live="polite"></div>
@@ -357,7 +357,7 @@
   <section class="toy-paper gu-panel wide" id="guSkills" aria-labelledby="guSkillsH">
     <h2 id="guSkillsH">Where they are</h2>
     <div class="field"><label for="sNode">Current skill<span class="hint">Everything before it counts as learned. Change this if your child already knows more.</span></label><select id="sNode"></select></div>
-    <div class="field"><label for="sName">Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" class="txt"></div>
+    <div class="field"><label for="sName">Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" class="txt" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"></div>
     <div class="row gu-row"><button class="btn small ghost" id="levelAgain">Run the level check again</button></div>
     <div class="gu-tablewrap"><table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table></div>
     <div class="note">A skill unlocks the next one automatically at 80% or better over the last 20 problems, practised on at least 2 different days. You can mark any skill learned or not learned by hand.</div>
@@ -402,8 +402,8 @@
     <div class="field"><label for="sVoice">Voice<span class="hint">"Recorded" voices are family members' own recordings. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">Test</button></div></div>
     <div class="recpanel" id="recPanel">
       <div class="note">Record family voices. Each person records the same 33 short words once (about 3 minutes), and “equals” if they like; the app builds every number from them. Pick a voice above, or "Take turns" once two or more people have finished.</div>
-      <div class="recrow"><input id="recNew" placeholder="Add a person, e.g. Mom" class="txt"><button class="btn small" id="recAdd"><span class="gu-ic" data-ic="plus"></span>Add person</button></div>
-      <div class="recrow" id="recWhoRow"><label class="note gu-reclabel" for="recWho">Recording for</label><select id="recWho" class="txt"></select><label class="note" for="recName">Name</label><input id="recName" class="txt gu-recname"><button class="btn small ghost" id="recDelete">Delete person</button></div>
+      <div class="recrow"><input id="recNew" type="text" placeholder="Add a person, e.g. Mom" class="txt" autocomplete="off" autocapitalize="words"><button class="btn small" id="recAdd"><span class="gu-ic" data-ic="plus"></span>Add person</button></div>
+      <div class="recrow" id="recWhoRow"><label class="note gu-reclabel" for="recWho">Recording for</label><select id="recWho" class="txt"></select><label class="note" for="recName">Name</label><input id="recName" type="text" class="txt gu-recname" autocomplete="off" autocapitalize="words"><button class="btn small ghost" id="recDelete">Delete person</button></div>
       <div id="recBody">
         <div class="recrow"><button class="btn small ghost" id="recStart">Start recording</button><button class="btn small ghost gu-sq" id="recPrev" aria-label="Previous word"><span class="gu-ic" data-ic="back"></span></button><div class="recword"><div id="recWord">—</div><div class="note" id="recCount"></div></div><button class="btn small ghost gu-sq gu-flip" id="recNext" aria-label="Next word"><span class="gu-ic" data-ic="back"></span></button><button class="btn small ghost gu-sq" id="recPlay" aria-label="Play this word" disabled><span class="gu-ic" data-ic="speaker"></span></button></div>
         <div class="recrow"><button id="recBtn" class="btn"><span class="gu-recdot" aria-hidden="true"></span>Hold to record</button></div>
