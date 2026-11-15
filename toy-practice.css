@@ -19,7 +19,11 @@
 @keyframes tp-fadein{from{opacity:0}to{opacity:1}}
 
 /* ============ practice ============ */
-#drill.tp{--vh:100vh;--pad:24px;--gap:16px;--bixcol:320px;--board:262px;--bix:184px;--foot:138px;--th-max:98px;--tf-max:84px;--ans-h:92px;
+/* Landscape widths (v4.2): three columns - Bix | the sum on its clipboard | the answer tool. The clipboard is 262px and the
+   keypad with the Check dome needs up to 510px, so Bix's column is what gives way on a narrower iPad: 320px at 1180 and
+   wider, down to 196px at 1024 (the smallest supported landscape width). The old fixed 320px left the keypad only 362px
+   at 1024 and it slid under the clipboard. Below 1024 (Safari text zoom) the keys and the dome shrink too, never under 64px. */
+#drill.tp{--vh:100vh;--pad:24px;--gap:16px;--bixcol:clamp(196px,calc(100vw - 860px),320px);--board:262px;--bix:184px;--foot:clamp(112px,11.7vw,138px);--th-max:98px;--tf-max:84px;--ans-h:92px;
   --toy-window-x:clamp(96px,11vw,170px);
   --toy-key-w:clamp(84px,7.8vw,108px);
   --toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - 172px)/4),126px);
@@ -46,7 +50,7 @@
 #drill .tp-b.cur.ok::before,#drill .tp-b.cur.bad::before{opacity:.5}
 
 /* --- on the table --- */
-#drill .tp-body{flex:1;min-height:0;margin:16px var(--pad) 20px;display:grid;grid-template-columns:var(--bixcol) var(--board) minmax(0,1fr);gap:var(--gap);align-items:stretch}
+#drill .tp-body{flex:1;min-height:0;margin:16px max(var(--pad),env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(var(--pad),env(safe-area-inset-left));display:grid;grid-template-columns:var(--bixcol) var(--board) minmax(0,1fr);gap:var(--gap);align-items:stretch}
 
 /* left: the answer-tool switch (a little soroban / keypad to pick up), Bix and his paper bubble */
 #drill .tp-bixcol{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0}
@@ -304,6 +308,25 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
 #drill.tb .tp-bowl{display:none}
 #drill.tb .tp-tool.demo .tp-check{opacity:.45;pointer-events:none}
 #drill.tb .tp-tool.demo .tp-abacus{pointer-events:none}
+
+/* a narrow landscape table: Bix's column is slim, so his bubble may take three or four short lines and "Show me" drops under the tool switch */
+@media (orientation:landscape) and (max-width:1140px){
+  #drill:not(.tb) .tp-bubble{height:106px;padding:8px 44px 8px 16px;font-size:18px;line-height:1.2}
+  #drill:not(.tb) .tp-say{right:10px}
+  #drill:not(.tb) .tp-props{flex-wrap:wrap;row-gap:6px}
+  #drill:not(.tb){--bix:clamp(150px,15.6vw,184px)}
+}
+@media (orientation:landscape) and (max-width:1140px){
+  /* on the beads Bix's bubble shares the bottom row with "Show me" and the Check dome: it may use the row's whole height */
+  #drill.tb .tp-bubble{height:calc(var(--foot) - 6px);padding:8px 42px 8px 16px;font-size:18px;line-height:1.2}
+  #drill.tb .tp-say{right:10px}
+  #drill.tb.long.fixing .tp-bixfig{display:none}   /* long rows, polish pass: tool switch, Show me, bubble and Check share one row - Bix steps out, his words stay */
+}
+@media (orientation:landscape) and (max-width:1023px){
+  #drill.tp:not(.tb){--bixcol:184px;--foot:104px;--toy-key-w:clamp(64px,calc((100vw - 716px)/3),84px)}
+  #drill.tb.fixing .tp-bixfig{display:none}   /* no room for Bix beside "Show me": his words stay */
+  #drill.tb .tp-bubble{flex-basis:260px}
+}
 
 /* long rows on the beads: the sheet needs the whole height, so the tool switch joins the row under the soroban */
 @media (orientation:landscape){

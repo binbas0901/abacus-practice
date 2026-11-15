@@ -1150,9 +1150,9 @@ const PB = {
   // The bubble keeps a fixed two-line height (nothing below it jumps); a longer line gets slightly smaller letters.
   fit(){
     const tx=this.el().querySelector('.tp-btxt'); if (!tx) return; tx.style.fontSize='';
-    const lines=()=>tx.scrollHeight/(parseFloat(getComputedStyle(tx).lineHeight)||25);
+    // the words get smaller until they fit the bubble (two lines; three or four short ones in a slim column)
     let fs=parseFloat(getComputedStyle(tx).fontSize)||20;
-    while (tx.scrollHeight && lines()>2.15 && fs>15){ fs-=1; tx.style.fontSize=fs+'px'; }
+    while (tx.scrollHeight && tx.scrollHeight>tx.clientHeight+2 && fs>14){ fs-=1; tx.style.fontSize=fs+'px'; }
   },
 };
 PB.mount();   // mounted up front, so the first problem's tiles are sized with the bubble already in place

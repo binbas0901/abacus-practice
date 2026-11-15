@@ -82,6 +82,7 @@ Drawing a new character or pose: body = one path filled with a lacquer gradient,
 - Tune with `--toy-wall-h` and `--toy-window-x` on the scene element. The moon slot follows the window.
 
 ## Sizes
+**Supported sizes (v4.3): 1024x768 landscape and 768x1024 portrait are the smallest screens the whole app must work on** (9.7" iPads and older minis as a home-screen app; 1080x810 and 1112x834 are the other 4:3 iPads). At every size from there up, nothing may overlap or be cut off, and children's targets stay 64px or more. When room runs out: a flexible column gives way first (in practice: Bix's column, 320px down to 196px), then decorative props go (bead bowl, Bix's figure), then keys and type shrink to their minimum - never an overlap. Fixed pixel widths for a whole row of columns are not allowed; a row's fixed parts must add up to less than 1024 (landscape) / 768 (portrait). Below the minimum (Safari text zoom makes 1180 behave like 908x631) keys may go under 64px but still must not overlap. `tests/p21_fit.py` + `p22_fit2.py` measure this (bounding boxes, 16 screen sizes x 10 problem shapes x both answer tools).
 Design at 1180x820. Check 820x1180 (lower wall, blocks wrap, keys sized by width) and 1366x1024 (larger blocks, tag, icon buttons). Touch targets: 64px minimum for children; keys and blocks are larger.
 
 ## Do
