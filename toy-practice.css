@@ -472,6 +472,28 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 #drill .sp-foot [hidden]{display:none}
 #drill .sp-goslot:empty{display:none}
 #drill .sp-goslot .toy-block{min-width:240px;min-height:76px;font-size:28px}
+/* a short screen (768px high and less: older iPads, Safari with its bars): the same panel, packed tighter; it never loses its
+   heading, and if even that is not enough the sheet scrolls inside itself */
+#drill .sp-card{overflow-y:auto;overscroll-behavior:contain}
+@media (max-height:800px) and (orientation:landscape){
+  #drill .sp{padding:6px 24px 10px}
+  #drill .sp-card{padding:14px 24px 14px;gap:9px}
+  #drill .sp-bix svg{width:68px;height:68px}
+  #drill .sp-title{font-size:27px} #drill .sp-sub{font-size:17px;margin-top:2px}
+  #drill .sp-ctrls{gap:9px}
+  #drill .sp-ctrl{padding:8px 14px 9px;gap:4px 16px}
+  #drill .sp-label{font-size:22px} #drill .sp-val{font-size:34px;min-width:124px;padding:6px 10px 3px}
+  #drill .sp-preview{height:46px;font-size:38px}
+  #drill .sp-goslot .toy-block{min-height:66px}
+}
+@media (max-height:700px) and (orientation:landscape){
+  #drill .sp-bix,#drill .sp-sub{display:none}
+  #drill .sp-card{gap:7px;padding:10px 24px 12px}
+}
+/* the gear sits where the window was: on Listen and Flash the window moves right of it */
+@media (orientation:landscape){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:clamp(176px,16vw,230px)}
+  #drill[data-mode=listen]:not(.tb) .tp-rodwrap,#drill[data-mode=flash]:not(.tb) .tp-rodwrap{width:min(560px,calc(100vw - 610px))} }   /* ...and the bead rod stays clear of the window */
+@media (orientation:portrait){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:172px} #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(280px,34vw)} }
 @media (min-width:1300px) and (min-height:960px){
   #drill .sp-card{width:900px;padding:28px 36px 30px;gap:20px}
   #drill .sp-title{font-size:38px} #drill .sp-sub{font-size:22px} #drill .sp-label{font-size:28px} #drill .sp-val{font-size:46px;min-width:160px}

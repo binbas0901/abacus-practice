@@ -232,6 +232,15 @@
 #parent.gu .tp-pick select{min-width:0;width:118px;min-height:44px;font-size:16px}
 #parent.gu .tp-given{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #parent.gu .tptable input[data-f=name]{width:100%}
+/* a narrow page (768px): the price and its golden bead stay on one line, the picture list is slimmer, the name gets the room */
+#parent.gu .tptable td:nth-child(3){white-space:nowrap}
+#parent.gu #sessions td:nth-child(3){white-space:nowrap}
+@media (max-width:860px){
+  #parent.gu .tptable td{padding-left:4px;padding-right:4px}
+  #parent.gu .tp-pick select{width:110px}
+  #parent.gu .tptable input[data-f=price]{width:62px !important}
+  #parent.gu .tptable [data-del]{padding-left:10px;padding-right:10px}
+}
 
 /* set-up checklist: ruled rows with a status bead */
 #parent.gu .checkl{display:flex;flex-direction:column;gap:0;margin-top:0}

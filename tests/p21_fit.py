@@ -16,7 +16,8 @@ SIZES = [(1180, 820), (1180, 796), (1180, 744), (1180, 700), (1180, 650), (820, 
          (1024, 768), (768, 1024), (1080, 810), (810, 1080), (1112, 834), (1026, 713), (908, 631)]
 SMALLEST = [(1024, 768), (768, 1024)]
 ONLY = [a for a in sys.argv[1:] if 'x' in a and a[0].isdigit()]          # e.g. tests/p21_fit.py 1024x768 908x631
-BELOW = {(908, 631), (1180, 650)}          # under the supported minimum: keys may be smaller than 64px here, never covered
+BELOW = {(908, 631), (1180, 650)}          # (at these two the speed panel may scroll inside its sheet)
+BELOW_ = 0          # under the supported minimum: keys may be smaller than 64px here, never covered
 # (skill, numbers per problem or 0 for the skill's own): 4, 5, 8 one-digit rows; 8-10 rows; 2-, 3-, 4-digit; times
 SHAPES = [('combined', 0), ('combined', 5), ('combined', 8), ('long_rows', 0), ('two_digit', 0), ('rows_2d', 0), ('three_digit', 0), ('four_digit', 0), ('times_a', 0), ('mul_3x1', 0)]
 MEASURE = """(()=>{ const R=e=>e.getBoundingClientRect(), vis=e=>e && e.getClientRects().length && getComputedStyle(e).visibility!=='hidden';
@@ -79,7 +80,9 @@ async def main():
                 await pg.evaluate(f"App.startMode('{mode}')"); await pg.wait_for_selector('#speedPop:not([hidden])'); await pg.wait_for_timeout(300); n += 1
                 bad = await pg.evaluate(PAGE, ['#speedPop .sp-card', '#speedPop button', '#speedPop input', '#speedPop .sp-val', '#speedPop .sp-label', '#speedPop .sp-end', '#exitDrill', '#speedGear'])
                 bad += await pg.evaluate(OVER, [['#speedPop .sp-step', '#speedPop .sp-val'], ['#speedPop .sp-foot button', '#speedPop .sp-ctrl'], ['#speedPop .sp-head', '#speedPop .sp-ctrl'], ['#exitDrill', '#speedGear'], ['#speedGear', '#drill .tp-rodwrap']])
+                bad += await pg.evaluate("(()=>{ const c=document.querySelector('#speedPop .sp-card'), cr=c.getBoundingClientRect(), out=[]; if (c.scrollHeight>c.clientHeight+1) out.push('speed panel does not fit its sheet (scrolls)'); for (const e of c.querySelectorAll('.sp-title, .sp-label, .sp-val, .sp-foot button')){ if (!e.getClientRects().length) continue; const r=e.getBoundingClientRect(); if (r.top<cr.top-0.5||r.bottom>cr.bottom+0.5) out.push('speed panel: '+(e.id||e.className)+' cut'); } const g=document.querySelector('#speedGear').getBoundingClientRect(), m=document.querySelector('#drillSky .toy-sky-moon, #drillSky svg'); if (m){ const r=m.getBoundingClientRect(); if (!(g.right<=r.left+4||g.left>=r.right-4||g.bottom<=r.top+4||g.top>=r.bottom-4)) out.push('gear over the moon'); } return [...new Set(out)]; })()")
                 sm = await pg.evaluate("Math.min(...[...document.querySelectorAll('#speedPop .sp-step')].map(e=>Math.min(e.getBoundingClientRect().width, e.getBoundingClientRect().height)))")
+                if (w, h) in BELOW: bad = [x for x in bad if 'scrolls' not in x]
                 check(f'{w}x{h} {mode} speed panel: on screen, nothing overlapping, - / + discs 64px or more', not bad and sm >= 64, f'{bad} {sm}')
                 if bad or (w, h) in SMALLEST: await shot(pg, f'speed_{w}x{h}_{mode}')
                 await pg.click(go); await pg.wait_for_function(msg, timeout=40000); await pg.wait_for_timeout(200)
