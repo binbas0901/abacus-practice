@@ -67,7 +67,20 @@ const Typing = {
   inTap(){ const e=window.event; return !!e && e.isTrusted && /^(touchend|mouseup|click|keydown|keyup)$/.test(e.type); },
   focus(el){ if (!el || (this.touch && !this.inTap())) return false; el.focus(); return document.activeElement===el; },
   afterTap(el, still){ this.pending=null; if (!this.focus(el)) this.pending={el, still}; },
-  keyboard(){ if (this.fake!==null) return this.fake; const v=window.visualViewport; return v ? Math.max(0, innerHeight - v.height*v.scale) : 0; },
+  /* How much of the screen the keyboard covers. The full height is remembered per screen width while no box has the
+     focus: in a home-screen app on some iPads innerHeight shrinks together with visualViewport.height, so the
+     difference of those two says "no keyboard" while half the screen is covered. A hardware keyboard, or the floating /
+     split keyboard, covers nothing (at most a ~55px bar): that stays under 120 and the normal layout is kept. */
+  full:{}, guess:0, held:[],
+  viewH(){ const v=window.visualViewport; return v ? v.height*v.scale : innerHeight; },
+  fullH(){ const d=document.documentElement; return Math.max(innerHeight, d.clientHeight, this.full[innerWidth]||0); },
+  note(lower){ const d=document.documentElement, h=Math.round(Math.max(innerHeight, d.clientHeight, this.viewH())), w=innerWidth; if (lower || h>(this.full[w]||0)) this.full[w]=h; },
+  shift(){ const v=window.visualViewport, d=document.documentElement; return Math.max(window.scrollY||0, d.scrollTop||0, document.body.scrollTop||0, v ? v.offsetTop : 0); },
+  keyboard(){ if (this.fake!==null) return this.fake;
+    const kb=Math.max(0, Math.round(this.fullH() - this.viewH())); if (kb>120){ this.guess=0; return kb; }
+    // Nothing got smaller, yet iOS slid the page up under a focused box: a keyboard is there. Assume the usual size until the box is left.
+    if (this.touch && !this.guess && this.shift()>40) this.guess=Math.round(this.fullH()*(innerWidth>this.fullH() ? .54 : .34));
+    return this.guess || kb; },
   onTap(e){
     const p=this.pending, live=q=>q.el.isConnected && q.el.offsetParent!==null && (!q.still || q.still());
     if (p){ this.pending=null; if (live(p)){ this.focus(p.el); this.again={el:p.el, still:p.still, t:Date.now()}; } }
@@ -76,17 +89,35 @@ const Typing = {
     const t=e.target;
     if (e.type==='touchend' && this.isBox(t) && document.activeElement===t && this.keyboard()<=120){ t.blur(); t.focus(); }
   },
+  /* Called on every focus change and viewport change. Keyboard up: html.kb-up (+ kb-short under 620px, kb-tiny under
+     300px) and --vv-h / --vv-top = the part of the screen that is left, in layout-viewport coordinates, which is what
+     position:fixed uses - so the screen with the box sits exactly there however far iOS slid the page. */
   layout(){
-    const d=document.documentElement, v=window.visualViewport, kb=this.keyboard(), a=document.activeElement, up=kb>120 && this.isBox(a);
-    d.classList.toggle('kb-up', up);
-    if (!up){ this.slides=0; d.classList.remove('kb-short'); d.style.removeProperty('--vv-h'); d.style.removeProperty('--vv-top'); return; }
-    const h=Math.round(innerHeight-kb), top=this.fake===null && v ? Math.max(0, Math.round(v.offsetTop)) : 0;
-    d.classList.toggle('kb-short', h<620); d.style.setProperty('--vv-h', h+'px'); d.style.setProperty('--vv-top', top+'px');
-    // iOS slides the page up to show the box; the screen now fits above the keyboard, so slide it back.
-    if (top>0 && this.fake===null && (this.slides=(this.slides||0)+1)<=3) window.scrollTo(0,0);
-    // In the Grown-ups page (it scrolls) bring the box into the part that is left.
-    if (a.closest('#parent')){ const r=a.getBoundingClientRect(); if (r.bottom>top+h-12 || r.top<top+60) a.scrollIntoView({block:'center', behavior:'instant'}); }
+    const d=document.documentElement, v=window.visualViewport, a=document.activeElement, box=this.isBox(a);
+    if (!box){ this.guess=0; if (this.fake===null){ this.note(false); clearTimeout(this.noteT); this.noteT=setTimeout(()=>{ if (!this.isBox(document.activeElement)) this.note(true); }, 1200); } }
+    const kb=box ? this.keyboard() : 0, up=box && kb>120;
+    if (up!==d.classList.contains('kb-up')) d.classList.toggle('kb-up', up);
+    if (!up){ if (this.was){ this.was=false; this.slides=0; d.classList.remove('kb-short','kb-tiny'); d.style.removeProperty('--vv-h'); d.style.removeProperty('--vv-top'); this.unslide(); } return; }
+    this.was=true;
+    const h=Math.round(this.fullH()-kb), top=this.fake===null && v ? Math.max(0, Math.round(v.offsetTop)) : 0;
+    d.classList.toggle('kb-short', h<620); d.classList.toggle('kb-tiny', h<300); d.style.setProperty('--vv-h', h+'px'); d.style.setProperty('--vv-top', top+'px');
+    // iOS slides things up to show the box (the page, and any clipped parent of the box). The screen now fits above the keyboard: slide them back.
+    for (let p=a.parentElement; p && p!==document.body; p=p.parentElement) if ((p.scrollTop || p.scrollLeft) && !this.scroller(p)){ p.scrollTop=0; p.scrollLeft=0; if (this.held.indexOf(p)<0) this.held.push(p); }
+    if (this.fake===null && (window.scrollY>0 || top>0) && (this.slides=(this.slides||0)+1)<=3) window.scrollTo(0,0);
+    // A box in a part that scrolls (the Grown-ups page): bring its whole row - label, box, its button - into what is left, inside that part only.
+    const sc=a.closest('#parent, .toy-dialog-panel, [data-kb-scroll]');
+    if (sc && this.scroller(sc)){ const row=a.closest('.field, .recrow, tr, label')||a, r=row.getBoundingClientRect(), b=a.getBoundingClientRect(), c=sc.getBoundingClientRect(), pad=12;
+      const nav=sc.querySelector('.gu-nav'), nb=nav && getComputedStyle(nav).position==='sticky' ? nav.getBoundingClientRect().bottom : 0, ct=Math.max(c.top, Math.min(nb, c.top+c.height/2))+pad, cb=c.bottom-pad;   // the tab bar stays stuck at the top
+      const lo=Math.min(r.top, b.top), hi=Math.max(r.bottom, b.bottom), room=cb-ct;
+      let dy=0; if (hi-lo>room) dy=(b.top+b.bottom)/2-(ct+cb)/2; else if (lo<ct || hi>cb) dy=(lo+hi)/2-(ct+cb)/2;
+      if (Math.abs(dy)>1){ const sb=sc.style.scrollBehavior; sc.style.scrollBehavior='auto'; sc.scrollTop+=dy; sc.style.scrollBehavior=sb; } }
   },
+  scroller(p){ const o=getComputedStyle(p).overflowY; return o==='auto' || o==='scroll'; },
+  // Keyboard gone: whatever iOS slid, slide back, so the screen is where it was.
+  unslide(){ this.held.forEach(p=>{ if (p.isConnected && !this.scroller(p)){ p.scrollTop=0; p.scrollLeft=0; } }); this.held=[];
+    const d=document.documentElement; if (window.scrollY || d.scrollTop || document.body.scrollTop){ window.scrollTo(0,0); d.scrollTop=0; document.body.scrollTop=0; }
+    const app=document.getElementById('app'); if (app && (app.scrollTop || app.scrollLeft)){ app.scrollTop=0; app.scrollLeft=0; }
+    document.querySelectorAll('.screen.active').forEach(sn=>{ if ((sn.scrollTop || sn.scrollLeft) && !this.scroller(sn)){ sn.scrollTop=0; sn.scrollLeft=0; } }); },
   init(){
     ['touchend','mouseup','click'].forEach(ev=>document.addEventListener(ev, e=>this.onTap(e), true));
     // A button beside the box (Open, Next, That's me) must not take the focus from it: the keyboard would close and the
@@ -94,9 +125,17 @@ const Typing = {
     document.addEventListener('mousedown', e=>{ const a=document.activeElement, bt=e.target.closest && e.target.closest('button');
       if (this.again && Date.now()-this.again.t<1000 && a===this.again.el && !this.isBox(e.target)) return e.preventDefault();   // the tap that opened the box
       if (bt && this.isBox(a) && bt.closest('#gate, #nameAsk, #setup')===a.closest('#gate, #nameAsk, #setup') && a.closest('#gate, #nameAsk, #setup')) e.preventDefault(); }, true);
-    const lay=()=>this.layout(), soon=()=>{ lay(); setTimeout(lay, 120); setTimeout(lay, 450); };
-    document.addEventListener('focusin', soon); document.addEventListener('focusout', soon); window.addEventListener('resize', lay);
+    const lay=()=>this.layout(), soon=()=>{ lay(); [120, 450, 900].forEach(ms=>setTimeout(lay, ms)); };
+    this.note(true);
+    document.addEventListener('focusin', soon); window.addEventListener('resize', lay); window.addEventListener('orientationchange', soon);
+    // Leaving a box: put back anything iOS slid, now and once the keyboard has gone down.
+    document.addEventListener('focusout', ()=>{ soon(); [60, 350, 700].forEach(ms=>setTimeout(()=>{ if (!this.isBox(document.activeElement)) this.unslide(); }, ms)); });
+    // While a box has the focus look again a few times a second: not every iPad reports the keyboard arriving.
+    setInterval(()=>{ if (this.isBox(document.activeElement)) lay(); }, 300);
     if (window.visualViewport){ visualViewport.addEventListener('resize', lay); visualViewport.addEventListener('scroll', lay); }
+    // Grown-ups boxes: the keyboard's Done / Enter finishes the box (saves it, keyboard down); in "Add a person" it presses Add.
+    document.addEventListener('keydown', e=>{ const t=e.target; if (e.key!=='Enter' || !this.isBox(t) || t.tagName!=='INPUT' || !t.closest('#parent')) return;
+      e.preventDefault(); if (t.id==='recNew' && t.value.trim()) document.getElementById('recAdd').click(); else t.blur(); });
     window.__kb=px=>{ this.fake = px==null ? null : px; this.layout(); };
   },
 };

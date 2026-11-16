@@ -4,9 +4,10 @@ What this can check: the box is a real input (text, numeric keypad, not read-onl
 gives it the focus, and the app never focuses a box outside a tap (on iOS that focuses without a keyboard, and the
 box then ignores taps). What it cannot check: the iOS keyboard itself - headless Chrome has none; the keyboard is
 faked with window.__kb(px) to check that the question, box and button stay in the part of the screen above it."""
-import asyncio, os
+import asyncio, os, sys
 from playwright.async_api import async_playwright
-HERE = os.path.dirname(os.path.abspath(__file__)); URL = 'http://localhost:%s/index.html' % os.environ.get('PORT', '8765'); OUT = '/tmp/toy-v42'; os.makedirs(OUT, exist_ok=True)
+HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); import kbfit
+URL = 'http://localhost:%s/index.html' % os.environ.get('PORT', '8765'); OUT = '/tmp/toy-v42'; os.makedirs(OUT, exist_ok=True)
 UA = 'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
 # every focus() the app makes, with the event being handled at that moment (None = a timer or an animation frame)
 SPY = """(()=>{ window.__foc=[]; const f=HTMLElement.prototype.focus; HTMLElement.prototype.focus=function(){ const e=window.event; if (/^(INPUT|TEXTAREA)$/.test(this.tagName)) window.__foc.push([this.id||this.tagName, e&&e.isTrusted?e.type:null]); return f.apply(this,arguments); }; })()"""
@@ -32,7 +33,7 @@ async def page(b, w, h, seed=True):
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox', '--autoplay-policy=no-user-gesture-required'])
-        for (w, h, kbh, tag) in [(1180, 820, 420, 'landscape'), (820, 1180, 340, 'portrait')]:
+        for (w, h, kbh, tag) in ([] if 'fit' in sys.argv else [(1180, 820, 420, 'landscape'), (820, 1180, 340, 'portrait')]):
             ctx, pg, errs = await page(b, w, h)
             # ---- Grown-ups gate ----
             await pg.tap('#grownups'); await pg.wait_for_selector('#gate.active'); await pg.wait_for_timeout(300)
@@ -100,6 +101,8 @@ async def main():
             await pg.keyboard.type('Mia'); await pg.tap('#suNameGo'); await pg.wait_for_timeout(500); await kb(pg, None)
             check(f'{tag} setup: name accepted, next step shown, keyboard given up', not await pg.evaluate("document.querySelector('#suName').classList.contains('on')") and await pg.evaluate("document.activeElement.id") != 'suNameIn')
             check(f'{tag} setup: no page errors', not errs, str(errs)); await ctx.close()
+        # v4.5: the compact layout above the keyboard, at the three sizes an older iPad reports (tests/kbfit.py)
+        if 'old' not in sys.argv: await kbfit.keyboard_fit(b, check, full=True)
         print('errors: []'); await b.close()
     if not ok: print('FAIL p19_typing')
 asyncio.run(main())

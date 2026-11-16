@@ -120,6 +120,9 @@ async def main():
             bad = await pg.evaluate(PAGE, ['#summary button', '#sumScore', '#sumMoons', '#bixSum .bix', '#summary .tp-sumhead']) + await pg.evaluate(OVER, [['#summary .tp-sumhead', '#sumMoons'], ['#summary button', '#summary button'], ['#summary button', '#sumMoons'], ['#summary button', '#summary .tp-sumhead']])
             check(f'{w}x{h} summary: score, moons and buttons on screen and apart', not bad, str(bad)); await shot(pg, f'summary_{w}x{h}')
             await ctx.close()
+        # v4.5: keyboard up on the Grown-ups gate and the name dialog (tests/kbfit.py; everything else that takes typing is in p19_typing)
+        if not ONLY and PART == '2':
+            sys.path.insert(0, HERE); import kbfit; await kbfit.keyboard_fit(b, check, full=False)
         print(f'{n} layouts measured, {len(fails)} failed'); print('errors: []'); await b.close()
     if not ok: print('FAIL p21_fit part ' + PART)
 asyncio.run(main())

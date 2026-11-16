@@ -14,14 +14,14 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=4.4">
-<link rel="stylesheet" href="abacus-input.css?v=4.4">
-<link rel="stylesheet" href="toy.css?v=4.4">
-<link rel="stylesheet" href="toy-home.css?v=4.4">
-<link rel="stylesheet" href="toy-practice.css?v=4.4">
-<link rel="stylesheet" href="toy-door.css?v=4.4">
-<link rel="stylesheet" href="toy-room.css?v=4.4">
-<link rel="stylesheet" href="toy-grown.css?v=4.4">
+<link rel="stylesheet" href="styles.css?v=4.5">
+<link rel="stylesheet" href="abacus-input.css?v=4.5">
+<link rel="stylesheet" href="toy.css?v=4.5">
+<link rel="stylesheet" href="toy-home.css?v=4.5">
+<link rel="stylesheet" href="toy-practice.css?v=4.5">
+<link rel="stylesheet" href="toy-door.css?v=4.5">
+<link rel="stylesheet" href="toy-room.css?v=4.5">
+<link rel="stylesheet" href="toy-grown.css?v=4.5">
 </head>
 <body>
 <div id="app">
@@ -54,7 +54,7 @@
     </nav>
     <div class="th-bowl"><span class="th-bowl-art" id="homeBowl" aria-hidden="true"></span><span class="toy-chip th-beadchip" id="roomBeads" aria-label="golden beads"></span></div>
   </div>
-  <div id="ver" class="th-ver">v4.4</div>
+  <div id="ver" class="th-ver">v4.5</div>
 </section>
 
 <section id="who" class="screen toy-scene tw">
@@ -372,7 +372,7 @@
     <h2 id="guSkillsH">Where they are</h2>
     <div class="field"><label for="sNode">Current skill<span class="hint">Everything before it counts as learned. Change this if your child already knows more.</span></label><select id="sNode"></select></div>
     <div class="note gu-skillnote" id="sNodeNote" hidden></div>
-    <div class="field"><label for="sName">Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" class="txt" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"></div>
+    <div class="field"><label for="sName">Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" class="txt" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"></div>
     <div class="row gu-row"><button class="btn small ghost" id="levelAgain">Run the level check again</button></div>
     <div class="gu-tablewrap"><table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table></div>
     <div class="note">A skill unlocks the next one automatically at 80% or better over the last 20 problems, practised on at least 2 different days. You can mark any skill learned or not learned by hand.</div>
@@ -417,8 +417,8 @@
     <div class="field"><label for="sVoice">Voice<span class="hint">"Recorded" voices are family members' own recordings. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">Test</button></div></div>
     <div class="recpanel" id="recPanel">
       <div class="note">Record family voices. Each person records the same 33 short words once (about 3 minutes), and “equals” if they like; the app builds every number from them. Pick a voice above, or "Take turns" once two or more people have finished.</div>
-      <div class="recrow"><input id="recNew" type="text" placeholder="Add a person, e.g. Mom" class="txt" autocomplete="off" autocapitalize="words"><button class="btn small" id="recAdd"><span class="gu-ic" data-ic="plus"></span>Add person</button></div>
-      <div class="recrow" id="recWhoRow"><label class="note gu-reclabel" for="recWho">Recording for</label><select id="recWho" class="txt"></select><label class="note" for="recName">Name</label><input id="recName" type="text" class="txt gu-recname" autocomplete="off" autocapitalize="words"><button class="btn small ghost" id="recDelete">Delete person</button></div>
+      <div class="recrow"><input id="recNew" type="text" placeholder="Add a person, e.g. Mom" class="txt" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"><button class="btn small" id="recAdd"><span class="gu-ic" data-ic="plus"></span>Add person</button></div>
+      <div class="recrow" id="recWhoRow"><label class="note gu-reclabel" for="recWho">Recording for</label><select id="recWho" class="txt"></select><label class="note" for="recName">Name</label><input id="recName" type="text" class="txt gu-recname" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"><button class="btn small ghost" id="recDelete">Delete person</button></div>
       <div id="recBody">
         <div class="recrow"><button class="btn small ghost" id="recStart">Start recording</button><button class="btn small ghost gu-sq" id="recPrev" aria-label="Previous word"><span class="gu-ic" data-ic="back"></span></button><div class="recword"><div id="recWord">—</div><div class="note" id="recCount"></div></div><button class="btn small ghost gu-sq gu-flip" id="recNext" aria-label="Next word"><span class="gu-ic" data-ic="back"></span></button><button class="btn small ghost gu-sq" id="recPlay" aria-label="Play this word" disabled><span class="gu-ic" data-ic="speaker"></span></button></div>
         <div class="recrow"><button id="recBtn" class="btn"><span class="gu-recdot" aria-hidden="true"></span>Hold to record</button></div>
@@ -466,18 +466,18 @@
 </section>
 
 </div>
-<script src="store.js?v=4.4"></script>
-<script src="toykit.js?v=4.4"></script>
-<script src="toystickers.js?v=4.4"></script>
-<script src="engine.js?v=4.4"></script>
-<script src="curriculum.js?v=4.4"></script>
-<script src="audio/bix-lines.js?v=4.4"></script>
-<script src="abacus-input.js?v=4.4"></script>
-<script src="parent-brain.js?v=4.4"></script>
-<script src="fun.js?v=4.4"></script>
-<script src="games.js?v=4.4"></script>
-<script src="treats.js?v=4.4"></script>
-<script src="onboarding.js?v=4.4"></script>
-<script src="app.js?v=4.4"></script>
+<script src="store.js?v=4.5"></script>
+<script src="toykit.js?v=4.5"></script>
+<script src="toystickers.js?v=4.5"></script>
+<script src="engine.js?v=4.5"></script>
+<script src="curriculum.js?v=4.5"></script>
+<script src="audio/bix-lines.js?v=4.5"></script>
+<script src="abacus-input.js?v=4.5"></script>
+<script src="parent-brain.js?v=4.5"></script>
+<script src="fun.js?v=4.5"></script>
+<script src="games.js?v=4.5"></script>
+<script src="treats.js?v=4.5"></script>
+<script src="onboarding.js?v=4.5"></script>
+<script src="app.js?v=4.5"></script>
 </body>
 </html>
