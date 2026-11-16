@@ -1,3 +1,12 @@
+# Project tracker (source of truth)
+
+Every decision, idea, open question, known issue and release is tracked in the project tracker doc: https://claude.ai/artifact/PAj4pL5tfcDpeHH9RGMzv3
+Rule: whenever something is decided, proposed, shipped or found, update the tracker in the same turn. Read it at the start of any new session before doing work.
+
+State at 2026-11-15: main = v4.4 (Toy Table look, Juni the moon, speed panel, small-iPad support). Next: rework the Juni-teacher / Bix-classmate plan with the owner, then ElevenLabs voices.
+
+---
+
 # Toy Table rebuild — where things stand (update on every milestone)
 
 - Live app: main, v4.0 (Toy Table look), released 2026-11-14. v3.13 was the last Workshop-look build.
