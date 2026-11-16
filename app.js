@@ -1163,7 +1163,7 @@ function onLessonBeads(v){
     if (L.helpStage!=='ask' || v!==L.target) return;              // only the child's fix counts
     clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; L.helpStage='done';
     const sc=lessonScript(L.node.id)||{}; Sfx.ok(); Fun.Mascot.react($('#bixLesson'), 'cheer', 1800);
-    cap('Help Bixi', `<b>${v}</b> — that's it. You fixed it.`, '');
+    cap('Help Bixi', `<b>${v}</b> — that's it. You put it right.`, '');
     bixiSay((sc.bixi_thanks||{}).id, {text:(sc.bixi_thanks||{}).text, ms:4000});
     lessonAb.clearHighlights(); L.busy=true;
     setTimeout(()=>{ juniNarrate((sc.close||{}).id); L.busy=false; advanceLesson(); }, 1900);
