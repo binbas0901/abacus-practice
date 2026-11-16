@@ -4,7 +4,7 @@
 /* ---------------- who-marked speech bubble ---------------- */
 /* A bubble says who is speaking: Juni's lines carry her name chip, Bixi's carry his. */
 .cl-bubble{position:relative}
-.cl-bubble[data-who]::after{content:attr(data-who);position:absolute;top:-12px;left:18px;
+.cl-bubble[data-who]::after{content:attr(data-who);position:absolute;top:-13px;right:20px;
   padding:2px 12px;border-radius:12px;font:700 15px/1.3 var(--toy-display);text-transform:capitalize;
   color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),2px 3px 6px rgba(58,30,6,.28)}
 .cl-bubble[data-who="juni"]::after{content:"Juni";background:linear-gradient(var(--toy-indigo),#2d3c86)}
