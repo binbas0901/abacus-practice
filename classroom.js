@@ -36,13 +36,16 @@
   function lineInfo(key) { const m = MANIFEST()[key]; if (m) return { who: m.who, text: m.text, tuning: m.tuning || 'default' }; return lessonLine(key); }
 
   /* ---------------- voice packs ---------------- */
-  // Re-record packs, newest first, added as they are produced (e.g. EXTRA.bixi = ['fix']).
-  const EXTRA = { juni: [], bixi: [] };
+  // Which recorded packs exist is declared in window.LINE_PACKS (an array of pack keys), so the loader never fetches a
+  // file that is not there (a 404 would show in the console and fail tests). It is empty until the recording track ships
+  // packs; then it lists, oldest first: "juni", "bixi", and any re-record pack "juni-<name>" / "bixi-<name>".
+  // Search order is newest-first (a later pack's take of a key wins), so packList reverses the list.
   function packList(char) {
-    const out = [{ key: char, src: `audio/${char}-lines.js` }];
-    (EXTRA[char] || []).forEach(p => out.unshift({ key: char + '-' + p, src: `audio/${char}-lines-${p}.js` }));  // newer wins: searched first
-    return out;
+    const avail = root.LINE_PACKS || [];
+    return avail.filter(k => k === char || k.indexOf(char + '-') === 0).reverse()
+      .map(k => ({ key: k, src: k === char ? `audio/${char}-lines.js` : `audio/${char}-lines-${k.slice(char.length + 1)}.js` }));
   }
+  const EXTRA = {};   // legacy shim; re-records are declared in window.LINE_PACKS now
   const Voice = {
     buf: {}, map: {}, text: {}, loading: {}, src: null, talkingEl: null, seq: 0, queued: 0,
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },   // the "characters talk out loud" family switch
@@ -156,10 +159,11 @@
       const M = MANIFEST(), opts = [['b_tap_roll', 'roll'], ['b_tap_dizzy', 'dizzy'], ['b_tap_nohands', 'tip'], ['b_tap_fastest', 'warmup'], ['b_tap_beadword', 'bow']];
       return opts.filter(([k]) => M[k]);
     },
+    // Draw the next joke base (no repeat until exhausted) and persist it, without playing. Exposed for the scheduler + tests.
+    drawJoke() { const s = sstate(), base = nextUnheard(this.jokeBases(), s.jokes); ssave(s); return base; },
     // Tell a joke: question, pause, punchline. who stays bixi; Juni may chime a reply after (manifest j_jokereply_*).
     async joke(opts = {}) {
-      const s = sstate(), base = nextUnheard(this.jokeBases(), s.jokes); ssave(s);
-      if (!base) return false;
+      const base = this.drawJoke(); if (!base) return false;
       await sequence([{ key: base + '_q' }, { pause: opts.gap || 1400 }, { key: base + '_a' }], opts);
       return base;
     },

@@ -99,19 +99,19 @@ window.LINES_MANIFEST = {
  "b_home_steps3": {
   "text": "Three beads to fill up Juni!",
   "who": "bixi",
-  "tuning": "maths",
+  "tuning": "lively",
   "when": "Home: three practice steps left today."
  },
  "b_home_steps2": {
   "text": "Two more beads to fill up Juni!",
   "who": "bixi",
-  "tuning": "maths",
+  "tuning": "lively",
   "when": "Home: two practice steps left today."
  },
  "b_home_steps1": {
   "text": "One more bead to fill up Juni!",
   "who": "bixi",
-  "tuning": "maths",
+  "tuning": "lively",
   "when": "Home: one practice step left today."
  },
  "b_home_done": {

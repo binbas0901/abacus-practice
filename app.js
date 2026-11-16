@@ -650,7 +650,7 @@ function renderHome(){
   // Today: three beads on the rod, finished ones first (slid to the left like counted beads); the moon shows the same count
   const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
   $('#home').classList.toggle('is-done', allDone);
-  homeMoon(steps.length-left, steps.length); wireMoonTap('#homeSky');
+  homeMoon(steps.length-left, steps.length); wireMoonTap('#homeSky'); armBixiIdle();
   $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
   $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
   const shown = steps.filter(s=>s.done).concat(steps.filter(s=>!s.done));
@@ -738,10 +738,10 @@ async function activityDone(kind, info={}){
     await Fun.give({gold:true, title:'Today’s practice is done!', voice:'today_done'});
     Treats.earn(Treats.EARN.today, 'Today’s practice done!');
   }
-  if ($('#home').classList.contains('active')) renderHome();
+  if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); }
+function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); Games.leave(); });
@@ -1218,6 +1218,17 @@ function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
 function wireBixiTap(){ const el=$('#bixLesson'); if (!el || el._cltap) return; el._cltap=true;
   el.addEventListener('click', ()=>{ if (!CL() || (L && L.busy)) return; Speaker.unlock(); CL().Silly.tapBixi({figure:el, bubble:$('#bixiBubble'), ms:3200}); });
 }
+/* ---- Bixi moments + jokes between activities (Part 6). Never during a sum: only called on home / the play hub. ---- */
+let bixiIdleT=null;
+// A short Bixi bit or joke, honouring the silliness setting and never repeating until the pool is exhausted (see Classroom.Silly).
+function maybeBixiMoment(el){ if (!CL()) return; const fig=el||$('#bixHome'); CL().Silly.between({figure:fig, bubble:fig && fig.querySelector('.bubble'), ms:6000}); }
+// When home sits idle, Bixi dozes off (a calm move, no words). Any tap wakes him with a start.
+function armBixiIdle(){ clearTimeout(bixiIdleT); if (!CL() || CL().Silly.level()==='quiet' || reduced()) return;
+  bixiIdleT=setTimeout(()=>{ if ($('#home').classList.contains('active')) CL().move($('#bixHome'), 'sleep', 3200); }, 30000); }
+function reduced(){ return document.body.classList.contains('ws-calm') || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+// Any interaction on home wakes a dozing Bixi (with a start) and re-arms the idle timer.
+document.addEventListener('pointerdown', ()=>{ if (!$('#home').classList.contains('active')) return; clearTimeout(bixiIdleT);
+  const f=$('#bixHome .bix'); if (f && f.classList.contains('cl-sleep') && CL()) CL().move($('#bixHome'), 'wake', 1300); armBixiIdle(); }, true);
 
 /* ---------------- practice (Look / Listen / Flash), answer tool, end of set, fix, level test ---------------- */
 let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
@@ -2169,7 +2180,10 @@ async function renderParent(){
     tb.appendChild(tr); });
   tb.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const st=node(b.dataset.toggle); st.mastered = st.mastered?null:'parent'; if(st.mastered) st.lesson=true; saveProgress(); renderParent(); });
   Treats.renderParent(); Treats.bindParent();
-  bindSwitch('#sBixTalks','bixTalks', ()=>{ if(!settings.bixTalks) Fun.BixVoice.stop(); });
+  bindSwitch('#sBixTalks','bixTalks', ()=>{ if(!settings.bixTalks){ Fun.BixVoice.stop(); if (CL()) CL().stop(); } });
+  bindSwitch('#sBixiMistakes','bixiMistakes');
+  $('#sBixiSilly').value = settings.bixiSilly || 'normal';
+  $('#sBixiSilly').onchange = ()=>{ settings.bixiSilly = $('#sBixiSilly').value; saveSettings(); };
   $('#sBixVoice').innerHTML=Object.entries(Fun.BixVoice.voices).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
   $('#sBixVoice').value=Fun.BixVoice.tag();
   $('#sBixVoice').onchange=async()=>{ settings.bixVoice=$('#sBixVoice').value; saveSettings(); keepVoiceOffline(); Fun.BixVoice.stop(); Speaker.unlock(); await Fun.BixVoice.load(); Fun.BixVoice.play('intro_hi'); };
