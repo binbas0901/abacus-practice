@@ -97,7 +97,7 @@ const Typing = {
     if (!box){ this.guess=0; if (this.fake===null){ this.note(false); clearTimeout(this.noteT); this.noteT=setTimeout(()=>{ if (!this.isBox(document.activeElement)) this.note(true); }, 1200); } }
     const kb=box ? this.keyboard() : 0, up=box && kb>120;
     if (up!==d.classList.contains('kb-up')) d.classList.toggle('kb-up', up);
-    if (!up){ if (this.was){ this.was=false; this.slides=0; d.classList.remove('kb-short','kb-tiny'); d.style.removeProperty('--vv-h'); d.style.removeProperty('--vv-top'); this.unslide(); } return; }
+    if (!up){ this.seenBox=null; if (this.was){ this.was=false; this.slides=0; d.classList.remove('kb-short','kb-tiny'); d.style.removeProperty('--vv-h'); d.style.removeProperty('--vv-top'); this.unslide(); } return; }
     this.was=true;
     const h=Math.round(this.fullH()-kb), top=this.fake===null && v ? Math.max(0, Math.round(v.offsetTop)) : 0;
     d.classList.toggle('kb-short', h<620); d.classList.toggle('kb-tiny', h<300); d.style.setProperty('--vv-h', h+'px'); d.style.setProperty('--vv-top', top+'px');
@@ -106,7 +106,8 @@ const Typing = {
     if (this.fake===null && (window.scrollY>0 || top>0) && (this.slides=(this.slides||0)+1)<=3) window.scrollTo(0,0);
     // A box in a part that scrolls (the Grown-ups page): bring its whole row - label, box, its button - into what is left, inside that part only.
     const sc=a.closest('#parent, .toy-dialog-panel, [data-kb-scroll]');
-    if (sc && this.scroller(sc)){ const row=a.closest('.field, .recrow, tr, label')||a, r=row.getBoundingClientRect(), b=a.getBoundingClientRect(), c=sc.getBoundingClientRect(), pad=12;
+    const key=h+'/'+top, moved=this.seenBox!==a || this.seenKey!==key; this.seenBox=a; this.seenKey=key;   // once per box and keyboard size: the page can still be scrolled by hand while typing
+    if (sc && moved && this.scroller(sc)){ const row=a.closest('.field, .recrow, tr, label')||a, r=row.getBoundingClientRect(), b=a.getBoundingClientRect(), c=sc.getBoundingClientRect(), pad=12;
       const nav=sc.querySelector('.gu-nav'), nb=nav && getComputedStyle(nav).position==='sticky' ? nav.getBoundingClientRect().bottom : 0, ct=Math.max(c.top, Math.min(nb, c.top+c.height/2))+pad, cb=c.bottom-pad;   // the tab bar stays stuck at the top
       const lo=Math.min(r.top, b.top), hi=Math.max(r.bottom, b.bottom), room=cb-ct;
       let dy=0; if (hi-lo>room) dy=(b.top+b.bottom)/2-(ct+cb)/2; else if (lo<ct || hi>cb) dy=(lo+hi)/2-(ct+cb)/2;

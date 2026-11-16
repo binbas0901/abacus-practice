@@ -137,6 +137,9 @@ async def grown_ups(b, check, w, h, k):
         pr = await pg.evaluate(RECTS, ['#parent'])
         check(f'{tag} grown-ups {sel}: the box with its label / button is above the keyboard and below the tab bar; only the page itself scrolled', st['up'] and st['active'] is not None and not bad and st['sy'] == 0 and pr[0][1] == SAT and pr[0][3] == vis - SAT, str(st) + str(bad) + str(pr))
         if sel in ('#sName', '#recNew', '#tpList tr:last-child input[data-f=price]'): await pg.screenshot(path=f'{OUT}/grown_{w}x{h}_{sel.split("=")[-1].strip("#]")}_kb{k}.png')
+        if sel == '#sName':
+            mv = await pg.evaluate("async()=>{ const p=document.querySelector('#parent'), a=p.scrollTop; p.scrollTop=a+90; const b=p.scrollTop; await new Promise(r=>setTimeout(r,800)); return [a, b, p.scrollTop]; }")
+            check(f'{tag} grown-ups: the page can still be scrolled by hand while the keyboard is up (it is not pulled back)', mv[1] != mv[0] and mv[2] == mv[1], str(mv))
         at = await pg.evaluate(ATTR, sel); check(f'{tag} grown-ups {sel}: asks for the right keyboard {want}', all(at[x] == v for x, v in want.items()), str(at))
         if sel != '#recNew':
             await pg.keyboard.press('Enter'); await pg.wait_for_timeout(150); check(f'{tag} grown-ups {sel}: Done leaves the box', not await pg.evaluate("Typing.isBox(document.activeElement)"))
