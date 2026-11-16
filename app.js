@@ -12,6 +12,7 @@ const DEFAULTS = {
   count:10, operands:0, sfx:true, speakFeedback:true, name:'',
   termGap:0.65, sayPlus:true, voice:'juni', voiceRate:1.0, answerPause:0.5,
   flashSec:1.0, flashGap:0.2, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:6,
+  bixiMistakes:true, bixiSilly:'normal',   // classroom: Bixi makes mistakes in lessons; how often Bixi's silliness fires
 };
 // All saving goes through store.js: family-wide settings are shared, progress and treats are per child.
 function load(k, d){ return Store.get(k, d); }
@@ -987,14 +988,16 @@ function lessonPair(f, mood){
   const pk=f ? Math.min(f[0],f[1])+'-'+Math.max(f[0],f[1]) : ''; $$('#capFriends span').forEach(x=>x.classList.toggle('on', x.dataset.pair===pk));
 }
 // The speaker mark on the lesson bubble: shown only while the caption has a spoken line; tap the bubble to hear it again.
-function capVoice(id, extra){
+// src: undefined = Bix main pack, true = Bix extra pack, 'juni' = Juni (classroom) line. Tap the bubble to hear it again.
+function capVoice(id, src){
   const c=$('#lessonCap'), mark=$('#capSay'); c._v=null; mark.hidden=true; c.classList.remove('has-voice'); if (!id || !Fun.BixVoice.enabled()) return;
-  const on=()=>{ c._v={id, extra}; mark.hidden=false; c.classList.add('has-voice'); };
-  if (!extra){ if (window.BIX_LINES && window.BIX_LINES[id]) on(); return; }
+  const on=()=>{ c._v={id, src}; mark.hidden=false; c.classList.add('has-voice'); };
+  if (src==='juni'){ if (CL() && CL().lineInfo(id)) on(); return; }           // Juni's lines always have text; the icon replays her clip (silent until recorded)
+  if (!src){ if (window.BIX_LINES && window.BIX_LINES[id]) on(); return; }
   const tag=Fun.BixVoice.tag(), tok=c._vt=(c._vt||0)+1; BixExtra.load(tag).then(()=>{ if (c._vt===tok && BixExtra.map[tag] && BixExtra.map[tag][id]) on(); });
 }
 $('#capSay').innerHTML=TOY.icon('speaker', 26, 'currentColor');
-$('#lessonCap').addEventListener('click', ()=>{ const v=$('#lessonCap')._v; if (!v) return; Speaker.unlock(); if (v.extra) BixExtra.play(v.id, $('#bixLesson')); else Fun.BixVoice.play(v.id, $('#bixLesson')); });
+$('#lessonCap').addEventListener('click', ()=>{ const v=$('#lessonCap')._v; if (!v) return; Speaker.unlock(); if (v.src==='juni'){ CL() && CL().Voice.play('juni', v.id, $('#lessonSky')); } else if (v.src) BixExtra.play(v.id, $('#bixLesson')); else Fun.BixVoice.play(v.id, $('#bixLesson')); });
 function startLesson(n, from){
   Speaker.unlock(); lessonFrom = from || 'home';
   // The practice soroban (AbacusInput via DemoAbacus): Bix moves it in demos, the child moves it on "Your turn".
@@ -1007,6 +1010,9 @@ function startLesson(n, from){
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   toyBix($('#bixLesson'), 'happy', {size:170, keep:false, bubble:false}); toySky($('#lessonSky'));
   $('#lesson').classList.add('cl-juni-forward'); wireMoonTap('#lessonSky');   // Juni leans in from the window to lead
+  $('#lessonCap').classList.add('cl-bubble'); $('#lessonCap').dataset.who='juni';   // the board is Juni's: she leads the lesson
+  $('#bixiBubble').classList.remove('on'); $('#bixiBubble').dataset.who='bixi';
+  if (window.Classroom) wireBixiTap();
   // Room under the soroban is kept for the friends only in lessons where a friend rule can come up.
   let friendly=false; try{ friendly=[...(n.demos||[]), ...(n.guided||[])].some(pr=>friendOfSteps(lessonStep(n, pr).steps)); }catch(e){}
   $('#lesson').classList.toggle('may-pair', friendly); $('#lesson').dataset.rods=rods;
@@ -1023,8 +1029,8 @@ function lessonRods(n){
   try{ if (n.kind==='numbers') mx=Math.max(0, ...n.lesson.numbers); else for (const p of [...(n.demos||[]), ...(n.guided||[])]){ const ls=lessonStep(n, p); mx=Math.max(mx, ls.start||0, ls.target||0); } }catch(e){ mx=99999; }
   return Math.max(3, String(Math.floor(mx)).length);
 }
-function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1; }
-function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx : L.phase==='done'?lessonTotal() : 0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='done'? lessonTotal() : 0; return d; }
+function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1+(hasInterlude(n)?1:0); }
+function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx : L.phase==='done'?lessonTotal() : 0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='help'? n.demos.length+n.guided.length : L.phase==='done'? lessonTotal() : 0; return d; }
 // The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
 function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>').replace(/×/g,'<i class="times">×</i>'); }
 function cap(kind, text, prob){ $('#capKind').textContent=kind; const t=$('#capText'); t.classList.remove('tight'); t.innerHTML=text; if (capLines()>3) t.classList.add('tight'); if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? TOY.icon('star', 64, '#F2B632') : probHtml(prob||''); }
@@ -1067,6 +1073,22 @@ function lessonSkip(){
 // Learned = she really did most of the "Your turn" steps (two in three); skipped ones do not count.
 function lessonLearned(){ const t=turnTotal(L.node); return L.did*3 >= t*2; }
 function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); capVoice(id); }
+/* ---- classroom lesson flow (Part 4): Juni leads; Bixi (the bead) is the classmate who sometimes slips ---- */
+// The scripted dialogue for a node from lessons.json (window.LESSONS), grouped by act. Null if there is none.
+function lessonScript(nodeId){
+  const L0 = (window.LESSONS||{})[nodeId]; if (!L0 || !Array.isArray(L0.steps)) return null;
+  const by = {watch:[]};
+  for (const s of L0.steps){ if (s.act==='watch') by.watch.push(s); else by[s.act]=s; }
+  return by;
+}
+// Juni narrates (plays her clip + moves her mouth) WITHOUT touching the caption, so the existing captions/tests stay intact.
+function juniNarrate(key){ if (!key || !window.Classroom) return; Classroom.Voice.play('juni', key, juniFig()); }
+// The Bixi interlude runs once, after the guided turns, when the node has a bixi_wrong step and the grown-up left mistakes on.
+function hasInterlude(n){ return settings.bixiMistakes!==false && n && n.kind!=='numbers' && !!(lessonScript(n.id)||{}).bixi_wrong && (n.guided&&n.guided.length || n.demos&&n.demos.length); }
+// A visibly-wrong but correctable value for Bixi to land on (the narration explains the real slip).
+function bixiWrongValue(start, target, maxV){ let w = target>0 ? target-1 : target+1; if (w===target || w<0) w=target+1; if (w>maxV) w=Math.max(0, target-1); if (w===target) w=start; return Math.max(0, Math.min(maxV, w)); }
+// The example the interlude works on (the first guided pair, else the first demo).
+function interludeExample(n){ const pair = (n.guided&&n.guided[0]) || (n.demos&&n.demos[0]); return pair ? lessonStep(n, pair) : null; }
 // Lesson progress as beads on a brass rod (one per demo / try): done teal, the one you are on gold, the rest bare wood.
 function renderLessonSteps(){
   const tot=lessonTotal()-1, done=Math.min(tot, lessonDone()), live=['numbers','demo','guided'].includes(L.phase);
@@ -1081,28 +1103,49 @@ async function renderLesson(){
     if (!L.pages) L.pages=lessonPages(n);
     const pg=L.pages[Math.min(L.page, L.pages.length-1)], last=L.page>=L.pages.length-1;
     cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null);
-    if (L.page===0){ lessonAb.reset(); BixExtra.play('learn_'+n.id, $('#bixLesson')); capVoice('learn_'+n.id, true); }
+    if (L.page===0){ lessonAb.reset(); const sc=lessonScript(n.id), ok=sc&&sc.open&&sc.open.id; if (ok){ juniNarrate(ok); capVoice(ok,'juni'); } else { BixExtra.play('learn_'+n.id, $('#bixLesson')); capVoice('learn_'+n.id, true); } }
     return;
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0) lessonSay('lesson_turn'); return;
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt) juniNarrate(yt); else lessonSay('lesson_turn'); } return;
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
-    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); if (L.demoIdx===0) lessonSay('lesson_watch'); lessonBtn('Next', 'play');
+    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); { const sc=lessonScript(n.id), w=sc&&sc.watch&&sc.watch[L.demoIdx]; if (w) juniNarrate(w.id); else if (L.demoIdx===0) lessonSay('lesson_watch'); } lessonBtn('Next', 'play');
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
     return;
   }
   if (L.phase==='guided'){
     const ls=lessonStep(n, n.guided[L.guidedIdx]); L.target=ls.target; lessonAb.value=ls.start;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label); { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
-    lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0) lessonSay('lesson_turn'); return;
+    lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else lessonSay('lesson_turn'); } return;
+  }
+  if (L.phase==='help'){   // Bixi the classmate makes the classic slip; the child helps fix it (Part 4)
+    const sc=lessonScript(n.id), ex=interludeExample(n);
+    if (!sc || !sc.bixi_wrong || !ex){ L.phase='done'; return renderLesson(); }
+    const rods=+($('#lesson').dataset.rods)||3, maxV=Math.pow(10, rods)-1, wrong=bixiWrongValue(ex.start, ex.target, maxV);
+    L.target=ex.target; $('#lessonHint').style.display='none'; lessonBtn('', null); $('#lessonNext').style.visibility='hidden';
+    const f=friendOfSteps(ex.steps); if (f || !n.family) lessonPair(f);
+    const tok=++animToken; L.helpStage='watch'; L.busy=true;
+    lessonAb.setReadOnly(true); lessonAb.value=ex.start;
+    cap('Help Bixi', `It's Bixi's turn to try <b>${probHtml(ex.label)}</b>. Let's watch.`, ex.label);
+    (async()=>{
+      await sleep(700); if (tok!==animToken || L.phase!=='help') return;
+      lessonAb.poke(wrong); Fun.Mascot.react($('#bixLesson'), 'oops', 1400); CL() && CL().move($('#bixLesson'), 'dizzy');
+      bixiSay((sc.bixi_wrong||{}).id, {text:(sc.bixi_wrong||{}).text, ms:4200});
+      await sleep(1800); if (tok!==animToken || L.phase!=='help') return;
+      L.helpStage='ask'; L.busy=false; lessonAb.poke(ex.start); lessonAb.setReadOnly(false);
+      $('#bixiBubble').classList.remove('on');
+      cap('Help Bixi', (sc.ask_help&&sc.ask_help.text ? esc(sc.ask_help.text) : `Can you help Bixi? Show <b>${esc(ex.label)}</b> the right way.`), ex.label);
+      juniNarrate((sc.ask_help||{}).id); lessonSkip();
+    })();
+    return;
   }
   if (L.phase==='done' && !lessonLearned()){   // mostly skipped: kind words, no sticker, no golden bead, the Today step stays open
     cap('Good try!', `Good practice! Every try makes you stronger. Let’s do <b>${esc(n.title)}</b> again later.`, ''); lessonBtn('OK', 'check'); Fun.Mascot.react($('#bixLesson'), 'happy', 1600);
-    if (!L.told){ L.told=true; lessonSay('sum_good'); } return; }
-  if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
+    if (!L.told){ L.told=true; juniNarrate('j_end_good'); } return; }
+  if (L.phase==='done'){ cap('Done!', `You learned <b>${esc(n.title)}</b>. Now practise it with Look and Listen.`, '*'); lessonBtn('Finish', 'check'); node(n.id).lesson=true; saveProgress(); Sfx.star(); Fun.Mascot.react($('#bixLesson'), 'cheer', 2400); if (!L.awarded){ L.awarded=true; Fun.confetti(70); const cl=(lessonScript(n.id)||{}).close; if (cl) juniNarrate(cl.id); else lessonSay('lesson_done'); setTimeout(()=>activityDone('lesson'), 2600); } return; }
 }
 $('#lessonHint').innerHTML=TOY.icon('eye', 30, 'currentColor')+'<span class="toy-block-label">Show me</span>';
 let animToken=0;
@@ -1116,11 +1159,21 @@ async function playSteps(ab, steps, onStep){
 }
 function onLessonBeads(v){
   if (L.busy) return;
+  if (L.phase==='help'){
+    if (L.helpStage!=='ask' || v!==L.target) return;              // only the child's fix counts
+    clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; L.helpStage='done';
+    const sc=lessonScript(L.node.id)||{}; Sfx.ok(); Fun.Mascot.react($('#bixLesson'), 'cheer', 1800);
+    cap('Help Bixi', `<b>${v}</b> — that's it. You fixed it.`, '');
+    bixiSay((sc.bixi_thanks||{}).id, {text:(sc.bixi_thanks||{}).text, ms:4000});
+    lessonAb.clearHighlights(); L.busy=true;
+    setTimeout(()=>{ juniNarrate((sc.close||{}).id); L.busy=false; advanceLesson(); }, 1900);
+    return;
+  }
   if (L.phase==='numbers' || L.phase==='guided'){
     clearTimeout(L.tryT);
     if (v!==L.target){ const l=L, at=l.phase+turnIdx();   // the beads rest on another number: a try. After two, Skip turns up.
       l.tryT=setTimeout(()=>{ if (L!==l || l.phase+turnIdx()!==at || l.busy || lessonAb.value===l.target) return; if (++l.tries>=2 && l.showSkip) l.showSkip(); }, 1500); }
-    if (v===L.target){ clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok(); lessonSay('lesson_yes'); Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+    if (v===L.target){ clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok(); juniNarrate('j_praise_'+(L.node.family===5?'sf':L.node.family===10?'bf':'both')); Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
 function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
@@ -1130,7 +1183,8 @@ function advanceLesson(){
   if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; } L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
-  else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase='done'; }
+  else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase = hasInterlude(n) ? 'help' : 'done'; }
+  else if (L.phase==='help'){ L.phase='done'; }
   else if (L.phase==='done'){ leaveLesson(); return; }
   renderLesson();
 }
@@ -1152,13 +1206,17 @@ const CL = ()=>window.Classroom;
 function juniFig(){ return $('#lessonSky'); }
 function juniSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'juni', figure:juniFig()}, o)); }
 function bixiFig(){ return $('#bixLesson'); }
-function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'bixi', figure:bixiFig()}, o)); }
+function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'bixi', figure:bixiFig(), bubble:$('#bixiBubble')}, o)); }
 // Tapping the moon plays one of Juni's calm lines; mark her tappable where she can be tapped (home, lesson).
 function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
   sky.classList.add('cl-moon-tap');
   const m=sky.querySelector('.toy-moon'); if (m && !m.getAttribute('role')){ m.setAttribute('role','button'); m.setAttribute('aria-label', TOY.moonName); m.tabIndex=0; }
   if (sky._cltap) return; sky._cltap=true;
   sky.addEventListener('click', ()=>{ if (!CL()) return; Speaker.unlock(); CL().Silly.tapJuni({figure:sky, bubble:sel==='#lessonSky'?$('#lessonCap'):$('#bixHome .bubble')}); });
+}
+// Tapping Bixi (the bead) in a lesson plays one of his tap lines in his own bubble.
+function wireBixiTap(){ const el=$('#bixLesson'); if (!el || el._cltap) return; el._cltap=true;
+  el.addEventListener('click', ()=>{ if (!CL() || (L && L.busy)) return; Speaker.unlock(); CL().Silly.tapBixi({figure:el, bubble:$('#bixiBubble'), ms:3200}); });
 }
 
 /* ---------------- practice (Look / Listen / Flash), answer tool, end of set, fix, level test ---------------- */
