@@ -49,6 +49,14 @@
 .bix.cl-bow{animation:cl-bow 1.3s ease-in-out both}
 @keyframes cl-bow{0%,100%{transform:rotate(0) translateY(0)}40%{transform:rotate(22deg) translateY(6%)}60%{transform:rotate(22deg) translateY(6%)}}
 
+/* Juni is tappable (plays a calm fact / habit line). The sky moon is normally pointer-transparent and sits
+   behind the header/content; lift just the moon's own pixels so a tap on her lands (the rest of the sky stays
+   transparent, so the header buttons beside her keep working). The click bubbles to the sky handler. */
+.cl-moon-tap .toy-sky-moon{z-index:6}
+.cl-moon-tap .toy-sky-moon-in{pointer-events:none}
+.cl-moon-tap .toy-moon{pointer-events:auto;cursor:pointer}
+.cl-moon-tap .toy-moon:focus-visible{outline:4px solid var(--toy-ink);outline-offset:-4px;border-radius:50%}
+
 /* Bixi the classmate seat in a lesson: a little to the side, below the teacher caption. */
 .td-lesson .lesson-bix.cl-classmate{position:relative}
 .cl-think-bubble{font-style:normal}

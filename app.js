@@ -649,7 +649,7 @@ function renderHome(){
   // Today: three beads on the rod, finished ones first (slid to the left like counted beads); the moon shows the same count
   const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
   $('#home').classList.toggle('is-done', allDone);
-  homeMoon(steps.length-left, steps.length);
+  homeMoon(steps.length-left, steps.length); wireMoonTap('#homeSky');
   $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
   $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
   const shown = steps.filter(s=>s.done).concat(steps.filter(s=>!s.done));
@@ -1006,6 +1006,7 @@ function startLesson(n, from){
   L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   toyBix($('#bixLesson'), 'happy', {size:170, keep:false, bubble:false}); toySky($('#lessonSky'));
+  $('#lesson').classList.add('cl-juni-forward'); wireMoonTap('#lessonSky');   // Juni leans in from the window to lead
   // Room under the soroban is kept for the friends only in lessons where a friend rule can come up.
   let friendly=false; try{ friendly=[...(n.demos||[]), ...(n.guided||[])].some(pr=>friendOfSteps(lessonStep(n, pr).steps)); }catch(e){}
   $('#lesson').classList.toggle('may-pair', friendly); $('#lesson').dataset.rods=rods;
@@ -1144,6 +1145,21 @@ function guidedText(ls, pair, lead){
 }
 $('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
 $('#exitLesson').addEventListener('click', ()=>{ Fun.BixVoice.stop(); leaveLesson(); });
+
+/* ---------------- Juni the teacher: a speaker in her own right (Part 2) ---------------- */
+// Juni leads from the window. juniSay shows her bubble (the lesson caption) and animates her mouth on the sky moon.
+const CL = ()=>window.Classroom;
+function juniFig(){ return $('#lessonSky'); }
+function juniSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'juni', figure:juniFig()}, o)); }
+function bixiFig(){ return $('#bixLesson'); }
+function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'bixi', figure:bixiFig()}, o)); }
+// Tapping the moon plays one of Juni's calm lines; mark her tappable where she can be tapped (home, lesson).
+function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
+  sky.classList.add('cl-moon-tap');
+  const m=sky.querySelector('.toy-moon'); if (m && !m.getAttribute('role')){ m.setAttribute('role','button'); m.setAttribute('aria-label', TOY.moonName); m.tabIndex=0; }
+  if (sky._cltap) return; sky._cltap=true;
+  sky.addEventListener('click', ()=>{ if (!CL()) return; Speaker.unlock(); CL().Silly.tapJuni({figure:sky, bubble:sel==='#lessonSky'?$('#lessonCap'):$('#bixHome .bubble')}); });
+}
 
 /* ---------------- practice (Look / Listen / Flash), answer tool, end of set, fix, level test ---------------- */
 let mode='visual', drillNode=null, problems=[], idx=0, results=[], entry='', t0=0, reviewing=false, locked=false, wakeLock=null, reviewQueue=[];
