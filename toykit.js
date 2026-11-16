@@ -375,7 +375,7 @@
     const Mo = { smile: `<path d="M-7,10 Q0,16 7,10" fill="none" stroke="${ML.mouth}" stroke-width="3" stroke-linecap="round"/>`,
       grin: `<path d="M-9,8 Q0,20 9,8Z" fill="${ML.mouth}" stroke="${ML.mouth}" stroke-width="3" stroke-linejoin="round"/><path d="M-4.5,13 Q0,10.5 4.5,13 Q0,16 -4.5,13Z" fill="#FF8D86"/>`,
       tiny: `<ellipse cx="0" cy="12" rx="3.4" ry="4" fill="${ML.mouth}"/>`, o: `<ellipse cx="0" cy="13" rx="5" ry="6.4" fill="${ML.mouth}"/>` };
-    return (thin ? '' : `<ellipse cx="${-BL}" cy="7" rx="8.5" ry="5" fill="${ML.blush}" opacity=".55"/><ellipse cx="${BL}" cy="7" rx="8.5" ry="5" fill="${ML.blush}" opacity=".55"/>`) + E[M.eyes] + Mo[M.mouth];
+    return (thin ? '' : `<ellipse cx="${-BL}" cy="7" rx="8.5" ry="5" fill="${ML.blush}" opacity=".55"/><ellipse cx="${BL}" cy="7" rx="8.5" ry="5" fill="${ML.blush}" opacity=".55"/>`) + E[M.eyes] + `<g class="toy-moon-mouth">${Mo[M.mouth]}</g>`;
   }
   // a little star companion with a face
   const starPal = (cx, cy, r) => `<g transform="translate(${cx},${cy})">${star(1, 1.5, r, '#B8860F')}${star(0, 0, r, '#F7C843')}<ellipse cx="${r1(-r * .3)}" cy="${r1(-r * .42)}" rx="${r1(r * .3)}" ry="${r1(r * .13)}" transform="rotate(-30 ${r1(-r * .3)} ${r1(-r * .42)})" fill="#fff" opacity=".8"/>`
