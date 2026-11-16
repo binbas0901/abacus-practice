@@ -21,7 +21,7 @@ ok = True
 def check(name, cond, detail=''):
     global ok; ok = ok and bool(cond); print(('PASS' if cond else 'FAIL'), name, detail)
 async def listen(pg, voice, gap=1, rate=1.0, node=None, nopack=False):
-    await pg.evaluate("([v,g,r,n])=>{const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice=v; st.profiles=[{id:'p1',name:'Mom'}]; st.termGap=g; st.voiceRate=r; st.answerPause=0.5; st.sayPlus=true; st.speakFeedback=false; st.sfx=false; st.settingsVersion=5; localStorage.setItem('abacus.settings',JSON.stringify(st)); if(n){ const pr=JSON.parse(window.__legacy('progress')||'{}'); pr.current=n; localStorage.setItem('abacus.progress',JSON.stringify(pr)); } }", [voice, gap, rate, node])
+    await pg.evaluate("([v,g,r,n])=>{const st=JSON.parse(window.__legacy('settings')||'{}'); st.voice=v; st.profiles=[{id:'p1',name:'Mom'}]; st.termGap=g; st.voiceRate=r; st.answerPause=0.5; st.sayPlus=true; st.speakFeedback=false; st.sfx=false; st.settingsVersion=6; localStorage.setItem('abacus.settings',JSON.stringify(st)); if(n){ const pr=JSON.parse(window.__legacy('progress')||'{}'); pr.current=n; localStorage.setItem('abacus.progress',JSON.stringify(pr)); } }", [voice, gap, rate, node])
     await pg.reload(); await pg.wait_for_timeout(400); await pg.evaluate(HOOK)
     if nopack: await pg.evaluate("App.Speaker.prepare().then(()=>{ App.Speaker.extra=null; App.Speaker.loadExtra=async()=>{}; })")   # as if audio/voice-ljspeech-extra.js could not be fetched
     await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo')

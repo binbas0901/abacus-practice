@@ -16,7 +16,7 @@ ok = True
 def check(name, cond, detail=''):
     global ok; ok = ok and bool(cond); print(('PASS' if cond else 'FAIL'), name, detail)
 async def setv(pg, **kw):
-    await pg.evaluate("(kw)=>{ const st=JSON.parse(window.__legacy('settings')||'{}'); Object.assign(st, {sfx:false, speakFeedback:false, answerPause:0, settingsVersion:5}, kw); localStorage.setItem('abacus.settings', JSON.stringify(st)); }", kw); await pg.reload(); await pg.wait_for_timeout(500); await pg.evaluate(HOOK)
+    await pg.evaluate("(kw)=>{ const st=JSON.parse(window.__legacy('settings')||'{}'); Object.assign(st, {sfx:false, speakFeedback:false, answerPause:0, settingsVersion:6}, kw); localStorage.setItem('abacus.settings', JSON.stringify(st)); }", kw); await pg.reload(); await pg.wait_for_timeout(500); await pg.evaluate(HOOK)
 async def vals(pg): return await pg.evaluate("[...document.querySelectorAll('#spCtrls .sp-val')].map(e=>e.textContent)")
 async def sett(pg): return await pg.evaluate("(()=>{ const s=App.settings; return [s.voiceRate, s.termGap, s.flashSec, s.flashGap]; })()")
 async def step(pg, k, d, n=1):
@@ -129,7 +129,7 @@ async def main():
 
         # 7) settings from before v4.2: start-to-start seconds become a pause on the new scale, speed goes to a 10% step
         for old, want in [({'gap': 2}, 0.65), ({'gap': 1.5}, 0.6), ({'gap': 6}, 1.2), ({'gap': 0.5}, 0.05)]:
-            await pg.evaluate("(old)=>{ const id=Store.addChild(); Store.switchTo(id); localStorage.setItem('abacus.settings', JSON.stringify(Object.assign({settingsVersion:5, voiceRate:1.2}, old))); }", old); await pg.reload(); await pg.wait_for_timeout(400)
+            await pg.evaluate("(old)=>{ const id=Store.addChild(); Store.switchTo(id); localStorage.setItem('abacus.settings', JSON.stringify(Object.assign({settingsVersion:6, voiceRate:1.2}, old))); }", old); await pg.reload(); await pg.wait_for_timeout(400)
             st = await sett(pg); check(f'old setting {old} -> pause {want}s, speed 120%', st[:2] == [1.2, want], str(st))
         check('no page errors', not errs, str(errs)); await ctx.close()
 

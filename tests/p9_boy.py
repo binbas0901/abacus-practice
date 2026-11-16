@@ -24,7 +24,7 @@ async def main():
         ctx=await b.new_context(viewport={'width':1180,'height':820}); pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read())
         await pg.goto(URL); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, sfx:false}))"); await pg.reload()
-        await pg.evaluate("navigator.serviceWorker.ready.then(()=>new Promise(r=>{ const t=setInterval(()=>caches.match('./audio/voice-ljspeech.js').then(x=>{ if (x){ clearInterval(t); r(); } }), 200); }))"); await pg.wait_for_timeout(2500)
+        await pg.evaluate("navigator.serviceWorker.ready.then(()=>new Promise(r=>{ const t=setInterval(()=>caches.match('./audio/voice-juni.js').then(x=>{ if (x){ clearInterval(t); r(); } }), 200); }))"); await pg.wait_for_timeout(2500)
         check('default install does not hold the Boy voice (about 3 MB)', await pg.evaluate(BOY)==[False]*4, await pg.evaluate(BOY))
         await pg.click('#grownups'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active')
         await pg.select_option('#sBixVoice','boy')

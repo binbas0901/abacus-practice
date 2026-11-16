@@ -10,14 +10,19 @@ const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]))
 /* ---------------- storage ---------------- */
 const DEFAULTS = {
   count:10, operands:0, sfx:true, speakFeedback:true, name:'',
-  termGap:0.65, sayPlus:true, voice:'device', voiceRate:1.0, answerPause:0.5,
-  flashSec:1.0, flashGap:0.2, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:5,
+  termGap:0.65, sayPlus:true, voice:'juni', voiceRate:1.0, answerPause:0.5,
+  flashSec:1.0, flashGap:0.2, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:6,
 };
 // All saving goes through store.js: family-wide settings are shared, progress and treats are per child.
 function load(k, d){ return Store.get(k, d); }
 function save(k, v){ Store.set(k, v); }
 let settings = Store.loadSettings(DEFAULTS);
 if ((settings.settingsVersion||1) < 5){ settings = Object.assign({}, DEFAULTS, {voice:settings.voice||'device', name:settings.name||''}); }
+// v6: Juni (a real voice) replaces the old synthetic default for anyone who was still on it ('device' was the default).
+// A deliberately chosen voice (e.g. 'ljspeech' or a recorded family voice) is left alone. The version bump and save
+// happen after the gap->termGap migration below, so saving here doesn't pre-empt that one-time conversion.
+const needsV6 = (settings.settingsVersion||1) < 6;
+if (needsV6 && settings.voice==='device') settings.voice='juni';
 function saveSettings(){ Store.saveSettings(settings); }
 /* Speed settings, one source of truth for the speed panel on the Listen / Flash screens and for Grown-ups. Per child.
      voiceRate  how fast the numbers are said: 70%-150% in steps of 10; 100% is the recording exactly as it is
@@ -38,6 +43,7 @@ function snapSpeed(k, v){ const s=SPEED[k]; v=parseFloat(v); if (!isFinite(v)) v
   Object.keys(SPEED).forEach(k=>{ settings[k]=snapSpeed(k, settings[k]); });
   delete settings.gap; delete settings.gapMin; delete settings.gapMax;
 })();
+if (needsV6){ settings.settingsVersion=6; saveSettings(); }   // persist the v6 voice upgrade after the gap->termGap conversion
 let history = load('history', []);
 let days = load('days', {});
 // progress: {current:nodeId, nodes:{id:{lesson:bool, mastered:'auto'|'parent'|null, hist:[{ok,day}]}}}
@@ -167,7 +173,7 @@ const Sfx = {
    After the last number every voice says "equals": the person's own recording, else the built-in clip
    (audio/voice-ljspeech-extra.js, also used by 'ljspeech'), else the device voice.
    Clip voices are scheduled on the Web Audio clock so pacing is exact.                   */
-const SPRITES = { ljspeech:'Built-in synthetic (Linda)' };
+const SPRITES = { juni:'Juni (teacher)', ljspeech:'Built-in synthetic (Linda)' };
 const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
 const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
 const RECORD_WORDS = [...ONES, ...TENS.slice(2), 'hundred', 'plus', 'minus', 'yes', 'not quite'];   // a voice is usable once these 33 are recorded
@@ -324,6 +330,7 @@ const Speaker = {
   // with the pitch kept (stretchSamples) and then played whole at normal rate, so nothing is cut early or late.
   fitted:{}, fitRate:1,
   playClip(key, buf, t, off, dur){
+    if (!buf) return dur || 0;                                                  // never start a source with no buffer
     const c=this.ctx, rate=snapSpeed('voiceRate', settings.voiceRate); let b=buf, whole=off===undefined;
     if (rate!==1){
       if (this.fitRate!==rate){ this.fitted={}; this.fitRate=rate; }
@@ -354,6 +361,8 @@ const Speaker = {
     const c=this.ctx, t=Math.max(when||0, c.currentTime+0.02);
     const own = this.kind()==='rec' && (this.recs[this.activePid]||{}).equals;
     if (own) return [t+this.playClip('rec:'+this.activePid+':equals', own, t), 'own recording'];
+    // A sprite voice (e.g. Juni) that has its own "equals" uses it, so the word matches the numbers' voice.
+    if (this.kind()==='sprite'){ const sm=this.spriteMap[settings.voice], se=sm&&sm.equals; if (se) return [t+this.playClip(settings.voice+':equals', this.sprite[settings.voice], t, se[0], se[1]), 'sprite voice']; }
     const x=this.extra, sp=x && x.map.equals;
     return sp ? [t+this.playClip('extra:equals', x.buf, t, sp[0], sp[1]), 'built-in clip'] : null;
   },
