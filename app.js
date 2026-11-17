@@ -2386,5 +2386,18 @@ setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 // iPad Safari only allows sound to start on a finger lift / click, so try on every tap until it's on.
 ['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)) Speaker.unlock(); }, true));
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').then(keepVoiceOffline).catch(()=>{});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  // Auto-update: when a NEW service worker takes control (sw.js does skipWaiting + clients.claim on deploy),
+  // reload once so the device runs the new build instead of stale cached files. Only wire this when a worker
+  // already controls the page — i.e. this is an update, not the first-ever install — so first load never reloads.
+  let swReloading=false;
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if (swReloading) return; swReloading=true; location.reload(); });
+  }
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    keepVoiceOffline(reg);
+    try{ reg.update(); }catch(e){}
+    setInterval(()=>{ try{ reg.update(); }catch(e){} }, 30*60*1000);   // check for a new build every 30 min while open
+  }).catch(()=>{});
+}
 })();

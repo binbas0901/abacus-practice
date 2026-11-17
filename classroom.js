@@ -213,4 +213,34 @@
     jokeBases: () => Silly.jokeBases(), state: sstate,
     stop: () => Voice.stop(),
   };
+
+  // Bulletproof "one speech bubble at a time" rule. Whatever code path turns a speech bubble on — the classroom
+  // system (.cl-bubble) or the legacy Fun mascot (.bixwrap .bubble) — this backstop turns every OTHER one off, so
+  // Juni's sign and a Bixi line can never sit on top of each other. A lesson is the one exception: there the teacher
+  // caption (#lessonCap) and the classmate's bubble are meant to show together, so the rule stands down while a
+  // lesson is active.
+  (function oneBubbleGuard(doc) {
+    if (!doc || typeof MutationObserver === 'undefined') return;
+    const isSpeech = el => el && el.nodeType === 1 && el.classList &&
+      (el.classList.contains('cl-bubble') || (el.classList.contains('bubble') && el.closest && el.closest('.bixwrap')));
+    function enforce(keep) {
+      const les = doc.getElementById('lesson');
+      if (les && les.classList.contains('active')) return;          // lesson: caption + classmate coexist
+      doc.querySelectorAll('.cl-bubble.on, .bixwrap .bubble.on').forEach(b => {
+        if (b !== keep && b.id !== 'lessonCap') { b.classList.remove('on'); clearTimeout(b._cl); clearTimeout(b._t); }
+      });
+    }
+    const obs = new MutationObserver(muts => {
+      for (const m of muts) {
+        const el = m.target;
+        if (el.classList && el.classList.contains('on') && isSpeech(el)) { enforce(el); break; }
+      }
+    });
+    const start = () => { try { obs.observe(doc.body, { subtree: true, attributes: true, attributeFilter: ['class'] }); } catch (e) {} };
+    // Start only after the page has loaded, so the observer never competes with app start-up.
+    const win = doc.defaultView;
+    if (doc.readyState === 'complete') start();
+    else if (win) win.addEventListener('load', () => setTimeout(start, 0), { once: true });
+    else doc.addEventListener('DOMContentLoaded', start);
+  })(typeof document !== 'undefined' ? document : null);
 })(typeof globalThis !== 'undefined' ? globalThis : this);
