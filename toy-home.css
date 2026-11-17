@@ -19,7 +19,7 @@
    One grid for the whole table. --u is one design pixel (1180x820 landscape, 820x1180 portrait),
    so every object keeps its place and proportion on each iPad.
    ===================================================================== */
-#home.th{--u:min(.084746vw,.121951vh);--toy-wall-h:clamp(calc(var(--u)*206),calc(100vh - var(--u)*614),calc(var(--u)*252));--toy-window-x:calc(var(--u)*246);--toy-plank:calc(var(--u)*124);
+#home.th{--u:min(.084746vw,.121951vh);--toy-wall-h:clamp(calc(var(--u)*248),calc(100vh - var(--u)*516),calc(var(--u)*332));--toy-window-x:calc(var(--u)*230);--toy-plank:calc(var(--u)*124);
   grid-template-columns:calc(var(--u)*306) minmax(0,1fr) calc(var(--u)*262);
   grid-template-rows:var(--toy-wall-h) minmax(0,1fr) auto auto;
   gap:0 calc(var(--u)*14);padding:0 calc(var(--u)*30) calc(var(--u)*15) calc(var(--u)*14);box-sizing:border-box;overflow:hidden}
@@ -67,8 +67,8 @@
 
 /* The moon in the window is Juni, the main character: she fills her window pane (larger than before and than the
    sidekick on the table) and glows brighter, while staying inside the one pane (never across the bars). */
-#home .toy-sky-moon-in{width:calc(var(--_h)*1.24);height:calc(var(--_h)*1.24);transform:translate(-50%,-50%)}
-#home .toy-sky-moon .toy-moon-halo{opacity:.92}
+#home .toy-sky-moon-in{width:calc(var(--_h)*1.22);height:calc(var(--_h)*1.22);transform:translate(-50%,-50%)}
+#home .toy-sky-moon .toy-moon-halo{opacity:1}
 
 /* today's three beads on their rod */
 .th-today{grid-column:2;grid-row:3;align-self:end;min-width:0;margin-bottom:calc(var(--u)*32)}
