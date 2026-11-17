@@ -7,15 +7,19 @@ HOOK = r"""(()=>{
   const okEv=new Set(['click','pointerup','touchend','mouseup','keydown']);
   const R=AudioContext.prototype.resume;
   AudioContext.prototype.resume=function(){ const e=window.event; if(!e||!okEv.has(e.type)){ window.__blocked=(window.__blocked||0)+1; return new Promise(()=>{}); } return R.apply(this,arguments); };
-  window.__bix=[]; const S=AudioBufferSourceNode.prototype.start, P=AudioBufferSourceNode.prototype.stop;
+  window.__bix=[]; window.__cl=[]; const S=AudioBufferSourceNode.prototype.start, P=AudioBufferSourceNode.prototype.stop;
   AudioBufferSourceNode.prototype.start=function(w,off,dur){ try{ const bv=window.Fun&&Fun.BixVoice, tag=bv&&bv.tag();
     if(bv&&this.buffer&&this.buffer===bv.buf[tag]){ const id=(Object.entries(bv.map[tag]).find(([k,v])=>Math.abs(v[0]-off)<0.01)||[])[0];
       const bubbles=[...document.querySelectorAll('.bubble.on, .tp-bubble.on, #summary.active .tp-sumnote')].map(b=>b.textContent);
-      const rec={id, t0:this.context.currentTime, t1:this.context.currentTime+dur, state:this.context.state, bubbles, screen:document.querySelector('.screen.active').id}; this.__rec=rec; window.__bix.push(rec); } }catch(e){}
+      const rec={id, t0:this.context.currentTime, t1:this.context.currentTime+dur, state:this.context.state, bubbles, screen:document.querySelector('.screen.active').id}; this.__rec=rec; window.__bix.push(rec); }
+    const cv=window.Classroom&&Classroom.Voice;
+    if(cv&&this.buffer){ for(const pk in cv.buf){ if(this.buffer===cv.buf[pk]){ const m=cv.map[pk]||{}; const e=(Object.entries(m).find(([k,v])=>Math.abs(v[0]-off)<0.01)||[]);
+      const rec={char: pk.indexOf('juni')===0?'juni':'bixi', id:e[0], t0:this.context.currentTime, t1:this.context.currentTime+dur, state:this.context.state, screen:document.querySelector('.screen.active').id}; this.__rec=rec; window.__cl.push(rec); break; } } } }catch(e){}
     return S.apply(this,arguments); };
   AudioBufferSourceNode.prototype.stop=function(){ if(this.__rec) this.__rec.t1=Math.min(this.__rec.t1,this.context.currentTime); return P.apply(this,arguments); };
 })()"""
 async def take(pg): return await pg.evaluate("window.__bix.splice(0)")
+async def clrecs(pg): return await pg.evaluate("window.__cl.splice(0)")
 def overlaps(recs):
     r=sorted(recs,key=lambda x:x['t0']); return [ (a['id'],b['id']) for a,b in zip(r,r[1:]) if b['t0']<a['t1']-0.03 ]
 async def slow(route):
@@ -34,15 +38,20 @@ async def main():
         # 1. brand-new device, slow tablet
         ctx,pg = await newpage(); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800)
         LINES = await pg.evaluate("window.BIX_LINES")
-        await pg.touchscreen.tap(600, 760); await pg.wait_for_timeout(14000); r=await take(pg); allrecs+=r
-        ids=[x['id'] for x in r]
-        check('new device: first tap -> "Hi, I\'m Bix" then "What\'s your name?"', ids[:2]==['intro_hi','intro_name'], ids)
-        check('  ...the two lines do not cut each other off (slow tablet)', not overlaps(r) and all(x['t1']-x['t0']>1 for x in r), [(x['id'],round(x['t1']-x['t0'],1)) for x in r])
-        check('  ...sound really on when he talks', all(x['state']=='running' for x in r))
-        await pg.fill('#suNameIn','Mia'); await pg.tap('#suNameGo'); await pg.wait_for_timeout(1500); await pg.tap('[data-abacus=unsure]'); await pg.wait_for_timeout(4500)
-        await pg.tap('[data-lv=pick]'); await pg.wait_for_timeout(3500); await pg.tap('.su-skill[data-id=bf_add_a]'); await pg.wait_for_timeout(800)
-        await pg.tap('#suStart'); await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r; ids=[x['id'] for x in r]
-        check('setup talk-through + home hello, no overlaps', 'intro_meet' in ids and 'intro_done' in ids and not overlaps(r), ids)
+        await pg.touchscreen.tap(60, 60); await pg.wait_for_timeout(14000); cl=await clrecs(pg)
+        ids=[x['id'] for x in cl]
+        check('new device: first tap -> Juni welcomes, then asks the name', ids[:3]==['j_intro_hello','j_intro_welcome','j_intro_name'] and all(x['char']=='juni' for x in cl[:3]), ids)
+        check('  ...the lines do not cut each other off (slow tablet)', not overlaps(cl) and all(x['t1']-x['t0']>0.8 for x in cl), [(x['id'],round(x['t1']-x['t0'],1)) for x in cl])
+        check('  ...sound really on when she talks', all(x['state']=='running' for x in cl))
+        await pg.fill('#suNameIn','Mia'); await pg.tap('#suNameGo')
+        await pg.wait_for_selector('#bixiSetupBubble.on', timeout=20000); await pg.wait_for_timeout(1500)
+        await pg.wait_for_selector('#suAbacus.on', timeout=20000); await pg.tap('[data-abacus=unsure]')
+        await pg.wait_for_selector('#suLevel.on'); await pg.tap('[data-lv=pick]')
+        await pg.wait_for_selector('#suPick.on'); await pg.tap('.su-skill[data-id=bf_add_a]')
+        await pg.wait_for_selector('#suDone.on'); await pg.wait_for_timeout(2500)
+        await pg.tap('#suStart'); await pg.wait_for_timeout(5000)
+        cl=await clrecs(pg); bx=await take(pg); allrecs+=bx; clids=[(x['char'],x['id']) for x in cl]
+        check('setup talk-through (Juni leads, Bixi introduced) + home hello, no overlaps', ('juni','j_intro_meet') in clids and ('bixi','b_intro_hi') in clids and ('juni','j_intro_begin') in clids and any((x['id'] or '').startswith('hello_') for x in bx) and not overlaps(cl), [clids, [x['id'] for x in bx]])
         await ctx.close()
         # 2. returning child
         ctx,pg = await newpage(True); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))

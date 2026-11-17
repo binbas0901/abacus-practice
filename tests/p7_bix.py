@@ -1,26 +1,42 @@
 import asyncio, re, json
 from playwright.async_api import async_playwright
 def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
-HOOK = """(()=>{ window.__bixPlays=[]; const o=AudioBufferSourceNode.prototype.start;
-  AudioBufferSourceNode.prototype.start=function(w,off,dur){ try{ const bv=window.Fun&&Fun.BixVoice; const tag=bv&&bv.tag(); if (bv && this.buffer && this.buffer===bv.buf[tag]){ const id=Object.entries(bv.map[tag]).find(([k,v])=>Math.abs(v[0]-off)<0.01); window.__bixPlays.push({id:id&&id[0], t:performance.now(), screen:document.querySelector('.screen.active').id, msg:(document.querySelector('#listenMsg')||{}).textContent}); } }catch(e){} return o.apply(this,arguments); }; })()"""
+HOOK = """(()=>{ window.__bixPlays=[]; window.__clPlays=[]; const o=AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start=function(w,off,dur){ try{
+    const bv=window.Fun&&Fun.BixVoice; const tag=bv&&bv.tag();
+    if (bv && this.buffer && this.buffer===bv.buf[tag]){ const id=Object.entries(bv.map[tag]||{}).find(([k,v])=>Math.abs(v[0]-off)<0.01); window.__bixPlays.push({id:id&&id[0], t:performance.now(), screen:document.querySelector('.screen.active').id, msg:(document.querySelector('#listenMsg')||{}).textContent}); }
+    const cv=window.Classroom&&Classroom.Voice;
+    if (cv && this.buffer){ for (const pk in cv.buf){ if (this.buffer===cv.buf[pk]){ const m=cv.map[pk]||{}; const e=Object.entries(m).find(([k,v])=>Math.abs(v[0]-off)<0.01); window.__clPlays.push({src: pk.indexOf('juni')===0?'juni':'bixi', id:e&&e[0], t:performance.now(), screen:document.querySelector('.screen.active').id}); break; } } }
+  }catch(e){} return o.apply(this,arguments); }; })()"""
 async def plays(pg): return await pg.evaluate("window.__bixPlays.splice(0)")
+async def clplays(pg): return await pg.evaluate("window.__clPlays.splice(0)")
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
         errs=[]
-        # 1. first-time setup: Bix introduces himself on first tap, then asks the name
+        # 1. first-time setup (now Juni-led): Juni welcomes on the first tap, then asks the name; after the name,
+        #    Bixi (the classmate) rolls in and greets. Juni presents the setup and the start; home greeting at the end.
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(HOOK)
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(2500)
-        await pg.mouse.click(600, 700); await pg.wait_for_timeout(700)
-        talking = await pg.locator('#bixSetup .bix.talking').count()
+        await pg.mouse.click(60, 60)   # a first tap on an empty spot, not a button
+        try: await pg.wait_for_selector('#juniSetup .toy-moon.talking', timeout=12000); talking=1   # her mouth moves while she speaks
+        except Exception: talking=0
         await pg.screenshot(path='/tmp/bx_setup_talk.png')
-        await pg.wait_for_timeout(7000); pl=[x['id'] for x in await plays(pg)]
-        check('first launch: Bix says hello, then asks for the name (mouth moving)', pl[:2]==['intro_hi','intro_name'] and talking==1, pl)
-        await pg.fill('#suNameIn','Mia'); await pg.click('#suNameGo'); await pg.wait_for_timeout(800); await pg.click('[data-abacus=yes]'); await pg.wait_for_timeout(1500); pl=[x['id'] for x in await plays(pg)]
-        check('after the name (+ abacus question): "Nice to meet you"', pl[-1:]==['intro_meet'] and all(x in ('ask_abacus','intro_meet') for x in pl), pl)
-        await pg.click('[data-lv=pick]'); await pg.wait_for_timeout(500); await pg.click('.su-skill[data-id=bf_add_a]'); await pg.wait_for_timeout(800)
-        await pg.click('#suStart'); await pg.wait_for_timeout(1200); pl=[x['id'] for x in await plays(pg)]
-        check('setup lines play (home greeting is now Juni-led, covered by p12_home)', 'intro_pick' in pl and 'intro_done' in pl, pl)
+        await pg.wait_for_timeout(8000); cl=await clplays(pg)
+        jids=[x['id'] for x in cl if x['src']=='juni']
+        check('first launch: Juni welcomes, then asks for the name (mouth moving)', jids[:3]==['j_intro_hello','j_intro_welcome','j_intro_name'] and talking>=1, [(x['src'],x['id']) for x in cl])
+        await pg.fill('#suNameIn','Mia'); await pg.click('#suNameGo')
+        await pg.wait_for_selector('#bixiSetupBubble.on', timeout=15000); await pg.wait_for_timeout(1200); cl=await clplays(pg)
+        pairs=[(x['src'],x['id']) for x in cl]
+        check('after the name: Juni "Lovely to meet you", then Bixi rolls in and greets', ('juni','j_intro_meet') in pairs and ('bixi','b_intro_hi') in pairs, pairs)
+        await pg.wait_for_selector('#suAbacus.on', timeout=20000); await pg.click('[data-abacus=yes]')
+        await pg.wait_for_selector('#suLevel.on'); await pg.click('[data-lv=pick]')
+        await pg.wait_for_selector('#suPick.on'); await pg.click('.su-skill[data-id=bf_add_a]')
+        await pg.wait_for_selector('#suDone.on'); await pg.wait_for_timeout(1500)
+        await pg.click('#suStart'); await pg.wait_for_timeout(2500)
+        cl=await clplays(pg); bx=[x['id'] for x in await plays(pg)]
+        pairs=[(x['src'],x['id']) for x in cl]
+        check('setup lines + home greeting', ('juni','j_intro_pick') in pairs and ('juni','j_intro_begin') in pairs and any(x and x.startswith('hello_') for x in bx), [pairs, bx])
         await ctx.close()
         # 2. existing device: greeting on first tap on an empty spot (not on a button)
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); await pg.add_init_script(HOOK)

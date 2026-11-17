@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="toy-room.css?v=4.6">
 <link rel="stylesheet" href="toy-grown.css?v=4.6">
 <link rel="stylesheet" href="classroom.css?v=4.6">
+<link rel="stylesheet" href="onboarding.css?v=4.6">
 </head>
 <body>
 <div id="app">
@@ -82,11 +83,19 @@
     <button class="toy-block toy-block--mustard toy-block--sm tr-wish" id="roomWish" aria-label="Treats: pick a treat to save for"><span id="roomWishIc"></span>Treats</button>
   </footer>
 </section>
-<section id="setup" class="screen toy-scene to">
+<section id="setup" class="screen toy-scene to cl-onboard">
   <div id="setupSky" aria-hidden="true"></div>
   <div class="to-shelf" id="setupShelf" aria-hidden="true"></div>
   <div class="to-body">
-    <div id="bixSetup" class="to-bix"></div>
+    <!-- Juni the teacher leads from the very first screen: her figure, then her speech bubble. -->
+    <div id="juniStage">
+      <div id="juniSetup" aria-hidden="true"></div>
+      <div id="juniBubble" class="toy-bubble cl-su-bubble" aria-live="polite"><div class="ctext"></div></div>
+    </div>
+    <!-- Bixi the classmate: rolls in for his introduction, then settles to the side (positioned off the step flow). -->
+    <div id="bixSetup" class="cl-bixi"></div>
+    <div id="bixiSetupBubble" class="toy-bubble toy-bubble--right cl-su-bubble" aria-live="polite"><div class="ctext"></div></div>
+    <div class="su-step to-step" id="suMeet" aria-hidden="true"></div>
     <div class="su-step to-step" id="suName">
       <h2 class="to-sr">What’s your name?</h2>
       <div class="toy-felt to-namemat">
