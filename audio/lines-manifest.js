@@ -1067,5 +1067,131 @@ window.LINES_MANIFEST = {
   "who": "bixi",
   "tuning": "lively",
   "when": "first run: Bixi after the help idea"
+ },
+ "j_fix_one": {
+  "text": "Let's polish this one together.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Practice: fix one wrong answer (start)."
+ },
+ "j_fix_start": {
+  "text": "Let's polish these together.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Practice: fix several wrong answers (start)."
+ },
+ "j_sum_fixed": {
+  "text": "All polished! So shiny!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Summary: after all fixes are corrected."
+ },
+ "j_unlock": {
+  "text": "Hooray! You unlocked a new skill!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Summary unlock + game unlock."
+ },
+ "j_play_pick": {
+  "text": "Pick a game! Every game gives you a sticker.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Play hub: choose a game."
+ },
+ "j_pop_go": {
+  "text": "Find the friend and pop it!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Pop game: start."
+ },
+ "j_read_look": {
+  "text": "Look closely at the beads.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Read game: show the beads."
+ },
+ "j_read_ask": {
+  "text": "What number was it?",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Read game: ask for the number."
+ },
+ "j_read_levelup": {
+  "text": "Wonderful! Let's try more beads now.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Read game: level up."
+ },
+ "j_build_go": {
+  "text": "Make this number on the abacus.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Build game: start."
+ },
+ "j_build_half": {
+  "text": "You're halfway there!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Build game: halfway encouragement."
+ },
+ "j_room_jar_pick": {
+  "text": "Pick a treat to save for. Tap Treats.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "My Room: no treat chosen yet."
+ },
+ "j_room_jar_saving": {
+  "text": "Keep practising to fill your jar. You can do it!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "My Room: saving toward a treat."
+ },
+ "j_room_jar_full": {
+  "text": "Your jar is full enough for your treat!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "My Room: jar full enough for the treat."
+ },
+ "j_room_garden": {
+  "text": "Every day you practise, a new flower grows.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "My Room: garden with flowers."
+ },
+ "j_room_garden_none": {
+  "text": "Practise today and a flower will grow!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "My Room: garden empty today."
+ },
+ "j_door_play": {
+  "text": "How would you like to practise today?",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Door: choose how to practise."
+ },
+ "j_path_locked": {
+  "text": "Not yet! Finish the skills before it to open this one.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Path: tapped a locked skill."
+ },
+ "j_path_here": {
+  "text": "This is your skill right now. Tap Learn to start.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Path: current skill."
+ },
+ "j_path_done": {
+  "text": "You've already learned this one. Well done!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Path: an already-learned skill."
+ },
+ "j_gate_grownup": {
+  "text": "This part is for a grown-up. Can you go and get one?",
+  "who": "juni",
+  "tuning": "default",
+  "when": "Parent gate: ask for a grown-up."
  }
 };
