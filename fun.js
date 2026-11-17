@@ -137,6 +137,10 @@
       if (vid && (text === null || text === undefined)) text = [].concat(vid).map(v => LINES()[v] || '').join(' ');
       if (vid) BixVoice.play(vid, el);
       const b = el && el.querySelector('.bubble'); if (!b) return;
+      // one speech bubble at a time across BOTH systems: when Bixi speaks (legacy), close Juni's classroom bubble —
+      // except inside an active lesson, where the teacher caption and the classmate are meant to sit together.
+      const _les = document.getElementById('lesson');
+      if (!(_les && _les.classList.contains('active'))) document.querySelectorAll('.cl-bubble.on').forEach(c => { if (c !== b && c.id !== 'lessonCap') { c.classList.remove('on'); clearTimeout(c._cl); } });
       const t = b.querySelector('.ws-text') || b; t.textContent = caption(text); b._vid = vid || replayId || null;
       b.classList.toggle('has-voice', !!(b._vid && [].concat(b._vid).some(v => v && LINES()[v])));
       b.classList.add('on'); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');

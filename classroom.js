@@ -106,6 +106,9 @@
     // one bubble at a time: close any other open speech bubble so banners never overlap.
     // The lesson caption is persistent context (the problem + instruction), so it's left alone and can sit beside Bixi's lesson bubble.
     if (bubble.id !== 'lessonCap') document.querySelectorAll('.cl-bubble.on').forEach(b => { if (b !== bubble && b.id !== 'lessonCap') { b.classList.remove('on'); clearTimeout(b._cl); } });
+    // also close any stray legacy (Fun) speech bubble so a Bixi line can't sit beside Juni's sign — except inside an active lesson
+    { const _les = document.getElementById('lesson');
+      if (bubble.id !== 'lessonCap' && !(_les && _les.classList.contains('active'))) document.querySelectorAll('.bubble.on').forEach(b2 => { if (b2 !== bubble && !b2.classList.contains('cl-bubble')) { b2.classList.remove('on'); clearTimeout(b2._t); clearTimeout(b2._cl); } }); }
     bubble.dataset.who = who; bubble.classList.add('cl-bubble');
     const t = bubble.querySelector('.ctext') || bubble.querySelector('.ws-text') || bubble;
     t.textContent = caption(text);

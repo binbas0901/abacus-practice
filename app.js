@@ -1023,7 +1023,7 @@ function startLesson(n, from){
   if (L) clearTimeout(L.skipT), clearTimeout(L.tryT);
   L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
-  toyBix($('#bixLesson'), 'happy', {size:170, keep:false, bubble:false}); toySky($('#lessonSky'));
+  toyBix($('#bixLesson'), 'happy', {size:116, keep:false, bubble:false}); toySky($('#lessonSky'));   // Bixi is the small classmate; Juni (the moon) leads
   $('#lesson').classList.add('cl-juni-forward'); wireMoonTap('#lessonSky');   // Juni leans in from the window to lead
   $('#lessonCap').classList.add('cl-bubble'); $('#lessonCap').dataset.who='juni';   // the board is Juni's: she leads the lesson
   $('#bixiBubble').classList.remove('on'); $('#bixiBubble').dataset.who='bixi';

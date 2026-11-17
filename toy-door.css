@@ -201,7 +201,7 @@
 #lesson .friends span.on{background:#F2B632;box-shadow:0 0 0 3px #F2B632,2px 4px 5px rgba(var(--toy-shade),.35)}
 
 #lesson .lesson-floor{display:flex;align-items:flex-end;justify-content:space-between;gap:clamp(8px,1.4vw,20px);min-height:190px}
-#lesson .lesson-bix{--tb:clamp(200px,26vh,250px);padding:0;margin:calc(var(--tb)*-.22) 0 calc(var(--tb)*-.07) calc(var(--tb)*-.03);flex:none}
+#lesson .lesson-bix{--tb:clamp(150px,19.5vh,188px);padding:0;margin:calc(var(--tb)*-.22) 0 calc(var(--tb)*-.07) calc(var(--tb)*-.03);flex:none}
 #lesson .lesson-left{--pair-h:clamp(140px,20.5vh,200px)}
 #lesson .lesson-pair{position:absolute;right:0;bottom:0;width:calc(100% - 176px);display:flex;align-items:flex-end;justify-content:flex-end;line-height:0}
 #lesson .lesson-pair .toy-pair{display:block;flex:none;width:min(100%,calc(var(--pair-h)*1.88))}
@@ -229,7 +229,7 @@
 #lesson .friends{gap:clamp(5px,.6vw,12px)}
 #lesson .friends span b{width:clamp(32px,2.9vw,40px);height:clamp(32px,2.9vw,40px);font-size:20px}
 #lesson .lesson-left{--pair-h:clamp(124px,16vh,200px)}
-#lesson .lesson-bix{--tb:clamp(176px,23vh,250px)}
+#lesson .lesson-bix{--tb:clamp(140px,17.5vh,185px)}
 #lesson #lessonNext.td-next{min-width:clamp(168px,15vw,220px)}
 
 /* up to three rods the soroban is taller than wide, so the friends stand beside it (not under it) and the beads get the whole height */
@@ -267,7 +267,7 @@
   #lesson{--ab-room:540px} #lesson.may-pair{--ab-room:540px}
   #lesson .lesson-left{flex:0 1 auto;width:100%}
   #lesson .lesson-side{flex:none}
-  #lesson .lesson-bix{--tb:clamp(200px,26vh,250px)}
+  #lesson .lesson-bix{--tb:clamp(150px,19.5vh,188px)}
   /* three rods: the friends stand beside the soroban; wider sorobans keep them underneath, as in landscape */
   #lesson[data-rods="3"] .lesson-left{flex-direction:row;align-items:flex-end;justify-content:center;gap:14px}
   #lesson[data-rods="3"] .lesson-ab{flex:0 1 auto;min-width:0}

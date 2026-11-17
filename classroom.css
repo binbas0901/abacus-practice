@@ -32,8 +32,8 @@
 /* ---------------- Juni as a speaker (Part 2) ---------------- */
 /* Juni leans in from the window during a lesson (bigger, brighter), and sits back otherwise. */
 .td-lesson .toy-sky-moon{z-index:2}
-.td-lesson.cl-juni-forward .toy-sky-moon-in{width:calc(var(--_h)*1.5);height:calc(var(--_h)*1.5);
-  transition:width .5s ease,height .5s ease,transform .5s ease;transform:translate(-50%,-42%)}
+.td-lesson.cl-juni-forward .toy-sky-moon-in{width:calc(var(--_h)*1.28);height:calc(var(--_h)*1.28);
+  transition:width .5s ease,height .5s ease,transform .5s ease;transform:translate(-50%,-50%)}
 .td-lesson .toy-sky-moon-in{transition:width .5s ease,height .5s ease,transform .5s ease}
 .cl-juni-forward .toy-sky-moon .toy-moon-halo{opacity:.9}
 /* Juni's talking mouth, the same idea as Bix's (open/close while a clip plays). */
