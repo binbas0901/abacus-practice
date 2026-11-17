@@ -29,15 +29,15 @@ async def main():
 
         # ---------- home ----------
         steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
-        check('home: Bix on the table, Juni greets first with the child name, grown-ups lock',
-              await pg.locator('#bixHome .bix > .toy-bix').count()==1 and 'Mia' in await pg.text_content('#homeJuni') and await pg.get_attribute('#homeJuni','data-who')=='juni' and await pg.get_attribute('#bixHome .bubble','data-who')=='bixi' and await pg.locator('#home #grownups[aria-label]').count()==1)
-        # the home greeting is Juni-first (the teacher leads), then Bixi's bead countdown (the classmate follows)
+        check('home: Bix on the table (sidekick), Juni greets with the child name, grown-ups lock',
+              await pg.locator('#bixHome .bix > .toy-bix').count()==1 and 'Mia' in await pg.text_content('#homeJuni') and await pg.get_attribute('#homeJuni','data-who')=='juni' and await pg.locator('#home #grownups[aria-label]').count()==1)
+        # Juni leads the home greeting alone; Bixi is a silent, waving sidekick (no competing countdown bubble)
         await pg.evaluate("""window.__spoke=[]; const op=Classroom.Voice.play.bind(Classroom.Voice);
           Classroom.Voice.play=function(c,id,f){ (Array.isArray(id)?id:[id]).forEach(x=>{ if(x) window.__spoke.push(c+':'+x); }); return op(c,id,f); };""")
         await pg.mouse.click(600, 12); await pg.wait_for_timeout(7000)
         spoke=await pg.evaluate("window.__spoke.slice(0)")
-        check('home greeting: Juni speaks first (j_hello_*), then Bixi\'s countdown (b_home_steps*)',
-              bool(spoke) and spoke[0].startswith('juni:j_hello_') and any(x.startswith('bixi:b_home_steps') for x in spoke[1:]), spoke)
+        check('home greeting: Juni greets alone (j_hello_*); Bixi stays a silent sidekick (no countdown)',
+              bool(spoke) and spoke[0].startswith('juni:j_hello_') and not any(x.startswith('bixi:b_home_steps') for x in spoke[1:]), spoke)
         check('home: Today with 3 lacquered beads on the rod; only the next one glows',
               len(steps)==3 and 'next' in steps[0] and 'later' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.now').count()==1 and await pg.locator('#todaySteps svg.toy-bead').count()==3, steps)
         check('home: one big Start and three doors (Practice / Play / My Room with bead chip)',
