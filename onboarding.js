@@ -127,7 +127,7 @@
     App().settings.hasAbacus = v === 'yes' ? true : v === 'no' ? false : null; App().saveSettings();
     App().Sfx.tap(); toLevel();
   }
-  function toLevel() { step('suLevel'); juniShow(`Where should we start${state.name ? ', ' + state.name : ''}?`); }
+  function toLevel() { step('suLevel'); juniSay('j_intro_pick'); }   // Juni speaks on the level step (was silent juniShow)
 
   /* ---------- grown-up picks the skill ---------- */
   function toPick() {
@@ -139,7 +139,7 @@
       b.onclick = () => finish(n.id, 'parent', `We'll start with ${n.title}.`);
       box.appendChild(b);
     });
-    step('suPick'); juniSay('j_intro_pick');
+    step('suPick'); juniShow('Grown-up, please pick the skill they’re working on.');   // text only: Juni just voiced this on the level step
   }
   function example(n) {
     if (n.kind === 'numbers') return 'Showing numbers on the abacus';

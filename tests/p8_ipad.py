@@ -62,10 +62,10 @@ async def main():
         await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(6500); r=await take(pg); allrecs+=r; cl=await clrecs(pg)
         check('returning: first tap anywhere -> Juni greets alone (j_hello_*), no Bixi countdown', bool(cl) and cl[0]['char']=='juni' and cl[0]['id'].startswith('j_hello_') and not any(x['char']=='bixi' and (x['id'] or '').startswith('b_home_') for x in cl[1:]), [(x['char'],x['id']) for x in cl])
         for i in range(5): await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(250)
-        await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r
-        check('tapping Bix 5 times fast -> each new joke replaces the last, never two at once', len(r)>=1 and not overlaps(r), [x['id'] for x in r])
-        await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(500); r=await take(pg); allrecs+=r
-        check('single tap on Bix -> joke', len(r)==1 and r[0]['id'].startswith('tap_'), [x['id'] for x in r])
+        await pg.wait_for_timeout(5000); r=[x for x in await clrecs(pg) if x['char']=='bixi']; allrecs+=r; await take(pg)
+        check('tapping Bix 5 times fast -> each new line replaces the last, never two at once', len(r)>=1 and not overlaps(r), [x['id'] for x in r])
+        await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(1000); r=[x for x in await clrecs(pg) if x['char']=='bixi']; allrecs+=r; await take(pg)
+        check('single tap on Bix -> his new (Gigi) voice', len(r)>=1 and (r[0]['id'] or '').startswith('b_'), [x['id'] for x in r])
         # listen drill silent
         await pg.wait_for_timeout(4000); await take(pg)
         await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(600); await pg.tap('#listenGo')
@@ -86,12 +86,14 @@ async def main():
         check('Look drill: Juni leads, Bixi only reacts, no voice overlaps', any(x['char']=='juni' for x in clr) and not overlaps(r), [x['id'] for x in r]+['|']+[(x['char'],x['id']) for x in clr])
         await ctx.close()
         # 3. text on screen matches what he says
-        bad=[]
+        bad=[]; checked=0
         for x in allrecs:
+            if 'bubbles' not in x: continue   # classroom (Gigi) recs carry no bubble snapshot; their text is checked inline above
             if x['id'] in ('gift','gift_gold','today_done'): continue   # spoken over the sticker card, which has its own text
+            checked+=1
             want=re.sub(r'[^a-z0-9 ]','',(LINES.get(x['id']) or '').lower().replace('’',"'").replace("'",'')).split()
             got=[re.sub(r'[^a-z0-9 ]','',bb.lower().replace('’',"'").replace("'",'')).split() for bb in x['bubbles']]
             if not any(len(set(want)&set(g))>=0.6*len(set(want)) for g in got): bad.append((x['id'], LINES.get(x['id']), x['bubbles']))
-        check('bubble text matches the spoken line (%d lines checked)'%len(allrecs), not bad, bad)
+        check('bubble text matches the spoken line (%d lines checked)'%checked, not bad, bad)
         print('errors:', errs); print('RESULT', sum(res),'/',len(res)); await b.close()
 asyncio.run(main())

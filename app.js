@@ -565,6 +565,7 @@ const Backup = {
 };
 
 /* ---------------- screens ---------------- */
+function stopVoices(){ try{ if(window.Classroom) Classroom.Voice.stop(); }catch(e){} try{ Fun.BixVoice.stop(); }catch(e){} }   // cut any line from both systems
 function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
 
 /* ---------------- home (Workshop: Bix, Today on the soroban, three doors) ---------------- */
@@ -746,21 +747,21 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false});
+function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
   Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
-$('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
-$('#exitGame').addEventListener('click', ()=>{ Games.stop(); Games.leave(); });
+$('#exitPlay').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
+$('#exitGame').addEventListener('click', ()=>{ stopVoices(); Games.stop(); Games.leave(); });
 // The three doors. Practice opens the Practice door screen (#door).
-function openPractice(){
+function openPractice(){ stopVoices();
   Speaker.unlock();
   if (typeof window.App.openDoor==='function') return window.App.openDoor();
   return show('door');
 }
 // Start a practice mode for the current skill (used by the Practice door and the tests).
-function startMode(m){
+function startMode(m){ stopVoices();
   Speaker.unlock();
   const n=NODES[curIdx()];
   if (m==='play') return goPlay();
@@ -817,7 +818,7 @@ function renderRoom(){
   $('#roomWish').classList.toggle('tr-nudge', !Treats.goal());   // nudge only to pick a goal, never to spend
   return n;
 }
-function goRoom(){
+function goRoom(){ stopVoices();
   renderRoom(); show('room');
   // Bixi shrinks to a quiet sidekick on the table; Juni leads the jar line from the window moon.
   const br=$('#bixRoom'); toyBix(br, 'happy', {size:84}); Fun.Mascot.quiet(br);
@@ -826,7 +827,7 @@ function goRoom(){
   const jText = vid==='shop_pick' ? 'Pick a treat to save for. Tap Treats.' : vid==='shop_saving' ? text : 'Your jar is full enough for your treat!';
   juniSayOn($('#roomJuni'), $('#roomSky'), jKey, jText);
 }
-$('#exitRoom').addEventListener('click', ()=>{ renderHome(); show('home'); });
+$('#exitRoom').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#roomStickers').addEventListener('click', ()=>{ Sfx.tap(); goAlbum(); });
 $('#roomGarden').addEventListener('click', ()=>{
   Sfx.boing(); const pot=$('#garden'); pot.classList.remove('wiggle'); void pot.offsetWidth; pot.classList.add('wiggle');
@@ -983,7 +984,7 @@ $$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
     return to==='learn' ? startLesson(lessonTarget(n), 'door') : Games.open(to, {from:'door'}); }
   startDrill(m, doorDrillNode(m, n));
 }));
-$('#exitDoor').addEventListener('click', ()=>{ Fun.BixVoice.stop(); renderHome(); show('home'); });
+$('#exitDoor').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#doorAll').addEventListener('click', ()=>openGate('skills'));
 
 /* ---- lesson: Bix shows each trick on a wooden soroban, then she tries it ---- */
@@ -1118,7 +1119,7 @@ async function renderLesson(){
     if (!L.pages) L.pages=lessonPages(n);
     const pg=L.pages[Math.min(L.page, L.pages.length-1)], last=L.page>=L.pages.length-1;
     cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null);
-    if (L.page===0){ lessonAb.reset(); const sc=lessonScript(n.id), ok=sc&&sc.open&&sc.open.id; if (ok){ juniNarrate(ok); capVoice(ok,'juni'); } else { BixExtra.play('learn_'+n.id, $('#bixLesson')); capVoice('learn_'+n.id, true); } }
+    if (L.page===0){ lessonAb.reset(); const sc=lessonScript(n.id), ok=sc&&sc.open&&sc.open.id; if (ok){ juniNarrate(ok); capVoice(ok,'juni'); } else { juniNarrate('j_showme'); capVoice('j_showme','juni'); } }   // Juni (the teacher) opens every lesson, never Bixi
     return;
   }
   if (L.phase==='numbers'){ // beads node: set each number
@@ -1213,7 +1214,7 @@ function guidedText(ls, pair, lead){
   return `${lead}${lead?'the abacus':'The abacus'} shows <b>${x}</b>. ${lead?(y<0?'Take away':'Add'):'Now '+(y<0?'take away':'add')} <b>${Math.abs(y)}</b>.`;
 }
 $('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
-$('#exitLesson').addEventListener('click', ()=>{ Fun.BixVoice.stop(); leaveLesson(); });
+$('#exitLesson').addEventListener('click', ()=>{ stopVoices(); leaveLesson(); });
 
 /* ---------------- Juni the teacher: a speaker in her own right (Part 2) ---------------- */
 // Juni leads from the window. juniSay shows her bubble (the lesson caption) and animates her mouth on the sky moon.
@@ -1861,9 +1862,9 @@ $('#fixBtn').addEventListener('click', ()=>{
 });
 $('#showMeBtn').addEventListener('click', async()=>{ if(locked||demoing) return; locked=true; await showMe(problems[idx]); locked=false; if (Tool.kind==='beads' && $('#drill').classList.contains('active')){ Tool.reset(); markTiles(); JB.setBase('Your turn! Move the beads, then tap Check.'); } });
 $('#againBtn').addEventListener('click', ()=>startDrill(mode, drillNode));
-$('#homeBtn').addEventListener('click', ()=>{ pendingTest=null; renderHome(); show('home'); });
+$('#homeBtn').addEventListener('click', ()=>{ stopVoices(); pendingTest=null; renderHome(); show('home'); });
 $('#testBtn').addEventListener('click', ()=>{ const id=pendingTest; pendingTest=null; startLevelTest(id); });
-$('#exitDrill').addEventListener('click', ()=>{ endDrill(); LT=null; renderHome(); show('home'); });
+$('#exitDrill').addEventListener('click', ()=>{ stopVoices(); endDrill(); LT=null; renderHome(); show('home'); });
 
 /* ---- show me: the bead moves for each number, on the Workshop soroban ---- */
 let showAb=null, showToken=0, demoToken=0, demoing=false;
@@ -2021,7 +2022,7 @@ function certPicView(url){
   box.querySelector('img').src=url; box.classList.add('on');
 }
 $('#certPrint').addEventListener('click', ()=>{ Sfx.tap(); openGate(()=>{ if (standaloneApp()) saveCertPicture(); else window.print(); }); });   // sharing leaves the app: grown-ups only
-$('#certDone').addEventListener('click', ()=>{ renderHome(); show('home'); });
+$('#certDone').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 // Other screens (practice door, grown-ups) can start a level test or read this child's certificates.
 window.LevelTest = { start: startLevelTest, certificates, show: c=>showCertificate(c), picture: c=>certPicture(c||certShown) };
 

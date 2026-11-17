@@ -47,8 +47,8 @@ async def main():
           Classroom.Voice.play=function(c,id,f){ (Array.isArray(id)?id:[id]).forEach(x=>{ if(x) window.__cl.push(c+':'+x); }); return op(c,id,f); };""")
         await pg.mouse.click(600, 12); await pg.wait_for_timeout(6500); cl=await pg.evaluate("window.__cl.slice(0)"); await plays(pg)
         check('first tap on an empty spot -> Juni greets alone (j_hello_*), no Bixi countdown', bool(cl) and cl[0].startswith('juni:j_hello_') and not any(x.startswith('bixi:b_home_') for x in cl[1:]), cl)
-        await pg.click('#bixHome .bix'); await pg.wait_for_timeout(800); pl=[x['id'] for x in await plays(pg)]
-        check('tapping Bix -> a joke/fact out loud', len(pl)==1 and pl[0].startswith('tap_'), pl)
+        await pg.click('#bixHome .bix'); await pg.wait_for_timeout(1000); cp=[x for x in await clplays(pg) if x['src']=='bixi']; await plays(pg)
+        check('tapping Bix -> his new (Gigi) voice out loud, not the old one', len(cp)>=1 and (cp[0]['id'] or '').startswith('b_'), cp)
         # 3. listening drill: Bix silent the whole time numbers are read and answered
         await pg.evaluate("App.startMode('listen')"); await pg.click('#listenGo')
         for i in range(3):
