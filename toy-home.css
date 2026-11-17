@@ -68,13 +68,14 @@
 #homeJuni.th-jbub.on{visibility:visible;animation:th-sign-sway 6s ease-in-out infinite}
 #homeJuni.th-jbub.pop{animation:th-sign-in .4s cubic-bezier(.2,1.4,.4,1) both,th-sign-sway 6s ease-in-out .4s infinite}
 /* two cords rise from the sign's shoulders to small pegs tucked under the sill */
-#homeJuni .th-jhang{position:absolute;left:14%;right:14%;top:calc(var(--u)*-25);height:calc(var(--u)*26);pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,#8a5a26 0 calc(var(--u)*5),transparent calc(var(--u)*5)) left -1px top/calc(var(--u)*12) calc(var(--u)*12) no-repeat,
-  radial-gradient(circle at 50% 50%,#8a5a26 0 calc(var(--u)*5),transparent calc(var(--u)*5)) right -1px top/calc(var(--u)*12) calc(var(--u)*12) no-repeat}
-#homeJuni .th-jhang::before,#homeJuni .th-jhang::after{content:"";position:absolute;top:calc(var(--u)*3);bottom:calc(var(--u)*-2);width:calc(var(--u)*4);
-  background:linear-gradient(#c79e5c,#a87b3b);border-radius:2px;transform-origin:50% 0}
-#homeJuni .th-jhang::before{left:0;transform:rotate(13deg)}
-#homeJuni .th-jhang::after{right:0;transform:rotate(-13deg)}
+/* the hanger reads clearly as a hung sign: a round peg up on the sill, two ropes splaying down to the sign's shoulders */
+#homeJuni .th-jhang{position:absolute;left:0;right:0;top:calc(var(--u)*-38);height:calc(var(--u)*40);pointer-events:none;
+  background:radial-gradient(circle at 50% calc(var(--u)*6),#b5803f 0 calc(var(--u)*6.5),#80501f calc(var(--u)*6.5) calc(var(--u)*8),transparent calc(var(--u)*8)) center top no-repeat}
+#homeJuni .th-jhang::before,#homeJuni .th-jhang::after{content:"";position:absolute;top:calc(var(--u)*7);left:calc(50% - var(--u)*2.5);
+  width:calc(var(--u)*5);height:calc(var(--u)*36);border-radius:calc(var(--u)*3);
+  background:linear-gradient(90deg,#9a6f34,#d8b074 48%,#9a6f34);box-shadow:0 1px 1px rgba(58,30,6,.25);transform-origin:50% calc(var(--u)*-1)}
+#homeJuni .th-jhang::before{transform:rotate(-34deg)}
+#homeJuni .th-jhang::after{transform:rotate(34deg)}
 @keyframes th-sign-in{0%{opacity:0;transform:translateX(-50%) rotate(-5deg) scale(.86)}100%{opacity:1;transform:translateX(-50%) rotate(-1.4deg) scale(1)}}
 @keyframes th-sign-sway{0%,100%{transform:translateX(-50%) rotate(-1.4deg)}50%{transform:translateX(-50%) rotate(1.4deg)}}
 
