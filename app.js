@@ -1653,6 +1653,17 @@ function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.
 // Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or keeps its dashed rim and wobbles gently ("not yet", never red),
 // and her bead on the rod turns teal or stays raw walnut (one to polish). Cleared when the next problem comes. Never used in the level test.
 function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong'); if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
+// Bixi's spoken reactions in Practice (her own voice, no-repeat until the pool is used up).
+const _bixiReact={yes:[],notyet:[]};
+function bixiReactKey(kind){ const n=kind==='yes'?6:3; let pool=_bixiReact[kind];
+  if(!pool.length){ pool=_bixiReact[kind]=Array.from({length:n},(_,i)=>i+1);
+    for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; } }
+  return 'b_react_'+kind+pool.pop(); }
+function reactVoice(kind){ // kind: 'yes' | 'notyet'
+  if(!settings.speakFeedback) return;
+  if(mode==='listen'){ Speaker.say(null, kind==='yes'?'yes':'not quite'); return; }  // listen mode keeps the plain number-voice cue
+  if(CL()) CL().say(bixiReactKey(kind), {who:'bixi'});
+}
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
   if (val===null){ shake(); return; }
@@ -1667,16 +1678,16 @@ async function submit(){
     fb.textContent='Yes!'; Sfx.ok();
     const mf=methodFeedback(p); if (mf) p._method=mf.ok;
     if (mf && mf.text) PB.say(mf.text, mf.ok?'cheer':'happy', null, mf.ok?1800:3600);
-    else { const k=Math.floor(Math.random()*6); PB.say(['Yes!','Nice!','You got it!','Fantastic!','Super!','Wow!'][k], 'cheer', (Math.random()<0.35 && !settings.speakFeedback && mode!=='listen') ? 'yes_'+(k+1) : null, 1400); }
+    else { const k=Math.floor(Math.random()*6); PB.say(['Yes!','Nice!','You got it!','Fantastic!','Super!','Wow!'][k], 'cheer', null, 1400); }
     verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
-    if(settings.speakFeedback) Speaker.say(null,'yes');
+    reactVoice('yes');
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
-    if (!reviewing) { const k=Math.floor(Math.random()*3); PB.say(['Oops! We\'ll polish it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 'concerned', (!settings.speakFeedback && mode!=='listen') ? 'oops_'+(k+1) : null, 1800); }
-    if(settings.speakFeedback) Speaker.say(null,'not quite');
+    if (!reviewing) { const k=Math.floor(Math.random()*3); PB.say(['Oops! We\'ll polish it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 'concerned', null, 1800); }
+    reactVoice('notyet');
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
