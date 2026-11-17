@@ -147,14 +147,17 @@ async def main():
 
         # ---------- first-time setup: "abacus at home?" saved per child ----------
         ctx=await b.new_context(viewport={'width':1180,'height':820}); pg=await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
-        await pg.goto(URL); await pg.wait_for_timeout(700)
+        await pg.goto(URL); await pg.wait_for_timeout(700); await pg.evaluate("App.settings.bixTalks=false")   # bubbles still show; muted keeps the Juni-led flow fast
         answers={'Ava':('yes',True), 'Ben':('no',False), 'Cy':('unsure',None)}
         for i,(nm,(btn,want)) in enumerate(answers.items()):
-            if i: await pg.evaluate("Store.switchTo(Store.addChild())"); await pg.reload(); await pg.wait_for_timeout(800)
-            await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', nm); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on')
-            q=await pg.text_content('#suAbacusH'); bq=await pg.text_content('#bixSetup .bubble')
+            if i: await pg.evaluate("Store.switchTo(Store.addChild())"); await pg.reload(); await pg.wait_for_timeout(800); await pg.evaluate("App.settings.bixTalks=false")
+            await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', nm); await pg.click('#suNameGo')
+            # Juni-led: after the name she introduces Bixi, then (on the abacus step) a grown-up prompt and the abacus question.
+            await pg.wait_for_selector('#suAbacus.on', timeout=15000)
+            await pg.wait_for_function("()=>/abacus at home/i.test((document.querySelector('#juniBubble .ctext')||{}).textContent||'')", timeout=15000)
+            q=await pg.text_content('#suAbacusH'); bq=await pg.text_content('#juniBubble .ctext')
             if i==0: await pg.screenshot(path='/tmp/p12_abacus.png')
-            check(f'{nm}: "Does {nm} have an abacus at home?" (Yes / No / Not sure), Bix asks it out loud', nm in q and 'abacus at home' in bq and await pg.locator('#suAbacus [data-abacus]').count()==3, bq)
+            check(f'{nm}: "Does {nm} have an abacus at home?" (Yes / No / Not sure), Juni asks it out loud', nm in q and 'abacus at home' in bq and await pg.locator('#suAbacus [data-abacus]').count()==3, bq)
             await pg.click(f'[data-abacus={btn}]'); await pg.wait_for_selector('#suLevel.on'); await pg.click('[data-lv=new]'); await pg.wait_for_selector('#suDone.on'); await pg.click('#suStart'); await pg.wait_for_selector('#home.active')
         await pg.evaluate("Fun.BixVoice.load()"); await pg.wait_for_timeout(1500)
         check('Bix has recorded lines for the new questions (extra "home" pack)', await pg.evaluate("['who_ask','ask_abacus'].every(id=>!!Fun.BixVoice.find(id)[1])"))
@@ -166,7 +169,7 @@ async def main():
 
         # ---------- setup: skill examples, the kit keypad, "Stop here", confetti behind the content ----------
         c3=await b.new_context(viewport={'width':1180,'height':820}); p3=await c3.new_page(); p3.on('pageerror', lambda e: errs.append(str(e)))
-        await p3.goto(URL); await p3.wait_for_selector('#suName.on'); await p3.fill('#suNameIn','Kai'); await p3.click('#suNameGo'); await p3.click('[data-abacus=yes]'); await p3.wait_for_selector('#suLevel.on')
+        await p3.goto(URL); await p3.wait_for_selector('#suName.on'); await p3.evaluate("App.settings.bixTalks=false"); await p3.fill('#suNameIn','Kai'); await p3.click('#suNameGo'); await p3.wait_for_selector('#suAbacus.on', timeout=15000); await p3.click('[data-abacus=yes]'); await p3.wait_for_selector('#suLevel.on')
         await p3.click('[data-lv=pick]'); await p3.wait_for_selector('#suPick.on')
         ex=await p3.evaluate("Object.fromEntries([...document.querySelectorAll('#suPickList .su-skill')].map(b=>[b.dataset.id, b.querySelector('small').textContent]))")
         mul=[k for k in ['times_a','times_b','mul_2x1','mul_3x1'] if k in ex]
@@ -184,7 +187,8 @@ async def main():
         check('level check: every target at least 60px tall', not small, small)
         check('level check: the stop button says what it does ("Stop here")', (await p3.text_content('#suStop')).strip()=='Stop here' and 'Stop here' in (await p3.get_attribute('#suStop','aria-label')))
         await p3.click('#suPad [data-k="9"]'); await p3.click('#suPad [data-k="9"]'); await p3.click('#suGo'); await p3.wait_for_timeout(300)
-        check('a wrong answer: Bix explains "Stop here"', 'Stop here' in await p3.text_content('#bixSetup .bubble'), await p3.text_content('#bixSetup .bubble'))
+        await p3.wait_for_function("()=>/Stop here/.test((document.querySelector('#juniBubble .ctext')||{}).textContent||'')", timeout=4000)
+        check('a wrong answer: Juni explains "Stop here"', 'Stop here' in await p3.text_content('#juniBubble .ctext'), await p3.text_content('#juniBubble .ctext'))
         await p3.wait_for_timeout(500); await p3.click('#suStop')
         await p3.wait_for_selector('#suDone.on', timeout=3000)
         check('"Stop here" ends the check at once (no extra answer needed)', await p3.locator('#suDone.on').count()==1)
@@ -208,7 +212,7 @@ async def main():
         for label, init in [('browser tab', None), ('Home Screen app (standalone)', "Object.defineProperty(navigator,'standalone',{get:()=>true})"), ('native wrapper', "window.Capacitor={isNativePlatform:()=>true}")]:
             c2=await b.new_context(viewport={'width':1180,'height':820}); p2=await c2.new_page(); p2.on('pageerror', lambda e: errs.append(str(e)))
             if init: await p2.add_init_script(init)
-            await p2.goto(URL); await p2.wait_for_selector('#suName.on'); await p2.fill('#suNameIn','Zoe'); await p2.click('#suNameGo'); await p2.click('[data-abacus=yes]'); await p2.click('[data-lv=new]'); await p2.wait_for_selector('#suDone.on')
+            await p2.goto(URL); await p2.wait_for_selector('#suName.on'); await p2.evaluate("App.settings.bixTalks=false"); await p2.fill('#suNameIn','Zoe'); await p2.click('#suNameGo'); await p2.wait_for_selector('#suAbacus.on', timeout=15000); await p2.click('[data-abacus=yes]'); await p2.wait_for_selector('#suLevel.on'); await p2.click('[data-lv=new]'); await p2.wait_for_selector('#suDone.on')
             vis=await p2.is_visible('#suInstall')
             check(f'setup finish, {label}: Home Screen advice {"shown" if not init else "hidden"}', vis == (init is None) and await p2.is_visible('#suStart'))
             await c2.close()

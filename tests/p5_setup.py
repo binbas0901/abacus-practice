@@ -4,9 +4,16 @@ def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+
 async def fresh(b):
     ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page()
     pg.on('dialog', lambda d: asyncio.ensure_future(d.accept()))
-    await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800); return ctx, pg
+    await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800)
+    # Juni-led onboarding plays her recorded welcome once tapped; the bubbles still show the same with sound off, so
+    # keep these UI-flow tests fast and deterministic by muting the characters (audio pacing is covered by p24_classroom).
+    try: await pg.evaluate("window.App && (App.settings.bixTalks=false)")
+    except Exception: pass
+    return ctx, pg
+# Juni leads: the first screen is hers. After the child's name, Bixi (the classmate) rolls in during the meet beat.
 async def name(pg, n):
-    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', n); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
+    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', n); await pg.click('#suNameGo')
+    await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
 async def gate(pg):
     await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(400)
@@ -27,7 +34,25 @@ async def main():
         # 1. brand-new device -> setup -> "I'm new"
         ctx,pg = await fresh(b); pg.on('pageerror', lambda e: errs.append(str(e)))
         check('new device opens setup (not home)', await pg.locator('#setup.active').count()==1 and await pg.locator('#home.active').count()==0)
-        await pg.screenshot(path='/tmp/su_name.png'); await name(pg,'Leo'); await pg.screenshot(path='/tmp/su_level.png')
+        # Juni leads from the very first screen: her bubble shows a j_intro_* line (marked who=juni); Bixi is not shown yet.
+        await pg.wait_for_selector('#suName.on')
+        first = await pg.evaluate("()=>{const j=document.querySelector('#juniBubble'),b=document.querySelector('#bixiSetupBubble');return {jon:j.classList.contains('on'),jwho:j.dataset.who,jtxt:(j.querySelector('.ctext').textContent||''),bon:b.classList.contains('on'),bvis:getComputedStyle(document.querySelector('#bixSetup')).visibility,here:document.querySelector('#setup').classList.contains('cl-bixi-here')};}")
+        check('first spoken line is Juni\'s (her bubble, who=juni); Bixi not introduced yet', first['jon'] and first['jwho']=='juni' and 'Juni' in first['jtxt'] and not first['bon'] and first['bvis']=='hidden' and not first['here'], first)
+        # The name field (and its Next button) stay above the keyboard when it is up (v4.5 keyboard-up handling).
+        await pg.focus('#suNameIn'); await pg.evaluate("window.__kb(360)"); await pg.wait_for_timeout(220)
+        kb = await pg.evaluate("()=>{const d=document.documentElement,r=document.querySelector('#suNameIn').getBoundingClientRect(),g=document.querySelector('#suNameGo').getBoundingClientRect(),vv=parseFloat(getComputedStyle(d).getPropertyValue('--vv-h'))||innerHeight;return {up:d.classList.contains('kb-up'),vv:Math.round(vv),inBot:Math.round(r.bottom),goBot:Math.round(g.bottom),ok:(r.top>=0 && r.bottom<=vv+2 && g.bottom<=vv+2 && r.height>=48 && g.height>=48)};}")
+        check('keyboard up: name field and Next stay reachable above the keyboard', kb['up'] and kb['ok'], kb)
+        await pg.evaluate("window.__kb(null)"); await pg.wait_for_timeout(150)
+        await pg.screenshot(path='/tmp/su_name.png')
+        # submit the name -> Bixi is introduced AFTER the name step (rolls in during the meet beat).
+        await pg.fill('#suNameIn','Leo'); await pg.click('#suNameGo')
+        await pg.wait_for_selector('#setup.cl-bixi-here', timeout=8000)
+        onname = await pg.evaluate("()=>document.querySelector('#setup').dataset.step")
+        await pg.wait_for_selector('#bixiSetupBubble.on', timeout=8000)   # Bixi rolls in, then greets in his own bubble
+        meet = await pg.evaluate("()=>({step:document.querySelector('#setup').dataset.step, bvis:getComputedStyle(document.querySelector('#bixSetup')).visibility, bwho:document.querySelector('#bixiSetupBubble').dataset.who, btxt:(document.querySelector('#bixiSetupBubble .ctext').textContent||'')});")
+        check('Bixi is introduced after the name step (meet beat, rolls in, greets as who=bixi)', onname=='suMeet' and meet['bvis']=='visible' and meet['bwho']=='bixi' and len(meet['btxt'])>0, [onname, meet])
+        await pg.screenshot(path='/tmp/su_meet.png')
+        await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on'); await pg.screenshot(path='/tmp/su_level.png')
         await pg.click('[data-lv=new]'); await pg.wait_for_selector('#suDone.on'); await pg.wait_for_timeout(500); await pg.screenshot(path='/tmp/su_done.png')
         check('install reminder shown in a browser tab', await pg.locator('#suInstall').is_visible())
         await pg.click('#suStart'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(600)
@@ -78,6 +103,8 @@ async def main():
         # portrait iPad: all three "abacus at home?" cards (and the three starting-point cards) fit on the page
         ctx = await b.new_context(viewport={'width':820,'height':1180}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(800)
+        try: await pg.evaluate("window.App && (App.settings.bixTalks=false)")
+        except Exception: pass
         await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', 'June'); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.wait_for_timeout(400)
         FIT="(sel)=>[...document.querySelectorAll(sel+' .to-card')].map(e=>{ const r=e.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom), r.top>=0 && r.bottom<=innerHeight-8 && r.height>=64]; })"
         cards = await pg.evaluate(FIT, '#suAbacus')

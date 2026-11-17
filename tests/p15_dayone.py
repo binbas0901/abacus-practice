@@ -12,7 +12,8 @@ async def fresh(b, size=(1180,820)):
     ctx = await b.new_context(viewport={'width':size[0],'height':size[1]}); pg = await ctx.new_page(); await pg.add_init_script(SPY)
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     await pg.goto(URL); await pg.wait_for_timeout(800)
-    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', 'Leo'); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
+    await pg.wait_for_selector('#suName.on'); await pg.evaluate("App.settings.bixTalks=false")   # Juni-led intro muted so this day-one run stays quick
+    await pg.fill('#suNameIn', 'Leo'); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
     await pg.click('[data-lv=new]'); await pg.wait_for_selector('#suDone.on'); await pg.click('#suStart'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(500)
     return ctx, pg, errs
 async def collect_all(pg, first=15000):
