@@ -48,9 +48,11 @@ async def main():
         ctx,pg = await newpage(True); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(1500)
         check('returning: silent until she taps', len(await take(pg))==0)
-        # tap an empty spot (the top margin), not a button
-        await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(5500); r=await take(pg); allrecs+=r
-        check('returning: first tap anywhere -> Bix says hello', len(r)==1 and r[0]['id'].startswith('hello_'), [x['id'] for x in r])
+        # tap an empty spot (the top margin), not a button -> the two-speaker greeting: Juni (teacher) first, then Bixi.
+        await pg.evaluate("""window.__cl=[]; const op=Classroom.Voice.play.bind(Classroom.Voice);
+          Classroom.Voice.play=function(c,id,f){ (Array.isArray(id)?id:[id]).forEach(x=>{ if(x) window.__cl.push(c+':'+x); }); return op(c,id,f); };""")
+        await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(6500); r=await take(pg); allrecs+=r; cl=await pg.evaluate("window.__cl.slice(0)")
+        check('returning: first tap anywhere -> Juni greets first (j_hello_*), then Bixi', bool(cl) and cl[0].startswith('juni:j_hello_') and any(x.startswith('bixi:b_home_') for x in cl[1:]), cl)
         for i in range(5): await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(250)
         await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r
         check('tapping Bix 5 times fast -> each new joke replaces the last, never two at once', len(r)>=1 and not overlaps(r), [x['id'] for x in r])

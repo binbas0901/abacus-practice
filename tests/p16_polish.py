@@ -35,20 +35,10 @@ async def main():
             if voice == 'sweet':
                 vis = await pg.evaluate("[...document.querySelectorAll('.screen')].map(s=>s.innerText||s.textContent).join(' ')")
                 check('every screen as loaded: no "fix", "red one(s)", "green beads"', not bad.search(vis), bad.findall(vis))
-            # ---- home: the bubble's two sentences are both spoken, for 3, 2, 1 steps left and when all are done ----
-            await pg.mouse.click(600, 12); await pg.wait_for_timeout(6500); r = await said(pg); bub = await pg.evaluate("document.querySelector('#bixHome .bubble').textContent.replace(/\\s+/g,' ').trim()")
-            check(f'{voice}: 3 steps left -> hello, then "Three beads to fill up Juni!" (bubble ends with the same words)', len(r)==2 and r[0]['id'].startswith('hello_') and r[1]['id']=='moon_3' and r[1]['key']==pack and bub.endswith(LINES['moon_3']), ([(x['key'],x['id']) for x in r], bub))
-            for done, want in ((1, 'moon_2'), (2, 'moon_1')):
-                await pg.evaluate("n=>{ Fun.data.today.steps.forEach((s,i)=>s.done=i<n); App.renderHome(); }", done)
-                await pg.wait_for_timeout(300); await said(pg)
-                await pg.click('#bixHome .bubble'); await pg.wait_for_timeout(6500); r = await said(pg); bub = await pg.evaluate("document.querySelector('#bixHome .bubble').textContent.replace(/\\s+/g,' ').trim()")
-                spoken = ' '.join(LINES[x['id']] for x in r)
-                check(f'{voice}: {3-done} left -> "Tap Next" hello, then "{LINES[want]}" (bubble = spoken words, plus her name)', [x['id'] for x in r]==['hello_next', want] and all(x['key']==pack for x in r) and norm(bub.replace(', Mia', ' friend'))==norm(spoken), ([(x['key'],x['id']) for x in r], bub))
-            await pg.evaluate("{ Fun.data.today.steps.forEach(s=>s.done=true); App.renderHome(); }"); await pg.wait_for_timeout(7500); r = await said(pg); bub = await pg.evaluate("document.querySelector('#bixHome .bubble').textContent.replace(/\\s+/g,' ').trim()")
-            check(f'{voice}: all done -> one line, "All done today! Juni is full! Play a game or visit My Room." (bubble the same, plus her name)', [(x['key'],x['id']) for x in r]==[(pack,'home_done')] and norm(bub.replace(', Mia', ''))==norm(LINES['home_done']), ([(x['key'],x['id']) for x in r], bub))
-            await pg.evaluate("{ TOY.moonName='Luna'; App.renderHome(); }"); await pg.wait_for_timeout(300); await said(pg); await pg.click('#bixHome .bubble'); await pg.wait_for_timeout(1200); r = await said(pg)
-            check(f'{voice}: another moon name -> the recording that says "Juni" is not used', all(x['id'] in ('all_done',) for x in r) and 'Luna is full' in await pg.text_content('#bixHome .bubble'), [(x['key'],x['id']) for x in r])
-            await pg.evaluate("{ TOY.moonName='Juni'; Fun.data.today.steps.forEach(s=>s.done=false); App.renderHome(); }")
+            # ---- home: the greeting is now the two-speaker classroom (Juni leads, then Bixi's bead countdown) and is
+            #      covered by p12_home; here we only unlock audio so the practice-screen BixVoice checks below can play. ----
+            await pg.mouse.click(600, 12); await pg.wait_for_timeout(1500); await said(pg)
+            await pg.evaluate("{ Fun.data.today.steps.forEach(s=>s.done=false); App.renderHome(); }")
             # ---- practice: polish pass ----
             await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(1500); await said(pg)
             oops = []

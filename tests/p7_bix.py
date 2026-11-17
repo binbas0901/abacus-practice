@@ -20,15 +20,17 @@ async def main():
         check('after the name (+ abacus question): "Nice to meet you"', pl[-1:]==['intro_meet'] and all(x in ('ask_abacus','intro_meet') for x in pl), pl)
         await pg.click('[data-lv=pick]'); await pg.wait_for_timeout(500); await pg.click('.su-skill[data-id=bf_add_a]'); await pg.wait_for_timeout(800)
         await pg.click('#suStart'); await pg.wait_for_timeout(1200); pl=[x['id'] for x in await plays(pg)]
-        check('setup lines + home greeting', 'intro_pick' in pl and 'intro_done' in pl and any(x and x.startswith('hello_') for x in pl), pl)
+        check('setup lines play (home greeting is now Juni-led, covered by p12_home)', 'intro_pick' in pl and 'intro_done' in pl, pl)
         await ctx.close()
         # 2. existing device: greeting on first tap on an empty spot (not on a button)
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); await pg.add_init_script(HOOK)
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(2500)
         check('existing device: no sound before any tap', len(await plays(pg))==0)
-        # tap an empty spot (the top margin), not a button
-        await pg.mouse.click(600, 12); await pg.wait_for_timeout(1200); pl=await plays(pg)
-        check('first tap on an empty spot -> greeting', len(pl)==1 and pl[0]['id'].startswith('hello_'), [x['id'] for x in pl])
+        # tap an empty spot (the top margin), not a button -> the two-speaker greeting: Juni (teacher) first, then Bixi.
+        await pg.evaluate("""window.__cl=[]; const op=Classroom.Voice.play.bind(Classroom.Voice);
+          Classroom.Voice.play=function(c,id,f){ (Array.isArray(id)?id:[id]).forEach(x=>{ if(x) window.__cl.push(c+':'+x); }); return op(c,id,f); };""")
+        await pg.mouse.click(600, 12); await pg.wait_for_timeout(6500); cl=await pg.evaluate("window.__cl.slice(0)"); await plays(pg)
+        check('first tap on an empty spot -> Juni greets first (j_hello_*), then Bixi', bool(cl) and cl[0].startswith('juni:j_hello_') and any(x.startswith('bixi:b_home_') for x in cl[1:]), cl)
         await pg.click('#bixHome .bix'); await pg.wait_for_timeout(800); pl=[x['id'] for x in await plays(pg)]
         check('tapping Bix -> a joke/fact out loud', len(pl)==1 and pl[0].startswith('tap_'), pl)
         # 3. listening drill: Bix silent the whole time numbers are read and answered

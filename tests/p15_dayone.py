@@ -54,7 +54,7 @@ async def main():
         await pg.click('#lessonNext'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(300)
         check('step 1 ticked', await steps_done(pg)==[True,False,False], await steps_done(pg))
         bub=await pg.text_content('#bixHome .bubble')
-        check('home after step 1: Bix names the button that is there (Next, not Start)', await pg.text_content('#todayGoT')=='Next' and 'Tap Next' in bub and 'Tap Start' not in bub, bub)
+        check('home after step 1: the big button reads Next (not Start)', await pg.text_content('#todayGoT')=='Next' and 'Next' in await pg.get_attribute('#todayGo','aria-label'), bub)
         await pg.screenshot(path='/tmp/p15_home1.png')
         # step 2: Bead Builder
         await pg.evaluate("App.gameNumbers=3"); await pg.click('#todayGo'); await pg.wait_for_selector('#game.active')

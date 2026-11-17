@@ -570,17 +570,43 @@ function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===
 /* ---------------- home (Workshop: Bix, Today on the soroban, three doors) ---------------- */
 function curIdx(){ return NODE_IDX[progress.current] ?? 0; }
 function stars(nid){ const h=node(nid).hist.slice(-20); if(!h.length) return 0; const p=h.filter(x=>x.ok).length/h.length; return node(nid).mastered ? 3 : p>=0.8 ? 2 : h.length>=5 ? 1 : 0; }
-// Home greetings: [bubble text, voice line]. Bubbles can use the name; the recorded voice never does.
-const HOME_LINES = (n)=>{
-  const nm = settings.name ? `, ${settings.name}` : '', h=new Date().getHours();
-  const tod = h<12 ? ['Good morning'+nm+'! Ready to move some beads?','hello_morning'] : h<17 ? ['Good afternoon'+nm+'! Let\'s do some abacus!','hello_afternoon'] : ['Good evening'+nm+'! A little practice before bed?','hello_evening'];
-  const L=[tod, [`You're back${nm}! I missed you!`,'hello_back'], [`Hi${nm}! Tap Start when you're ready!`,'hello_ready']];
-  if (n.family===10) L.push(['Big friends make 10. Let\'s practise!','hello_big']);
-  if (n.family===5) L.push(['Small friends make 5. Let\'s practise!','hello_small']);
-  return L;
-};
+// Home greeting: Juni (the teacher, the moon in the window) leads and greets FIRST; then Bixi (the classmate,
+// the bead on the table) adds a short countdown. Each helper returns [voice key, bubble caption].
+// The caption can use the child's name; the recorded voice line never does (voices/CONTRACT.md).
+function juniGreet(allDone){
+  const nm = settings.name ? `, ${settings.name}` : '';
+  if (allDone) return ['j_end_amazing', `Amazing work${nm}! You filled me all the way up today.`];
+  const h = new Date().getHours(), back = (Fun.data.seen % 2) === 1;       // alternate a warm welcome-back with the time-of-day hello
+  if (back) return ['j_hello_back', `You're back${nm}! I missed you!`];
+  if (h < 12) return ['j_hello_morning', `Good morning${nm}! Ready to move some beads?`];
+  if (h < 17) return ['j_hello_afternoon', `Good afternoon${nm}! Let's do some abacus!`];
+  return ['j_hello_evening', `Good evening${nm}! A little practice before bed?`];
+}
+// Bixi counts how many step-beads are left to fill up Juni. His recorded lines say "Juni", so when the owner
+// renames the moon the caption uses the real name and the clip stays silent (bubble still shows).
+function bixiCount(steps, allDone){
+  if (allDone) return ['b_home_alldone', "You did all of today's practice! Want to play a game?"];
+  const left = steps.filter(s=>!s.done).length, k = Math.min(3, Math.max(1, left)), spoken = TOY.moonName === 'Juni';
+  return [spoken ? 'b_home_steps' + k : null, `${NUM_WORD[left] || left} ${left === 1 ? 'bead' : 'beads'} to fill up ${TOY.moonName}!`];
+}
 let greeted=false;
-function greetIdx(){ return (Fun.data.seen++) % 2 === 0 ? 0 : 1; }
+// Speak the home greeting in order: Juni first (her bubble + talking moon), then Bixi (his bubble + talking mouth).
+let homeGreetSeq = 0;
+async function speakHomeGreeting(jKey, jText, bKey, bText){
+  const CLr = window.Classroom; if (!CLr) return showHomeBubbles(jText, bText);
+  const seq = ++homeGreetSeq;
+  const jb = $('#homeJuni'), bb = $('#bixHome .bubble'), sky = $('#homeSky'), bh = $('#bixHome');
+  Fun.Mascot.quiet(bh);                                   // keep Bixi's bubble closed until his turn
+  await CLr.say(jKey, { who:'juni', text:jText, bubble:jb, figure:sky, ms:0 });
+  if (seq !== homeGreetSeq || !$('#home').classList.contains('active')) return;   // a newer render (or screen change) took over
+  await CLr.say(bKey, { who:'bixi', text:bText, bubble:bb, figure:bh, ms:0 });
+}
+// Show both greeting bubbles without playing audio (returning to home, or before the first tap).
+function showHomeBubbles(jText, bText){
+  const CLr = window.Classroom; if (!CLr) return;
+  CLr.showBubble($('#homeJuni'), jText, 'juni', 0);
+  CLr.showBubble($('#bixHome .bubble'), bText, 'bixi', 0);
+}
 document.addEventListener('click', e=>{
   if (greeted || !$('#home').classList.contains('active')) return;
   const onButton = e.target.closest('button') && !e.target.closest('#bixHome');
@@ -606,24 +632,7 @@ function homeMoon(done, total){
   if (sky.dataset.k===key) return; sky.dataset.k=key;
   sky.innerHTML = TOY.skyMoon(full ? 'proud' : done ? 'happy' : 'calm', phase) + (full ? HOME_SPARKS : '');
 }
-// The bubble as in the mockup: the greeting as a title, then the rest of what Bix says (the caption always holds the
-// spoken line) and how many beads are left today. The moon gets one mention.
-// The sentence about the moon while steps are left: [words, recorded line]. The recordings say "Juni" and cover a day
-// of three steps, so they are used only while that is her name; any other count is a caption only.
-const moonSpoken = ()=>TOY.moonName==='Juni';
-function moonLine(steps){
-  const n=steps.length, left=steps.filter(s=>!s.done).length;
-  const text = left===n ? `${NUM_WORD[n]||n} beads to fill up ${TOY.moonName}!` : `${NUM_WORD[left]||left} more ${left===1?'bead':'beads'} to fill up ${TOY.moonName}!`;
-  const id = !moonSpoken() ? null : left===n ? (n===3 ? 'moon_3' : null) : left<=2 ? 'moon_'+left : null;
-  return [text, id];
-}
-function homeBubble(text, steps){
-  const t=$('#bixHome .bubble .ws-text'); if (!t || !settings.name) return;
-  const n=steps.length, done=steps.filter(s=>s.done).length, left=n-done, m=/^(.*?[!.?])\s+(.*)$/.exec(text), title = m ? m[1] : text, rest = m ? m[2] : '';
-  const sub = !left ? `${TOY.moonName} is full! ${rest}` : rest + ' ' + moonLine(steps)[0];
-  t.innerHTML = `<span class="toy-bubble-title">${esc(title)}</span> <span class="th-bub-sub">${esc(sub.trim())}</span>`;
-}
-function renderHome(){
+function renderHome(opts){
   const many = Store.children().length>1, tagName = settings.name || (many ? 'New child' : '');
   const tagCol = KID_COLORS[Math.max(0, Store.children().findIndex(c=>c.id===Store.activeId()))%KID_COLORS.length];
   const sk=$('#switchKid'); sk.style.display = many ? '' : 'none'; sk.innerHTML = many ? TOY.tag(tagName, {hang:true, color:tagCol}) : '';
@@ -631,26 +640,26 @@ function renderHome(){
   $('#homeTag').innerHTML = !many && tagName ? TOY.tag(tagName, {hang:true, color:tagCol}) : '';
   const cur = NODES[curIdx()];
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
-  // Bix
+  // Bixi (the classmate) sits small on the table; Juni (the teacher) leads from the window.
   const bh=$('#bixHome'); toyBix(bh, allDone ? 'proud' : 'wave');
-  // Bix talks on the home screen once per visit to the app (the first time sound is allowed), and when today is finished.
-  const canTalk = !!Speaker.gestured;   // sound is allowed once she has tapped
-  const line = !settings.name ? ["I don't know your name yet! Tap me to tell me.", 'ask_name']
-    : allDone ? [`All done today, ${settings.name}! Play a game or visit My Room.`, moonSpoken() ? 'home_done' : 'all_done']
-    : (greeted ? HOME_LINES(cur)[2] : HOME_LINES(cur)[greetIdx()]);
-  // Once a step is done the round button says Next: the bubble names that button (the recorded line says "Start", so this one is a caption only).
-  if (settings.name && !allDone && steps.some(s=>s.done) && line[1]==='hello_ready') line.splice(0, 2, line[0].replace('Tap Start', 'Tap Next'), 'hello_next');
-  const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
-  // He says what the bubble shows: the greeting, then the sentence about the moon (see homeBubble).
-  const mv = settings.name && !allDone ? moonLine(steps)[1] : null, vids = mv ? [line[1], mv] : line[1];
-  Fun.Mascot.say(bh, line[0], 0, speak ? vids : null, vids);
-  homeBubble(line[0], steps);
-  if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; }
-  Fun.save();
-  // Today: three beads on the rod, finished ones first (slid to the left like counted beads); the moon shows the same count
+  // Today: beads left, and the moon in the window that fills as they are finished (Juni full + proud when all done).
   const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
   $('#home').classList.toggle('is-done', allDone);
   homeMoon(steps.length-left, steps.length); wireMoonTap('#homeSky'); armBixiIdle();
+  // Greeting: Juni speaks first (her bubble + the glowing moon), THEN Bixi adds his bead countdown. Spoken once per
+  // app visit (the first time sound is allowed) and again when today is finished; otherwise the bubbles just show.
+  const canTalk = !!Speaker.gestured;   // sound is allowed once the child has tapped once
+  if (!settings.name){
+    $('#homeJuni').classList.remove('on');
+    Fun.Mascot.say(bh, "I don't know your name yet! Tap me to tell me.", 0, canTalk ? 'ask_name' : null, 'ask_name');
+  } else {
+    const [jKey, jText] = juniGreet(allDone), [bKey, bText] = bixiCount(steps, allDone);
+    const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
+    if (opts && opts.quietGreet){ showHomeBubbles(jText, bText); }
+    else if (speak){ Fun.data.seen++; greeted=true; if (allDone) renderHome.saidDone=true; speakHomeGreeting(jKey, jText, bKey, bText); }
+    else { showHomeBubbles(jText, bText); }
+  }
+  Fun.save();
   $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
   $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
   const shown = steps.filter(s=>s.done).concat(steps.filter(s=>!s.done));
@@ -678,7 +687,7 @@ function openNameAsk(){
   toyBix($('#bixName'), 'happy', {bubble:false});
   $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); Typing.afterTap($('#nameAskIn'), ()=>$('#nameAsk').classList.contains('active'));
 }
-function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ Typing.focus($('#nameAskIn')); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); Sfx.ok(); renderHome(); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
+function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ Typing.focus($('#nameAskIn')); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); Sfx.ok(); homeGreetSeq++; renderHome({quietGreet:true}); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
 $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>{ $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); });
