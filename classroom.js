@@ -103,6 +103,9 @@
   // bubble: a toy-bubble element (plain, or with a .ctext / .ws-text child). who marks it so CSS shows the right name + tail.
   function showBubble(bubble, text, who, ms) {
     if (!bubble) return;
+    // one bubble at a time: close any other open speech bubble so banners never overlap.
+    // The lesson caption is persistent context (the problem + instruction), so it's left alone and can sit beside Bixi's lesson bubble.
+    if (bubble.id !== 'lessonCap') document.querySelectorAll('.cl-bubble.on').forEach(b => { if (b !== bubble && b.id !== 'lessonCap') { b.classList.remove('on'); clearTimeout(b._cl); } });
     bubble.dataset.who = who; bubble.classList.add('cl-bubble');
     const t = bubble.querySelector('.ctext') || bubble.querySelector('.ws-text') || bubble;
     t.textContent = caption(text);

@@ -28,6 +28,9 @@ async def tryit(pg):
     return await pg.evaluate("({s:window.__lastSchedule, src:window.__src.slice(), said:window.__said.slice()})")
 def gaps(s): return [round(b[0] - a[1], 3) for a, b in zip(s, s[1:])]
 def durs(s): return [round(e - a, 3) for a, e in s]
+async def openp(pg):  # the speed panel now opens via the gear (not automatically each set); open it if it's closed
+    if not await pg.is_visible('#speedPop'):
+        await pg.click('#speedGear'); await pg.wait_for_selector('#speedPop', state='visible'); await pg.wait_for_timeout(150)
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox', '--autoplay-policy=no-user-gesture-required'])
@@ -36,9 +39,11 @@ async def main():
 
         # 1) a fresh child: the panel opens before the set, with 100% and 0.65s and one Start
         await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(500)
+        check('fresh child: Listen starts at the Ready button, no speed panel each time (saved speed is used)', (not await pg.is_visible('#speedPop')) and await pg.is_visible('#listenGo') and await pg.is_visible('#speedGear'), str([await pg.is_visible('#speedPop'), await pg.is_visible('#listenGo')]))
+        await openp(pg)
         v = await vals(pg); st = await sett(pg)
-        check('fresh child: panel shown before a Listen set, 100% and 0.65s', await pg.is_visible('#speedPop') and v == ['100%', '0.65s'] and st[:2] == [1, 0.65], f'{v} {st}')
-        check('fresh child: Start is in the panel (the set\'s own button), Done is not; Try it is', await pg.locator('#speedPop #listenGo').count() == 1 and 'Start' in await pg.text_content('#listenGo') and not await pg.is_visible('#spDone') and await pg.is_visible('#spTry'))
+        check('the gear opens the panel at the saved 100% and 0.65s', await pg.is_visible('#speedPop') and v == ['100%', '0.65s'] and st[:2] == [1, 0.65], f'{v} {st}')
+        check('gear panel: Done is shown and the Ready button stays on the stage; Try it is there', await pg.is_visible('#spDone') and await pg.locator('#speedPop #listenGo').count() == 0 and await pg.is_visible('#listenGo') and await pg.is_visible('#spTry'))
         sz = await pg.evaluate("[...document.querySelectorAll('#speedPop .sp-step')].map(e=>{const r=e.getBoundingClientRect(); return Math.min(r.width,r.height)})")
         check('- and + discs are 64px or more; slow / fast drawings at both ends (no emoji)', len(sz) == 4 and min(sz) >= 64 and await pg.locator('#speedPop .sp-end svg').count() == 4 and await pg.evaluate("[...document.querySelectorAll('#spCtrls [data-k=voiceRate] .sp-end')].map(e=>e.dataset.end).join()") == 'slow,fast' and await pg.evaluate("[...document.querySelectorAll('#spCtrls [data-k=termGap] .sp-end')].map(e=>e.dataset.end).join()") == 'fast,slow', str(sz))
 
@@ -60,7 +65,7 @@ async def main():
         gu = await pg.evaluate("[document.querySelector('#sRateV').textContent, document.querySelector('#sGapV').textContent, document.querySelector('#sRate').step, document.querySelector('#sGap').step, document.querySelectorAll('#sGapMin, #sGapMax').length]")
         check('Grown-ups shows the same values, steps and units', gu == ['120%', '0.30s', '0.1', '0.05', 0], str(gu))
         await pg.evaluate("(()=>{ const e=document.querySelector('#sGap'); e.value=0.5; e.dispatchEvent(new Event('input',{bubbles:true})); })()"); await pg.click('#parentDone')
-        await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(400); check('a change in Grown-ups shows on the Listen panel', await vals(pg) == ['120%', '0.50s'], str(await vals(pg))); await pg.click('#exitDrill')
+        await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(400); await openp(pg); check('a change in Grown-ups shows on the Listen panel', await vals(pg) == ['120%', '0.50s'], str(await vals(pg))); await pg.click('#exitDrill')
         await pg.reload(); await pg.wait_for_timeout(500); await pg.evaluate(HOOK); check('saved: still 120% and 0.50s after a restart', (await sett(pg))[:2] == [1.2, 0.5], str(await sett(pg)))
         first = await pg.evaluate("Store.activeId()"); await pg.evaluate("(()=>{ const id=Store.addChild(); Store.switchTo(id); })()"); await pg.reload(); await pg.wait_for_timeout(500)
         check('another child starts at 100% and 0.65s', (await sett(pg))[:2] == [1, 0.65], str(await sett(pg)))
@@ -72,7 +77,7 @@ async def main():
             await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=60000); s = await pg.evaluate("window.__lastSchedule"); gp = gaps(s)
             check(f'clips: pause {g}s -> silence between numbers and before "equals" is {g}s', len(s) >= 3 and all(abs(x - g) < 0.02 for x in gp), str(gp)); await pg.click('#exitDrill')
         # voice speed: clips get longer / shorter, the pitch is kept (never a changed playback rate), 100% is the recording itself
-        await setv(pg, voice='ljspeech', voiceRate=1, termGap=0.3); await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(400)
+        await setv(pg, voice='ljspeech', voiceRate=1, termGap=0.3); await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(400); await openp(pg)
         base = await tryit(pg); d1 = durs(base['s']); sprite = await pg.evaluate("App.Speaker.sprite.ljspeech.duration")
         check('Try it says "three, plus four, minus two, equals" (4 parts) with the chosen pause', len(base['s']) == 4 and all(abs(x - 0.3) < 0.02 for x in gaps(base['s'])), str(base['s']))
         check('100%: the recording is played as it is (slices of the original sprite, rate 1)', all(x['rate'] == 1 and not x['whole'] for x in base['src']) and abs(base['src'][0]['buflen'] - sprite) < 0.01, str(base['src'][:1]))
@@ -82,13 +87,13 @@ async def main():
             check(f'{int(r*100)}%: every part lasts 1/{r} as long, pause unchanged, playback rate stays 1 (pitch kept)', (await sett(pg))[0] == r and all(abs(q - 1 / r) < 0.06 for q in ratio) and all(abs(x - 0.3) < 0.02 for x in gaps(t['s'])) and all(x['rate'] == 1 and x['whole'] for x in t['src']), f'{ratio} {gaps(t["s"])}')
         await pg.click('#exitDrill')
         # a recorded family voice: same pause, same stretch
-        await pg.evaluate(SEEDREC); await setv(pg, voice='rec:p1', profiles=[{'id': 'p1', 'name': 'Mom'}], voiceRate=1, termGap=0.4); await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(500)
+        await pg.evaluate(SEEDREC); await setv(pg, voice='rec:p1', profiles=[{'id': 'p1', 'name': 'Mom'}], voiceRate=1, termGap=0.4); await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(500); await openp(pg)
         r1 = await tryit(pg); await step(pg, 'voiceRate', -1, 3); r2 = await tryit(pg); log = '\n'.join(await pg.evaluate("window.__diag.lines"))
         check('recorded voice: pause 0.40s between numbers and before its own "equals"', 'equals: own recording' in log and all(abs(x - 0.4) < 0.02 for x in gaps(r1['s']) + gaps(r2['s'])), f'{gaps(r1["s"])} {gaps(r2["s"])}')
         check('recorded voice: 70% makes each word 1/0.7 as long at playback rate 1', all(abs(x['len'] - 0.4) < 0.01 and x['rate'] == 1 for x in r1['src']) and all(abs(x['len'] - 0.4 / 0.7) < 0.02 and x['rate'] == 1 for x in r2['src']), str([round(x['len'], 3) for x in r2['src']][:4]))
         await pg.click('#exitDrill')
         # the device voice: speech rate and the pause after each utterance
-        await setv(pg, voice='device', voiceRate=1.3, termGap=0.8); await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(400); dvc = await tryit(pg)
+        await setv(pg, voice='device', voiceRate=1.3, termGap=0.8); await pg.evaluate("App.startMode('listen')"); await pg.wait_for_timeout(400); await openp(pg); dvc = await tryit(pg)
         check('device voice: rate 1.3 (pitch 1), "three" / "plus four" / "minus two" / "equals", 0.80s after each', [x[0] for x in dvc['said']] == ['three', 'plus four', 'minus two', 'equals'] and all(abs(x[1] - 1.3) < 1e-6 and x[2] == 1 for x in dvc['said']) and all(abs(x - 0.8) < 0.08 for x in gaps(dvc['s'])), f'{dvc["said"]} {gaps(dvc["s"])}')
         await pg.click('#exitDrill')
 
@@ -111,11 +116,11 @@ async def main():
         check('Look mode: no gear, no panel', not await pg.is_visible('#speedGear') and not await pg.is_visible('#speedPop')); await pg.click('#exitDrill')
 
         # 6) Flash: two controls in seconds; the numbers stay and the blanks last as chosen
-        await setv(pg, flashSec=1, flashGap=0.2); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_timeout(500); v = await vals(pg)
-        check('Flash: panel with "How long each number shows" and "Pause between numbers", in seconds', await pg.is_visible('#speedPop') and len(v) == 2 and all(x.endswith('s') for x in v) and v[1] == '0.20s' and await pg.locator('#speedPop #flashGo').count() == 1, str(v))
+        await setv(pg, flashSec=1, flashGap=0.2); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_timeout(500); await openp(pg); v = await vals(pg)
+        check('Flash: panel with "How long each number shows" and "Pause between numbers", in seconds', await pg.is_visible('#speedPop') and len(v) == 2 and all(x.endswith('s') for x in v) and v[1] == '0.20s' and await pg.is_visible('#spDone'), str(v))
         await pg.evaluate("(()=>{ for (const [k,x] of [['flashSec',0.5],['flashGap',0.4]]){ const e=document.querySelector('#sp_'+k); e.value=x; e.dispatchEvent(new Event('input',{bubbles:true})); } })()")
         check('Flash: set to 0.5s and 0.40s', await vals(pg) == ['0.5s', '0.40s'] and (await sett(pg))[2:] == [0.5, 0.4], str(await vals(pg)))
-        await pg.click('#spTry'); await pg.wait_for_timeout(250); pv = await pg.text_content('#spPreview'); check('Flash: Try it shows the sample numbers in the panel', pv.strip() == '3', pv); await pg.wait_for_timeout(2900)
+        await pg.click('#spTry'); await pg.wait_for_timeout(250); pv = await pg.text_content('#spPreview'); check('Flash: Try it shows the sample numbers in the panel', pv.strip() == '3', pv); await pg.wait_for_timeout(2900); await pg.click('#spDone'); await pg.wait_for_timeout(200)
         await pg.screenshot(path=f'{OUT}/speed_flash.png')
         await pg.evaluate("(()=>{ window.__fl=[]; const el=document.querySelector('#flashNum'); new MutationObserver(()=>window.__fl.push([performance.now()/1000, el.textContent.trim()!=='' && el.classList.contains('pop')])).observe(el,{childList:true,characterData:true,subtree:true,attributes:true}); })()")
         await pg.click('#flashGo'); await pg.wait_for_function("/What did you get/.test(document.querySelector('#flashMsg').textContent)", timeout=30000)

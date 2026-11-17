@@ -77,7 +77,7 @@ async def main():
             # Listen and Flash: the speed panel, then the answer state, both tools
             await seed(pg, 'combined', 0)
             for mode, go, msg in [('listen', '#listenGo', "document.querySelector('#listenMsg').textContent==='Your answer?'"), ('flash', '#flashGo', "/What did you get/.test(document.querySelector('#flashMsg').textContent)")]:
-                await pg.evaluate(f"App.startMode('{mode}')"); await pg.wait_for_selector('#speedPop:not([hidden])'); await pg.wait_for_timeout(300); n += 1
+                await pg.evaluate(f"App.startMode('{mode}')"); await pg.wait_for_selector(go, state='visible'); await pg.click('#speedGear'); await pg.wait_for_selector('#speedPop:not([hidden])'); await pg.wait_for_timeout(300); n += 1
                 bad = await pg.evaluate(PAGE, ['#speedPop .sp-card', '#speedPop button', '#speedPop input', '#speedPop .sp-val', '#speedPop .sp-label', '#speedPop .sp-end', '#exitDrill', '#speedGear'])
                 bad += await pg.evaluate(OVER, [['#speedPop .sp-step', '#speedPop .sp-val'], ['#speedPop .sp-foot button', '#speedPop .sp-ctrl'], ['#speedPop .sp-head', '#speedPop .sp-ctrl'], ['#exitDrill', '#speedGear'], ['#speedGear', '#drill .tp-rodwrap']])
                 bad += await pg.evaluate("(()=>{ const c=document.querySelector('#speedPop .sp-card'), cr=c.getBoundingClientRect(), out=[]; if (c.scrollHeight>c.clientHeight+1) out.push('speed panel does not fit its sheet (scrolls)'); for (const e of c.querySelectorAll('.sp-title, .sp-label, .sp-val, .sp-foot button')){ if (!e.getClientRects().length) continue; const r=e.getBoundingClientRect(); if (r.top<cr.top-0.5||r.bottom>cr.bottom+0.5) out.push('speed panel: '+(e.id||e.className)+' cut'); } const g=document.querySelector('#speedGear').getBoundingClientRect(), m=document.querySelector('#drillSky .toy-sky-moon, #drillSky svg'); if (m){ const r=m.getBoundingClientRect(); if (!(g.right<=r.left+4||g.left>=r.right-4||g.bottom<=r.top+4||g.top>=r.bottom-4)) out.push('gear over the moon'); } return [...new Set(out)]; })()")
@@ -85,6 +85,7 @@ async def main():
                 if (w, h) in BELOW: bad = [x for x in bad if 'scrolls' not in x]
                 check(f'{w}x{h} {mode} speed panel: on screen, nothing overlapping, - / + discs 64px or more', not bad and sm >= 64, f'{bad} {sm}')
                 if bad or (w, h) in SMALLEST: await shot(pg, f'speed_{w}x{h}_{mode}')
+                await pg.click('#spDone'); await pg.wait_for_selector('#speedPop', state='hidden')   # close the panel; Ready stays on the stage
                 await pg.click(go); await pg.wait_for_function(msg, timeout=40000); await pg.wait_for_timeout(200)
                 for t in ['keys', 'beads']:
                     await tool(pg, t); m = await pg.evaluate(MEASURE); n += 1

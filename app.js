@@ -30,7 +30,7 @@ function saveSettings(){ Store.saveSettings(settings); }
      termGap    silence between one number and the next (and before "equals"): 0.05 s - 1.20 s in steps of 0.05
      flashSec   how long each Flash number stays;  flashGap  the blank between two Flash numbers                    */
 const SPEED = {
-  voiceRate:{ min:0.7, max:1.5, step:0.1, def:1, fmt:v=>Math.round(v*100)+'%', label:'How fast Bix says the numbers', lowIsFast:false },
+  voiceRate:{ min:0.7, max:1.5, step:0.1, def:1, fmt:v=>Math.round(v*100)+'%', label:'How fast I say the numbers', lowIsFast:false },
   termGap:{ min:0.05, max:1.2, step:0.05, def:0.65, fmt:v=>v.toFixed(2)+'s', label:'Pause between numbers', lowIsFast:true },
   flashSec:{ min:0.3, max:3, step:0.1, def:1, fmt:v=>v.toFixed(1)+'s', label:'How long each number shows', lowIsFast:true },
   flashGap:{ min:0.05, max:1, step:0.05, def:0.2, fmt:v=>v.toFixed(2)+'s', label:'Pause between numbers', lowIsFast:true },
@@ -916,7 +916,7 @@ $('#exitDoor').innerHTML=TOY.icon('back', 32, 'currentColor'); $('#exitLesson').
 // The three ways to practise: wooden toy blocks with a lacquer face. [TOY icon, label, icon colour, accent]
 const DOOR_TOYS = { visual:['eye','Look','#fff','#FFD25E','Look: read the numbers'], listen:['ear','Listen','#4A2C06','#FFFDF6','Listen: hear the numbers'], flash:['flash','Flash','#fff','#FFD25E','Flash: numbers pop up fast'] };
 // A skill with no sums yet (bead numbers): the same three blocks offer what works for it. [.., what it opens]
-const DOOR_BEADS = { visual:['book','Learn','#fff','#FFD25E','Learn: Bix shows you the beads','learn'], listen:['practice','Make','#4A2C06','#FFFDF6','Make: make numbers on the abacus','build'], flash:['eye','Read','#fff','#FFD25E','Read: read numbers from the beads','reader'] };
+const DOOR_BEADS = { visual:['book','Learn','#fff','#FFD25E','Learn: Juni shows you the beads','learn'], listen:['practice','Make','#4A2C06','#FFFDF6','Make: make numbers on the abacus','build'], flash:['eye','Read','#fff','#FFD25E','Read: read numbers from the beads','reader'] };
 function renderDoor(){
   const sums=!!NODES[curIdx()].drill, set=sums ? DOOR_TOYS : DOOR_BEADS, key=sums ? '1' : 'beads';
   $$('#door .door-block').forEach(b=>{ const [ic,lab,col,acc,aria]=set[b.dataset.door];
@@ -1236,7 +1236,7 @@ function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
   sky.addEventListener('click', ()=>{
     // On home, before we know the child's name, a moon tap opens the name box instead of playing a fact.
     if (sel==='#homeSky' && !settings.name){ if (!$('#nameAsk').classList.contains('active')){ Speaker.unlock(); openNameAsk(); } return; }
-    if (!CL()) return; Speaker.unlock(); CL().Silly.tapJuni({figure:sky, bubble:sel==='#lessonSky'?$('#lessonCap'):$('#bixHome .bubble')}); });
+    if (!CL()) return; Speaker.unlock(); CL().Silly.tapJuni({figure:sky, bubble:sel==='#lessonSky'?$('#lessonCap'):sel==='#homeSky'?$('#homeJuni'):$('#bixHome .bubble')}); });
 }
 // Tapping Bixi (the bead) in a lesson plays one of his tap lines in his own bubble.
 function wireBixiTap(){ const el=$('#bixLesson'); if (!el || el._cltap) return; el._cltap=true;
@@ -1539,7 +1539,7 @@ let dictateToken=0, listenArmed=false, submitting=false;   // submitting: an ans
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
   locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
   const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ SpeedPanel.close(); b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
-  if (idx===0 && !reviewing && !LT) SpeedPanel.open('listen', b);   // a new set starts at the speed panel; its Start is this button
+  // Speed is saved per child and used right away — no speed panel each time; the gear (shown during the drill) opens it to adjust.
 }
 // Say a problem: "seven", "plus five", "minus two", "equals" - with settings.termGap of silence after each number (and
 // before "equals") and at settings.voiceRate. Used by Listen and by "Try it" in the speed panel. alive() turns false
@@ -1608,7 +1608,7 @@ function armFlash(p){
   flashDots(p.terms.length, 0); $('#flashAgain').style.display='none';
   $('#flashMsg').textContent = idx===0 && !reviewing ? 'Clear your abacus. Numbers pop up one at a time.' : 'Clear your abacus, then tap Ready.';
   const b=$('#flashGo'); b.style.display=''; b.onclick=()=>{ SpeedPanel.close(); b.style.display='none'; Speaker.unlock(); flash(p); };
-  if (idx===0 && !reviewing && !LT) SpeedPanel.open('flash', b);
+  // Speed is saved per child and used right away — no speed panel each time; the gear opens it to adjust.
 }
 /* ---- Speed panel: how fast the numbers come, on the Listen and Flash screens ----
    Two controls per mode (SPEED): Listen = voice speed + pause between numbers, Flash = time on screen + pause between

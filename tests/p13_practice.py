@@ -223,16 +223,16 @@ async def main():
         await pg.click('#exitDrill')
         # listen + flash screens (layout)
         await pg.evaluate("App.startMode('listen')"); await pg.wait_for_selector('#listenGo', state='visible')
-        # v4.2: the speed panel is back on the child's screen (owner's decision, no grown-ups gate): it opens before a set
-        # with the set's own Start button in it, and a gear disc reopens it; Grown-ups edits the same settings. See p20_speed.
-        check('Listen: numbers hidden; the speed panel (2 controls, Start) is on the child screen, the gear too, and the same settings are in Grown-ups', await pg.evaluate("getComputedStyle(document.getElementById('problemArea')).display==='none'")
-              and await pg.is_visible('#speedPop') and await pg.locator('#speedPop .sp-ctrl').count()==2 and await pg.locator('#speedPop #listenGo').count()==1 and await pg.is_visible('#speedGear')
+        # v4.10: speed is saved per child and used right away — no speed panel each time (that extra step was annoying).
+        # Ready starts the set on the stage; a gear disc reopens the panel to adjust; Grown-ups edits the same settings. See p20_speed.
+        check('Listen: numbers hidden; Ready is on the child screen, the gear too (no speed panel each time), and the settings are in Grown-ups', await pg.evaluate("getComputedStyle(document.getElementById('problemArea')).display==='none'")
+              and await pg.is_visible('#listenGo') and not await pg.is_visible('#speedPop') and await pg.is_visible('#speedGear')
               and await pg.locator('#parent #sGap').count()==1 and await pg.locator('#parent #sRate').count()==1 and await pg.locator('#parent #sFlash').count()==1)
         await shot(pg, 'listen_ready')
         check('child targets >= 60px on Listen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
         fit = "(()=>{ const els=['#checkBtn','#toolSwitch','#listenStage','#flashStage'].map(q=>document.querySelector(q)).concat([...document.querySelectorAll('#answerTool .abx-svg, #padKeys .toy-keypad')]).filter(e=>e.getClientRects().length); return els.every(e=>{ const r=e.getBoundingClientRect(); return r.bottom<=innerHeight && r.right<=innerWidth && r.left>=0; }); })()"
         for k in range(2):
-            ok = await pg.evaluate(fit); await pg.evaluate("document.querySelector('#toolSwitch').click()"); await pg.wait_for_timeout(150)   # (the speed panel is over the table until Start)
+            ok = await pg.evaluate(fit); await pg.evaluate("document.querySelector('#toolSwitch').click()"); await pg.wait_for_timeout(150)   # (Ready sits on the stage; the panel only opens from the gear)
             check(f'Listen ({(await drill(pg))["tool"]=="keys" and "beads" or "keys"}): card, answer tool and Check all fit on screen', ok)
         off = "document.querySelector('#checkBtn').disabled && [...document.querySelectorAll('#pad [data-k]')].filter(b=>b.dataset.k!=='go').every(b=>b.disabled) && document.querySelector('#answerTool').classList.contains('waiting')"
         check('Listen: keypad + Check disabled (dimmed) before the numbers are read', await pg.evaluate(off))
