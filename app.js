@@ -746,7 +746,10 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false}); Fun.Mascot.say(bp, 'Pick a game! Every game gives a sticker.', 0, 'play_pick'); show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
+function goPlay(){ Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false});
+  // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
+  Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');
+  show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ Games.stop(); Games.leave(); });
@@ -816,16 +819,21 @@ function renderRoom(){
 }
 function goRoom(){
   renderRoom(); show('room');
-  const br=$('#bixRoom'); toyBix(br, 'happy', {size:110});
-  const [text, vid] = Treats.jarLine(); Fun.Mascot.say(br, text, 0, vid);
+  // Bixi shrinks to a quiet sidekick on the table; Juni leads the jar line from the window moon.
+  const br=$('#bixRoom'); toyBix(br, 'happy', {size:84}); Fun.Mascot.quiet(br);
+  const [text, vid] = Treats.jarLine();   // Treats.jarLine() feeds only here: its state (via vid) picks Juni's key, caption keeps its dynamic text
+  const jKey = vid==='shop_pick' ? 'j_room_jar_pick' : vid==='shop_saving' ? 'j_room_jar_saving' : 'j_room_jar_full';
+  const jText = vid==='shop_pick' ? 'Pick a treat to save for. Tap Treats.' : vid==='shop_saving' ? text : 'Your jar is full enough for your treat!';
+  juniSayOn($('#roomJuni'), $('#roomSky'), jKey, jText);
 }
 $('#exitRoom').addEventListener('click', ()=>{ renderHome(); show('home'); });
 $('#roomStickers').addEventListener('click', ()=>{ Sfx.tap(); goAlbum(); });
 $('#roomGarden').addEventListener('click', ()=>{
   Sfx.boing(); const pot=$('#garden'); pot.classList.remove('wiggle'); void pot.offsetWidth; pot.classList.add('wiggle');
   const n=Object.keys(days).filter(k=>k.startsWith(todayKey().slice(0,8))).length, br=$('#bixRoom');
-  Fun.Mascot.react(br,'happy');
-  Fun.Mascot.say(br, n ? `${n} flower${n===1?'':'s'} this month! Every day you practise, a new one grows.` : 'Practise today and a flower will grow!', 0, null);
+  Fun.Mascot.react(br,'happy');   // Bixi gives the happy wiggle; Juni says the garden line (caption keeps the "N flowers" count)
+  if (n) juniSayOn($('#roomJuni'), $('#roomSky'), 'j_room_garden', `${n} flower${n===1?'':'s'} this month! Every day you practise, a new one grows.`);
+  else juniSayOn($('#roomJuni'), $('#roomSky'), 'j_room_garden_none', 'Practise today and a flower will grow!');
 });
 $('#jar').addEventListener('click', ()=>{ Sfx.tap(); Treats.open(); });
 $('#roomWish').addEventListener('click', ()=>{ Sfx.tap(); Treats.wish(); });

@@ -34,7 +34,7 @@ async def main():
         await pg.click('.tcard.tpick:has-text("Ice cream")'); await pg.click('.tcard.hi:has-text("Ice cream") [data-goal]'); await pg.wait_for_timeout(300)
         check('save for the ice cream outing', await pg.locator('.tcard.goal:has-text("Ice cream")').count()==1, await pg.text_content('#bixShop .bubble'))
         await pg.click('#exitShop'); await pg.wait_for_selector('#room.active'); await pg.wait_for_timeout(300)
-        check('jar shows the goal tag + Bix counts the beads still to go', 'Ice cream' in await pg.text_content('#jar .jar-sub') and await pg.locator('#jar .j-goal').count()==1 and 'more bead' in await pg.text_content('#bixRoom .bubble'), f"{await pg.text_content('#jar .jar-sub')} | {await pg.text_content('#bixRoom .bubble')}")
+        check('jar shows the goal tag + Juni counts the beads still to go (Bixi mounted)', 'Ice cream' in await pg.text_content('#jar .jar-sub') and await pg.locator('#jar .j-goal').count()==1 and 'more bead' in await pg.text_content('#roomJuni') and await pg.locator('#bixRoom .bix').count()>=1, f"{await pg.text_content('#jar .jar-sub')} | {await pg.text_content('#roomJuni')}")
         await pg.screenshot(path='/tmp/p3_home_jar.png'); await pg.click('#exitRoom')
         # grown-up adds beads
         await gate(pg); await pg.click('[data-adj="5"]'); await pg.click('[data-adj="1"]'); bead_txt = await pg.text_content('#tpBeads')
