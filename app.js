@@ -647,8 +647,9 @@ function renderHome(opts){
   // app visit (the first time sound is allowed) and again when today is finished; otherwise the bubbles just show.
   const canTalk = !!Speaker.gestured;   // sound is allowed once the child has tapped once
   if (!settings.name){
-    $('#homeJuni').classList.remove('on');
-    Fun.Mascot.say(bh, "I don't know your name yet! Tap me to tell me.", 0, canTalk ? 'ask_name' : null, 'ask_name');
+    // Juni leads the name ask from the window; tapping the moon opens the box. Bixi stays a quiet sidekick.
+    Fun.Mascot.quiet(bh);
+    juniSayOn($('#homeJuni'), $('#homeSky'), 'j_home_name', "I don't know your name yet. Tap me and tell me!");
   } else {
     const [jKey, jText] = juniGreet(allDone), [bKey, bText] = bixiCount(steps, allDone);
     const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
@@ -676,15 +677,13 @@ $('#doorRoomIc').innerHTML = TOY.icon('room', 46, 'currentColor');
 $('#homeShelf').innerHTML = TOY.prop('rainbow', 150) + TOY.prop('plant', 170);
 $('#homeLoose').innerHTML = TOY.bead('mustard', 64) + TOY.bead('teal', 72) + TOY.bead('indigo', 58);
 $('#homeBowl').innerHTML = TOY.prop('bowl', 190);
-// Tapping Bix on the home screen asks for a name if the device doesn't have one yet.
-// (The box opens while the tap is still being handled, so that the keyboard may open with it: see Typing.)
-$('#bixHome').addEventListener('pointerup', e=>{ if (settings.name || !e.target.closest('.bix') || $('#nameAsk').classList.contains('active')) return; openNameAsk(); });
+// Juni (the moon) asks for a name when the device doesn't have one yet; tapping the moon opens the box
+// (wired in wireMoonTap, which opens it during the tap so the keyboard may open with it: see Typing).
 function openNameAsk(){
-  Fun.Mascot.say($('#bixHome'), "I don't know your name yet! Tap me to tell me.", 0, 'ask_name');
   toyBix($('#bixName'), 'happy', {bubble:false});
   $('#nameAskIn').value=''; $('#nameAsk').classList.add('active'); Typing.afterTap($('#nameAskIn'), ()=>$('#nameAsk').classList.contains('active'));
 }
-function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ Typing.focus($('#nameAskIn')); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); Sfx.ok(); homeGreetSeq++; renderHome({quietGreet:true}); Fun.Mascot.react($('#bixHome'),'cheer'); Fun.Mascot.say($('#bixHome'), `Hi, ${n}! Now I know you!`, 0, 'got_name'); }
+function saveAskedName(){ const n=$('#nameAskIn').value.trim().replace(/\s+/g,' ').slice(0,20); if(!n){ Typing.focus($('#nameAskIn')); Fun.Mascot.react($('#bixName'),'oops'); return; } settings.name=n; saveSettings(); $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); Sfx.ok(); homeGreetSeq++; renderHome({quietGreet:true}); Fun.Mascot.react($('#bixHome'),'cheer'); juniSayOn($('#homeJuni'), $('#homeSky'), 'j_intro_meet', `Hi, ${n}! Lovely to meet you!`); }
 $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>{ $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); });
@@ -918,9 +917,10 @@ function renderDoor(){
   const props=$('#doorProps'); if (!props.innerHTML) props.innerHTML=TOY.prop('rainbow', 150)+TOY.prop('plant', 170);
   toySky($('#doorSky'));
   renderDoorPath();
-  const bd=$('#bixDoor'); toyBix(bd, 'happy', {size:190});
-  if (sums) bixSay(bd, 'How do you want to play with numbers?', 'door_ask');
-  else bixSay(bd, 'First we get to know the beads. Sums come next!', null);
+  // Bixi stays on the table as a quiet, waving sidekick; Juni (the moon) leads the line from the window.
+  const bd=$('#bixDoor'); toyBix(bd, 'wave', {size:190}); Fun.Mascot.quiet(bd);
+  if (sums) juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_play', 'How would you like to practise today?');
+  else juniSayOn($('#doorJuni'), $('#doorSky'), null, 'First we meet the beads. Sums come soon!');
   $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
 }
 // My path: every skill is a bead on one brass rod that winds across the table. Learned beads are glossy teal, the
@@ -946,7 +946,7 @@ function renderDoorPath(){
     if (i<ci) out.push(`<div class="dp-node done" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: learned">${TOY.bead('teal', HB, {tall:true})}<span class="dp-mark">${TOY.icon('check', R(34), '#fff', {stroke:3.6})}</span></button><span class="dp-name">${name}</span></div>`);
     else if (i===ci){ curX=cx;
       out.push(`<div class="dp-node cur" ${at(HC)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: you are here"><span class="dp-glow"></span>${TOY.bead('mustard', HC, {tall:true})}<span class="dp-mark">${TOY.icon('star', R(42), '#FFFDF6')}</span></button><span class="dp-name">${name}</span>`
-        +`<button class="toy-block toy-block--teal toy-block--sm dp-learn" id="doorLearn">${TOY.icon('play', 26, '#fff')}<span class="toy-block-label">Learn it with Bix</span></button></div>`); }
+        +`<button class="toy-block toy-block--teal toy-block--sm dp-learn" id="doorLearn">${TOY.icon('play', 26, '#fff')}<span class="toy-block-label">Learn it</span></button></div>`); }
     else out.push(`<div class="dp-node locked" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: not yet">${TOY.bead('wood', HB, {tall:true})}<span class="dp-mark">${TOY.icon('lock', R(28), 'currentColor', {accent:'#F6D9AA'})}</span></button><span class="dp-name">${name}</span></div>`);
   });
   const W=x+R(26), ends=[[-30, pts[0][1]]].concat(pts, [[W+30, pts[pts.length-1][1]]]);
@@ -957,9 +957,10 @@ function renderDoorPath(){
   p.scrollLeft=Math.max(0, curX-p.clientWidth*.42);
   p.querySelectorAll('.dp-node .dp-bead').forEach(b=>b.onclick=()=>{
     const i=NODE_IDX[b.dataset.node], bd=$('#bixDoor'); Sfx.tap();
-    if (i>ci){ replay(b, 'td-shake'); bixSay(bd, 'Locked! Finish the skills before it to open it.', 'locked', 3500); }
-    else if (i<ci){ replay(b, 'td-pop'); bixSay(bd, 'You already know this one. Great job!', 'path_done', 3500); }
-    else bixSay(bd, 'This is your skill right now! Tap “Learn it with Bix”.', 'path_here', 3500);
+    // Juni leads the word from the window; Bixi stays quiet but still reacts beside her.
+    if (i>ci){ replay(b, 'td-shake'); Fun.Mascot.react(bd, 'oops'); juniSayOn($('#doorJuni'), $('#doorSky'), 'j_path_locked', 'Not yet! Finish the skills before it to open this one.', 3500); }
+    else if (i<ci){ replay(b, 'td-pop'); Fun.Mascot.react(bd, 'cheer'); juniSayOn($('#doorJuni'), $('#doorSky'), 'j_path_done', 'You’ve already learned this one. Well done!', 3500); }
+    else { Fun.Mascot.react(bd, 'happy'); juniSayOn($('#doorJuni'), $('#doorSky'), 'j_path_here', 'This is your skill right now. Tap Learn to start.', 3500); }
   });
   $('#doorLearn').onclick=()=>{ Speaker.unlock(); startLesson(lessonTarget(NODES[curIdx()]), 'door'); };
 }
@@ -1224,7 +1225,10 @@ function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
   sky.classList.add('cl-moon-tap');
   const m=sky.querySelector('.toy-moon'); if (m && !m.getAttribute('role')){ m.setAttribute('role','button'); m.setAttribute('aria-label', TOY.moonName); m.tabIndex=0; }
   if (sky._cltap) return; sky._cltap=true;
-  sky.addEventListener('click', ()=>{ if (!CL()) return; Speaker.unlock(); CL().Silly.tapJuni({figure:sky, bubble:sel==='#lessonSky'?$('#lessonCap'):$('#bixHome .bubble')}); });
+  sky.addEventListener('click', ()=>{
+    // On home, before we know the child's name, a moon tap opens the name box instead of playing a fact.
+    if (sel==='#homeSky' && !settings.name){ if (!$('#nameAsk').classList.contains('active')){ Speaker.unlock(); openNameAsk(); } return; }
+    if (!CL()) return; Speaker.unlock(); CL().Silly.tapJuni({figure:sky, bubble:sel==='#lessonSky'?$('#lessonCap'):$('#bixHome .bubble')}); });
 }
 // Tapping Bixi (the bead) in a lesson plays one of his tap lines in his own bubble.
 function wireBixiTap(){ const el=$('#bixLesson'); if (!el || el._cltap) return; el._cltap=true;
@@ -2039,7 +2043,8 @@ function openGate(next){
   GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   gateAnswer=-1; window.__gateAnswer=null;
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
-  toySky('#gateSky'); show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); bixSay(bg, 'This part is for a grown-up. Go get a grown-up!', 'gate_grownup');
+  toySky('#gateSky'); show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); Fun.Mascot.quiet(bg);
+  juniSayOn($('#gateJuni'), $('#gateSky'), 'j_gate_grownup', 'This part is for a grown-up. Can you go and get one?');
 }
 function leaveGate(){ gateCb=null; $('#gateA').blur(); GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
@@ -2276,9 +2281,10 @@ function showWho(){
   $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); Sfx.tap(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
   if (!$('#whoSky').innerHTML){ $('#whoSky').innerHTML=TOY.skyMoon('calm', 1);   /* nobody is picked yet: a neutral full moon, not somebody's phase */ $('#whoShelf').innerHTML=TOY.prop('rainbow', 150) + TOY.prop('plant', 170); }
   show('who');
-  const bw=$('#bixWho'); toyBix(bw, 'wave');
-  Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask');
-  if (!showWho.bound){ showWho.bound=true; $('#who').addEventListener('click', e=>{ if (!e.target.closest('button') && !showWho.spoke){ showWho.spoke=true; Fun.Mascot.say(bw, 'Who’s practising today?', 0, 'who_ask'); } }); }
+  const bw=$('#bixWho'); toyBix(bw, 'wave'); Fun.Mascot.quiet(bw);
+  // Juni (the moon) asks; her clip is already recorded (j_onboard_who). Bixi waves quietly beside the mat.
+  juniSayOn($('#whoJuni'), $('#whoSky'), 'j_onboard_who', 'Who’s practising today?');
+  if (!showWho.bound){ showWho.bound=true; $('#who').addEventListener('click', e=>{ if (!e.target.closest('button') && !showWho.spoke){ showWho.spoke=true; juniSayOn($('#whoJuni'), $('#whoSky'), 'j_onboard_who', 'Who’s practising today?'); } }); }
 }
 $('#switchKid').addEventListener('click', ()=>{ sessionStorage.removeItem('abacus.who'); showWho(); });
 
