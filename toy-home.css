@@ -19,7 +19,7 @@
    One grid for the whole table. --u is one design pixel (1180x820 landscape, 820x1180 portrait),
    so every object keeps its place and proportion on each iPad.
    ===================================================================== */
-#home.th{--u:min(.084746vw,.121951vh);--toy-wall-h:clamp(calc(var(--u)*248),calc(100vh - var(--u)*516),calc(var(--u)*332));--toy-window-x:calc(var(--u)*230);--toy-plank:calc(var(--u)*124);
+#home.th{--u:min(.084746vw,.121951vh);--toy-wall-h:clamp(calc(var(--u)*244),calc(100vh - var(--u)*548),calc(var(--u)*300));--toy-window-x:calc(var(--u)*230);--toy-plank:calc(var(--u)*124);
   grid-template-columns:calc(var(--u)*306) minmax(0,1fr) calc(var(--u)*262);
   grid-template-rows:var(--toy-wall-h) minmax(0,1fr) auto auto;
   gap:0 calc(var(--u)*14);padding:0 calc(var(--u)*30) calc(var(--u)*15) calc(var(--u)*14);box-sizing:border-box;overflow:hidden}
@@ -55,15 +55,28 @@
   font:700 15px/1.3 var(--toy-display);text-transform:capitalize;color:#fff;background:linear-gradient(var(--toy-red,#E5402F),#c0301f);clip-path:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),2px 3px 6px rgba(58,30,6,.28)}
 .th-bub-sub{display:block;text-wrap:balance;font:400 max(18px,calc(var(--u)*21))/1.35 var(--toy-body)}
 
-/* Juni leads: her greeting bubble sits up by the window, under the moon. Tail points up-left to her. */
-#homeJuni.th-jbub{position:absolute;z-index:5;left:calc(var(--toy-window-x) + var(--u)*132);top:calc(var(--toy-wall-h) - var(--u)*34);
-  box-sizing:border-box;max-width:calc(var(--u)*440);min-width:calc(var(--u)*150);padding:calc(var(--u)*15) calc(var(--u)*26) calc(var(--u)*17);
-  border-radius:calc(var(--u)*26);background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
-  font:600 max(20px,calc(var(--u)*25))/1.3 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(58,30,6,.3);visibility:hidden}
-#homeJuni.th-jbub.on{visibility:visible}
-#homeJuni.th-jbub.pop{animation:toy-saypop .34s cubic-bezier(.2,1.4,.4,1) both}
-#homeJuni.th-jbub::before{content:"";position:absolute;left:calc(var(--u)*40);top:calc(var(--u)*-18);width:calc(var(--u)*34);height:calc(var(--u)*30);
-  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(0 100%,55% 0,100% 100%)}
+/* Juni leads: her words hang from the window on two little cords, a sign that sits at the sill line
+   just below the moon — in her world (the window), never dropped over the beads on the table. */
+#homeJuni.th-jbub{position:absolute;z-index:5;
+  left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*1.075);transform:translateX(-50%);
+  top:calc(var(--toy-wall-h) - var(--u)*64);transform-origin:50% calc(var(--u)*-26);
+  box-sizing:border-box;max-width:min(calc(var(--u)*430),calc((var(--toy-wall-h) - 16px)*1.9));min-width:calc(var(--u)*150);
+  padding:calc(var(--u)*13) calc(var(--u)*26) calc(var(--u)*15);text-align:center;text-wrap:balance;
+  border-radius:calc(var(--u)*22);background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
+  font:600 max(19px,calc(var(--u)*24))/1.26 var(--toy-display);
+  box-shadow:inset 0 2px 0 #fff,inset 0 0 0 2px rgba(255,243,216,.6),5px 9px 15px rgba(58,30,6,.28);visibility:hidden}
+#homeJuni.th-jbub.on{visibility:visible;animation:th-sign-sway 6s ease-in-out infinite}
+#homeJuni.th-jbub.pop{animation:th-sign-in .4s cubic-bezier(.2,1.4,.4,1) both,th-sign-sway 6s ease-in-out .4s infinite}
+/* two cords rise from the sign's shoulders to small pegs tucked under the sill */
+#homeJuni .th-jhang{position:absolute;left:14%;right:14%;top:calc(var(--u)*-25);height:calc(var(--u)*26);pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,#8a5a26 0 calc(var(--u)*5),transparent calc(var(--u)*5)) left -1px top/calc(var(--u)*12) calc(var(--u)*12) no-repeat,
+  radial-gradient(circle at 50% 50%,#8a5a26 0 calc(var(--u)*5),transparent calc(var(--u)*5)) right -1px top/calc(var(--u)*12) calc(var(--u)*12) no-repeat}
+#homeJuni .th-jhang::before,#homeJuni .th-jhang::after{content:"";position:absolute;top:calc(var(--u)*3);bottom:calc(var(--u)*-2);width:calc(var(--u)*4);
+  background:linear-gradient(#c79e5c,#a87b3b);border-radius:2px;transform-origin:50% 0}
+#homeJuni .th-jhang::before{left:0;transform:rotate(13deg)}
+#homeJuni .th-jhang::after{right:0;transform:rotate(-13deg)}
+@keyframes th-sign-in{0%{opacity:0;transform:translateX(-50%) rotate(-5deg) scale(.86)}100%{opacity:1;transform:translateX(-50%) rotate(-1.4deg) scale(1)}}
+@keyframes th-sign-sway{0%,100%{transform:translateX(-50%) rotate(-1.4deg)}50%{transform:translateX(-50%) rotate(1.4deg)}}
 
 /* The moon in the window is Juni, the main character: she fills her window pane (larger than before and than the
    sidekick on the table) and glows brighter, while staying inside the one pane (never across the bars). */
@@ -145,10 +158,10 @@
   .th-shelf .toy-prop:first-child{width:calc(var(--u)*120)}
   .th-shelf .toy-prop:last-child{width:calc(var(--u)*150)}
   .th-lock{top:calc(var(--u)*20)}
-  #bixHome > .bix{--tb:calc(var(--u)*202);grid-row:2;align-self:end;margin:0 calc(var(--u)*-14) calc(var(--u)*6)}
+  #bixHome > .bix{--tb:calc(var(--u)*190);grid-row:2;align-self:end;margin:0 calc(var(--u)*-14) calc(var(--u)*-26) calc(var(--u)*-30);justify-self:start}
   #bixHome .bubble{grid-column:2/4;grid-row:2;align-self:start;max-width:min(calc(var(--u)*380),100%);margin:calc(var(--u)*118) 0 0 calc(var(--u)*18)}
   #bixHome .bubble::before{left:-26px;bottom:auto;top:28px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
-  #homeJuni.th-jbub{left:calc(var(--toy-window-x) + var(--u)*126);top:calc(var(--toy-wall-h) - var(--u)*34);max-width:calc(var(--u)*380)}
+  #homeJuni.th-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*1.075);top:calc(var(--toy-wall-h) - var(--u)*58);max-width:min(calc(var(--u)*300),calc(100vw - var(--u)*150))}
   .th-today{grid-column:1/-1;grid-row:3;justify-self:center;width:calc(var(--u)*600);margin:calc(var(--u)*34) 0 0}
   #home .th-start{grid-column:1/-1;grid-row:4;margin:calc(var(--u)*40) 0 calc(var(--u)*30);--d:calc(var(--u)*240)}
   .th-loose{grid-row:4;align-self:center}
@@ -479,6 +492,6 @@ html.kb-short #nameAsk .tn-card{padding:18px 30px 20px;gap:12px}
 /* the grown-ups' calm setting: no idle motion */
 body.ws-calm .toy-bix-breathe,body.ws-calm .toy-lid,body.ws-calm #home .toy-moon-halo,body.ws-calm #who .toy-moon-halo,body.ws-calm #setup .toy-moon-halo{animation:none}
 @media (prefers-reduced-motion:reduce){
-  #todaySteps .step.just .th-bead,.tg-shake,.to-pop,.tn-card,#homeJuni.th-jbub.pop{animation:none}
+  #todaySteps .step.just .th-bead,.tg-shake,.to-pop,.tn-card,#homeJuni.th-jbub.pop,#homeJuni.th-jbub.on{animation:none;transform:translateX(-50%) rotate(-1.4deg)}
   #home .toy-sky-moon-in,#home .toy-tag,#who .who-card,.tg-holdbtn,.to-card,#setup .su-skill{transition:none}
 }
