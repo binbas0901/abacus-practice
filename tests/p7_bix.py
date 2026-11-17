@@ -46,7 +46,7 @@ async def main():
         await pg.evaluate("""window.__cl=[]; const op=Classroom.Voice.play.bind(Classroom.Voice);
           Classroom.Voice.play=function(c,id,f){ (Array.isArray(id)?id:[id]).forEach(x=>{ if(x) window.__cl.push(c+':'+x); }); return op(c,id,f); };""")
         await pg.mouse.click(600, 12); await pg.wait_for_timeout(6500); cl=await pg.evaluate("window.__cl.slice(0)"); await plays(pg)
-        check('first tap on an empty spot -> Juni greets first (j_hello_*), then Bixi', bool(cl) and cl[0].startswith('juni:j_hello_') and any(x.startswith('bixi:b_home_') for x in cl[1:]), cl)
+        check('first tap on an empty spot -> Juni greets alone (j_hello_*), no Bixi countdown', bool(cl) and cl[0].startswith('juni:j_hello_') and not any(x.startswith('bixi:b_home_') for x in cl[1:]), cl)
         await pg.click('#bixHome .bix'); await pg.wait_for_timeout(800); pl=[x['id'] for x in await plays(pg)]
         check('tapping Bix -> a joke/fact out loud', len(pl)==1 and pl[0].startswith('tap_'), pl)
         # 3. listening drill: Bix silent the whole time numbers are read and answered
@@ -59,14 +59,14 @@ async def main():
         pl=await plays(pg)
         check('Listen drill: Bix never talks (numbers stay clear)', len(pl)==0, [(x['id'],x['msg']) for x in pl])
         await pg.click('#exitDrill'); await pg.wait_for_timeout(300)
-        # 4. look drill with family feedback off: Bix starts and cheers
-        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_timeout(800)
+        # 4. look drill: Juni gives the intro (she leads now); Bixi only reacts
+        await pg.evaluate("window.__cl=[]"); await pg.evaluate("App.startMode('visual')"); await pg.wait_for_timeout(800)
         for i in range(4):
             d=await pg.evaluate("window.__drill()")
             for ch in str(d['answer']+(1 if i==2 else 0)): await pg.click(f'#pad [data-k="{ch}"]')
             await pg.click('#pad [data-k=go]'); await pg.wait_for_timeout(1100)
-        pl=[x['id'] for x in await plays(pg)]
-        check('Look drill: Bix says "You can do it!" (and sometimes cheers)', pl and pl[0]=='drill_look', pl)
+        cl=await pg.evaluate("window.__cl.slice(0)")
+        check('Look drill: Juni gives the intro (j_start_look)', any(x.startswith('juni:j_start_look') for x in cl), cl)
         await pg.click('#exitDrill'); await pg.wait_for_timeout(300)
         # 5. grown-ups: turn Bix off
         await pg.click('#grownups'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(500)

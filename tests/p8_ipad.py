@@ -60,7 +60,7 @@ async def main():
         # tap an empty spot (the top margin), not a button -> the two-speaker greeting: Juni (teacher) first, then Bixi.
         # (the init HOOK already records every clip to window.__cl as {char,id,...}; read those, don't double-hook Voice.play.)
         await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(6500); r=await take(pg); allrecs+=r; cl=await clrecs(pg)
-        check('returning: first tap anywhere -> Juni greets first (j_hello_*), then Bixi', bool(cl) and cl[0]['char']=='juni' and cl[0]['id'].startswith('j_hello_') and any(x['char']=='bixi' and (x['id'] or '').startswith('b_home_') for x in cl[1:]), [(x['char'],x['id']) for x in cl])
+        check('returning: first tap anywhere -> Juni greets alone (j_hello_*), no Bixi countdown', bool(cl) and cl[0]['char']=='juni' and cl[0]['id'].startswith('j_hello_') and not any(x['char']=='bixi' and (x['id'] or '').startswith('b_home_') for x in cl[1:]), [(x['char'],x['id']) for x in cl])
         for i in range(5): await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(250)
         await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r
         check('tapping Bix 5 times fast -> each new joke replaces the last, never two at once', len(r)>=1 and not overlaps(r), [x['id'] for x in r])
@@ -82,8 +82,8 @@ async def main():
             if not d: break
             for ch in str(d['answer']+(1 if i in (2,5) else 0)): await pg.tap(f'#pad [data-k="{ch}"]')
             await pg.tap('#pad [data-k=go]'); await pg.wait_for_timeout(1300)
-        await pg.wait_for_timeout(2500); r=await take(pg); allrecs+=r
-        check('Look drill: Bix starts, cheers, no overlaps', r and r[0]['id']=='drill_look' and not overlaps(r), [x['id'] for x in r])
+        await pg.wait_for_timeout(2500); r=await take(pg); allrecs+=r; clr=await clrecs(pg)
+        check('Look drill: Juni leads, Bixi only reacts, no voice overlaps', any(x['char']=='juni' for x in clr) and not overlaps(r), [x['id'] for x in r]+['|']+[(x['char'],x['id']) for x in clr])
         await ctx.close()
         # 3. text on screen matches what he says
         bad=[]

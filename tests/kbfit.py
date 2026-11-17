@@ -89,7 +89,7 @@ async def name_dialog(b, check, w, h, k, full):
     tag = f'{w}x{h} kb{k}'; vis = h - k
     ctx, pg, errs = await page(b, w, h)
     await pg.evaluate("()=>{ const st=JSON.parse(window.__legacy('settings')||'{}'); st.name=''; st.settingsVersion=5; localStorage.setItem('abacus.settings', JSON.stringify(st)); }"); await pg.reload(); await pg.wait_for_timeout(600); await pg.evaluate("document.documentElement.style.setProperty('--sat','%dpx')" % SAT)
-    await pg.tap('#bixHome .bix'); await pg.wait_for_selector('#nameAsk.active'); await pg.wait_for_timeout(400); await pg.evaluate("document.activeElement.blur()"); await pg.wait_for_timeout(200)
+    await pg.tap('#homeSky .toy-moon'); await pg.wait_for_selector('#nameAsk.active'); await pg.wait_for_timeout(400); await pg.evaluate("document.activeElement.blur()"); await pg.wait_for_timeout(200)
     normal = await pg.evaluate(RECTS, ['#nameAsk', '#nameAsk .tn-card', '#bixName .bix'] + NAME)
     await pg.tap('#nameAskIn'); await pg.wait_for_timeout(200); await kb(pg, k); st = await pg.evaluate(STATE); bad = await pg.evaluate(FIT, [NAME + ['#nameAsk .tn-card'], vis, SAT, False]) + await pg.evaluate(FIT, [NAME, vis, SAT, True])
     check(f'{tag} name dialog: title, box, Later and That\'s me (the whole card) inside the visible part, under the status bar, apart', st['up'] and st['vh'] == vis and not bad, str(st) + str(bad))

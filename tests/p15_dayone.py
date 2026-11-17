@@ -91,7 +91,7 @@ async def main():
         # Practice door on Beads: three blocks that all work, Bix explains
         await pg.click('#doorPractice'); await pg.wait_for_selector('#door.active'); await pg.wait_for_timeout(500)
         labs=await pg.eval_on_selector_all('#door .door-block .door-label','els=>els.map(e=>e.textContent)')
-        check('Practice door on Beads offers Learn / Make / Read, and Bix says why', labs==['Learn','Make','Read'] and 'Sums come next' in await pg.text_content('#bixDoor .bubble'), [labs, await pg.text_content('#bixDoor .bubble')])
+        check('Practice door on Beads offers Learn / Make / Read, and Juni says why', labs==['Learn','Make','Read'] and 'Sums come soon' in await pg.text_content('#doorJuni'), [labs, await pg.text_content('#doorJuni')])
         await pg.screenshot(path='/tmp/p15_door_beads.png')
         opened=[]
         for sel in ('#doorLook','#doorListen','#doorFlash'):
