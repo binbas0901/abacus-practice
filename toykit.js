@@ -571,10 +571,26 @@
       + `<button type="button" class="toy-key toy-key--del" data-k="del" aria-label="Delete">${icon('backspace', 40, 'currentColor', { stroke: 2.4 })}</button>`
       + '<button type="button" class="toy-key toy-key--zero" data-k="0">0</button></div></div>'
       + (opts.onCheck ? start(opts.checkLabel || 'Check', { icon: 'check', small: true, attrs: 'data-k="check"' }) : '');
-    el.addEventListener('click', e => {
+    // Respond on finger-DOWN, not click: on iPad a click only fires after the finger lifts and after Safari's
+    // double-tap-to-zoom wait, so a child's fast taps feel laggy and some get dropped. pointerdown is immediate.
+    // A `click` fallback stays for keyboard/AT and non-pointer environments, de-duped so a tap never fires twice.
+    const fire = b => { const k = b.dataset.k;
+      if (k === 'del') { if (opts.onBackspace) opts.onBackspace(); } else if (k === 'check') { if (opts.onCheck) opts.onCheck(); } else if (opts.onKey) opts.onKey(k); };
+    let lastPD = 0, pressed = null;
+    const unpress = () => { if (pressed) { pressed.classList.remove('is-pressed'); pressed = null; } };
+    el.addEventListener('pointerdown', e => {
       const b = e.target.closest('button[data-k]'); if (!b || b.disabled) return;
-      const k = b.dataset.k;
-      if (k === 'del') { if (opts.onBackspace) opts.onBackspace(); } else if (k === 'check') { if (opts.onCheck) opts.onCheck(); } else if (opts.onKey) opts.onKey(k);
+      lastPD = e.timeStamp || Date.now(); e.preventDefault();          // suppress the ghost click that follows
+      pressed = b; b.classList.add('is-pressed');                      // instant visual feedback, even where :active lags
+      fire(b);
+    });
+    el.addEventListener('pointerup', unpress);
+    el.addEventListener('pointercancel', unpress);
+    el.addEventListener('pointerleave', unpress);
+    el.addEventListener('click', e => {
+      if (((e.timeStamp || Date.now()) - lastPD) < 700) return;        // a pointerdown already handled this tap
+      const b = e.target.closest('button[data-k]'); if (!b || b.disabled) return;
+      fire(b);
     });
     container.appendChild(el);
     return {
