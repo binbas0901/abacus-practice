@@ -51,17 +51,16 @@ async def main():
         await pg.wait_for_selector('#suDone.on'); await pg.wait_for_timeout(2500)
         await pg.tap('#suStart'); await pg.wait_for_timeout(5000)
         cl=await clrecs(pg); bx=await take(pg); allrecs+=bx; clids=[(x['char'],x['id']) for x in cl]
-        check('setup talk-through (Juni leads, Bixi introduced) + home hello, no overlaps', ('juni','j_intro_meet') in clids and ('bixi','b_intro_hi') in clids and ('juni','j_intro_begin') in clids and any((x['id'] or '').startswith('hello_') for x in bx) and not overlaps(cl), [clids, [x['id'] for x in bx]])
+        check('setup talk-through (Juni leads, Bixi introduced) + home hello, no overlaps', ('juni','j_intro_meet') in clids and ('bixi','b_intro_hi') in clids and ('juni','j_intro_begin') in clids and any(s=='juni' and (i or '').startswith('j_hello_') for (s,i) in clids) and not overlaps(cl), [clids, [x['id'] for x in bx]])
         await ctx.close()
         # 2. returning child
         ctx,pg = await newpage(True); await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765'))
         await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, speakFeedback:false, gap:0.5, voice:'ljspeech', sfx:false}))"); await pg.reload(); await pg.wait_for_timeout(1500)
         check('returning: silent until she taps', len(await take(pg))==0)
         # tap an empty spot (the top margin), not a button -> the two-speaker greeting: Juni (teacher) first, then Bixi.
-        await pg.evaluate("""window.__cl=[]; const op=Classroom.Voice.play.bind(Classroom.Voice);
-          Classroom.Voice.play=function(c,id,f){ (Array.isArray(id)?id:[id]).forEach(x=>{ if(x) window.__cl.push(c+':'+x); }); return op(c,id,f); };""")
-        await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(6500); r=await take(pg); allrecs+=r; cl=await pg.evaluate("window.__cl.slice(0)")
-        check('returning: first tap anywhere -> Juni greets first (j_hello_*), then Bixi', bool(cl) and cl[0].startswith('juni:j_hello_') and any(x.startswith('bixi:b_home_') for x in cl[1:]), cl)
+        # (the init HOOK already records every clip to window.__cl as {char,id,...}; read those, don't double-hook Voice.play.)
+        await pg.touchscreen.tap(600, 12); await pg.wait_for_timeout(6500); r=await take(pg); allrecs+=r; cl=await clrecs(pg)
+        check('returning: first tap anywhere -> Juni greets first (j_hello_*), then Bixi', bool(cl) and cl[0]['char']=='juni' and cl[0]['id'].startswith('j_hello_') and any(x['char']=='bixi' and (x['id'] or '').startswith('b_home_') for x in cl[1:]), [(x['char'],x['id']) for x in cl])
         for i in range(5): await pg.tap('#bixHome .bix'); await pg.wait_for_timeout(250)
         await pg.wait_for_timeout(5000); r=await take(pg); allrecs+=r
         check('tapping Bix 5 times fast -> each new joke replaces the last, never two at once', len(r)>=1 and not overlaps(r), [x['id'] for x in r])

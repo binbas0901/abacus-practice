@@ -36,7 +36,7 @@ async def main():
         await pg.click('#suStart'); await pg.wait_for_timeout(2500)
         cl=await clplays(pg); bx=[x['id'] for x in await plays(pg)]
         pairs=[(x['src'],x['id']) for x in cl]
-        check('setup lines + home greeting', ('juni','j_intro_pick') in pairs and ('juni','j_intro_begin') in pairs and any(x and x.startswith('hello_') for x in bx), [pairs, bx])
+        check('setup lines + home greeting', ('juni','j_intro_pick') in pairs and ('juni','j_intro_begin') in pairs and any(s=='juni' and i.startswith('j_hello_') for (s,i) in pairs), [pairs, bx])
         await ctx.close()
         # 2. existing device: greeting on first tap on an empty spot (not on a button)
         ctx = await b.new_context(viewport={'width':1180,'height':820}); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); await pg.add_init_script(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)),'seed_init.js')).read()); await pg.add_init_script(HOOK)
