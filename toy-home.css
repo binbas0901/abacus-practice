@@ -45,7 +45,7 @@
 /* the table */
 .th-table,.th-bottom,#bixHome.th-bix{display:contents}
 /* Bixi is the smaller sidekick on the table (down from 344u), sitting in the lower-left corner. */
-#bixHome > .bix{--tb:calc(var(--u)*238);grid-column:1;grid-row:2/4;align-self:end;justify-self:center;margin:0 calc(var(--u)*-8) calc(var(--u)*30) calc(var(--u)*-18)}
+#bixHome > .bix{--tb:calc(var(--u)*202);grid-column:1;grid-row:2/4;align-self:end;justify-self:center;margin:0 calc(var(--u)*-8) calc(var(--u)*30) calc(var(--u)*-18)}
 /* Bixi's bubble: his bead countdown, near him on the left, clear of the rod, Start and the lock. Tail points down to the bead. */
 #bixHome .bubble{grid-column:1/3;grid-row:2;align-self:end;justify-self:start;z-index:2;max-width:min(calc(var(--u)*430),100%);
   margin:0 0 calc(var(--u)*28) calc(var(--u)*150);padding:calc(var(--u)*14) calc(var(--u)*24) calc(var(--u)*16);font-size:max(19px,calc(var(--u)*23))}
@@ -67,8 +67,8 @@
 
 /* The moon in the window is Juni, the main character: she fills her window pane (larger than before and than the
    sidekick on the table) and glows brighter, while staying inside the one pane (never across the bars). */
-#home .toy-sky-moon-in{width:calc(var(--_h)*1.17);height:calc(var(--_h)*1.17);transform:translate(-50%,-50%)}
-#home .toy-sky-moon .toy-moon-halo{opacity:.72}
+#home .toy-sky-moon-in{width:calc(var(--_h)*1.24);height:calc(var(--_h)*1.24);transform:translate(-50%,-50%)}
+#home .toy-sky-moon .toy-moon-halo{opacity:.92}
 
 /* today's three beads on their rod */
 .th-today{grid-column:2;grid-row:3;align-self:end;min-width:0;margin-bottom:calc(var(--u)*32)}
@@ -145,7 +145,7 @@
   .th-shelf .toy-prop:first-child{width:calc(var(--u)*120)}
   .th-shelf .toy-prop:last-child{width:calc(var(--u)*150)}
   .th-lock{top:calc(var(--u)*20)}
-  #bixHome > .bix{--tb:calc(var(--u)*238);grid-row:2;align-self:end;margin:0 calc(var(--u)*-14) calc(var(--u)*6)}
+  #bixHome > .bix{--tb:calc(var(--u)*202);grid-row:2;align-self:end;margin:0 calc(var(--u)*-14) calc(var(--u)*6)}
   #bixHome .bubble{grid-column:2/4;grid-row:2;align-self:start;max-width:min(calc(var(--u)*380),100%);margin:calc(var(--u)*118) 0 0 calc(var(--u)*18)}
   #bixHome .bubble::before{left:-26px;bottom:auto;top:28px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
   #homeJuni.th-jbub{left:calc(var(--toy-window-x) + var(--u)*126);top:calc(var(--toy-wall-h) - var(--u)*34);max-width:calc(var(--u)*380)}

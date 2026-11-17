@@ -595,17 +595,14 @@ let homeGreetSeq = 0;
 async function speakHomeGreeting(jKey, jText, bKey, bText){
   const CLr = window.Classroom; if (!CLr) return showHomeBubbles(jText, bText);
   const seq = ++homeGreetSeq;
-  const jb = $('#homeJuni'), bb = $('#bixHome .bubble'), sky = $('#homeSky'), bh = $('#bixHome');
-  Fun.Mascot.quiet(bh);                                   // keep Bixi's bubble closed until his turn
+  const jb = $('#homeJuni'), sky = $('#homeSky'), bh = $('#bixHome');
+  Fun.Mascot.quiet(bh);                                   // Bixi stays a quiet, waving sidekick; Juni is the lead and the only greeter
   await CLr.say(jKey, { who:'juni', text:jText, bubble:jb, figure:sky, ms:0 });
-  if (seq !== homeGreetSeq || !$('#home').classList.contains('active')) return;   // a newer render (or screen change) took over
-  await CLr.say(bKey, { who:'bixi', text:bText, bubble:bb, figure:bh, ms:0 });
 }
-// Show both greeting bubbles without playing audio (returning to home, or before the first tap).
+// Show Juni's greeting bubble without playing audio (returning to home, or before the first tap). Juni leads; Bixi has no competing bubble.
 function showHomeBubbles(jText, bText){
   const CLr = window.Classroom; if (!CLr) return;
   CLr.showBubble($('#homeJuni'), jText, 'juni', 0);
-  CLr.showBubble($('#bixHome .bubble'), bText, 'bixi', 0);
 }
 document.addEventListener('click', e=>{
   if (greeted || !$('#home').classList.contains('active')) return;
