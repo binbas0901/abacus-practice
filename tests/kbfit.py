@@ -99,7 +99,7 @@ async def name_dialog(b, check, w, h, k, full):
     check(f'{tag} name dialog: after blur the dialog is as it was', not st['up'] and st['sy'] == 0 and now == normal, str(now) + str(normal))
     at = await pg.evaluate(ATTR, '#nameAskIn'); check(f'{tag} name dialog box: words capitalised, no autocorrect, Done', at['cap'] == 'words' and at['corr'] == 'off' and at['hint'] == 'done', str(at))
     await pg.tap('#nameAskIn'); await kb(pg, k); await pg.keyboard.type('Mia'); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(400); await kb(pg, None); st = await pg.evaluate(STATE)
-    check(f'{tag} name dialog: Done saves the name, dialog and keyboard layout gone', await pg.locator('#nameAsk.active').count() == 0 and 'Mia' in await pg.text_content('#bixHome .bubble') and not st['up'] and st['sy'] == 0, str(st))
+    check(f'{tag} name dialog: Done saves the name, dialog and keyboard layout gone', await pg.locator('#nameAsk.active').count() == 0 and 'Mia' in await pg.text_content('#homeJuni') and not st['up'] and st['sy'] == 0, str(st))
     check(f'{tag} name dialog: no page errors', not errs, str(errs)); await ctx.close()
 
 async def setup_name(b, check, w, h, k):

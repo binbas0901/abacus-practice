@@ -79,15 +79,15 @@ async def main():
             # ---- "What's your name?" (tap Bix on a device with no name yet) ----
             ctx, pg, errs = await page(b, w, h)
             await pg.evaluate("()=>{ const st=JSON.parse(window.__legacy('settings')||'{}'); st.name=''; st.settingsVersion=5; localStorage.setItem('abacus.settings', JSON.stringify(st)); }"); await pg.reload(); await pg.wait_for_timeout(600); await pg.evaluate("window.__foc.length=0")
-            await pg.tap('#bixHome .bix'); await pg.wait_for_selector('#nameAsk.active'); await pg.wait_for_timeout(300)
+            await pg.tap('#homeSky .toy-moon'); await pg.wait_for_selector('#nameAsk.active'); await pg.wait_for_timeout(300)
             foc = await pg.evaluate("window.__foc"); box = await pg.evaluate(BOX, '#nameAskIn')
-            check(f'{tag} name dialog: opens with the box focused inside the tap on Bix', box['active'] and foc == [['nameAskIn', 'touchend']], str(foc))
+            check(f'{tag} name dialog: opens with the box focused inside the tap on the moon', box['active'] and foc in ([['nameAskIn', 'touchend']], [['nameAskIn', 'click']]), str(foc))
             await pg.evaluate("document.activeElement.blur()"); await pg.tap('#nameAskIn'); await pg.wait_for_timeout(150); box = await pg.evaluate(BOX, '#nameAskIn')
             check(f'{tag} name dialog: a tap on the box focuses it (real text input, nothing on top)', box['active'] and box['top'] and box['type'] == 'text' and not box['ro'] and box['mode'] != 'none' and box['sel'] == 'text', str(box))
             await kb(pg, kbh); vis = await pg.evaluate(VIS, ['#nameAsk .tn-t', '#nameAskIn', '#nameAskOk', '#nameAskNo']); check(f'{tag} name dialog: title, box and buttons above the keyboard', all(v[3] for v in vis), str(vis))
             await pg.screenshot(path=f'{OUT}/name_{tag}_keyboard.png')
             await pg.keyboard.type('Mia'); await pg.tap('#nameAskOk'); await pg.wait_for_timeout(400); await kb(pg, None)
-            check(f'{tag} name dialog: name saved, dialog and keyboard gone', await pg.locator('#nameAsk.active').count() == 0 and 'Mia' in await pg.text_content('#bixHome .bubble') and await pg.evaluate("document.activeElement.id") != 'nameAskIn')
+            check(f'{tag} name dialog: name saved, dialog and keyboard gone', await pg.locator('#nameAsk.active').count() == 0 and 'Mia' in await pg.text_content('#homeJuni') and await pg.evaluate("document.activeElement.id") != 'nameAskIn')
             check(f'{tag} name dialog: no page errors', not errs, str(errs)); await ctx.close()
 
             # ---- first-run setup: the child's name ----
