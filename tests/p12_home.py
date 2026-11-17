@@ -229,7 +229,7 @@ async def main():
         await pg.evaluate("sessionStorage.removeItem('abacus.who')"); await pg.reload(); await pg.wait_for_timeout(900)
         cards=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.textContent.trim())')
         fills=await pg.eval_on_selector_all('#whoList .who-card','els=>els.map(e=>e.querySelector(".toy-bead path").getAttribute("fill"))')
-        check("Who's practising: a card per child, each bead a different lacquer colour, Bix asks", cards==['Ava','Ben','Cy'] and len(set(fills))==3 and 'practising' in await pg.text_content('#bixWho .bubble'), f"{cards} {fills}")
+        check("Who's practising: a card per child, each bead a different lacquer colour, Juni asks", cards==['Ava','Ben','Cy'] and len(set(fills))==3 and 'practising' in await pg.text_content('#whoJuni'), f"{cards} {fills}")
         await pg.screenshot(path='/tmp/p12_who.png')
         await pg.click('#whoList .who-card:has-text("Ben")'); await pg.wait_for_timeout(1200)
         check('picking Ben opens his home; Switch child shows quietly', await pg.locator('#home.active').count()==1 and await pg.is_visible('#switchKid') and await pg.evaluate("App.settings.hasAbacus")==False)

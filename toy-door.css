@@ -55,6 +55,14 @@
 #door .td-bixspot .bubble::after{content:"";position:absolute;left:34px;bottom:-22px;width:50px;height:32px;background:var(--toy-paper-dk);clip-path:polygon(22% 0,100% 0,0 100%)}
 #door .td-bixspot .bubble .ws-text{flex:1;min-width:0}
 #door .td-bixspot .bubble .ws-say{flex:none;display:inline-flex;align-self:flex-start;line-height:0;opacity:1;color:var(--toy-indigo);margin-top:2px}
+/* Juni leads from the window: her paper bubble sits just under the moon, tail pointing up to her. (Bixi stays quiet below.) */
+#doorJuni.td-jbub{position:absolute;z-index:6;left:calc(var(--toy-window-x) + clamp(52px,6vw,96px));top:calc(var(--toy-wall-h) - 30px);
+  box-sizing:border-box;max-width:min(360px,40vw);min-width:120px;padding:13px 22px 15px;border-radius:22px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
+  font:600 clamp(18px,1.9vw,23px)/1.28 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(58,30,6,.3);visibility:hidden}
+#doorJuni.td-jbub.on{visibility:visible}
+#doorJuni.td-jbub.pop{animation:toy-saypop .34s cubic-bezier(.2,1.4,.4,1) both}
+#doorJuni.td-jbub::before{content:"";position:absolute;left:34px;top:-16px;width:30px;height:26px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(0 100%,55% 0,100% 100%)}
 
 /* the three toys: a maple block with a lacquer dome on it */
 #door .door-blocks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.3vw,32px);align-self:stretch;height:auto;min-height:0;max-height:340px;

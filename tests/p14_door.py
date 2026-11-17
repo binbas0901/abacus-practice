@@ -25,7 +25,7 @@ async def main():
         await door(pg)
         blocks=await pg.eval_on_selector_all('#door .door-block','els=>els.map(e=>e.textContent.trim())')
         check('door: Look, Listen, Flash blocks', blocks==['7+8−4Look','Listen','9Flash'] or [x[-6:].strip() for x in blocks]==['Look','Listen','Flash'], blocks)
-        check('door: Bix asks how to play', 'How do you want to play' in (await pg.text_content('#bixDoor .bubble') or ''))
+        check('door: Juni asks how to practise', 'How would you like to practise' in (await pg.text_content('#doorJuni') or ''))
         nodes=await pg.eval_on_selector_all('#doorPath .dp-node','els=>els.map(e=>[e.className.split(" ")[1], e.querySelector(".dp-name").textContent])')
         total=await pg.evaluate("Curriculum.NODES.length")
         check('path rod shows every skill as a bead: 5 learned, the current one, the rest still locked', len(nodes)==total and [n[0] for n in nodes]==['done']*5+['cur']+['locked']*(total-6), nodes)
@@ -40,9 +40,9 @@ async def main():
         sp=await pg.evaluate("(()=>{const b=document.querySelector('#bixDoor .bubble'), drawn=p=>{const c=getComputedStyle(b,p); return c.display!=='none' && !['none','normal'].includes(c.content) && c.maskImage!=='none'}; return {say:b.querySelectorAll('.ws-say').length, after:drawn('::after'), before:drawn('::before')}})()")
         check('door bubble: one speaker mark (no CSS pseudo-element icon)', sp['say']<=1 and not sp['after'] and not sp['before'], sp)
         await pg.click('#doorPath .dp-node.locked .dp-bead >> nth=0'); await pg.wait_for_timeout(200)
-        check('tapping a locked bead: Bix explains it is locked', 'Locked' in await pg.text_content('#bixDoor .bubble'))
+        check('tapping a locked bead: Juni explains it is locked', 'Not yet' in await pg.text_content('#doorJuni'))
         await pg.click('#doorPath .dp-node.done .dp-bead >> nth=0'); await pg.wait_for_timeout(200)
-        check('tapping a learned bead: Bix praises', 'already know' in await pg.text_content('#bixDoor .bubble'))
+        check('tapping a learned bead: Juni praises', 'already learned' in await pg.text_content('#doorJuni'))
         # each block starts its drill mode for the current skill
         for sel, m in (('#doorLook','visual'),('#doorListen','listen'),('#doorFlash','flash')):
             await door(pg); await pg.click(sel); await pg.wait_for_selector('#drill.active', timeout=5000)
@@ -163,7 +163,7 @@ async def main():
 
         # ---- gate: non-readers hear/see "get a grown-up"; See all skills goes through it ----
         await door(pg); await pg.click('#doorAll'); await pg.wait_for_selector('#gate.active')
-        check('gate: Bix says go get a grown-up, with a picture', 'grown-up' in await pg.text_content('#bixGate .bubble') and await pg.locator('#gateArt svg').count()==1)
+        check('gate: Juni says go get a grown-up, with a picture', 'grown-up' in await pg.text_content('#gateJuni') and await pg.locator('#gateArt svg').count()==1)
         # step 1: press and hold for 3 seconds (letting go early does nothing); step 2: a written digit-picking instruction
         check('gate opens on the hold step: no question, no answer box yet', await pg.is_visible('#gateHold') and not await pg.is_visible('#gateA') and not await pg.is_visible('#gateQ') and await pg.evaluate('window.__gateAnswer') is None)
         hb=await pg.eval_on_selector('#gateHold','e=>{const r=e.getBoundingClientRect(); return [r.x+r.width/2, r.y+r.height/2, r.height]}')
