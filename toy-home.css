@@ -58,7 +58,7 @@
 /* Juni leads: her words hang from the window on two little cords, a sign that sits at the sill line
    just below the moon — in her world (the window), never dropped over the beads on the table. */
 #homeJuni.th-jbub{position:absolute;z-index:5;
-  left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*1.075);transform:translateX(-50%);
+  left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*0.6);transform:translateX(-50%);
   top:calc(var(--toy-wall-h) - var(--u)*64);transform-origin:50% calc(var(--u)*-26);
   box-sizing:border-box;max-width:min(calc(var(--u)*430),calc((var(--toy-wall-h) - 16px)*1.9));min-width:calc(var(--u)*150);
   padding:calc(var(--u)*13) calc(var(--u)*26) calc(var(--u)*15);text-align:center;text-wrap:balance;
@@ -162,7 +162,7 @@
   #bixHome > .bix{--tb:calc(var(--u)*190);grid-row:2;align-self:end;margin:0 calc(var(--u)*-14) calc(var(--u)*-26) calc(var(--u)*-30);justify-self:start}
   #bixHome .bubble{grid-column:2/4;grid-row:2;align-self:start;max-width:min(calc(var(--u)*380),100%);margin:calc(var(--u)*118) 0 0 calc(var(--u)*18)}
   #bixHome .bubble::before{left:-26px;bottom:auto;top:28px;width:36px;height:40px;clip-path:polygon(100% 0,100% 70%,0 100%)}
-  #homeJuni.th-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*1.075);top:calc(var(--toy-wall-h) - var(--u)*58);max-width:min(calc(var(--u)*300),calc(100vw - var(--u)*150))}
+  #homeJuni.th-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*0.98);top:calc(var(--toy-wall-h) - var(--u)*58);max-width:min(calc(var(--u)*288),calc(100vw - var(--u)*170))}
   .th-today{grid-column:1/-1;grid-row:3;justify-self:center;width:calc(var(--u)*600);margin:calc(var(--u)*34) 0 0}
   #home .th-start{grid-column:1/-1;grid-row:4;margin:calc(var(--u)*40) 0 calc(var(--u)*30);--d:calc(var(--u)*240)}
   .th-loose{grid-row:4;align-self:center}
