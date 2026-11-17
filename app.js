@@ -1302,6 +1302,22 @@ const PB = {
   },
 };
 PB.mount();   // mounted up front, so the first problem's tiles are sized with the bubble already in place
+// Juni is the lead teacher in Practice: her words show in #drillJuni and the window moon (#drillSky) talks. Bixi (PB) stays
+// mounted as the reacting sidekick (his cheer/groan is reactVoice; his bubble hides when it has no line). Reuse recorded j_*
+// keys where we have them; otherwise pass text only (silent until the recording stream ships that clip).
+const JB = {
+  base:null, cur:null, t:null,
+  bubble(){ return $('#drillJuni'); },
+  figure(){ return $('#drillSky'); },
+  show(text, key){ this.cur={text:text||'', key:key||null}; const b=this.bubble(); if (b) b.classList.toggle('empty', !text); juniSayOn(this.bubble(), this.figure(), key||null, text==null?'':text, 0); },
+  // the line Juni returns to for this problem (the instruction); silent is fine
+  setBase(text, key){ this.base={text:text||'', key:key||null}; this.show(text, key); },
+  // a reaction; after ms she returns to the base instruction
+  say(text, key, ms){ this.show(text, key); clearTimeout(this.t); if (ms && this.base){ const b=this.base; this.t=setTimeout(()=>{ if (this.base===b) this.show(b.text, null); }, ms); } },
+  replay(){ const c=this.cur; if (!c || !c.key || !CL() || App.quietNow()) return; Speaker.unlock(); CL().say(c.key, {who:'juni', figure:this.figure()}); },
+  clear(){ clearTimeout(this.t); this.base=null; this.cur=null; const b=this.bubble(); if (b){ b.classList.remove('on'); b.classList.add('empty'); const t=b.querySelector('.ctext'); if (t) t.textContent=''; } },
+};
+if ($('#drillJuni')) $('#drillJuni').addEventListener('click', ()=>JB.replay());
 
 /* ---- the answer tool: keypad (the toy kit's wooden keys on felt, same key order as before) or on-screen soroban (AbacusInput) ---- */
 const Keys = TOY.keypad($('#padKeys'), { 
@@ -1335,7 +1351,7 @@ const Tool = {
     if (beads && problems[idx]) this.ensureAb(this.rodsForSet());
     this.readout();
   },
-  switchTo(kind){ this.kind=kind; Fun.data.answerTool=kind; Fun.save(); this.apply(); if (kind==='beads'){ this.ab.clear({animate:false}); this.readout(); PB.setBase(baseLine(), baseMood()); } else setEntry(''); markTiles(); },
+  switchTo(kind){ this.kind=kind; Fun.data.answerTool=kind; Fun.save(); this.apply(); if (kind==='beads'){ this.ab.clear({animate:false}); this.readout(); JB.setBase(baseLine()); } else setEntry(''); markTiles(); },
   reset(){ verdict(null); setEntry(''); if (this.kind==='beads' && problems[idx]){ this.ensureAb(this.rodsForSet()).clear({animate:false}); } this.readout(); },
   // Listen / Flash: the keypad, the beads and Check wait (dimmed) until the numbers are done and Bix asks "Your answer?".
   setReady(on){ $('#answerTool').classList.toggle('waiting', !on); Keys.setEnabled(on); $('#checkBtn').disabled=!on; },
@@ -1344,7 +1360,7 @@ const Tool = {
   changed(v){
     this.readout(); markTiles();
     if (LT || demoing) return;
-    clearTimeout(this.sayT); this.sayT=setTimeout(()=>{ if ($('#drill').classList.contains('active') && !locked && this.ab.moves().length) PB.say(`Your beads show ${this.ab.value()}. Tap Check!`, 'happy'); }, 900);
+    clearTimeout(this.sayT); this.sayT=setTimeout(()=>{ if ($('#drill').classList.contains('active') && !locked && this.ab.moves().length) JB.say(`Your beads show ${this.ab.value()}. Tap Check!`, null); }, 900);
   },
 };
 $('#toolSwitch').addEventListener('click', ()=>{ Sfx.tap(); Tool.switchTo(Tool.kind==='beads' ? 'keys' : 'beads'); });
@@ -1362,16 +1378,20 @@ function segmentMoves(terms, moves){
 }
 // Gentle method feedback for a RIGHT answer made on the on-screen beads. Never turns a right answer wrong.
 const RULE_RANK={direct:0, five:1, ten:2, combined:3};
+// Juni's recorded praise for a clean friend move (caption matches the clip in audio/lines-manifest.js).
+const PRAISE_TEXT={ j_praise_sf:'You used a small friend. Nice work.', j_praise_bf:'You used a big friend. Nice work.', j_praise_both:'Both friends together. Two tricks in one move.' };
+const PRAISE_KEY=[null, 'j_praise_sf', 'j_praise_bf', 'j_praise_both'];   // by RULE_RANK: five->sf, ten->bf, combined->both
 function methodFeedback(p){
   if (Tool.kind!=='beads' || !Tool.ab || p.op==='mul') return null;
   const segs=segmentMoves(p.terms, Tool.ab.moves());
   if (segs.length<p.terms.length) return null;            // worked some of it in the head: nothing to say about the beads
   const res=segs.map(s=>AbacusInput.checkMethod(s.from, s.term, s.moves));
   const bad=res.find(r=>!r.ok);
-  if (bad) return { ok:false, text:`Yes, ${p.answer}! ${bad.hint.replace(/ \(.*\)/, '')}` };   // the short form fits Bix's two-line bubble
+  if (bad) return { ok:false, text:`Yes, ${p.answer}! ${bad.hint.replace(/ \(.*\)/, '')}` };   // the short form fits the two-line bubble
   const best=res.slice().sort((a,b)=>Math.max(-1,...b.expected.rules.map(r=>RULE_RANK[r]))-Math.max(-1,...a.expected.rules.map(r=>RULE_RANK[r])))[0];
-  const usedFriend=best && best.expected.rules.some(r=>r!=='direct');
-  return { ok:true, text: usedFriend ? best.hint : null };
+  const rank=best ? Math.max(-1,...best.expected.rules.map(r=>RULE_RANK[r])) : -1;
+  const usedFriend=rank>=1;   // a non-direct rule (small/big/combined friend) was the headline move
+  return { ok:true, text: usedFriend ? best.hint : null, key: usedFriend ? PRAISE_KEY[rank] : null };
 }
 
 /* ---- problem tiles, bead rod, time beads ---- */
@@ -1449,6 +1469,8 @@ function beginSet(){
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred(); Tool.apply();
   setStages(); toySky('#drillSky'); show('drill');
+  PB.show('');   // Bixi mounts as the quiet, reacting sidekick (figure only; his bubble stays empty — Juni leads)
+  JB.clear();    // start Juni's bubble empty until the first line
 }
 async function startDrill(m, n){
   if (!n || !n.drill){                                                       // no sums for this skill (bead numbers): its lesson, or making numbers
@@ -1459,8 +1481,9 @@ async function startDrill(m, n){
   try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ TOY.confirm('No problems to make', 'The grown-up settings for numbers and speed can’t make problems for this skill. Change them in Grown-ups → Practice.', {ok:'OK', cancel:'Close'}); return; }
   beginSet();
   presentProblem();                       // start speaking while we are still inside the tap
-  if (mode==='listen') PB.say('Listen carefully!', 'happy', 'drill_listen', 2600);   // spoken before Ready; numbers stop Bix
-  else PB.say(mode==='flash'?'Watch the numbers carefully!':'You can do it!', 'happy', mode==='flash' ? 'drill_flash' : 'drill_look', 2200);
+  if (mode==='listen') JB.say('Listen carefully!', 'j_start_listen', 2600);   // Juni leads; spoken before Ready, numbers stop her
+  else if (mode==='flash') JB.say('Watch the numbers carefully!', 'j_start_flash', 2200);
+  else JB.say('You can do it!', Tool.kind==='beads' ? 'j_start_lookbeads' : 'j_start_look', 2200);
   try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
 }
 // Show only the stage for the current mode (Look: number tiles; Listen: the listening card; Flash: the flash card). Used by drills, the fix pass and level tests.
@@ -1495,7 +1518,7 @@ function presentProblem(){
   const long = mode==='visual' && p.terms.length>4;
   $('#drill').classList.toggle('long', long);
   if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', long); area.classList.toggle('wide', dg>=3); area.classList.toggle('xwide', dg>=4); markTiles(); locked=false; Tool.setReady(true); }
-  PB.setBase(baseLine(), baseMood());
+  JB.setBase(baseLine());            // Juni gives the per-problem instruction (silent; she leads the screen)
   if (mode==='visual') fitTiles();   // after the bubble and "Show me" are in place
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
@@ -1604,7 +1627,7 @@ const SpeedPanel = {
   open(kind, goBtn){
     if (this.isOpen()) this.close();
     this.kind=kind; this.build(); const pop=$('#speedPop'), flashK=kind==='flash';
-    if (!$('#bixSpeed').firstChild) $('#bixSpeed').innerHTML=TOY.bix('happy', 92, {still:true});
+    if (!$('#bixSpeed').firstChild) $('#bixSpeed').innerHTML=TOY.moon('happy', 92, {still:true});   // Juni's moon fronts the speed panel; the subtitle is her first-person voice
     $('#spSub').textContent = (flashK ? 'How fast should the numbers pop up?' : 'How fast should I say the numbers?') + (goBtn ? ' Then tap Start.' : ' Then tap Done.');
     $('#spPreview').hidden=!flashK; $('#spPreview').textContent=''; $('#spTry .pr-ic').innerHTML=TOY.icon(flashK ? 'eye' : 'speaker', 28, 'currentColor'); $('#spTry').querySelector('.toy-block-label').textContent='Try it';
     if (goBtn){ this.go=goBtn; this.home={parent:goBtn.parentNode, next:goBtn.nextSibling}; this.goLabel=goBtn.querySelector('.toy-block-label').textContent; goBtn.querySelector('.toy-block-label').textContent='Start'; $('#spGoSlot').appendChild(goBtn); }
@@ -1670,7 +1693,7 @@ function reactVoice(kind){ // kind: 'yes' | 'notyet'
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
   if (val===null){ shake(); return; }
-  if (Tool.kind==='beads' && !Tool.ab.moves().length && val===0){ PB.say('Move the beads first, then tap Check.', 'think', null, 2200); shake(); return; }
+  if (Tool.kind==='beads' && !Tool.ab.moves().length && val===0){ JB.say('Move the beads first, then tap Check.', null, 2200); shake(); return; }
   locked=true; submitting=true; const fb=$('#feedback');
   if (LT){   // level test: no right/wrong on the screen, just on to the next one
     LT.answers[idx]={value:val, atMs:Date.now()-LT.start}; results[idx]=val===p.answer; Sfx.pop(); fb.textContent='Got it.';
@@ -1680,22 +1703,26 @@ async function submit(){
   if (ok){
     fb.textContent='Yes!'; Sfx.ok();
     const mf=methodFeedback(p); if (mf) p._method=mf.ok;
-    if (mf && mf.text) PB.say(mf.text, mf.ok?'cheer':'happy', null, mf.ok?1800:3600);
-    else { const k=Math.floor(Math.random()*6); PB.say(['Yes!','Nice!','You got it!','Fantastic!','Super!','Wow!'][k], 'cheer', null, 1400); }
+    // Juni gives the method win: a clean friend-move maps to a recorded praise clip; a correction keeps the dynamic hint as her text.
+    if (mf && mf.text){
+      if (mf.ok && mf.key) JB.say(PRAISE_TEXT[mf.key], mf.key, 1800);
+      else JB.say(mf.text, null, mf.ok?1800:3600);
+    }
+    else JB.say('Yes! Well done.', null, 1400);
     verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
-    reactVoice('yes');
+    reactVoice('yes');   // Bixi's recorded cheer stays as the sidekick reaction
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
-    if (!reviewing) { const k=Math.floor(Math.random()*3); PB.say(['Oops! We\'ll polish it later.','Almost! Keep going.','That\'s OK. Next one!'][k], 'concerned', null, 1800); }
-    reactVoice('notyet');
+    if (!reviewing) JB.say("That's okay. We'll polish it together.", null, 1800);   // Juni reassures (silent text)
+    reactVoice('notyet');   // Bixi's recorded groan stays as the sidekick reaction
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
       const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('walnut', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
-      PB.say('Let\'s watch the beads together.', 'happy', 'fix_watch', 0);
+      JB.say('Let\'s watch the beads together.', 'j_showme', 0);
       await sleep(900); await showMe(p);
       if (!$('#drill').classList.contains('active')) return;
       presentProblem(); return;
@@ -1758,11 +1785,14 @@ function drawMoon(sky, plaque, kind){
   const svg=(n,cls)=>TOY.moonPhases(n, m.total).replace('class="toy-moonphases"', `class="toy-moonphases ${cls}"`).replace('role="img"', 'aria-hidden="true"');
   plaque.innerHTML=`<span class="tp-moonstack">${svg(m.before,'before')}${m.after>m.before ? svg(m.after,'after') : ''}</span>`;
 }
-let sumVoice=null;
-// The words on screen are the words Bix says (audio/bix-<voice>-polish.js).
+let sumSpeak=null;   // the end-of-set line(s), spoken by Juni (the lead) on her moon; the words on screen stay in #sumNote
+// Juni's end-of-set clips; sum_amazing/great/good reuse her recorded praise, the rest arrive on the recording stream.
+const SUM_JKEY = { sum_amazing:'j_end_amazing', sum_great:'j_end_great', sum_good:'j_end_good', sum_fixed:'j_sum_fixed', sum_unlock:'j_unlock', fix_one:'j_fix_one', fix_start:'j_fix_start' };
 const POLISH_LINE = { fix_one:'Let’s polish this one together.', fix_start:'Let’s polish these together.' };
-$('#sumSay').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
-$('#bixSum').addEventListener('click', ()=>{ if (sumVoice) Fun.BixVoice.play(sumVoice, $('#bixSum')); });
+// Replay the summary line on Juni's moon (tapping the speaker, the bubble, or Bixi beside it).
+function saySummary(){ if (!sumSpeak || !sumSpeak.length || !CL()) return; Speaker.unlock(); CL().sequence(sumSpeak.map(it=>({key:it.key, text:it.text})), { who:'juni', figure:$('#sumJuniMoon'), ms:0 }); }
+$('#sumSay').addEventListener('click', saySummary);
+$('#bixSum').addEventListener('click', saySummary);
 function finish(){
   if (LT) return finishLevelTest();
   endDrill(); const correct=results.filter(r=>r===true).length; const secs=Math.round((Date.now()-t0)/1000); let leveled=false;
@@ -1803,7 +1833,10 @@ function finish(){
   $('#againBtn').style.display = toFix.length || pendingTest ? 'none' : '';
   $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Play again</span>';
   const mood = (n===3||leveled||allFixed) ? 'proud' : n===2 ? 'cheer' : 'happy';
-  sumVoice = fixVid ? [vid, fixVid] : vid; $('#sumSay').style.visibility=''; show('summary'); const bs=sumBix(mood); Fun.BixVoice.play(sumVoice, bs);
+  // Juni is the lead voice at the summary: she speaks the praise (and the polish line) on her moon; Bixi stays as the sidekick.
+  sumSpeak = (fixVid ? [{key:SUM_JKEY[vid], text:say}, {key:SUM_JKEY[fixVid], text:POLISH_LINE[fixVid]}] : [{key:SUM_JKEY[vid], text:say}]);
+  $('#sumJuniMoon').innerHTML = TOY.moon(mood==='cheer'?'happy':mood, 120);
+  $('#sumSay').style.visibility=''; show('summary'); sumBix(mood); saySummary();
   if (n===3||leveled||allFixed){ Sfx.star(); if (n===3||leveled) Fun.confetti(); } else Sfx.ok();
   if (!reviewing) setTimeout(()=>activityDone(mode, {gold: n===3, leveled}), 2400);   // let the beads and Bix land first
 }
@@ -1812,9 +1845,9 @@ $('#fixBtn').addEventListener('click', ()=>{
   Speaker.unlock(); reviewing=true; idx=reviewQueue[0]; t0=Date.now();
   setStages(); toySky('#drillSky'); show('drill');
   presentProblem();            // same mode as the drill: Listen re-reads the problem, Look shows it, Flash re-flashes it
-  { const v = reviewQueue.length===1 ? 'fix_one' : 'fix_start'; PB.say(POLISH_LINE[v], 'happy', mode==='listen' ? null : v, 2200); }
+  { const one = reviewQueue.length===1; JB.say(POLISH_LINE[one?'fix_one':'fix_start'], one?'j_fix_one':'j_fix_start', 2200); }   // Juni leads the polish pass
 });
-$('#showMeBtn').addEventListener('click', async()=>{ if(locked||demoing) return; locked=true; await showMe(problems[idx]); locked=false; if (Tool.kind==='beads' && $('#drill').classList.contains('active')){ Tool.reset(); markTiles(); PB.setBase('Your turn! Move the beads, then tap Check.', 'happy'); } });
+$('#showMeBtn').addEventListener('click', async()=>{ if(locked||demoing) return; locked=true; await showMe(problems[idx]); locked=false; if (Tool.kind==='beads' && $('#drill').classList.contains('active')){ Tool.reset(); markTiles(); JB.setBase('Your turn! Move the beads, then tap Check.'); } });
 $('#againBtn').addEventListener('click', ()=>startDrill(mode, drillNode));
 $('#homeBtn').addEventListener('click', ()=>{ pendingTest=null; renderHome(); show('home'); });
 $('#testBtn').addEventListener('click', ()=>{ const id=pendingTest; pendingTest=null; startLevelTest(id); });
@@ -1839,13 +1872,13 @@ async function showMe(p){
   $('#showme').classList.add('active');
   const rods=Tool.rodsForSet();
   if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.75, readOnly:true}); }
-  $('#showmeBix').innerHTML=bixArt('happy', 96, {still:true});
+  $('#showmeBix').innerHTML=TOY.moon('happy', 96);   // Juni's moon leads the worked demo (Bixi no longer fronts it)
   const probHtml=(k)=>p.op==='mul' ? `${p.terms[0]} <i>×</i> ${p.terms[1]}` : p.terms.map((t,i)=>`<span class="${i===k?'cur':''}">${i===0?t:(t<0?'<i class="minus">−</i>'+(-t):'<i class="plus">+</i>'+t)}</span>`).join('');
   const run = async()=>{ const my=++showToken; $('#showmeProb').innerHTML=probHtml(-1);
     await playSolution(showAb, p, ()=>my===showToken, h=>{ $('#showmeText').innerHTML=h; }, k=>{ $('#showmeProb').innerHTML=probHtml(k); });
     if (my===showToken) $('#showmeProb').innerHTML=probHtml(-1)+' <i>=</i> '+p.answer; };
   $('#showmeReplay').onclick=run;
-  Fun.BixVoice.play('showme', $('#showmeBix'));
+  juniSayOn(null, $('#showmeBix'), 'j_showme', 'Watch the beads move.', 0);   // Juni: reuse j_showme
   await new Promise(res=>{ $('#showmeClose').onclick=()=>{ showToken++; $('#showme').classList.remove('active'); res(); }; run(); });
 }
 // With the on-screen beads in use, Bix demonstrates right on her abacus, then hands it back cleared.
@@ -1853,9 +1886,9 @@ async function showMeHere(p){
   const my=++demoToken; demoing=true; $('#answerTool').classList.add('demo');
   const live=()=>my===demoToken && $('#drill').classList.contains('active');
   const tiles=()=>[...$('#problemArea').querySelectorAll('.term')];
-  PB.say('Watch the beads move.', 'happy', 'showme', 0);
+  JB.say('Watch the beads move.', 'j_showme', 0);   // Juni narrates the demo; reuse j_showme
   await sleep(700);
-  await playSolution(Tool.ab, p, live, h=>{ if(live()){ const t=document.createElement('div'); t.innerHTML=h; PB.say(t.textContent, 'happy', null, 0); } }, k=>tiles().forEach((t,i)=>{ t.classList.toggle('now', i===k); t.classList.toggle('done', i<k); }));
+  await playSolution(Tool.ab, p, live, h=>{ if(live()){ const t=document.createElement('div'); t.innerHTML=h; JB.say(t.textContent, null, 0); } }, k=>tiles().forEach((t,i)=>{ t.classList.toggle('now', i===k); t.classList.toggle('done', i<k); }));
   if (live()) await sleep(1400);
   if (my===demoToken){ demoing=false; $('#answerTool').classList.remove('demo'); }
 }
@@ -1869,7 +1902,7 @@ function startLevelTest(nodeId){
   problems=test.problems; LT={test, answers:[], start:Date.now()};   // timing is silent and generous: nothing counts down on screen
   beginSet();
   presentProblem();
-  PB.say('Level test! Take your time.', 'happy', null, 2600);
+  JB.say('Level test! Take your time.', null, 2600);   // Juni leads the level test
   return true;
 }
 function certificates(){ const l=Store.get('certificates', []); return Array.isArray(l) ? l : []; }
@@ -1897,7 +1930,7 @@ function finishLevelTest(){
     : `Almost there! Let’s practise ${lt.test.title} a little more, then try again.`;
   $('#sumGold').hidden=true; $('#sumNew').hidden=true; $('#fixBtn').style.display='none'; $('#testBtn').style.display='none';
   $('#againBtn').style.display=''; $('#againBtn').innerHTML=tpIcon('retry',40)+'<span class="toy-block-label">Practise</span>';   // practises the tested skill
-  sumVoice=null; $('#sumSay').style.visibility='hidden'; show('summary'); sumBix('happy'); Sfx.ok();
+  sumSpeak=null; $('#sumSay').style.visibility='hidden'; $('#sumJuniMoon').innerHTML=TOY.moon('happy', 120); show('summary'); sumBix('happy'); Sfx.ok();
 }
 function niceDate(key){ const [y,m,d]=key.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'}); }
 // A red wax seal with a golden bead pressed into it, on two indigo ribbon tails (the certificate's emblem).

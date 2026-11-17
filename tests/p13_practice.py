@@ -18,7 +18,7 @@ async def collect_all(pg):
 async def drill(pg): return await pg.evaluate("window.__drill()")
 # every visible child button on these screens is at least 60px (the grown-up speed control may be 44px)
 SMALL = "(sel)=>[...document.querySelectorAll(sel+' button')].filter(b=>b.getClientRects().length && getComputedStyle(b).visibility!=='hidden').map(b=>[b.id||b.dataset.k||b.textContent.trim(), b.getBoundingClientRect()]).filter(([n,r])=>Math.min(r.width,r.height)<(n==='speedBtn'?44:60)).map(([n,r])=>n+':'+Math.round(r.width)+'x'+Math.round(r.height))"
-async def bubble(pg): return (await pg.text_content('#bixDrill .tp-bubble')).strip()
+async def bubble(pg): return (await pg.text_content('#drillJuni .ctext')).strip()   # Juni now leads the practice instruction/reaction lines
 async def keypad(pg, v):
     for ch in str(v): await pg.click(f'#pad [data-k="{ch}"]')
     await pg.click('#pad [data-k=go]')
