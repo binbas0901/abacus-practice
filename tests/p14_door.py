@@ -91,9 +91,10 @@ async def main():
             await pg.click(f'.gcard[data-game={g}]'); await pg.wait_for_selector('#game.active'); await pg.wait_for_timeout(400)
             check(f'{name} opens', name in await pg.text_content('#gameTitle') and await pg.locator('#gameStage > *').count()>0)
             await pg.wait_for_timeout(2200)
-            bub=await pg.evaluate("(()=>{const b=document.querySelector('#bixGame .bubble'), t=b.querySelector('.ws-text'), r=b.getBoundingClientRect(); return {kit:b.classList.contains('toy-say'), say:b.querySelectorAll('.ws-say svg').length, w:r.width, lines:Math.round(t.getBoundingClientRect().height/parseFloat(getComputedStyle(t).lineHeight)), on:b.classList.contains('on'), text:t.textContent.trim()}})()")
+            bub=await pg.evaluate("(()=>{const b=document.querySelector('#gameJuni'), t=b.querySelector('.ctext'), r=b.getBoundingClientRect(); return {who:b.dataset.who, on:b.classList.contains('on'), w:r.width, text:(t||b).textContent.trim()}})()")
             heads=await pg.evaluate("[...document.querySelectorAll('#gameStage h1,#gameStage h2,#gameStage .rd-msg,#gameStage .bd-k,#gameStage .pop-hint,#gameTitle')].map(e=>e.textContent.trim())")
-            check(f'{name}: Bix uses the kit bubble (speaker mark, >= 320px, <= 2 lines) and does not repeat a heading', bub['kit'] and bub['say']==1 and bub['w']>=320 and 1<=bub['lines']<=2 and bub['on'] and bub['text'] not in heads, [bub, heads])
+            bixup=await pg.locator('#bixGame .bix').count()
+            check(f'{name}: Juni leads the instruction (her own bubble, not a heading) while Bixi stays mounted to react', bub['who']=='juni' and bub['on'] and bub['text'] and bub['text'] not in heads and bixup>=1, [bub, heads, bixup])
             bk=await pg.eval_on_selector('#exitGame','e=>e.getBoundingClientRect().height')
             check(f'{name}: back button >= 60px', bk>=60, bk)
             if g=='pop':

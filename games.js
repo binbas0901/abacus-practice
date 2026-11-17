@@ -43,6 +43,14 @@
     else if (root.BixSay) root.BixSay(el, text, id, ms); else root.Fun.Mascot.say(el, text, ms, id);
     const b = el && el.querySelector('.bubble'); if (b && id) b.classList.add('has-voice');   // extra-pack lines have a voice too
   }
+  // Juni leads a game instruction from the window moon (#gameSky); Bixi stays the reacting sidekick.
+  // quiet: show her caption without replaying audio (a gentle re-prompt, or a dynamic caption with no clip).
+  function juniLine(key, text, quiet) {
+    const CLr = root.Classroom, jb = $('#gameJuni'), sky = $('#gameSky');
+    if (!CLr) { if (jb) { const t = jb.querySelector('.ctext') || jb; if (text != null) t.textContent = text; jb.classList.add('on'); } return Promise.resolve(); }
+    if (quiet) { CLr.showBubble(jb, text, 'juni', 0); return Promise.resolve(); }
+    return CLr.say(key, { who: 'juni', text, bubble: jb, figure: sky, ms: 0 });
+  }
   // A row of little beads for "how far through the round": done ones jade (or walnut when missed), the current one indigo.
   function beadDots(n, done, marks) {
     return Array.from({ length: n }, (_, i) => `<i class="gdot${i < done ? (marks && marks[i] === false ? ' miss' : ' ok') : i === done ? ' cur' : ''}"></i>`).join('');
@@ -217,12 +225,12 @@
         b.gone = true; b.el.classList.add('popped'); setTimeout(() => b.el.remove(), 320);
         App().Sfx.pop(); score++; setScore(beadDots(N, score)); reunite(b.v);
         if (score >= N) { ended = true; return; }
-        if (score % 4 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); const c = pick([['Great popping!', 'pop_cheer'], [`${score} friends!`, null], ['Friend finder!', null]]); bixLine(c[0], c[1], 0); clearTimeout(back); back = setTimeout(() => { if (!ended && tok === token) bixLine(GO, 'pop_go', 0, true); }, 2200); }
+        if (score % 4 === 0) { root.Fun.Mascot.react(bix(), 'cheer'); const c = pick([['Great popping!', 'pop_cheer'], [`${score} friends!`, null], ['Friend finder!', null]]); bixLine(c[0], c[1], 0); clearTimeout(back); back = setTimeout(() => { if (!ended && tok === token) juniLine('j_pop_go', GO, true); }, 2200); }
       } else { wrong++; b.el.classList.remove('nope'); void b.el.offsetWidth; b.el.classList.add('nope'); App().Sfx.soft(); }
     }
     newTarget(); setScore(beadDots(N, 0));
     requestAnimationFrame(() => { if (calm) return grid(); if (!layout()) return; for (let k = 3; k >= 0; k--) spawn(top() + (bottom() - top()) * (0.15 + 0.22 * k)); });   // lowest first: the first bubble is the answer, so it stays longest
-    bixLine(GO, 'pop_go', 0);
+    juniLine('j_pop_go', GO);
     return new Promise(res => {
       function frame(now) {
         if (tok !== token) return res(null);
@@ -265,19 +273,19 @@
       const v = rods === 1 ? rnd(1, 9) : rnd(Math.pow(10, rods - 1), Math.pow(10, rods) - 1);
       ab.value = v;
       // Bix's bubble is the one instruction (spoken on the first number; afterwards a quiet caption, tap to hear it).
-      $('#rdCover').classList.remove('on'); bixLine('Look closely at the beads!', 'reader_look', 0, i > 0);
+      $('#rdCover').classList.remove('on'); juniLine('j_read_look', 'Look closely at the beads.', i > 0);
       await sleep(show * 1000); if (tok !== token) return null;
-      $('#rdCover').classList.add('on'); bixLine('What number was it?', 'reader_ask', 0, i > 0);
+      $('#rdCover').classList.add('on'); juniLine('j_read_ask', 'What number was it?', i > 0);
       const ans = await P.ask(); if (tok !== token) return null;
       $('#rdCover').classList.remove('on');
       if (ans === v) {
         score++; streak++; misses = 0; show = Math.max(0.6, show * 0.85); marks[i] = true; setScore(beadDots(N, i + 1, marks));
         $('#rdFb').innerHTML = `${TI('check', 26, '#fff', { stroke: 3.4 })}Yes!`; $('#rdFb').className = 'feedback ok'; $('#rdAns').classList.add('is-right'); a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
-        if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; bixLine('Super detective! More beads now!', 'reader_more', 0); await sleep(1500); }
+        if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; root.Fun.Mascot.react(bix(), 'cheer'); juniLine('j_read_levelup', 'Wonderful! Let’s try more beads now.'); await sleep(1500); }
         else await sleep(900);
       } else {
         streak = 0; misses++; show = Math.min(3.5, show * 1.25); marks[i] = false; setScore(beadDots(N, i + 1, marks));
-        $('#rdFb').innerHTML = `It was <b>${v}</b>`; $('#rdFb').className = 'feedback bad'; $('#rdAns').classList.add('is-wrong'); bixLine(`It was ${v}. Next one!`, null, 0, true); a.Sfx.soft(); root.Fun.Mascot.react(bix(), 'oops');
+        $('#rdFb').innerHTML = `It was <b>${v}</b>`; $('#rdFb').className = 'feedback bad'; $('#rdAns').classList.add('is-wrong'); juniLine(null, `It was ${v}. Next one!`, true); a.Sfx.soft(); root.Fun.Mascot.react(bix(), 'oops');
         if (misses >= 2 && rods > 1) { rods--; misses = 0; }
         await sleep(1800);
       }
@@ -300,7 +308,7 @@
     root.__gameAb = ab;   // test hook
     $('#bdSay').onclick = () => { if (want !== null) a.say(want); };
     await a.voiceReady();
-    bixLine('Make this number on the abacus!', 'build_go', 0);
+    juniLine('j_build_go', 'Make this number on the abacus.');
     let lastV = -1;
     for (let k = 0; k < N; k++) {
       if (tok !== token) return null;
@@ -312,7 +320,7 @@
       if (tok !== token) return null;
       ab.setReadOnly(true); setScore(beadDots(N, k + 1));
       a.Sfx.pop(); a.Sfx.ok(); root.Fun.Mascot.react(bix(), k === N - 1 ? 'cheer' : 'happy');
-      if (k === Math.floor(N / 2) - 1) { bixLine('You’re halfway there!', 'build_half', 0); setTimeout(() => { if (tok === token && !document.querySelector('#game .gscrim')) bixLine('Make this number on the abacus!', 'build_go', 0, true); }, 2400); }
+      if (k === Math.floor(N / 2) - 1) { juniLine('j_build_half', 'You’re halfway there!'); setTimeout(() => { if (tok === token && !document.querySelector('#game .gscrim')) juniLine('j_build_go', 'Make this number on the abacus.', true); }, 2400); }
       await sleep(650);
     }
     return { n: N, rods };
@@ -341,10 +349,10 @@
       card = { icon: GAMES.build.art(130), big: `${r.n} numbers made!`, sub: 'all on the abacus', best: false, bestText: `${best.buildTotal} numbers built so far` };
     }
     root.Fun.save();
-    root.Fun.Mascot.react(bix(), 'cheer', 2000); const newBest = isBest && id === 'reader'; bixLine(newBest ? 'A new best! Wow!' : 'Great playing!', newBest ? 'game_best' : 'game_good', 0);
+    root.Fun.Mascot.react(bix(), 'cheer', 2000); const newBest = isBest && id === 'reader'; juniLine(newBest ? 'j_end_amazing' : 'j_end_good', newBest ? 'A new best! Wow!' : 'Great playing!');
     if (isBest) root.Fun.confetti(60);
     const leveled = a.gameResult ? a.gameResult(id, id === 'build' ? Array(r.n).fill(true) : r.marks) : false;
-    if (leveled) { card.best = true; card.bestLine = 'New skill!'; bixLine('Hooray! You unlocked a new skill!', 'sum_unlock', 0); }
+    if (leveled) { card.best = true; card.bestLine = 'New skill!'; juniLine('j_unlock', 'Hooray! You unlocked a new skill!'); }
     // The sticker present comes first, on its own; the result card follows once it has been collected (never two layers).
     await a.activityDone('game', { gold: isBest, game: id, leveled, gap: 700 });
     if (my !== token) return;
