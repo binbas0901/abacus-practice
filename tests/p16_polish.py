@@ -1,5 +1,6 @@
-# v4.1: Bix's voice and the screen say the same words. "Polish" everywhere a sum is not right yet (never "fix", "red ones"
-# or "green beads"), and the home bubble's sentence about the moon is spoken too, in both voices.
+# v4.1: the screen's words stay consistent. "Polish" everywhere a sum is not right yet (never "fix", "red ones"
+# or "green beads"). Juni now leads the practice reactions, the polish pass and the end-of-set summary (her bubble + moon);
+# Bixi reacts alongside (reactVoice). The Bix polish pack still exists in audio/ and is checked for sensible clip lengths.
 import asyncio, os, re
 from playwright.async_api import async_playwright
 def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
@@ -45,24 +46,26 @@ async def main():
             for i in range(10):
                 await pg.wait_for_function("window.__drill().terms && document.querySelectorAll('#problemArea .term').length>0"); d = await pg.evaluate("window.__drill()")
                 await answer(pg, d['answer']+1 if i in (1,4,7,8) else d['answer']); await pg.wait_for_timeout(350)
-                if i in (1,4,7,8): oops.append(await pg.evaluate("document.querySelector('#bixDrill .tp-btxt').textContent"))
+                if i in (1,4,7,8): oops.append(await pg.evaluate("document.querySelector('#drillJuni .ctext').textContent"))
                 await pg.wait_for_timeout(750)
-            check(f'{voice}: a miss in the set -> one of Bix\'s three lines, as recorded (never "fix")', all(o in (LINES['oops_1'], LINES['oops_2'], "That's OK. Next one!") for o in oops), oops)
+            # Juni now leads the miss reaction (one kind reassurance); Bixi's recorded groan plays alongside (reactVoice). Still never "fix".
+            check(f'{voice}: a miss in the set -> Juni\'s reassurance on screen (never "fix")', all(norm(o)==norm("That's okay. We'll polish it together.") for o in oops) and not any(bad.search(o) for o in oops), oops)
             await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(600); note = (await pg.text_content('#sumNote')).strip()
             check(f'{voice}: summary with 4 to polish ends with the words Bix says next: "Let\'s polish these together."', norm(note).endswith(norm(LINES['fix_start'])) and not bad.search(await pg.evaluate("document.querySelector('#summary').innerText")), note)
             await collect_all(pg); await said(pg)
-            await pg.click('#sumSay'); await pg.wait_for_timeout(6500); r = await said(pg)
-            check(f'{voice}: tap the speaker on the summary -> the whole note is spoken (praise, then "Let\'s polish these together.")', len(r)==2 and r[1]['id']=='fix_start' and r[1]['key']==pack and norm(note)==norm(' '.join(LINES[x['id']] for x in r)), ([(x['key'],x['id']) for x in r], note))
-            await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(700); r = await said(pg)
-            check(f'{voice}: Polish these with Bix -> he says and shows "Let\'s polish these together." (new recording), chip says "Polishing"', len(r)==1 and (r[0]['key'], r[0]['id'])==(pack,'fix_start') and r[0]['text'].replace('’', "'")==LINES['fix_start'] and (await pg.text_content('#fixLabel')).strip()=='Polishing', r)
+            await pg.click('#sumSay'); await pg.wait_for_timeout(1200)
+            # Juni is the lead voice at the summary (her bubble + her moon); the written note still reads the praise then the polish line.
+            check(f'{voice}: Juni leads the summary (her bubble + moon), the note reads praise then "Let\'s polish these together."', (await pg.get_attribute('#sumJuni', 'data-who'))=='juni' and await pg.evaluate("!!document.querySelector('#sumJuniMoon .toy-moon')") and norm(note).endswith(norm(LINES['fix_start'])), note)
+            await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(700)
+            check(f'{voice}: Polish these with Bix -> Juni shows "Let\'s polish these together." and the chip says "Polishing"', norm(await pg.text_content('#drillJuni .ctext'))==norm(LINES['fix_start']) and (await pg.text_content('#fixLabel')).strip()=='Polishing', await pg.text_content('#drillJuni .ctext'))
             n = 0
             while not await pg.locator('#summary.active').count() and n < 8:
                 await pg.wait_for_function("window.__drill().terms && document.querySelectorAll('#problemArea .term').length>0"); d = await pg.evaluate("window.__drill()")
                 await answer(pg, d['answer']); await pg.wait_for_timeout(250)
                 if n == 0: check(f'{voice}: right in the polish pass -> "Polished!"', (await pg.text_content('#feedback')).strip()=='Polished!', await pg.text_content('#feedback'))
                 await pg.wait_for_timeout(900); n += 1
-            await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(3000); r = [x for x in await said(pg) if x['id']=='sum_fixed']; note = (await pg.text_content('#sumNote')).strip()
-            check(f'{voice}: all polished -> he says and shows "All polished! So shiny!" (new recording)', len(r)==1 and r[0]['key']==pack and note==LINES['sum_fixed']=='All polished! So shiny!', (r, note))
+            await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(3000); note = (await pg.text_content('#sumNote')).strip()
+            check(f'{voice}: all polished -> the summary reads "All polished! So shiny!" (Juni leads)', note==LINES['sum_fixed']=='All polished! So shiny!' and (await pg.get_attribute('#sumJuni', 'data-who'))=='juni', note)
             if voice == 'sweet': await pg.screenshot(path='/tmp/toy-open/p16_all_polished.png')
             # ---- one to polish ----
             await pg.click('#homeBtn'); await pg.wait_for_timeout(300); await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active')
@@ -70,8 +73,8 @@ async def main():
                 await pg.wait_for_function("window.__drill().terms && document.querySelectorAll('#problemArea .term').length>0"); d = await pg.evaluate("window.__drill()")
                 await answer(pg, d['answer']+1 if i==3 else d['answer']); await pg.wait_for_timeout(1100)
             await pg.wait_for_selector('#summary.active'); await collect_all(pg); await pg.wait_for_timeout(300); await said(pg)
-            await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(700); r = await said(pg)
-            check(f'{voice}: Polish this with Bix -> "Let\'s polish this one together."', len(r)==1 and (r[0]['key'], r[0]['id'])==(pack,'fix_one') and r[0]['text'].replace('’', "'")==LINES['fix_one'], r)
+            await pg.click('#fixBtn'); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(700)
+            check(f'{voice}: Polish this with Bix -> Juni shows "Let\'s polish this one together."', norm(await pg.text_content('#drillJuni .ctext'))==norm(LINES['fix_one']), await pg.text_content('#drillJuni .ctext'))
             check(f'{voice}: recorded clips have a sensible length', all(1.0 < v[1] < 6 for v in (await pg.evaluate("k=>Fun.BixVoice.map[k]", pack)).values()), await pg.evaluate("k=>Fun.BixVoice.map[k]", pack))
             print('errors:', errs); await ctx.close()
         await b.close()
