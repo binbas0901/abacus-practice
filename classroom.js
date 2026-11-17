@@ -86,7 +86,8 @@
       } finally { this.queued--; }
       if (my !== this.seq || ctx.state !== 'running') return;
       const [buf, sp] = this.find(char, id); if (!buf || !sp) return;         // clip not recorded yet: silent
-      this.stop(); const mine = ++this.seq;
+      this.stop(); try { if (root.Fun && root.Fun.BixVoice) root.Fun.BixVoice.stop(); } catch (e) {}   // one voice at a time: silence any legacy Bixi clip
+      const mine = ++this.seq;
       const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start(ctx.currentTime + 0.02, sp[0], sp[1]); this.src = s;
       const fig = figure && (figure.classList && figure.classList.contains('bix') ? figure : figure.querySelector && figure.querySelector('.bix'));
       const mouth = fig || (figure && figure.classList && figure.classList.contains('toy-moon') ? figure : figure && figure.querySelector && figure.querySelector('.toy-moon'));

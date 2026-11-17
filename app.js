@@ -1213,6 +1213,12 @@ function juniFig(){ return $('#lessonSky'); }
 function juniSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'juni', figure:juniFig()}, o)); }
 function bixiFig(){ return $('#bixLesson'); }
 function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'bixi', figure:bixiFig(), bubble:$('#bixiBubble')}, o)); }
+// Juni leads a line on ANY screen: pass her bubble element + the screen's moon figure. Falls back to a silent bubble
+// if the clip isn't recorded yet. One voice at a time is enforced in the Classroom/Fun audio layers.
+function juniSayOn(bubble, figure, key, text, ms){
+  if (!CL()){ if (bubble){ if (text!=null) bubble.textContent = text; bubble.classList.add('on'); } return Promise.resolve(); }
+  return CL().say(key, { who:'juni', text, bubble, figure, ms: ms||0 });
+}
 // Tapping the moon plays one of Juni's calm lines; mark her tappable where she can be tapped (home, lesson).
 function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
   sky.classList.add('cl-moon-tap');

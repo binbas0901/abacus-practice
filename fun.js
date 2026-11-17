@@ -80,7 +80,8 @@
       } finally { this.queued--; }
       if (my !== this.seq || ctx.state !== 'running') return;                    // a newer line was asked for, or sound is still off
       const [buf, sp] = this.find(id); if (!buf || !sp) return;
-      this.stop(); const mine = this.seq;
+      this.stop(); try { if (window.Classroom && window.Classroom.stop) window.Classroom.stop(); } catch (e) {}   // one voice at a time: silence any Juni/Classroom clip
+      const mine = this.seq;
       const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination); s.start(ctx.currentTime + 0.02, sp[0], sp[1]); this.src = s;
       const bx = el && el.querySelector('.bix'); if (bx) { bx.classList.add('talking'); this.talkingEl = bx; }
       await new Promise(r => { s.onended = r; setTimeout(r, sp[1] * 1000 + 400); });
