@@ -7,10 +7,10 @@ window.LINES_MANIFEST = {
   "when": "First meeting: Juni introduces herself (the moon teacher)."
  },
  "b_intro_hi": {
-  "text": "Hi there! I'm Bixi! I'm a little bead from an abacus, and I love numbers!",
+  "text": "Hi! I'm Bixi! I rolled off an abacus and never went back!",
   "who": "bixi",
   "tuning": "lively",
-  "when": "First meeting: Bixi introduces itself right after Juni."
+  "when": "first run: Bixi rolls in"
  },
  "j_onboard_who": {
   "text": "Who's practising today?",
@@ -1019,5 +1019,53 @@ window.LINES_MANIFEST = {
   "who": "bixi",
   "tuning": "lively",
   "when": "Joke book, punchline."
+ },
+ "j_intro_name": {
+  "text": "What should I call you? Type it in for me.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: Juni asks the child's name"
+ },
+ "j_intro_meet": {
+  "text": "Lovely to meet you!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: after name"
+ },
+ "j_intro_bixi1": {
+  "text": "There's someone I'd like you to meet.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: before Bixi rolls in"
+ },
+ "j_intro_bixi2": {
+  "text": "Bixi is learning too. You'll be classmates.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: introduce Bixi"
+ },
+ "j_intro_help": {
+  "text": "Sometimes Bixi gets a little mixed up. When that happens, you can help him. Helping is how we learn best.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: plant the help-Bixi idea"
+ },
+ "j_intro_grownup": {
+  "text": "Now a grown-up can help me get ready.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: hand off to the grown-up for setup"
+ },
+ "j_intro_begin": {
+  "text": "All set. Let's begin. A little every day. That's the whole secret.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: start"
+ },
+ "b_intro_help": {
+  "text": "I get mixed up a lot. This is going to be great!",
+  "who": "bixi",
+  "tuning": "lively",
+  "when": "first run: Bixi after the help idea"
  }
 };
