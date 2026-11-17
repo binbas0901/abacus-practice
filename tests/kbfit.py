@@ -103,13 +103,13 @@ async def name_dialog(b, check, w, h, k, full):
     check(f'{tag} name dialog: no page errors', not errs, str(errs)); await ctx.close()
 
 async def setup_name(b, check, w, h, k):
-    tag = f'{w}x{h} kb{k}'; vis = h - k; S = ['#suNameIn', '#suNameGo', '#bixSetup .bubble']; N = ['#setup', '.to-namemat', '#suNameIn', '#suNameGo']   # (Bix goes on talking: his bubble changes size by itself)
+    tag = f'{w}x{h} kb{k}'; vis = h - k; S = ['#suNameIn', '#suNameGo', '#juniBubble']; N = ['#setup', '.to-namemat', '#suNameIn', '#suNameGo']   # (Juni leads the name step: her bubble changes size by itself)
     ctx, pg, errs = await page(b, w, h, seed=False)
-    await pg.wait_for_selector('#setup.active'); await pg.wait_for_timeout(700); normal = await pg.evaluate(RECTS, N) + (await pg.evaluate(RECTS, ['#bixSetup .bix']))[0][2:]
+    await pg.wait_for_selector('#setup.active'); await pg.wait_for_timeout(700); normal = await pg.evaluate(RECTS, N) + (await pg.evaluate(RECTS, ['#juniSetup']))[0][2:]
     await pg.tap('#suNameIn'); await pg.wait_for_timeout(200); await kb(pg, k); st = await pg.evaluate(STATE); bad = await pg.evaluate(FIT, [S + ['.to-namemat'], vis, SAT, False]) + await pg.evaluate(FIT, [S, vis, SAT, True])
-    check(f'{tag} first-run name step: Bix\'s question, the name box and Next inside the visible part, under the status bar, apart', st['up'] and not bad, str(st) + str(bad))
+    check(f'{tag} first-run name step: Juni\'s question, the name box and Next inside the visible part, under the status bar, apart', st['up'] and not bad, str(st) + str(bad))
     await pg.screenshot(path=f'{OUT}/setup_{w}x{h}_kb{k}.png')
-    await leave(pg); st = await pg.evaluate(STATE); now = await pg.evaluate(RECTS, N) + (await pg.evaluate(RECTS, ['#bixSetup .bix']))[0][2:]
+    await leave(pg); st = await pg.evaluate(STATE); now = await pg.evaluate(RECTS, N) + (await pg.evaluate(RECTS, ['#juniSetup']))[0][2:]
     check(f'{tag} first-run name step: after blur the page is as it was', not st['up'] and st['sy'] == 0 and now == normal, str(now) + str(normal))
     at = await pg.evaluate(ATTR, '#suNameIn'); check(f'{tag} first-run name box: words capitalised, no autocorrect, Done', at['cap'] == 'words' and at['corr'] == 'off' and at['hint'] == 'done', str(at))
     await pg.tap('#suNameIn'); await kb(pg, k); await pg.keyboard.type('Mia'); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(500); await kb(pg, None)
