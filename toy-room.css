@@ -34,13 +34,12 @@
   font:600 clamp(18px,calc(.8vw + 1.2vh),25px)/1.3 var(--toy-display);
   box-shadow:inset 0 2px 0 #fff,5px 9px 15px rgba(var(--toy-shade),.3);visibility:hidden}
 #playJuni.tr-jbub.on,#gameJuni.tr-jbub.on,#roomJuni.tr-jbub.on{visibility:visible}
-/* little tail pointing up-left toward the moon */
-#playJuni.tr-jbub::before,#gameJuni.tr-jbub::before,#roomJuni.tr-jbub::before{content:"";position:absolute;left:30px;top:-15px;width:30px;height:26px;
-  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(0 100%,55% 0,100% 100%)}
-/* the moon on these scenes sits at left:(window-x + _h*.16), top:0, width _h*.855, height _h*.8; park the bubble just below/right of it */
-#playJuni.tr-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.82);top:calc((var(--toy-wall-h) - 16px)*.58)}
-#roomJuni.tr-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.82);top:calc((var(--toy-wall-h) - 16px)*.6)}
-#gameJuni.tr-jbub{left:clamp(14px,2vw,30px);top:calc(var(--toy-wall-h) + 8px);max-width:min(72vw,560px)}
+/* B look: Juni's words hang from the window on cords (.cl-sign), centred under the moon.
+   The moon sits at left:(window-x + _h*.16), width _h*.855, so its centre is window-x + _h*.5875. */
+#playJuni.tr-jbub,#roomJuni.tr-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.5875);transform:translateX(-50%);
+  top:calc((var(--toy-wall-h) - 16px)*.66);max-width:min(42vw,340px)}
+#gameJuni.tr-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.5875);transform:translateX(-50%);
+  top:calc(var(--toy-wall-h) - 4px);max-width:min(56vw,420px)}
 .tr-flip .bubble::after{left:auto;right:-22px;clip-path:polygon(0 0,0 78%,100% 100%)}
 
 @keyframes tr-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}

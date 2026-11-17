@@ -106,7 +106,7 @@
 .toy-moon-day{display:none}
 .toy-sky-moon .toy-moon-dark{display:none}
 .toy-sky-moon .toy-moon-day{display:inline}
-.toy-sky-moon .toy-moon-halo{opacity:.55}
+.toy-sky-moon .toy-moon-halo{opacity:.8}
 .toy-scene--evening .toy-sky-moon .toy-moon-dark{display:inline}
 .toy-scene--evening .toy-sky-moon .toy-moon-day{display:none}
 .toy-scene--evening .toy-sky-moon .toy-moon-halo{opacity:1}

@@ -13,6 +13,22 @@
 #lessonCap.cl-bubble[data-who="juni"]{border-top:3px solid rgba(63,82,168,.35)}
 #lessonCap.cl-bubble[data-who="bixi"]{border-top:3px solid rgba(229,64,47,.4)}
 
+/* ---------------- hanging sign: Juni's words hang from the window on cords (the "B" look) ----------------
+   Reusable across every window screen. Sizes are in em (relative to the sign's own font) so it scales with
+   each screen's text; each screen only sets the sign's position (centred under its moon) + transform:translateX(-50%). */
+.cl-sign{text-align:center;text-wrap:balance;transform-origin:50% -1.7em}
+.cl-sign .cl-jhang{position:absolute;left:0;right:0;top:-2.2em;height:2.3em;pointer-events:none;
+  background:radial-gradient(circle at 50% .36em,#b5803f 0 .4em,#80501f .4em .48em,transparent .48em) center top no-repeat}
+.cl-sign .cl-jhang::before,.cl-sign .cl-jhang::after{content:"";position:absolute;top:.42em;left:calc(50% - .15em);width:.3em;height:2.05em;border-radius:.18em;
+  background:linear-gradient(90deg,#9a6f34,#d8b074 48%,#9a6f34);box-shadow:0 1px 1px rgba(58,30,6,.22);transform-origin:50% -.05em}
+.cl-sign .cl-jhang::before{transform:rotate(-33deg)}
+.cl-sign .cl-jhang::after{transform:rotate(33deg)}
+.cl-sign.on{animation:cl-sign-sway 6s ease-in-out infinite}
+.cl-sign.pop{animation:cl-sign-in .4s cubic-bezier(.2,1.4,.4,1) both,cl-sign-sway 6s ease-in-out .4s infinite}
+@keyframes cl-sign-sway{0%,100%{transform:translateX(-50%) rotate(-1.4deg)}50%{transform:translateX(-50%) rotate(1.4deg)}}
+@keyframes cl-sign-in{0%{opacity:0;transform:translateX(-50%) rotate(-5deg) scale(.86)}100%{opacity:1;transform:translateX(-50%) rotate(-1.4deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.cl-sign.on,.cl-sign.pop{animation:none;transform:translateX(-50%) rotate(-1.4deg)}}
+
 /* ---------------- Juni as a speaker (Part 2) ---------------- */
 /* Juni leans in from the window during a lesson (bigger, brighter), and sits back otherwise. */
 .td-lesson .toy-sky-moon{z-index:2}

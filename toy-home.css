@@ -183,14 +183,12 @@
 .tw-shelf .toy-prop:first-child{width:calc(var(--u)*156);height:auto}
 .tw-shelf .toy-prop:last-child{width:calc(var(--u)*176);height:auto}
 /* Juni (the moon) asks "Who's practising?": her paper bubble sits by the moon up top, Bixi waves quietly below. */
-#whoJuni.tw-jbub{position:absolute;z-index:6;left:calc(var(--toy-window-x) + var(--u)*150);top:calc(var(--toy-wall-h) - var(--u)*34);
-  box-sizing:border-box;max-width:calc(var(--u)*430);min-width:calc(var(--u)*150);padding:calc(var(--u)*15) calc(var(--u)*26) calc(var(--u)*17);
-  border-radius:calc(var(--u)*26);background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
-  font:700 max(20px,calc(var(--u)*27))/1.28 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(58,30,6,.3);visibility:hidden}
+#whoJuni.tw-jbub{position:absolute;z-index:6;left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.5875);transform:translateX(-50%);
+  top:calc(var(--toy-wall-h) - var(--u)*60);
+  box-sizing:border-box;max-width:min(calc(var(--u)*320),calc((var(--toy-wall-h) - 16px)*1.95));min-width:calc(var(--u)*150);padding:calc(var(--u)*13) calc(var(--u)*26) calc(var(--u)*15);
+  border-radius:calc(var(--u)*22);background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
+  font:700 max(19px,calc(var(--u)*25))/1.26 var(--toy-display);box-shadow:inset 0 2px 0 #fff,inset 0 0 0 2px rgba(255,243,216,.6),5px 9px 15px rgba(58,30,6,.28);visibility:hidden}
 #whoJuni.tw-jbub.on{visibility:visible}
-#whoJuni.tw-jbub.pop{animation:toy-saypop .34s cubic-bezier(.2,1.4,.4,1) both}
-#whoJuni.tw-jbub::before{content:"";position:absolute;left:calc(var(--u)*40);top:calc(var(--u)*-18);width:calc(var(--u)*34);height:calc(var(--u)*30);
-  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(0 100%,55% 0,100% 100%)}
 .tw-bix .bubble{margin:0 0 calc(var(--u)*20) calc(var(--u)*8);font-size:max(24px,calc(var(--u)*32));font-weight:700;padding:calc(var(--u)*18) calc(var(--u)*30) calc(var(--u)*20);max-width:none}
 .tw-mat{padding:calc(var(--u)*30) calc(var(--u)*34) calc(var(--u)*38);max-width:100%;box-sizing:border-box}
 .tw-list{display:flex;flex-wrap:wrap;gap:calc(var(--u)*30) calc(var(--u)*26);justify-content:center}
@@ -230,13 +228,11 @@
 .tg-bix .bubble{grid-column:1/3;grid-row:1;justify-self:start;max-width:360px;margin:0 0 26px 30px;font-size:23px}
 .tg-bix .bubble::after{left:34px;bottom:-24px;width:56px;height:34px;background:var(--toy-paper-dk);clip-path:polygon(26% 0,100% 0,0 100%)}
 /* Juni (the moon) tells the child to fetch a grown-up: her paper bubble sits by the moon up top, tail pointing to her. */
-#gateJuni.tg-jbub{position:absolute;z-index:6;left:calc(var(--toy-window-x) + clamp(44px,5vw,82px));top:calc(var(--toy-wall-h) - 26px);
-  box-sizing:border-box;max-width:min(360px,52vw);min-width:120px;padding:13px 22px 15px;border-radius:22px;
+#gateJuni.tg-jbub{position:absolute;z-index:6;left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.5875);transform:translateX(-50%);top:calc(var(--toy-wall-h) - 44px);
+  box-sizing:border-box;max-width:min(300px,46vw);min-width:120px;padding:12px 22px 14px;border-radius:22px;
   background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);
-  font:600 clamp(18px,1.9vw,23px)/1.28 var(--toy-display);box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(58,30,6,.3);visibility:hidden}
+  font:600 clamp(18px,1.9vw,23px)/1.26 var(--toy-display);box-shadow:inset 0 2px 0 #fff,inset 0 0 0 2px rgba(255,243,216,.6),5px 9px 15px rgba(58,30,6,.28);visibility:hidden}
 #gateJuni.tg-jbub.on{visibility:visible}
-#gateJuni.tg-jbub.pop{animation:toy-saypop .34s cubic-bezier(.2,1.4,.4,1) both}
-#gateJuni.tg-jbub::before{content:"";position:absolute;left:34px;top:-16px;width:30px;height:26px;background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(0 100%,55% 0,100% 100%)}
 .tg-art{grid-column:2;grid-row:2}
 .tg-art{line-height:0}
 .tg-art svg{display:block;width:clamp(170px,19vw,230px);height:auto;overflow:visible}
