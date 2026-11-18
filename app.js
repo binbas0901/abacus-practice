@@ -1129,7 +1129,15 @@ async function renderLesson(){
     const m=(w.text||'').match(/\d+/), target=m?+m[0]:1;   // the number this step shows (5-bead -> 5, 1-bead -> 1)
     cap(`Watch ${L.watchIdx+1} of ${ws.length}`, (w.text||'').replace(/\b(\d+)\b/g,'<b>$1</b>'), ''); lessonBtn(last?'Your turn':'Next', 'play'); lessonAb.setReadOnly(true);
     const my=++animToken, live=()=>my===animToken;
-    (async()=>{ lessonAb.reset(); await sleep(400); if(!live())return; if (w.id) juniNarrate(w.id); await sleep(650); if(!live())return; await lessonAb.move(0, target, 650, live); })();
+    (async()=>{
+      lessonAb.reset(); await sleep(400); if(!live())return;                 // bead starts away from the bar
+      let clipMs = navigator.webdriver ? 700 : 1800;                          // tests: quick; real: pace to her clip
+      try{ if(!navigator.webdriver){ const r=Classroom.Voice.find('juni', w.id); if (r&&r[1]&&r[1][1]) clipMs=Math.round(r[1][1]*1000); } }catch(e){}
+      if (w.id) juniNarrate(w.id);
+      const t=w.text||'', dot=t.indexOf('. '), frac=dot>0?Math.min(0.72,Math.max(0.30,(dot+2)/t.length)):0.45;   // move the bead only when she reaches the second sentence ("pull it down / push it up"), not before
+      await sleep(Math.round(clipMs*frac)); if(!live())return;
+      await lessonAb.move(0, target, 700, live);
+    })();
     return;
   }
   if (L.phase==='numbers'){ // beads node: set each number
@@ -2459,7 +2467,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.23';
+const APP_VERSION='4.24';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
