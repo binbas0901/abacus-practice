@@ -194,7 +194,7 @@ async def main():
         await pg.goto(URL); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(600)
         RACE="""async (wait)=>{ const sl=ms=>new Promise(r=>setTimeout(r,ms)), nx=document.querySelector('#lessonNext');
           Lessons.start('bf_add_a'); while (nx.textContent!=='Show me') nx.click(); nx.click(); await sl(wait); nx.click(); const seen=[];   // demo 1 (8 + 9), then Next -> demo 2 (7 + 8)
-          for (let i=0;i<70;i++){ const v=__lesson().value; if (seen[seen.length-1]!==v) seen.push(v); await sl(40); } return seen; }"""
+          for (let i=0;i<220;i++){ const v=__lesson().value; if (seen[seen.length-1]!==v) seen.push(v); if (seen[seen.length-1]===15 && i>4) break; await sl(40); } return seen; }"""
         bad=[]
         for wait in list(range(0,1600,400))+list(range(1640,2060,30))+[2300, 2500]:      # leave demo 1 at many moments of its bead moves
             seen=await pg.evaluate(RACE, wait)

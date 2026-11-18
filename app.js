@@ -995,7 +995,7 @@ function friendsHtml(n){
   const dot=v=>`<b class="toy-lac--${TOY.friendColor(v)}">${v}</b>`;
   return ps.map(([a,b])=>`<span data-pair="${a}-${b}" aria-label="${a} and ${b}">${dot(a)}${dot(b)}</span>`).join('');
 }
-function friendIn(text){ const m=/(?:Small|Big) friend of (\d) is (\d)/.exec(String(text||'').replace(/<[^>]+>/g,'')); return m ? [+m[1], +m[2]] : null; }
+function friendIn(text){ const m=/(?:small|big) friend of (\d) is (\d)/i.exec(String(text||'').replace(/<[^>]+>/g,'')); return m ? [+m[1], +m[2]] : null; }
 function friendOfSteps(steps){ for (const st of steps||[]){ const f=friendIn(st.say); if (f) return f; } return null; }
 function lessonPair(f, mood){
   const el=$('#lessonPair'), key=f ? f.join('-')+(mood||'') : 'none'; if (el.dataset.k===key) return; el.dataset.k=key;
@@ -1170,8 +1170,10 @@ let animToken=0;
 // and the step holds until her line finishes. Falls back to a word-count estimate when a clip is missing or muted.
 function narrateStep(text){ try{ if (text && window.Classroom) Classroom.Voice.play('juni', text, juniFig()); }catch(e){} }
 function lessonClipMs(text){
-  try{ if (window.Classroom){ const r=Classroom.Voice.find('juni', text); if (r && r[1] && r[1][1]) return Math.round(r[1][1]*1000); } }catch(e){}
-  const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(1000, Math.round(w*400));   // ~calm teacher pace
+  try{ if (window.Classroom){ const V=Classroom.Voice, a=App(), r=V.find('juni', text);
+    // Only pace to the full spoken length when her clip will actually play; otherwise keep it brisk.
+    if (r && r[0] && r[1] && r[1][1] && V.enabled() && a && a.Speaker && a.Speaker.gestured) return Math.round(r[1][1]*1000); } }catch(e){}
+  const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(500, Math.min(1700, Math.round(w*160)));   // no audio: brisk, just enough to follow the beads
 }
 async function playSteps(ab, steps, onStep){
   const my=++animToken; L.busy=true;
@@ -2435,7 +2437,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.17';
+const APP_VERSION='4.18';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
