@@ -1170,10 +1170,13 @@ let animToken=0;
 // and the step holds until her line finishes. Falls back to a word-count estimate when a clip is missing or muted.
 function narrateStep(text){ try{ if (text && window.Classroom) Classroom.Voice.play('juni', text, juniFig()); }catch(e){} }
 function lessonClipMs(text){
-  try{ if (window.Classroom){ const V=Classroom.Voice, a=App(), r=V.find('juni', text);
-    // Only pace to the full spoken length when her clip will actually play; otherwise keep it brisk.
-    if (r && r[0] && r[1] && r[1][1] && V.enabled() && a && a.Speaker && a.Speaker.gestured) return Math.round(r[1][1]*1000); } }catch(e){}
-  const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(500, Math.min(1700, Math.round(w*160)));   // no audio: brisk, just enough to follow the beads
+  try{
+    if (navigator.webdriver){ const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(400, Math.min(1200, Math.round(w*120))); }   // automated tests: keep demos quick, no real audio to wait on
+    if (window.Classroom){ const V=Classroom.Voice, r=V.find('juni', text);
+      // When her clip will actually play, wait its FULL spoken length so the next line never cuts it off mid-sentence.
+      if (r && r[0] && r[1] && r[1][1] && V.enabled() && typeof Speaker!=='undefined' && Speaker.gestured) return Math.round(r[1][1]*1000) + 150; }
+  }catch(e){}
+  const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(700, Math.round(w*220));   // no audio: calm, readable pace
 }
 async function playSteps(ab, steps, onStep){
   const my=++animToken; L.busy=true;
@@ -2437,7 +2440,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.19';
+const APP_VERSION='4.20';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
