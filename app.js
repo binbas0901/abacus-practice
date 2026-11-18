@@ -639,7 +639,7 @@ function renderHome(opts){
   const cur = NODES[curIdx()];
   const steps = todaySteps(); const allDone = steps.every(s=>s.done);
   // Bixi (the classmate) sits small on the table; Juni (the teacher) leads from the window.
-  const bh=$('#bixHome'); toyBix(bh, allDone ? 'proud' : 'wave');
+  const bh=$('#bixHome'); toyBix(bh, allDone ? 'proud' : 'wave', {bubble:false});
   // Today: beads left, and the moon in the window that fills as they are finished (Juni full + proud when all done).
   const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
   $('#home').classList.toggle('is-done', allDone);
@@ -747,7 +747,7 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 $('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
-function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false});
+function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
   Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
@@ -821,7 +821,7 @@ function renderRoom(){
 function goRoom(){ stopVoices();
   renderRoom(); show('room');
   // Bixi shrinks to a quiet sidekick on the table; Juni leads the jar line from the window moon.
-  const br=$('#bixRoom'); toyBix(br, 'happy', {size:84}); Fun.Mascot.quiet(br);
+  const br=$('#bixRoom'); toyBix(br, 'happy', {size:84, bubble:false}); Fun.Mascot.quiet(br);
   const [text, vid] = Treats.jarLine();   // Treats.jarLine() feeds only here: its state (via vid) picks Juni's key, caption keeps its dynamic text
   const jKey = vid==='shop_pick' ? 'j_room_jar_pick' : vid==='shop_saving' ? 'j_room_jar_saving' : 'j_room_jar_full';
   const jText = vid==='shop_pick' ? 'Pick a treat to save for. Tap Treats.' : vid==='shop_saving' ? text : 'Your jar is full enough for your treat!';
@@ -1246,7 +1246,7 @@ function wireBixiTap(){ const el=$('#bixLesson'); if (!el || el._cltap) return; 
 /* ---- Bixi moments + jokes between activities (Part 6). Never during a sum: only called on home / the play hub. ---- */
 let bixiIdleT=null;
 // A short Bixi bit or joke, honouring the silliness setting and never repeating until the pool is exhausted (see Classroom.Silly).
-function maybeBixiMoment(el){ if (!CL()) return; const fig=el||$('#bixHome'); CL().Silly.between({figure:fig, bubble:fig && fig.querySelector('.bubble'), ms:6000}); }
+function maybeBixiMoment(el){ if (!CL()) return; const fig=el||$('#bixHome'); const card=fig && document.getElementById(fig.id+'Card'); CL().Silly.between({figure:fig, bubble:card || (fig && fig.querySelector('.bubble')), ms:6000}); }
 // When home sits idle, Bixi dozes off (a calm move, no words). Any tap wakes him with a start.
 function armBixiIdle(){ clearTimeout(bixiIdleT); if (!CL() || CL().Silly.level()==='quiet' || reduced()) return;
   bixiIdleT=setTimeout(()=>{ if ($('#home').classList.contains('active')) CL().move($('#bixHome'), 'sleep', 3200); }, 30000); }
@@ -2417,6 +2417,10 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
+const APP_VERSION='4.16';
+{ const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
+// Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
+['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
 Setup.bind();
 if (firstRun){ show('setup'); Setup.open(); }
 else if (Store.children().length>1 && !sessionStorage.getItem('abacus.who')) showWho();

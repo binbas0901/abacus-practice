@@ -84,8 +84,8 @@ async def main():
         check('each game has its own kit colour: Friend Pop red, Bead Detective indigo, Bead Builder mustard', cols==['pop:red','reader:indigo','build:mustard'], cols)
         hub=await pg.text_content('#playCards')
         check('hub cards show no times', not re.search(r'\d\s*s\b|second', hub), hub)
-        sp=await pg.evaluate("(()=>{const b=document.querySelector('#bixPlay .bubble'); return {say:b.querySelectorAll('.ws-say svg').length, after:(c=>c.display!=='none' && !['none','normal'].includes(c.content) && c.maskImage!=='none')(getComputedStyle(b,'::after'))}})()")
-        check('Play bubble: exactly one speaker icon (the ::after is the paper tail, not an icon)', sp['say']==1 and not sp['after'], sp)
+        sp=await pg.evaluate("(()=>{const inline=document.querySelector('#bixPlay .bubble'); const c=document.querySelector('#bixPlayCard'); return {inline:!!inline, card:!!c, tail:c?c.classList.contains('toy-say'):null}})()")
+        check('Play: Bixi speaks through his tailless reserved card, not a floating bubble', sp['inline']==False and sp['card']==True and sp['tail']==False, sp)
         check('no countdown bar on the game screen', await pg.locator('#game .gbar, #gameBar').count()==0)
         for g, name in (('pop','Friend Pop'),('reader','Bead Detective'),('build','Bead Builder')):
             await pg.click(f'.gcard[data-game={g}]'); await pg.wait_for_selector('#game.active'); await pg.wait_for_timeout(400)

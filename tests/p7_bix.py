@@ -73,6 +73,6 @@ async def main():
         await pg.click('#sBixTest'); await pg.wait_for_timeout(800); pl=await plays(pg); check('Grown-ups test button plays Bix', len(pl)==1)
         await pg.click('#sBixTalks'); await pg.click('#parentDone'); await pg.wait_for_timeout(400)
         await pg.click('#bixHome .bix'); await pg.wait_for_timeout(800)
-        check('Bix switched off -> silent (bubble still shows)', len(await plays(pg))==0 and await pg.locator('#bixHome .bubble.on').count()==1)
+        check('Bix switched off -> silent (bubble still shows)', len(await plays(pg))==0 and await pg.locator('#bixHomeCard.on').count()==1)
         print('errors:', errs); await b.close()
 asyncio.run(main())

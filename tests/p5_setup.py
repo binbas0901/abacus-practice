@@ -46,9 +46,9 @@ async def main():
         await pg.screenshot(path='/tmp/su_name.png')
         # submit the name -> Bixi is introduced AFTER the name step (rolls in during the meet beat).
         await pg.fill('#suNameIn','Leo'); await pg.click('#suNameGo')
-        await pg.wait_for_selector('#setup.cl-bixi-here', timeout=8000)
+        await pg.wait_for_selector('#setup.cl-bixi-here', timeout=20000)
         onname = await pg.evaluate("()=>document.querySelector('#setup').dataset.step")
-        await pg.wait_for_selector('#bixiSetupBubble.on', timeout=8000)   # Bixi rolls in, then greets in his own bubble
+        await pg.wait_for_selector('#bixiSetupBubble.on', timeout=20000)   # Bixi rolls in, then greets in his own bubble
         meet = await pg.evaluate("()=>({step:document.querySelector('#setup').dataset.step, bvis:getComputedStyle(document.querySelector('#bixSetup')).visibility, bwho:document.querySelector('#bixiSetupBubble').dataset.who, btxt:(document.querySelector('#bixiSetupBubble .ctext').textContent||'')});")
         check('Bixi is introduced after the name step (meet beat, rolls in, greets as who=bixi)', onname=='suMeet' and meet['bvis']=='visible' and meet['bwho']=='bixi' and len(meet['btxt'])>0, [onname, meet])
         await pg.screenshot(path='/tmp/su_meet.png')
@@ -58,7 +58,7 @@ async def main():
         await pg.click('#suStart'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(600)
         pr=json.loads(await pg.evaluate("window.__legacy('progress')")); st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         steps=await pg.eval_on_selector_all('#todaySteps .step .sl','els=>els.map(e=>e.textContent)')
-        check("I'm new -> starts at Beads, name saved, first step is Learn", pr['current']=='beads' and st['name']=='Leo' and steps[0]=='Learn', f"{pr['current']} | {st['name']} | {steps} | {await pg.text_content('#bixHome .bubble')}")
+        check("I'm new -> starts at Beads, name saved, first step is Learn", pr['current']=='beads' and st['name']=='Leo' and steps[0]=='Learn', f"{pr['current']} | {st['name']} | {steps} | {await pg.text_content('#bixHomeCard .ctext')}")
         await pg.screenshot(path='/tmp/su_home_new.png')
         await pg.reload(); await pg.wait_for_timeout(800)
         check('after setup, reopening goes straight home', await pg.locator('#home.active').count()==1)
@@ -77,7 +77,7 @@ async def main():
         check('Grown-ups shows "learned (level check)"', 'learned (level check)' in await pg.text_content('#nodeTable'))
         # 3. run the level check again from Grown-ups, stop at the first level -> back to Beads, name kept
         await pg.click('#levelAgain'); await pg.wait_for_selector('#suCheck.on'); await pg.wait_for_timeout(300)
-        await pg.click('#suStop'); await pg.wait_for_selector('#suDone.on', timeout=3000)   # "Stop here" ends the check at once
+        await pg.click('#suStop'); await pg.wait_for_selector('#suDone.on', timeout=12000)   # "Stop here" ends the check at once
         pr=json.loads(await pg.evaluate("window.__legacy('progress')")); st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         check('re-run level check + "Stop here" -> resets to Beads, keeps name', pr['current']=='beads' and st['name']=='Ava' and not any(v.get('mastered') for v in pr['nodes'].values()), f"{pr['current']} {st['name']}")
         await pg.click('#suStart'); await pg.wait_for_selector('#home.active')

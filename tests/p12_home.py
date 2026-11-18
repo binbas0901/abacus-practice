@@ -149,8 +149,8 @@ async def main():
             check(f'{W}x{H}: shop goal card first and fully on screen', gb and gb[0]>=0 and gb[1]<=gb[2], gb)
             await pg.click('#exitShop'); await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
             if W==1366:
-                gap=await pg.evaluate("(()=>{ const s=document.querySelector('#bixHome .bubble').getBoundingClientRect(), r=document.querySelector('.th-rack').getBoundingClientRect(); return r.top-s.bottom; })()")
-                check('iPad Pro: Bix\'s bubble sits well clear of the bead rod (>= 16px)', gap>=16, gap)
+                gap=await pg.evaluate("(()=>{ const c=document.querySelector('#bixHomeCard'); const s=c?c.getBoundingClientRect():{bottom:0}, r=document.querySelector('.th-rack').getBoundingClientRect(); return r.top-s.bottom; })()")
+                check('iPad Pro: Bix\'s card sits clear of the bead rod (>= 16px)', gap>=16, gap)
             await ctx.close()
 
         # ---------- first-time setup: "abacus at home?" saved per child ----------

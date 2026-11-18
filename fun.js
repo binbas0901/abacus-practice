@@ -114,7 +114,8 @@
         if (opts.onTap && opts.onTap() === false) return;
         // Bixi's new recorded voice (Gigi) lives in the classroom system. Route taps there when it's available so
         // every screen uses the new voice; fall back to the legacy clips only if the classroom isn't loaded.
-        const CL = root.Classroom, b = el.querySelector('.bubble');
+        // Prefer Bixi's reserved card (home/play/room: "<id>Card") so his line never floats over Juni; else his inline bubble.
+        const CL = root.Classroom, b = document.getElementById(el.id + 'Card') || el.querySelector('.bubble');
         if (CL && CL.Silly && b) { CL.Silly.tapBixi({ figure: el, bubble: b, ms: opts.keep ? 0 : 3500 }); return; }
         const id = 'tap_' + (1 + Math.floor(Math.random() * 16)); const text = LINES()[id] || pick(TAP_LINES);
         Mascot.say(el, text, opts.keep ? 0 : 3500, id);
