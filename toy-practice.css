@@ -34,6 +34,22 @@
 #drill .tp-top{position:relative;flex:none;height:var(--toy-wall-h);box-sizing:border-box;display:flex;align-items:flex-start;padding:26px var(--pad) 0 30px}
 #drill #exitDrill{flex:none}
 #drill .tp-topright{margin-left:auto;align-self:center;display:flex;align-items:center;gap:14px;min-width:0;margin-top:-22px}
+/* Bixi's snack bar: she feeds him by solving problems. Lives in the stable header so it never collides with the body grid. */
+#drill .tp-energy{align-self:center;display:flex;align-items:center;gap:9px;flex:1 1 auto;min-width:0;max-width:300px;margin:0 16px 0 10px}
+#drill.lt .tp-energy{visibility:hidden}
+#drill .tp-en-face{flex:none;width:34px;height:34px;line-height:0}
+#drill .tp-en-face svg{width:100%;height:100%;display:block}
+#drill .tp-en-track{position:relative;flex:1 1 auto;min-width:36px;height:18px;border-radius:999px;background:rgba(60,42,20,.14);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}
+#drill .tp-en-fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:999px;background:linear-gradient(180deg,#34c79a,#1d9e75);transition:width .45s cubic-bezier(.34,1.56,.64,1)}
+#drill .tp-energy.full .tp-en-fill{background:linear-gradient(180deg,#ffd36b,#f0a52a)}
+#drill .tp-en-pop{position:absolute;inset:0;border-radius:999px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);opacity:0;pointer-events:none}
+#drill .tp-energy.fed .tp-en-pop{animation:tp-en-shine .5s ease}
+#drill .tp-energy.burst{animation:tp-en-burst .5s ease}
+#drill .tp-energy.full{animation:tp-en-full .6s ease}
+@keyframes tp-en-shine{0%{opacity:1;transform:translateX(-100%)}100%{opacity:0;transform:translateX(100%)}}
+@keyframes tp-en-burst{0%,100%{transform:none}35%{transform:scale(1.08)}}
+@keyframes tp-en-full{0%,100%{transform:none}40%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){#drill .tp-en-fill{transition:none}#drill .tp-energy.fed .tp-en-pop,#drill .tp-energy.burst,#drill .tp-energy.full{animation:none}}
 #drill .tp-fixlabel{flex:none;font-size:22px;padding:4px 16px;min-height:40px}
 #drill .tp-rodwrap{position:relative;flex:none;width:min(560px,47vw);height:96px;display:flex;align-items:center}
 #drill .tp-post{position:relative;z-index:2;flex:none;width:20px;height:82px;border-radius:8px;background:linear-gradient(90deg,#F6DAAC,#E6BC82 45%,#B98448);

@@ -1478,7 +1478,7 @@ function drillConfig(n){
 }
 function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec && !settings.flashOwn) ? d.flashSec : settings.flashSec; }   // a skill's own pace, until someone picks one
 function beginSet(){
-  results = problems.map(()=>null); idx=0; t0=Date.now();
+  results = problems.map(()=>null); idx=0; t0=Date.now(); feedStreak=0;
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred(); Tool.apply();
   setStages(); toySky('#drillSky'); show('drill');
@@ -1535,6 +1535,7 @@ function presentProblem(){
   if (mode==='visual') fitTiles();   // after the bubble and "Show me" are in place
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
+  renderEnergy();                      // keep Bixi's snack bar showing today's progress
 }
 let dictateToken=0, listenArmed=false, submitting=false;   // submitting: an answer is being marked (the speed gear waits)
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
@@ -1703,6 +1704,38 @@ function reactVoice(kind){ // kind: 'yes' | 'notyet'
   if(mode==='listen'){ Speaker.say(null, kind==='yes'?'yes':'not quite'); return; }  // listen mode keeps the plain number-voice cue
   if(CL()) CL().say(bixiReactKey(kind), {who:'bixi'});
 }
+
+/* ---------------- Bixi's snack bar: she feeds him by solving problems (per child, resets each day) ---------------- */
+// Never punishing: a wrong answer only cools the streak, it never drains the bar; stopping early keeps what she fed him.
+const FEED_GOAL = 10;        // correct answers to fill Bixi up for the day
+let feedStreak = 0;          // consecutive corrects; every third is a "burst" (the race-to-feed feeling)
+function feedState(){ const F=Fun.data; if (!F.feed || F.feed.day!==todayKey()) F.feed={ day:todayKey(), n:0, full:false }; return F.feed; }
+function renderEnergy(){
+  const el=$('#drillEnergy'); if (!el) return;
+  const s=feedState(), pct=Math.min(1, s.n/FEED_GOAL)*100;
+  const face=el.querySelector('.tp-en-face'); if (face && !face.firstChild) face.innerHTML=bixArt('happy', 34);
+  const fill=el.querySelector('.tp-en-fill'); if (fill) fill.style.width=pct+'%';
+  el.classList.toggle('full', !!s.full);
+  el.setAttribute('aria-label', 'Bixi’s snack bar: ' + (s.full ? 'full' : s.n + ' of ' + FEED_GOAL));
+}
+function pulseEnergy(cls){ const el=$('#drillEnergy'); if(!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); clearTimeout(el['_'+cls]); el['_'+cls]=setTimeout(()=>el.classList.remove(cls), 650); }
+function feedBixi(){
+  const s=feedState();
+  if (s.full){ pulseEnergy('fed'); return; }          // already full today: a little shine, never over-feed
+  feedStreak++;
+  const burst = feedStreak % 3 === 0;                  // on a roll: a bigger bite
+  s.n = Math.min(FEED_GOAL, s.n + (burst ? 2 : 1));
+  pulseEnergy('fed'); if (burst) pulseEnergy('burst');
+  if (s.n >= FEED_GOAL && !s.full){ s.full=true; Fun.save(); renderEnergy(); bixiFull(); return; }
+  Fun.save(); renderEnergy();
+}
+function bixiFull(){
+  pulseEnergy('full');
+  PB.say('Yum! I’m all full — thank you!', 'proud', null, 3000);
+  try{ Treats.earn(2, 'You filled Bixi up!'); }catch(e){}
+  try{ Sfx.ok(); }catch(e){}
+}
+
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
   if (val===null){ shake(); return; }
@@ -1725,9 +1758,11 @@ async function submit(){
     verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
     reactVoice('yes');   // Bixi's recorded cheer stays as the sidekick reaction
+    feedBixi();          // ...and a correct answer feeds his snack bar
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
+    feedStreak=0;        // a miss only cools the streak — the bar never drains
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
     if (!reviewing) JB.say("That's okay. We'll polish it together.", null, 1800);   // Juni reassures (silent text)
     reactVoice('notyet');   // Bixi's recorded groan stays as the sidekick reaction
@@ -2379,6 +2414,9 @@ window.__drillSay = text=>PB.say(text, 'happy', null, 0);
 window.__lesson = ()=>L ? { phase:L.phase, target:L.target, demoIdx:L.demoIdx, guidedIdx:L.guidedIdx, busy:!!L.busy, value: lessonAb ? lessonAb.value : null, did:L.did||0, skipped:L.skipped||0 } : null;
 window.__lessonSet = v=>{ if (lessonAb) lessonAb.poke(v); };
 window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
+// Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
+window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
+window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
 Setup.bind();
 if (firstRun){ show('setup'); Setup.open(); }
 else if (Store.children().length>1 && !sessionStorage.getItem('abacus.who')) showWho();
