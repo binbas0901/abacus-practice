@@ -1128,7 +1128,7 @@ async function renderLesson(){
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
-    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); { const sc=lessonScript(n.id), w=sc&&sc.watch&&sc.watch[L.demoIdx]; if (w) juniNarrate(w.id); else if (L.demoIdx===0) lessonSay('lesson_watch'); } lessonBtn('Next', 'play');
+    cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); lessonBtn('Next', 'play');   // Juni now narrates each step in sync (playSteps); no separate whole-demo clip
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
     return;
   }
@@ -1165,12 +1165,30 @@ async function renderLesson(){
 }
 $('#lessonHint').innerHTML=TOY.icon('eye', 30, 'currentColor')+'<span class="toy-block-label">Show me</span>';
 let animToken=0;
+// Juni narrates each step in her own voice, and the beads move WITH her words (not ahead or behind):
+// the clip plays, the moves land in the back half of the clip (where "add five, take away two" is said),
+// and the step holds until her line finishes. Falls back to a word-count estimate when a clip is missing or muted.
+function narrateStep(text){ try{ if (text && window.Classroom) Classroom.Voice.play('juni', text, juniFig()); }catch(e){} }
+function lessonClipMs(text){
+  try{ if (window.Classroom){ const r=Classroom.Voice.find('juni', text); if (r && r[1] && r[1][1]) return Math.round(r[1][1]*1000); } }catch(e){}
+  const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(1000, Math.round(w*400));   // ~calm teacher pace
+}
 async function playSteps(ab, steps, onStep){
   const my=++animToken; L.busy=true;
   // Each run has its own token, checked after every wait (inside ab.move too): a demo that was left behind
   // (Next tapped mid-move) never touches the beads of the next one.
   const live=()=>my===animToken;
-  for (const s of steps){ if (!live()) return; onStep(s); for (const m of s.do){ if (!live()) return; await ab.move(m.rod, m.delta, 450, live); if (!live()) return; } await sleep(s.do.length?600:900); }
+  for (const s of steps){
+    if (!live()) return; onStep(s);
+    const dur=lessonClipMs(s.say); narrateStep(s.say);
+    if (s.do.length){
+      const lead=Math.max(250, Math.round(dur*0.45));             // let her set up the move, then the beads move as she says it
+      await sleep(lead); if (!live()) return;
+      for (const m of s.do){ if (!live()) return; await ab.move(m.rod, m.delta, 450, live); if (!live()) return; }
+      const rest=dur - lead - s.do.length*450; if (rest>0){ await sleep(rest); if (!live()) return; }
+      await sleep(450);
+    } else { await sleep(dur + 350); }                            // a talking-only step: hold for her whole line
+  }
   if (live()) L.busy=false;
 }
 function onLessonBeads(v){
