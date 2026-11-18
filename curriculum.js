@@ -238,8 +238,8 @@
                                      : `There aren't enough to take ${d}${place(r)}. The big friend of ${d} is ${f}. So we take ten from the next rod…`, do: [] });
       applyDigit(r + 1, 1, true);
       rods[r] += sign * d - sign * 10;
-      if (op === 'add') steps.push({ say: `…and then take away ${f}${rule === 'combined' ? `. Taking ${f} needs the small friend too: take five, add ${FRIEND5[f]}` : ''}.`, do: rule === 'combined' ? [{ rod: r, delta: -5 }, { rod: r, delta: 5 - f }] : [{ rod: r, delta: -f }] });
-      else steps.push({ say: `…and then add ${f}${rule === 'combined' ? `. Adding ${f} needs the small friend too: add five, take ${FRIEND5[f]}` : ''}.`, do: rule === 'combined' ? [{ rod: r, delta: 5 }, { rod: r, delta: f - 5 }] : [{ rod: r, delta: f }] });
+      if (op === 'add') steps.push({ say: rule === 'combined' ? `Then take away ${f} using the small friend: take away five, then add ${FRIEND5[f]} back.` : `Then take away ${f} from this rod.`, do: rule === 'combined' ? [{ rod: r, delta: -5 }, { rod: r, delta: 5 - f }] : [{ rod: r, delta: -f }] });
+      else steps.push({ say: rule === 'combined' ? `Then add ${f} using the small friend: add five, then take ${FRIEND5[f]} off.` : `Then add ${f} to this rod.`, do: rule === 'combined' ? [{ rod: r, delta: 5 }, { rod: r, delta: f - 5 }] : [{ rod: r, delta: f }] });
     }
     const digits = String(Math.abs(delta)).split('').reverse().map(Number);
     for (let r = digits.length - 1; r >= 0; r--) if (digits[r]) applyDigit(r, digits[r], false);
