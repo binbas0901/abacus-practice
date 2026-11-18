@@ -1168,11 +1168,14 @@ let animToken=0;
 // Juni narrates each step in her own voice, and the beads move WITH her words (not ahead or behind):
 // the clip plays, the moves land in the back half of the clip (where "add five, take away two" is said),
 // and the step holds until her line finishes. Falls back to a word-count estimate when a clip is missing or muted.
-function narrateStep(text){ try{ if (text && window.Classroom) Classroom.Voice.play('juni', text, juniFig()); }catch(e){} }
-function lessonClipMs(text){
+// Each lesson step carries a stable key (step.k); her recording is filed under that key, not the sentence,
+// so rewording a caption or restyling the app never breaks playback — only re-recording that key does.
+function narrateStep(s){ try{ if (s && s.k && window.Classroom) Classroom.Voice.play('juni', s.k, juniFig()); }catch(e){} }
+function lessonClipMs(s){
+  const text = s && s.say;
   try{
     if (navigator.webdriver){ const w=(String(text||'').trim().match(/\S+/g)||[]).length; return Math.max(400, Math.min(1200, Math.round(w*120))); }   // automated tests: keep demos quick, no real audio to wait on
-    if (window.Classroom){ const V=Classroom.Voice, r=V.find('juni', text);
+    if (s && s.k && window.Classroom){ const V=Classroom.Voice, r=V.find('juni', s.k);
       // When her clip will actually play, wait its FULL spoken length so the next line never cuts it off mid-sentence.
       if (r && r[0] && r[1] && r[1][1] && V.enabled() && typeof Speaker!=='undefined' && Speaker.gestured) return Math.round(r[1][1]*1000) + 150; }
   }catch(e){}
@@ -1185,7 +1188,7 @@ async function playSteps(ab, steps, onStep){
   const live=()=>my===animToken;
   for (const s of steps){
     if (!live()) return; onStep(s);
-    const dur=lessonClipMs(s.say); narrateStep(s.say);
+    const dur=lessonClipMs(s); narrateStep(s);
     if (s.do.length){
       const lead=Math.max(250, Math.round(dur*0.45));             // let her set up the move, then the beads move as she says it
       await sleep(lead); if (!live()) return;
@@ -2440,7 +2443,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.20';
+const APP_VERSION='4.21';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

@@ -24,7 +24,7 @@ for row in MAN:
     subprocess.run(['ffmpeg', '-y', '-i', mp3, '-ac', '1', '-ar', str(SR), '/tmp/w.wav'], capture_output=True)
     w = wave.open('/tmp/w.wav', 'rb'); n = w.getnframes(); pcm = w.readframes(n); w.close()
     dur = n / SR
-    sprite[row['text']] = [round(cur, 3), round(dur, 3)]
+    sprite[row['id']] = [round(cur, 3), round(dur, 3)]   # keyed by the stable key (step.k), not the raw sentence
     allpcm += pcm; cur += dur
 w = wave.open('/tmp/full.wav', 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes(allpcm); w.close()
 subprocess.run(['ffmpeg', '-y', '-i', '/tmp/full.wav', '-b:a', '48k', '/tmp/sprite.mp3'], capture_output=True)

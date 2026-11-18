@@ -213,7 +213,7 @@
     const op = delta >= 0 ? 'add' : 'sub';
     const ROD_NAMES = ['', 'tens', 'hundreds', 'thousands', 'ten-thousands'];
     const place = r => r === 0 ? '' : ROD_NAMES[r] ? ` on the ${ROD_NAMES[r]} rod` : ' on the next rod';
-    steps.push({ say: `We have ${total}. Now let's ${op === 'add' ? 'add' : 'take away'} ${Math.abs(delta)}.`, do: [] });
+    steps.push({ k: `we.${op}.${total}.${Math.abs(delta)}`, say: `We have ${total}. Now let's ${op === 'add' ? 'add' : 'take away'} ${Math.abs(delta)}.`, do: [] });
 
     function applyDigit(r, d, isCarry) {
       const v = rods[r];
@@ -221,29 +221,31 @@
       const sign = op === 'add' ? 1 : -1;
       if (rule === 'direct') {
         rods[r] += sign * d;
-        steps.push({ say: isCarry ? (op === 'add' ? `Add one${place(r)}.` : `Take one${place(r)}.`)
+        steps.push({ k: isCarry ? (op === 'add' ? `c+.${r}` : `c-.${r}`) : (op === 'add' ? `d+.${d}.${r}` : `d-.${d}.${r}`),
+                     say: isCarry ? (op === 'add' ? `Add one${place(r)}.` : `Take one${place(r)}.`)
                                   : (op === 'add' ? `There are enough beads, so just push ${d}${place(r)} up.` : `There are enough to take, so push ${d}${place(r)} down.`), do: [{ rod: r, delta: sign * d }] });
         return;
       }
       if (rule === 'five') {
         const f = FRIEND5[d];
         rods[r] += sign * d;
-        if (op === 'add') steps.push({ say: `There aren't enough one-beads for ${d}${place(r)}. That's okay — the small friend of ${d} is ${f}. So add five, and take away ${f}.`, do: [{ rod: r, delta: 5 }, { rod: r, delta: -f }] });
-        else steps.push({ say: `There aren't enough one-beads to take ${d}${place(r)}. The small friend of ${d} is ${f}. So take away five, and add ${f}.`, do: [{ rod: r, delta: -5 }, { rod: r, delta: f }] });
+        if (op === 'add') steps.push({ k: `f+.${d}.${r}`, say: `There aren't enough one-beads for ${d}${place(r)}. That's okay — the small friend of ${d} is ${f}. So add five, and take away ${f}.`, do: [{ rod: r, delta: 5 }, { rod: r, delta: -f }] });
+        else steps.push({ k: `f-.${d}.${r}`, say: `There aren't enough one-beads to take ${d}${place(r)}. The small friend of ${d} is ${f}. So take away five, and add ${f}.`, do: [{ rod: r, delta: -5 }, { rod: r, delta: f }] });
         return;
       }
       // ten or combined: carry/borrow on the next rod first, then fix this rod
       const f = FRIEND10[d];
-      steps.push({ say: op === 'add' ? `There's no room for ${d}${place(r)}. The big friend of ${d} is ${f}. So we add ten on the next rod…`
+      steps.push({ k: op === 'add' ? `t+i.${d}.${r}` : `t-i.${d}.${r}`,
+                   say: op === 'add' ? `There's no room for ${d}${place(r)}. The big friend of ${d} is ${f}. So we add ten on the next rod…`
                                      : `There aren't enough to take ${d}${place(r)}. The big friend of ${d} is ${f}. So we take ten from the next rod…`, do: [] });
       applyDigit(r + 1, 1, true);
       rods[r] += sign * d - sign * 10;
-      if (op === 'add') steps.push({ say: rule === 'combined' ? `Then take away ${f} using the small friend: take away five, then add ${FRIEND5[f]} back.` : `Then take away ${f} from this rod.`, do: rule === 'combined' ? [{ rod: r, delta: -5 }, { rod: r, delta: 5 - f }] : [{ rod: r, delta: -f }] });
-      else steps.push({ say: rule === 'combined' ? `Then add ${f} using the small friend: add five, then take ${FRIEND5[f]} off.` : `Then add ${f} to this rod.`, do: rule === 'combined' ? [{ rod: r, delta: 5 }, { rod: r, delta: f - 5 }] : [{ rod: r, delta: f }] });
+      if (op === 'add') steps.push({ k: rule === 'combined' ? `t+fc.${f}` : `t+f.${f}`, say: rule === 'combined' ? `Then take away ${f} using the small friend: take away five, then add ${FRIEND5[f]} back.` : `Then take away ${f} from this rod.`, do: rule === 'combined' ? [{ rod: r, delta: -5 }, { rod: r, delta: 5 - f }] : [{ rod: r, delta: -f }] });
+      else steps.push({ k: rule === 'combined' ? `t-fc.${f}` : `t-f.${f}`, say: rule === 'combined' ? `Then add ${f} using the small friend: add five, then take ${FRIEND5[f]} off.` : `Then add ${f} to this rod.`, do: rule === 'combined' ? [{ rod: r, delta: 5 }, { rod: r, delta: f - 5 }] : [{ rod: r, delta: f }] });
     }
     const digits = String(Math.abs(delta)).split('').reverse().map(Number);
     for (let r = digits.length - 1; r >= 0; r--) if (digits[r]) applyDigit(r, digits[r], false);
-    steps.push({ say: `And now it shows ${total + delta}.`, do: [] });
+    steps.push({ k: `end.${total + delta}`, say: `And now it shows ${total + delta}.`, do: [] });
     return steps;
   }
 
@@ -262,25 +264,25 @@
     if (countUp && a < 10 && b < 10) {
       const big = Math.max(a, b), times = Math.min(a, b);
       const seq = []; for (let k = 1; k <= times; k++) seq.push(big * k);
-      steps.push({ say: `${a} × ${b} means ${times} groups of ${big}. Count up by ${big}s.`, do: [] });
+      steps.push({ k: `m.cu.${a}.${b}`, say: `${a} × ${b} means ${times} groups of ${big}. Count up by ${big}s.`, do: [] });
       let total = 0;
-      for (let k = 1; k <= times; k++) { steps.push({ say: `Add ${big}: ${seq.slice(0, k).join(', ')}.`, do: moveList(explain(total, big)) }); total += big; }
-      steps.push({ say: `${a} × ${b} = ${ans}. Say it by heart: ${a} times ${b} is ${ans}.`, do: [] });
+      for (let k = 1; k <= times; k++) { steps.push({ k: `m.cua.${big}.${k}`, say: `Add ${big}: ${seq.slice(0, k).join(', ')}.`, do: moveList(explain(total, big)) }); total += big; }
+      steps.push({ k: `m.cue.${a}.${b}`, say: `${a} × ${b} = ${ans}. Say it by heart: ${a} times ${b} is ${ans}.`, do: [] });
       return steps;
     }
     const parts = E.mulPartials(a, b);
-    steps.push({ say: parts.length > 1 ? `${a} × ${b}. Start at 0. Go left to right: times each digit of ${a} by ${b}.`
+    steps.push({ k: `m.l.${a}.${b}`, say: parts.length > 1 ? `${a} × ${b}. Start at 0. Go left to right: times each digit of ${a} by ${b}.`
                                        : `${a} × ${b}. Start at 0.`, do: [] });
     let total = 0;
     for (const pt of parts) {
       const two = String(pt.product).padStart(2, '0');
-      if (!pt.value) { steps.push({ say: `${pt.digit} × ${b} = 00. Nothing to add: move one rod to the right.`, do: [] }); continue; }
+      if (!pt.value) { steps.push({ k: `m.lz.${pt.digit}.${b}`, say: `${pt.digit} × ${b} = 00. Nothing to add: move one rod to the right.`, do: [] }); continue; }
       const where = pt.place + 1 < PLACE.length ? `${PLACE[pt.place + 1]} and ${PLACE[pt.place]} rods` : 'next two rods';
       const lead = parts.length > 1 ? `${pt.digit} is on the ${PLACE[pt.place]} rod, so ` : '';
-      steps.push({ say: `${pt.digit} × ${b} = ${two}. ${lead}${two} goes on the ${where}: add ${pt.value}.`, do: moveList(explain(total, pt.value)) });
+      steps.push({ k: `m.lp.${pt.digit}.${b}.${pt.place}.${parts.length > 1 ? 1 : 0}`, say: `${pt.digit} × ${b} = ${two}. ${lead}${two} goes on the ${where}: add ${pt.value}.`, do: moveList(explain(total, pt.value)) });
       total += pt.value;
     }
-    steps.push({ say: `Now it shows ${ans}. ${a} × ${b} = ${ans}.`, do: [] });
+    steps.push({ k: `m.le.${a}.${b}`, say: `Now it shows ${ans}. ${a} × ${b} = ${ans}.`, do: [] });
     return steps;
   }
 
