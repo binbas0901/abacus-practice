@@ -1119,7 +1119,9 @@ async function renderLesson(){
     if (!L.pages) L.pages=lessonPages(n);
     const pg=L.pages[Math.min(L.page, L.pages.length-1)], last=L.page>=L.pages.length-1;
     cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null);
-    if (L.page===0){ lessonAb.reset(); const sc=lessonScript(n.id), ok=sc&&sc.open&&sc.open.id; if (ok){ juniNarrate(ok); capVoice(ok,'juni'); } else { juniNarrate('j_showme'); capVoice('j_showme','juni'); } }   // Juni (the teacher) opens every lesson, never Bixi
+    if (L.page===0){ lessonAb.reset(); const sc=lessonScript(n.id); let ok=sc&&sc.open&&sc.open.id;
+      if (!ok && n.kind==='numbers'){ const st=((window.LESSONS||{})[n.id]||{}).steps||[]; const f=st.find(s=>s.act!=='watch'&&s.act!=='your_turn'&&s.act!=='close'); if (f) ok=f.id; }   // beads: its own opening line, not the generic "Watch the beads move" (nothing moves on this static screen)
+      if (ok){ juniNarrate(ok); capVoice(ok,'juni'); } else { juniNarrate('j_showme'); capVoice('j_showme','juni'); } }   // Juni (the teacher) opens every lesson, never Bixi
     return;
   }
   if (L.phase==='watch'){ // beads node: Juni SHOWS the bead values (move the 5-bead, then a 1-bead) before the child's turn
@@ -1223,7 +1225,10 @@ function onLessonBeads(v){
     clearTimeout(L.tryT);
     if (v!==L.target){ const l=L, at=l.phase+turnIdx();   // the beads rest on another number: a try. After two, Skip turns up.
       l.tryT=setTimeout(()=>{ if (L!==l || l.phase+turnIdx()!==at || l.busy || lessonAb.value===l.target) return; if (++l.tries>=2 && l.showSkip) l.showSkip(); }, 1500); }
-    if (v===L.target){ clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok(); juniNarrate('j_praise_'+(L.node.family===5?'sf':L.node.family===10?'bf':'both')); Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+    if (v===L.target){ clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok();
+      const fam=L.node.family;   // only claim a "friend" when one was really used; beads/direct/mul/etc. get a plain cheer
+      if (fam===5) juniNarrate('j_praise_sf'); else if (fam===10) juniNarrate('j_praise_bf'); else if (L.node.id==='combined') juniNarrate('j_praise_both'); else lessonSay('lesson_yes');
+      Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
 function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
@@ -2454,7 +2459,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.22';
+const APP_VERSION='4.23';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
