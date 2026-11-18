@@ -1022,7 +1022,7 @@ function startLesson(n, from){
   if (!lessonAb || lessonAb.rodsMade!==rods){ if (lessonAb) lessonAb.destroy(); lessonAb = DemoAbacus($('#lessonAbacus'), {rods, readout:true, onBead:()=>Sfx.tap(), onChange:(v)=>onLessonBeads(v)}); lessonAb.rodsMade=rods; }
   lessonAb.reset();
   if (L) clearTimeout(L.skipT), clearTimeout(L.tryT);
-  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
+  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, watchIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   toyBix($('#bixLesson'), 'happy', {size:116, keep:false, bubble:false}); toySky($('#lessonSky'));   // Bixi is the small classmate; Juni (the moon) leads
   $('#lesson').classList.add('cl-juni-forward'); wireMoonTap('#lessonSky');   // Juni leans in from the window to lead
@@ -1122,9 +1122,17 @@ async function renderLesson(){
     if (L.page===0){ lessonAb.reset(); const sc=lessonScript(n.id), ok=sc&&sc.open&&sc.open.id; if (ok){ juniNarrate(ok); capVoice(ok,'juni'); } else { juniNarrate('j_showme'); capVoice('j_showme','juni'); } }   // Juni (the teacher) opens every lesson, never Bixi
     return;
   }
+  if (L.phase==='watch'){ // beads node: Juni SHOWS the bead values (move the 5-bead, then a 1-bead) before the child's turn
+    const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[], w=ws[L.watchIdx]||{}, last=L.watchIdx>=ws.length-1;
+    const m=(w.text||'').match(/\d+/), target=m?+m[0]:1;   // the number this step shows (5-bead -> 5, 1-bead -> 1)
+    cap(`Watch ${L.watchIdx+1} of ${ws.length}`, (w.text||'').replace(/\b(\d+)\b/g,'<b>$1</b>'), ''); lessonBtn(last?'Your turn':'Next', 'play'); lessonAb.setReadOnly(true);
+    const my=++animToken, live=()=>my===animToken;
+    (async()=>{ lessonAb.reset(); await sleep(400); if(!live())return; if (w.id) juniNarrate(w.id); await sleep(650); if(!live())return; await lessonAb.move(0, target, 650, live); })();
+    return;
+  }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt) juniNarrate(yt); else lessonSay('lesson_turn'); } return;
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ lessonSay('lesson_turn'); } return;   // a number-agnostic "your turn" cue — never a hard-coded number
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
@@ -1222,7 +1230,10 @@ function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } e
 function advanceLesson(){
   const n=L.node; animToken++; L.busy=false; L.won=false; lessonAb.clearHighlights();
   if ((L.phase==='numbers' || L.phase==='guided') && L.marks[turnIdx()]===undefined){ L.marks[turnIdx()]=false; L.skipped++; }   // skipped: not done
-  if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; } L.phase = n.kind==='numbers' ? 'numbers' : 'demo'; L.demoIdx=0; }
+  if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; }
+    if (n.kind==='numbers'){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
+    else { L.phase='demo'; L.demoIdx=0; } }
+  else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='numbers'; L.demoIdx=0; } }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
   else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase = hasInterlude(n) ? 'help' : 'done'; }
@@ -2443,7 +2454,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.21';
+const APP_VERSION='4.22';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
