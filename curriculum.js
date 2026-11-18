@@ -213,7 +213,7 @@
     const op = delta >= 0 ? 'add' : 'sub';
     const ROD_NAMES = ['', 'tens', 'hundreds', 'thousands', 'ten-thousands'];
     const place = r => r === 0 ? '' : ROD_NAMES[r] ? ` on the ${ROD_NAMES[r]} rod` : ' on the next rod';
-    steps.push({ say: `We have ${total}. ${op === 'add' ? 'Add' : 'Take away'} ${Math.abs(delta)}.`, do: [] });
+    steps.push({ say: `We have ${total}. Now let's ${op === 'add' ? 'add' : 'take away'} ${Math.abs(delta)}.`, do: [] });
 
     function applyDigit(r, d, isCarry) {
       const v = rods[r];
@@ -221,29 +221,29 @@
       const sign = op === 'add' ? 1 : -1;
       if (rule === 'direct') {
         rods[r] += sign * d;
-        steps.push({ say: isCarry ? (op === 'add' ? `Add 1${place(r)}.` : `Take 1${place(r)}.`)
-                                  : `${op === 'add' ? 'Push' : 'Push away'} ${d}${place(r)}: enough beads, no trick.`, do: [{ rod: r, delta: sign * d }] });
+        steps.push({ say: isCarry ? (op === 'add' ? `Add one${place(r)}.` : `Take one${place(r)}.`)
+                                  : (op === 'add' ? `There are enough beads, so just push ${d}${place(r)} up.` : `There are enough to take, so push ${d}${place(r)} down.`), do: [{ rod: r, delta: sign * d }] });
         return;
       }
       if (rule === 'five') {
         const f = FRIEND5[d];
         rods[r] += sign * d;
-        if (op === 'add') steps.push({ say: `Not enough 1-beads for ${d}${place(r)}. Small friend of ${d} is ${f}: add 5, take away ${f}.`, do: [{ rod: r, delta: 5 }, { rod: r, delta: -f }] });
-        else steps.push({ say: `The 1-beads for ${d} aren't there${place(r)}. Small friend of ${d} is ${f}: take away 5, add ${f}.`, do: [{ rod: r, delta: -5 }, { rod: r, delta: f }] });
+        if (op === 'add') steps.push({ say: `There aren't enough one-beads for ${d}${place(r)}. That's okay — the small friend of ${d} is ${f}. So add five, and take away ${f}.`, do: [{ rod: r, delta: 5 }, { rod: r, delta: -f }] });
+        else steps.push({ say: `There aren't enough one-beads to take ${d}${place(r)}. The small friend of ${d} is ${f}. So take away five, and add ${f}.`, do: [{ rod: r, delta: -5 }, { rod: r, delta: f }] });
         return;
       }
       // ten or combined: carry/borrow on the next rod first, then fix this rod
       const f = FRIEND10[d];
-      steps.push({ say: op === 'add' ? `No room for ${d}${place(r)}. Big friend of ${d} is ${f}: add 10 on the next rod…`
-                                     : `Not enough to take ${d}${place(r)}. Big friend of ${d} is ${f}: take 10 from the next rod…`, do: [] });
+      steps.push({ say: op === 'add' ? `There's no room for ${d}${place(r)}. The big friend of ${d} is ${f}. So we add ten on the next rod…`
+                                     : `There aren't enough to take ${d}${place(r)}. The big friend of ${d} is ${f}. So we take ten from the next rod…`, do: [] });
       applyDigit(r + 1, 1, true);
       rods[r] += sign * d - sign * 10;
-      if (op === 'add') steps.push({ say: `…and take away ${f}${rule === 'combined' ? ` (taking ${f} needs the small friend: take 5, add ${FRIEND5[f]})` : ''}.`, do: rule === 'combined' ? [{ rod: r, delta: -5 }, { rod: r, delta: 5 - f }] : [{ rod: r, delta: -f }] });
-      else steps.push({ say: `…and add ${f}${rule === 'combined' ? ` (adding ${f} needs the small friend: add 5, take ${FRIEND5[f]})` : ''}.`, do: rule === 'combined' ? [{ rod: r, delta: 5 }, { rod: r, delta: f - 5 }] : [{ rod: r, delta: f }] });
+      if (op === 'add') steps.push({ say: `…and then take away ${f}${rule === 'combined' ? `. Taking ${f} needs the small friend too: take five, add ${FRIEND5[f]}` : ''}.`, do: rule === 'combined' ? [{ rod: r, delta: -5 }, { rod: r, delta: 5 - f }] : [{ rod: r, delta: -f }] });
+      else steps.push({ say: `…and then add ${f}${rule === 'combined' ? `. Adding ${f} needs the small friend too: add five, take ${FRIEND5[f]}` : ''}.`, do: rule === 'combined' ? [{ rod: r, delta: 5 }, { rod: r, delta: f - 5 }] : [{ rod: r, delta: f }] });
     }
     const digits = String(Math.abs(delta)).split('').reverse().map(Number);
     for (let r = digits.length - 1; r >= 0; r--) if (digits[r]) applyDigit(r, digits[r], false);
-    steps.push({ say: `Now it shows ${total + delta}.`, do: [] });
+    steps.push({ say: `And now it shows ${total + delta}.`, do: [] });
     return steps;
   }
 
