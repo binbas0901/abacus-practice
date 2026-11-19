@@ -867,7 +867,8 @@ function startMode(m){ stopVoices();
   if (m==='flash') return startFlash(n.kind==='flash' ? n : NODES[curIdx()], 'door');
   return startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
 }
-$('#doorPractice').addEventListener('click', openPractice);
+// Practice-first: the home Practice door launches the guided 10x10 level run (listen/read/build), resuming at the next set.
+$('#doorPractice').addEventListener('click', ()=>{ Speaker.unlock(); Practice.start(); });
 $('#doorPlay').addEventListener('click', ()=>{ Speaker.unlock(); goPlay(); });
 $('#doorRoom').addEventListener('click', ()=>{ Speaker.unlock(); goRoom(); });
 
