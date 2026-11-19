@@ -42,20 +42,19 @@ async def main():
         miss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", ANAT_KEYS)
         check('all 5 anatomy lines have a recorded Juni voice', not miss, miss)
 
-        # start the first lesson and advance through the intro card(s) to the anatomy phase
+        # the FIRST thing the first lesson shows is the parts of the abacus (not the "worth 5 / worth 1" card)
         await pg.evaluate("()=>window.Lessons.start('beads','home')")
         await pg.wait_for_timeout(500)
-        for _ in range(5):
-            ph = await pg.evaluate("()=>document.querySelector('#lesson').dataset.phase")
-            if ph == 'anatomy':
-                break
-            await pg.evaluate("()=>document.querySelector('#lessonNext').click()")
-            await pg.wait_for_timeout(400)
-        check('the lesson reaches the anatomy phase before anything else', await pg.evaluate("()=>document.querySelector('#lesson').dataset.phase") == 'anatomy')
+        first_phase = await pg.evaluate("()=>document.querySelector('#lesson').dataset.phase")
+        check('the FIRST thing lesson one shows is the parts of the abacus', first_phase == 'anatomy', first_phase)
+        first_kind = (await pg.text_content('#capKind')) or ''
+        check('the first card is labelled "Parts of the abacus" (not a value rule)', 'Parts of the abacus' in first_kind, first_kind)
 
-        # step through all 5 parts, checking the caption, the right glow, and ordering
+        async def readout():
+            return await pg.evaluate("()=>{const b=document.querySelector('#lessonAbacus .abx-readout b');return b?b.textContent.trim():'?';}")
+
+        # step through all 5 parts, checking the caption, the right glow, and the demo for rod / heaven
         for i in range(5):
-            idx = i
             kind = (await pg.text_content('#capKind')) or ''
             check(f'step {i}: labelled "Parts of the abacus"', 'Parts of the abacus' in kind, kind)
             await pg.wait_for_timeout(350)  # let reset+anatHL run
@@ -66,14 +65,27 @@ async def main():
             if i in (1, 2, 3):
                 total = await pg.evaluate("()=>document.querySelectorAll('#lessonAbacus .abx-anat').length")
                 check(f'step {i}: only the named part glows', total == 1, total)
-            if i == 3:
+            if i == 1:  # rod: a bead slides up and down (readout ticks to 1 during the slide)
+                slid = False
+                for _ in range(16):
+                    if (await readout()) == '1': slid = True; break
+                    await pg.wait_for_timeout(120)
+                check('step 1: a bead slides on the rod (readout reaches 1)', slid)
+            if i == 3:  # heaven: the bead slides to the beam to show 5
+                shown = False
+                for _ in range(16):
+                    if (await readout()) == '5': shown = True; break
+                    await pg.wait_for_timeout(120)
+                check('step 3: the heaven bead shows its value (readout reaches 5)', shown)
                 await pg.screenshot(path='/tmp/anat_heaven.png')
             await pg.evaluate("()=>document.querySelector('#lessonNext').click()")
             await pg.wait_for_timeout(350)
 
-        # after the 5 parts, it flows into the value/watch step (not straight to the quiz)
+        # after the 5 parts come the "New skill" card, then the value/watch demos
         ph = await pg.evaluate("()=>document.querySelector('#lesson').dataset.phase")
-        check('after naming the parts, the lesson flows into the watch/value step', ph == 'watch', ph)
+        check('after naming the parts, the "New skill" intro card follows', ph == 'intro', ph)
+        intro_kind = (await pg.text_content('#capKind')) or ''
+        check('the value-rule card ("New skill") now comes AFTER the parts', 'New skill' in intro_kind, intro_kind)
         stale = await pg.evaluate("()=>document.querySelectorAll('#lessonAbacus .abx-anat').length")
         check('the glow is cleared once the anatomy phase ends', stale == 0, stale)
 
