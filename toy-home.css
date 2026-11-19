@@ -430,6 +430,10 @@ html.kb-tiny #setup[data-step=suName] .to-bix{display:none}
 #suPad .toy-keypad-mat{padding:16px 18px 18px}
 #suPad .toy-key{font-size:clamp(30px,4.2vh,40px)}
 .to-go{grid-column:2;grid-row:2;margin-bottom:8px}
+/* no abacus at home: the level check runs on the on-screen soroban in the keypad's slot */
+#suCheck.to-check--beads #suPad{padding:0;place-self:end center}
+#suCheck.to-check--beads .to-beadhost{display:flex;justify-content:center;align-items:flex-end}
+#suCheck.to-check--beads .to-beadhost .abx-svg{max-width:min(360px,46vw);height:auto}
 /* the level check uses the practice sheet: the sum, a rule and the answer slot on one clipboard; keys as big as in practice */
 .to-sheet{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-width:210px;padding:18px 22px 16px;transform:rotate(-1deg)}
 #suProb.to-prob{min-width:0;padding:0;transform:none}

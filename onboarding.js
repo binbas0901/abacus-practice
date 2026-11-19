@@ -157,8 +157,12 @@
   /* ---------- level check ---------- */
   async function check() {
     const my = ++token; const E = root.SorobanEngine, C = root.Curriculum;
-    step('suCheck'); juniSay('j_intro_abacususe');
-    const pad = makePad($('#suPad'), $('#suAns'));
+    // No abacus at home → the child works each problem on the on-screen soroban (the same one practice uses),
+    // so "find the level" is actually doable. With a physical abacus they keep the keypad and type the answer.
+    const onScreen = App().settings.hasAbacus === false;
+    $('#suCheck').classList.toggle('to-check--beads', onScreen);
+    step('suCheck'); juniSay(onScreen ? 'j_start_look' : 'j_intro_abacususe');
+    const pad = onScreen ? makeBeadsPad($('#suPad'), $('#suAns')) : makePad($('#suPad'), $('#suAns'));
     // "Stop here": the check ends now and practice starts at this level (it does not wait for the next answer).
     let stopAt = false, hinted = false; const mastered = [];
     $('#suStop').onclick = () => { if (my !== token) return; App().Sfx.tap(); stopAt = true; pad.cancel(); };
@@ -203,6 +207,20 @@
       onBackspace() { if (!waiting) return; App().Sfx.tap(); set(val.slice(0, -1)); } });
     go.onclick = () => { if (!waiting || val === '') return; App().Sfx.tap(); const w = waiting; waiting = null; go.disabled = true; w(parseInt(val, 10)); };
     return { ask() { set(''); return new Promise(r => { waiting = r; }); },
+      cancel() { if (!waiting) return; const w = waiting; waiting = null; go.disabled = true; w(null); } };
+  }
+  // The on-screen soroban for a child with no abacus at home: they build each sum on the beads and the answer is
+  // read straight off them; the round Check button submits. Same component the real practice uses (AbacusInput).
+  function makeBeadsPad(el, ansEl) {
+    const go = $('#suGo');
+    el.innerHTML = '';
+    const host = document.createElement('div'); host.className = 'to-beadhost'; el.appendChild(host);
+    let waiting = null;
+    const ab = root.AbacusInput.create(host, { rods: 3, showReadout: false, scale: 1,
+      onBead() { App().Sfx.tap(); },
+      onChange(v) { ansEl.textContent = v; } });
+    go.onclick = () => { if (!waiting) return; App().Sfx.tap(); const w = waiting; waiting = null; go.disabled = true; w(ab.value()); };
+    return { ask() { ab.clear({ animate: false }); ansEl.textContent = '0'; go.disabled = false; return new Promise(r => { waiting = r; }); },
       cancel() { if (!waiting) return; const w = waiting; waiting = null; go.disabled = true; w(null); } };
   }
 
