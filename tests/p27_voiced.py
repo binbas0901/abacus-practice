@@ -70,6 +70,10 @@ async def main():
         anat = ['anat_abacus','anat_rod','anat_beam','anat_heaven','anat_earth']
         amiss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", anat)
         check('parts-of-the-abacus step lines all have a voice', not amiss, amiss)
+        # Juni's varied encouragement + her "your turn" cue must all be recorded
+        praise = ['praise_1','praise_2','praise_3','praise_4','praise_5','praise_6','praise_7','praise_8','juni_turn']
+        pmiss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", praise)
+        check('Juni encouragement + your-turn lines all have a voice', not pmiss, pmiss)
         # the locked-practice banner has a voice too
         banner = await pg.evaluate("""()=>{const r=window.Classroom.Voice.find('juni','j_door_first');return !!(r&&r[0]&&r[1]);}""")
         check('practice "sums come soon" banner has a voice line', banner)

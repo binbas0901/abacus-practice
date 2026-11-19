@@ -1124,6 +1124,22 @@ function lessonSkip(){
 // Learned = she really did most of the "Your turn" steps (two in three); skipped ones do not count.
 function lessonLearned(){ const t=turnTotal(L.node); return L.did*3 >= t*2; }
 function lessonSay(id){ Fun.BixVoice.play(id, $('#bixLesson')); capVoice(id); }
+// Juni's varied encouragement for a correct "your turn" — rotate so she never repeats the same line twice running
+// (replaces Bixi saying one stock "that's it" every time). Keyed lines live in the juni-praise voice pack.
+const PRAISE_LINES=[
+  {k:'praise_1', text:"That's it!"}, {k:'praise_2', text:"Lovely work!"}, {k:'praise_3', text:"You've got it!"},
+  {k:'praise_4', text:"Perfect!"}, {k:'praise_5', text:"Yes, exactly right!"}, {k:'praise_6', text:"Nicely done!"},
+  {k:'praise_7', text:"You did it!"}, {k:'praise_8', text:"Wonderful!"},
+];
+let praiseBag=[];
+function nextPraise(){
+  if (!praiseBag.length){
+    praiseBag=PRAISE_LINES.map((_,i)=>i);
+    for (let i=praiseBag.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [praiseBag[i],praiseBag[j]]=[praiseBag[j],praiseBag[i]]; }
+    if (praiseBag[praiseBag.length-1]===nextPraise.last && praiseBag.length>1){ [praiseBag[praiseBag.length-1],praiseBag[0]]=[praiseBag[0],praiseBag[praiseBag.length-1]]; }   // no repeat across a reshuffle
+  }
+  const idx=praiseBag.pop(); nextPraise.last=idx; return PRAISE_LINES[idx];
+}
 /* ---- classroom lesson flow (Part 4): Juni leads; Bixi (the bead) is the classmate who sometimes slips ---- */
 // The scripted dialogue for a node from lessons.json (window.LESSONS), grouped by act. Null if there is none.
 function lessonScript(nodeId){
@@ -1210,7 +1226,7 @@ async function renderLesson(){
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ lessonSay('lesson_turn'); } return;   // a number-agnostic "your turn" cue — never a hard-coded number
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (a number-agnostic one — never a hard-coded number)
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
@@ -1221,7 +1237,7 @@ async function renderLesson(){
   if (L.phase==='guided'){
     const ls=lessonStep(n, n.guided[L.guidedIdx]); L.target=ls.target; lessonAb.value=ls.start;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label); { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
-    lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else lessonSay('lesson_turn'); } return;
+    lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else { juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } } return;
   }
   if (L.phase==='help'){   // Bixi the classmate makes the classic slip; the child helps fix it (Part 4)
     const sc=lessonScript(n.id), ex=interludeExample(n);
@@ -1347,9 +1363,9 @@ function onLessonBeads(v){
     if (v!==L.target){ const l=L, at=l.phase+turnIdx();   // the beads rest on another number: a try. After two, Skip turns up.
       l.tryT=setTimeout(()=>{ if (L!==l || l.phase+turnIdx()!==at || l.busy || lessonAb.value===l.target) return; if (++l.tries>=2 && l.showSkip) l.showSkip(); }, 1500); }
     if (v===L.target){ clearTimeout(L.skipT); $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok();
-      const fam=L.node.family;   // only claim a "friend" when one was really used; beads/direct/mul/etc. get a plain cheer
-      if (fam===5) juniNarrate('j_praise_sf'); else if (fam===10) juniNarrate('j_praise_bf'); else if (L.node.id==='combined') juniNarrate('j_praise_both'); else lessonSay('lesson_yes');
-      Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
+      const pr=nextPraise();   // Juni (the teacher) gives a different word of encouragement each time — never Bixi, never the same line twice running
+      cap('Yes!', `<b>${v}</b> — ${pr.text}`); juniNarrate(pr.k); capVoice(pr.k,'juni');
+      Fun.Mascot.react($('#bixLesson'), 'happy'); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
 function leaveLesson(){ animToken++; if (lessonFrom==='door'){ renderDoor.skipGreet=true; show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
@@ -2583,7 +2599,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.32';
+const APP_VERSION='4.33';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
