@@ -14,14 +14,14 @@ async def main():
         # seed: 12 correct yesterday on bf_add_a, lesson done
         await pg.evaluate("""(()=>{const pr={current:'bf_add_a',nodes:{}}; ['beads','add_direct','sub_direct','sf_add','sf_sub'].forEach(id=>pr.nodes[id]={lesson:true,mastered:'parent',hist:[]});
           pr.nodes.bf_add_a={lesson:true,mastered:null,hist:Array.from({length:12},()=>({ok:true,day:'2026-11-11'}))}; localStorage.setItem('abacus.progress',JSON.stringify(pr)); Store.remove('fun');})()""")
-        await pg.reload(); print('today:', await pg.text_content('#todayTitle'))
-        await pg.click('#todayGo'); await pg.wait_for_timeout(300)
+        await pg.reload(); await pg.wait_for_timeout(300); await pg.mouse.click(600,12); await pg.wait_for_timeout(200); print('practising:', await pg.evaluate("App.currentNode().id"))
+        await pg.evaluate("App.startMode('visual')"); await pg.wait_for_selector('#drill.active'); await pg.wait_for_timeout(300)
         for i in range(10):
             terms = await pg.eval_on_selector_all('#problemArea .term', 'els=>els.map(e=>e.textContent.replace("−","-"))')
             for ch in str(sum(int(t) for t in terms)): await pg.click(f'#pad [data-k="{ch}"]')
             await pg.click('#pad [data-k=go]'); await pg.wait_for_timeout(850)
         await pg.wait_for_selector('#summary.active'); await _collect_all(pg); print('score:', await pg.text_content('#sumScore'), '|', await pg.text_content('#sumNote'))
         await pg.screenshot(path='/tmp/p2_levelup.png')
-        await pg.click('#homeBtn'); await pg.wait_for_timeout(300); print('now:', await pg.text_content('#greetSub'), '|', await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.textContent)'))
+        await pg.click('#homeBtn'); await pg.wait_for_timeout(300); print('now:', await pg.evaluate("App.currentNode().id"), '| trophy', await pg.text_content('#homeTrophy'))
         await pg.screenshot(path='/tmp/p2_home3.png'); print('errors:', errs); await b.close()
 asyncio.run(main())

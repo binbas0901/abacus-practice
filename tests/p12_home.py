@@ -27,8 +27,7 @@ async def main():
         await pg.add_init_script(SEED); await pg.add_init_script(STATE)
         await pg.goto(URL); await pg.wait_for_timeout(900)
 
-        # ---------- home ----------
-        steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
+        # ---------- home (practice-first: one big Practice, the level trophy, Play/My room as earned breaks) ----------
         check('home: Bix on the table (sidekick), Juni greets with the child name, grown-ups lock',
               await pg.locator('#bixHome .bix > .toy-bix').count()==1 and 'Mia' in await pg.text_content('#homeJuni') and await pg.get_attribute('#homeJuni','data-who')=='juni' and await pg.locator('#home #grownups[aria-label]').count()==1)
         # Juni leads the home greeting alone; Bixi is a silent, waving sidekick (no competing countdown bubble)
@@ -38,49 +37,43 @@ async def main():
         spoke=await pg.evaluate("window.__spoke.slice(0)")
         check('home greeting: Juni greets alone (j_hello_*); Bixi stays a silent sidekick (no countdown)',
               bool(spoke) and spoke[0].startswith('juni:j_hello_') and not any(x.startswith('bixi:b_home_steps') for x in spoke[1:]), spoke)
-        check('home: Today with 3 lacquered beads on the rod; only the next one glows',
-              len(steps)==3 and 'next' in steps[0] and 'later' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.now').count()==1 and await pg.locator('#todaySteps svg.toy-bead').count()==3, steps)
-        check('home: one big Start and three doors (Practice / Play / My Room with bead chip)',
-              (await pg.text_content('#todayGoT'))=='Start' and await pg.locator('.th-doors > button').count()==3 and (await pg.text_content('#roomBeads')).strip()=='12')
+        check('home: one big Practice button and the level trophy (10 beads); the old Today strip is gone',
+              await pg.locator('#doorPractice').count()==1 and await pg.locator('#homeTrophy .th-pip').count()==10 and await pg.locator('#todaySteps, #todayGo').count()==0)
+        doors=await pg.eval_on_selector_all('.th-doors > button .toy-block-label','els=>els.map(e=>e.textContent.trim())')
+        check('home: two earned-break doors (Play / My room) with the bead chip',
+              doors==['Play','My room'] and (await pg.text_content('#roomBeads')).strip()=='12', doors)
         check('home: old skill path, mode tiles, jar and garden are gone from home',
               await pg.locator('#home #path, #home .tile, #home #jar, #home #garden').count()==0)
         check('home: no emoji in the UI text', not any(ord(c)>0x2600 for c in await pg.text_content('#home')))
-        start=await pg.eval_on_selector('#todayGo','e=>{const r=e.getBoundingClientRect(); return [r.width,r.height]}')
-        check('home: targets are big (Start >= 140px, three block doors >= 100px tall)', min(start)>=140 and await pg.evaluate("(d=>d.length===3 && d.every(e=>e.getBoundingClientRect().height>=100))([...document.querySelectorAll('.th-door')])"), start)
+        prac=await pg.eval_on_selector('#doorPractice','e=>{const r=e.getBoundingClientRect(); return [r.width,r.height]}')
+        check('home: Practice is the big hero (>= 200px) and dominates the two demoted doors',
+              min(prac)>=200 and await pg.evaluate("(()=>{const p=document.querySelector('#doorPractice').getBoundingClientRect(), d=[...document.querySelectorAll('.th-door--mini')]; return d.length===2 && d.every(e=>e.getBoundingClientRect().height < p.height);})()"), prac)
+        check('home: the demoted doors are still real tap targets (>= 60px tall)',
+              await pg.evaluate("[...document.querySelectorAll('.th-door--mini')].every(e=>e.getBoundingClientRect().height>=60)"))
         check('home: one child -> no "Switch child"', not await pg.is_visible('#switchKid'))
-        # a finished step turns jade with a check, the next one takes over
-        await pg.evaluate("Fun.data.today.steps[0].done=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(200)
-        steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
-        check('done step: teal bead + check, Start becomes Next for step 2', 'done' in steps[0] and 'next' in steps[1] and (await pg.text_content('#todayGoT'))=='Next' and '2 more' in await pg.text_content('#greetSub'), steps)
-        await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(200)
-        check('all done: "All done!", big button turns into Play', 'done' in await pg.text_content('#todayTitle') and (await pg.text_content('#todayGoT'))=='Play' and await pg.locator('#todayGo.play').count()==1)
-        await pg.click('#todayGo'); await pg.wait_for_selector('#play.active'); await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
+        # the trophy fills as practice sets are cleared; the cup lights at 10/10 (driven through the real level API)
+        cid=await pg.evaluate("App.currentNode().id")
+        await pg.evaluate("id=>{ for(let i=0;i<4;i++) window.__level.completeSet(id); App.renderHome(); }", cid); await pg.wait_for_timeout(200)
+        check('trophy: 4 of 10 beads filled, label "4 / 10", cup not yet lit',
+              await pg.locator('#homeTrophy .th-pip.on').count()==4 and '4 / 10' in await pg.text_content('#homeTrophy') and await pg.locator('#homeTrophy .th-cup.lit').count()==0)
+        await pg.evaluate("id=>{ for(let i=0;i<6;i++) window.__level.completeSet(id); App.renderHome(); }", cid); await pg.wait_for_timeout(200)
+        check('level done: 10 beads filled, cup lit, "Level done!", home shows the finished state',
+              await pg.locator('#homeTrophy .th-pip.on').count()==10 and await pg.locator('#homeTrophy .th-cup.lit').count()==1 and 'Level done' in await pg.text_content('#homeTrophy') and await pg.locator('#home.is-done').count()==1)
+        # reset this level's progress for the rest of the walkthrough
+        await pg.evaluate("(()=>{ const p=Store.get('progress'); p.nodes[p.current].setsDone=0; Store.set('progress',p); })()"); await pg.reload(); await pg.wait_for_timeout(900); await pg.wait_for_selector('#home.active')
+        await pg.click('#doorPlay'); await pg.wait_for_selector('#play.active'); await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
 
-        # ---------- Today's plan is frozen for the day; finished steps first; "Next" mid-day ----------
-        await pg.evaluate("Fun.data.today=null; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(150)
-        plan=await pg.evaluate("Fun.data.today.steps.map(s=>s.kind+(s.game?':'+s.game:''))")
-        await pg.evaluate("Fun.data.today.steps[1].done=true; Fun.save()")
-        # mid-day unlock: today's lesson got learned elsewhere and the next skill opened (the old code reshuffled the plan here)
-        await pg.evaluate("(()=>{ const p=Store.get('progress'); p.nodes[p.current]=Object.assign(p.nodes[p.current]||{hist:[]},{lesson:true,mastered:'auto'}); p.current='bf_add_b'; p.nodes.bf_add_b={lesson:true,hist:[]}; Store.set('progress',p); })()")
-        await pg.reload(); await pg.wait_for_timeout(900)
-        after=await pg.evaluate("Fun.data.today.steps.map(s=>s.kind+(s.game?':'+s.game:''))")
-        cur=await pg.evaluate("App.currentNode().id")
-        check('plan frozen after a mid-day unlock (same steps, same order)', after==plan and cur=='bf_add_b', f"{plan} -> {after} (now {cur})")
-        steps=await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className)')
-        check('finished step shown first (teal + check), the next one after it', 'done' in steps[0] and 'next' in steps[1] and 'later' in steps[2] and await pg.locator('#todaySteps .step.done .th-bead path[fill="url(#toy-lac-teal)"]').count()==1 and await pg.locator('#todaySteps .step.done .th-bead-ic svg').count()==1, steps)
-        check('main button reads "Next" mid-day', (await pg.text_content('#todayGoT'))=='Next' and 'Next' in await pg.get_attribute('#todayGo','aria-label'))
-        await pg.evaluate("Fun.data.today.steps.forEach(s=>s.done=true); Fun.data.today.celebrated=true; Fun.save(); App.renderHome()"); await pg.wait_for_timeout(150)
-        check('end of the day: Play', (await pg.text_content('#todayGoT'))=='Play')
+        # (The old frozen "Today" 3-step plan is retired: practice is now one 10x10 level driven by the Practice hero.)
         # the Switch child button and the version stay out of the child's way
         # the version is for grown-ups only (shown in Grown-ups, where 5 taps open diagnostics); #ver stays in the DOM as its source
         vis_ver=await pg.evaluate("[...document.querySelectorAll('#home *')].filter(e=>e.offsetParent!==null && e.children.length===0 && /\\bv\\d+\\.\\d+/.test(e.textContent)).map(e=>e.id||e.className)")
         check('no version text on the child home (#ver kept in the DOM, hidden)', not vis_ver and await pg.locator('#home #ver').count()==1 and not await pg.is_visible('#ver') and 'v' in (await pg.text_content('#ver')), vis_ver)
         check('dead skill menu (#nodemenu) is gone', await pg.locator('#nodemenu, #nmLearn').count()==0)
 
-        # ---------- the three doors ----------
-        await pg.click('#doorPractice'); await pg.wait_for_timeout(400)
-        check('Practice door -> the Practice door screen', await pg.locator('#door.active').count()==1)
-        await pg.evaluate("App.goHome()")
+        # ---------- the doors: Practice launches the level run; Play / My room are the breaks ----------
+        await pg.click('#doorPractice'); await pg.wait_for_timeout(600)
+        check('Practice hero -> starts the orchestrated level run', await pg.evaluate("window.__practice.on")==True)
+        await pg.evaluate("window.__practice.stop(); App.goHome()"); await pg.wait_for_selector('#home.active')
         await pg.click('#doorPlay'); await pg.wait_for_selector('#play.active')
         check('Play door -> games', await pg.locator('#play.active').count()==1)
         await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
@@ -133,8 +126,8 @@ async def main():
 
         # ---------- reduced motion ----------
         await pg.emulate_media(reduced_motion='reduce'); await pg.wait_for_timeout(100)
-        anim=await pg.evaluate("[...document.querySelectorAll('#home .toy-bix-breathe, #home .toy-lid, #home .toy-moon-halo, #home .bix > .toy-bix, #home .toy-bix-mouth, #home .th-bead')].map(e=>getComputedStyle(e).animationName)")
-        check('reduced motion: Bix, the moon and the beads hold still', len(anim)>=4 and all(a=='none' for a in anim), anim)
+        anim=await pg.evaluate("[...document.querySelectorAll('#home .toy-bix-breathe, #home .toy-lid, #home .toy-moon-halo, #home .bix > .toy-bix, #home .toy-bix-mouth, #home .th-pip')].map(e=>getComputedStyle(e).animationName)")
+        check('reduced motion: Bix, the moon and the trophy beads hold still', len(anim)>=4 and all(a=='none' for a in anim), anim)
         await pg.emulate_media(reduced_motion='no-preference')
         await ctx.close()
 
@@ -149,8 +142,8 @@ async def main():
             check(f'{W}x{H}: shop goal card first and fully on screen', gb and gb[0]>=0 and gb[1]<=gb[2], gb)
             await pg.click('#exitShop'); await pg.click('#exitRoom'); await pg.wait_for_selector('#home.active')
             if W==1366:
-                gap=await pg.evaluate("(()=>{ const c=document.querySelector('#bixHomeCard'); const s=c?c.getBoundingClientRect():{bottom:0}, r=document.querySelector('.th-rack').getBoundingClientRect(); return r.top-s.bottom; })()")
-                check('iPad Pro: Bix\'s card sits clear of the bead rod (>= 16px)', gap>=16, gap)
+                heroTop=await pg.evaluate("document.querySelector('.th-hero').getBoundingClientRect().top")
+                check('iPad Pro: Practice hero sits below the wall, on the table', heroTop>0, heroTop)
             await ctx.close()
 
         # ---------- first-time setup: "abacus at home?" saved per child ----------

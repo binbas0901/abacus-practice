@@ -13,9 +13,9 @@ async def main():
         pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console: '+m.text) if m.type=='error' and 'favicon' not in m.text else None)
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.wait_for_timeout(500)
         await pg.screenshot(path='/tmp/p2_home.png')
-        # Today = lesson for bf_add_a (lesson not done)
-        print('today:', await pg.text_content('#todayTitle'))
-        await pg.click('#todayGo'); await pg.wait_for_timeout(400); await pg.screenshot(path='/tmp/p2_lesson_intro.png')
+        # lesson for bf_add_a (lesson not done) -- started the way the Practice hero does it
+        print('lesson for:', await pg.evaluate("App.currentNode().id"))
+        await pg.evaluate("App.startMode('learn')"); await pg.wait_for_selector('#lesson.active'); await pg.wait_for_timeout(400); await pg.screenshot(path='/tmp/p2_lesson_intro.png')
         for _ in range(6):   # the intro may span a few pages (Bix's bubble holds at most 3 lines)
             await pg.click('#lessonNext'); await pg.wait_for_timeout(300)
             if (await pg.text_content('#capKind')).startswith('Watch'): break

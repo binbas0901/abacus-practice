@@ -40,25 +40,22 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
         ctx,pg,errs = await fresh(b)
-        labels=await pg.eval_on_selector_all('#todaySteps .step .sl','els=>els.map(e=>e.textContent)')
-        check('day one plan: Learn, then making numbers, then reading them (no Look / Listen on a skill without sums)', await plan(pg)==['lesson','game:build','game:reader'] and labels==['Learn','Bead Builder','Bead Detective'], [await plan(pg), labels])
-        lab=await pg.evaluate("(()=>{ const st=[...document.querySelectorAll('#todaySteps .step')].map(s=>[s.getBoundingClientRect(), s.querySelector('.th-lab').getBoundingClientRect(), s.querySelector('.th-bead').getBoundingClientRect()]); return { inThird: st.every(([t,l])=>l.left>=t.left-.5&&l.right<=t.right+.5), apart: st.every(([t,l],i)=>!i||l.left>=st[i-1][1].right), centred: st.every(([t,l,b])=>Math.abs((l.left+l.right)-(b.left+b.right))<4) }; })()")
-        check('home: each step label stays in its own third, centred under its bead (long game names wrap, none touch)', lab['inThird'] and lab['apart'] and lab['centred'], lab)
-        # step 1: the lesson, really done
-        await pg.click('#todayGo'); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
+        await pg.mouse.click(600, 12); await pg.wait_for_timeout(300)
+        check('day one: a new profile starts on Beads, with the Practice hero + an empty trophy (0/10)',
+              await pg.evaluate("App.currentNode().id")=='beads' and await pg.locator('#doorPractice').count()==1 and '0 / 10' in await pg.text_content('#homeTrophy'))
+        # step 1: the lesson, really done (started the way the Practice hero starts the current skill)
+        await pg.evaluate("App.startMode('learn')"); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
         check('lesson "Your turn": no Skip at first (the beads are the way forward)', await pg.eval_on_selector('#lessonNext','e=>getComputedStyle(e).visibility')=='hidden')
         await pg.screenshot(path='/tmp/p15_turn.png')
         n=await do_turns(pg, 'numbers')
         check('lesson: nine numbers made -> Done, all step beads done', n==9 and await pg.text_content('#capKind')=='Done!' and await pg.locator('#lessonSteps .ls-dot.ok').count()==9, [n, await pg.text_content('#capKind')])
         t=await collect_all(pg); check('lesson done -> sticker', len(t)==1, t)
         await pg.click('#lessonNext'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(300)
-        check('step 1 ticked', await steps_done(pg)==[True,False,False], await steps_done(pg))
-        bub=await pg.text_content('#bixHomeCard .ctext')
-        check('home after step 1: the big button reads Next (not Start)', await pg.text_content('#todayGoT')=='Next' and 'Next' in await pg.get_attribute('#todayGo','aria-label'), bub)
+        check('home after the lesson: the Beads lesson is marked learned', await pg.evaluate("JSON.parse(window.__legacy('progress')).nodes.beads.lesson")==True)
         await pg.screenshot(path='/tmp/p15_home1.png')
-        # step 2: Bead Builder
-        await pg.evaluate("App.gameNumbers=3"); await pg.click('#todayGo'); await pg.wait_for_selector('#game.active')
-        check('step 2 is Bead Builder (make the number)', await pg.get_attribute('#game','data-game')=='build')
+        # a Beads skill has no sums, so it is practised by making numbers (Bead Builder) and reading them (Bead Detective)
+        await pg.evaluate("App.gameNumbers=3; void Games.open('build', {from:'home'})"); await pg.wait_for_selector('#game.active')
+        check('Bead Builder opens (make the number)', await pg.get_attribute('#game','data-game')=='build')
         await build_round(pg, 3)
         await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
         check('the sticker present comes alone: no result card under it', await pg.locator('#game .gresult').count()==0 and await pg.locator('#game .gscrim').count()==0)
@@ -67,19 +64,19 @@ async def main():
         check('...then the result card, with no present on top', len(t)==1 and await pg.locator('#stickerReveal.active').count()==0, t)
         await pg.screenshot(path='/tmp/p15_result.png')
         await pg.click('.gresult [data-a=done]'); await pg.wait_for_timeout(400)
-        check('Done after a Today game goes home (the bead ticks, the moon fills)', await pg.locator('#home.active').count()==1 and await steps_done(pg)==[True,True,False], await steps_done(pg))
-        # step 3: Bead Detective
-        await pg.evaluate("App.gameReads=3"); await pg.click('#todayGo'); await pg.wait_for_selector('#game.active')
-        check('step 3 is a different beads activity: Bead Detective (read the number)', await pg.get_attribute('#game','data-game')=='reader' and await pg.locator('#drill.active').count()==0)
+        check('Done after a beads game goes home', await pg.locator('#home.active').count()==1)
+        # Bead Detective (read the number) -- never a drill on a skill without sums
+        await pg.evaluate("App.gameReads=3; void Games.open('reader', {from:'home'})"); await pg.wait_for_selector('#game.active')
+        check('Bead Detective opens (read the number), never a drill', await pg.get_attribute('#game','data-game')=='reader' and await pg.locator('#drill.active').count()==0)
         for _ in range(3):
             await pg.wait_for_selector('#rdPad:not(.idle)', timeout=9000)
             v=re.search(r'(\d+)$', await pg.get_attribute('#rdAb .abx','aria-label')).group(1)
             for ch in v: await pg.click(f'#rdPad [data-k="{ch}"]')
             await pg.click('#rdPad [data-k=go]'); await pg.wait_for_timeout(1100)
         t=await collect_all(pg, 8000)
-        check('step 3 -> sticker, then the gold "Today is done" sticker', len(t)==2 and any('Today' in x for x in t), t)
+        check('Bead Detective done -> sticker', len(t)>=1, t)
         await pg.wait_for_selector('#game .gresult', timeout=6000); await pg.click('.gresult [data-a=done]'); await pg.wait_for_timeout(500)
-        check('all three steps done, home says so', await pg.locator('#home.active').count()==1 and await steps_done(pg)==[True,True,True] and await pg.text_content('#todayTitle')=='All done!', await steps_done(pg))
+        check('back home after the beads games', await pg.locator('#home.active').count()==1)
         hist=await pg.evaluate("JSON.parse(window.__legacy('progress')).nodes.beads.hist.length")
         check('the numbers made and read are the skill\'s practice record (6 answers)', hist==6, hist)
         # no arithmetic drill for a skill without sums, however it is asked for
@@ -88,25 +85,9 @@ async def main():
             ok = await pg.locator('#drill.active').count()==0 and await pg.locator('#game.active').count()==1
             await pg.evaluate("Games.stop(); App.goHome()"); await pg.wait_for_timeout(200)
             check(f"startMode('{m}') on Beads never opens a drill (it opens a beads game)", ok)
-        # Practice door on Beads: three blocks that all work, Bix explains
-        await pg.click('#doorPractice'); await pg.wait_for_selector('#door.active'); await pg.wait_for_timeout(500)
-        labs=await pg.eval_on_selector_all('#door .door-block .door-label','els=>els.map(e=>e.textContent)')
-        check('Practice door on Beads offers Learn / Make / Read, and Juni says why', labs==['Learn','Make','Read'] and 'More practice opens' in await pg.text_content('#doorJuni'), [labs, await pg.text_content('#doorJuni')])
-        await pg.screenshot(path='/tmp/p15_door_beads.png')
-        opened=[]
-        for sel in ('#doorLook','#doorListen','#doorFlash'):
-            await pg.click(sel); await pg.wait_for_timeout(500)
-            opened.append('lesson' if await pg.locator('#lesson.active').count() else await pg.get_attribute('#game','data-game') if await pg.locator('#game.active').count() else 'drill' if await pg.locator('#drill.active').count() else '?')
-            await pg.click('#exitLesson' if opened[-1]=='lesson' else '#exitGame'); await pg.wait_for_timeout(300)
-            if not await pg.locator('#door.active').count(): opened.append('not back at the door')
-        check('each block opens what it says and comes back to the door', opened==['lesson','build','reader'], opened)
+        # the whole day-one run uses beads games, never an arithmetic drill (a skill without sums never makes a drill)
         sets=await pg.evaluate("window.__sets")
         check('day one: no drill was ever made, so none with empty problems (terms.length === 0)', len(sets)==0 and await pg.evaluate("!!SorobanEngine.__spied"), sets)
-        # an old plan (made before the bead games) with Look on Beads still never drills
-        await pg.evaluate("(()=>{ const f=JSON.parse(window.__legacy('fun')); f.today.steps=[{kind:'visual',done:false},{kind:'game',game:'build',done:false},{kind:'listen',done:false}]; f.today.celebrated=false; Store.set('fun', f); })()")
-        await pg.reload(); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(500)
-        await pg.click('#todayGo'); await pg.wait_for_timeout(600)
-        check('an older plan with "Look" on Beads opens Bead Detective, not blank problems', await pg.locator('#drill.active').count()==0 and await pg.get_attribute('#game','data-game')=='reader')
         check('no page errors (day one)', not errs, errs); await ctx.close()
 
         # ---- every skill that does drill makes real problems ----
@@ -125,7 +106,7 @@ async def main():
 
         # ---- a skipped lesson does not count ----
         ctx,pg,errs = await fresh(b)
-        await pg.evaluate("App.lessonSkipMs=700"); await pg.click('#todayGo'); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
+        await pg.evaluate("App.lessonSkipMs=700"); await pg.evaluate("App.startMode('learn')"); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
         vis=await pg.eval_on_selector("#lessonNext","e=>getComputedStyle(e).visibility"); await pg.wait_for_timeout(900)
         box=await pg.eval_on_selector('#lessonNext','e=>{const r=e.getBoundingClientRect(); return [getComputedStyle(e).visibility, Math.round(r.height), e.className]}')
         check('Skip turns up only after a wait, as a small wooden button', vis=='hidden' and box[0]=='visible' and 64<=box[1]<=72 and 'toy-block--wood' in box[2] and 'td-skip' in box[2], [vis, box])
@@ -139,9 +120,9 @@ async def main():
         check('...no sticker', await pg.locator('#stickerReveal.active').count()==0)
         await pg.click('#lessonNext'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(300)
         st=await pg.evaluate("(()=>{ const f=JSON.parse(window.__legacy('fun')); return [JSON.parse(window.__legacy('progress')).nodes.beads.lesson, (f.wallet&&f.wallet.beads)||0, Object.keys(f.stickers||{}).length]; })()")
-        check('...not learned, no golden bead, no sticker, the Today step stays open', st[0] is False and st[1]==0 and st[2]==0 and await steps_done(pg)==[False,False,False], [st, await steps_done(pg)])
+        check('...not learned, no golden bead, no sticker', st[0] is False and st[1]==0 and st[2]==0, st)
         # two tries that end on another number bring Skip without the wait; doing most steps counts
-        await pg.evaluate("App.lessonSkipMs=600000"); await pg.click('#todayGo'); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
+        await pg.evaluate("App.lessonSkipMs=600000"); await pg.evaluate("App.startMode('learn')"); await pg.wait_for_selector('#lesson.active'); await to_turns(pg)
         await pg.evaluate("__lessonSet(8)"); await pg.wait_for_timeout(1700); one=await pg.eval_on_selector('#lessonNext','e=>getComputedStyle(e).visibility')
         await pg.evaluate("__lessonSet(6)"); await pg.wait_for_timeout(1700); two=await pg.eval_on_selector('#lessonNext','e=>getComputedStyle(e).visibility')
         check('Skip also turns up after two tries that ended on another number', one=='hidden' and two=='visible', [one, two])

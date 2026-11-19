@@ -54,7 +54,7 @@ async def main():
                 await pg.goto(f'http://localhost:{PORT}/index.html'); await pg.wait_for_timeout(600)
                 await pg.evaluate("s=>localStorage.setItem('abacus.settings',JSON.stringify(s))", base)
                 await pg.reload(); await pg.wait_for_timeout(700); await pg.wait_for_selector('#home.active', timeout=5000)
-                await run_screen(pg, vw, vh, 'home', None, '#home', '#bixHome', '#bixHomeCard', '#homeJuni', ['#doorPractice', '#todayGo'])
+                await run_screen(pg, vw, vh, 'home', None, '#home', '#bixHome', '#bixHomeCard', '#homeJuni', ['#doorPractice', '#homeTrophy'])
                 await run_screen(pg, vw, vh, 'play', '#doorPlay', '#play', '#bixPlay', '#bixPlayCard', '#playJuni', [])
                 await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(200)
                 await run_screen(pg, vw, vh, 'room', '#doorRoom', '#room', '#bixRoom', '#bixRoomCard', '#roomJuni', ['#roomWish'])

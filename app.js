@@ -726,42 +726,53 @@ function renderHome(opts){
   sk.setAttribute('aria-label', 'Switch child' + (tagName ? ` (now ${tagName})` : ''));
   $('#homeTag').innerHTML = !many && tagName ? TOY.tag(tagName, {hang:true, color:tagCol}) : '';
   const cur = NODES[curIdx()];
-  const steps = todaySteps(); const allDone = steps.every(s=>s.done);
+  // Practice-first home: the level's own progress drives everything (10 sets to a level, then the trophy).
+  const L = window.__level, done = Math.min(L.setsDone(cur.id), L.LEVEL_SETS), total = L.LEVEL_SETS, allDone = L.levelComplete(cur.id);
   // Bixi (the classmate) sits small on the table; Juni (the teacher) leads from the window.
   const bh=$('#bixHome'); toyBix(bh, allDone ? 'proud' : 'wave', {bubble:false});
-  // Today: beads left, and the moon in the window that fills as they are finished (Juni full + proud when all done).
-  const nextS = steps.find(s=>!s.done), nextI = nextS ? nextS.at : -1, left = steps.filter(s=>!s.done).length, started = left<steps.length;
+  // The moon in the window fills as this level's practice sets are cleared (Juni full + proud at 10/10).
   $('#home').classList.toggle('is-done', allDone);
-  homeMoon(steps.length-left, steps.length); wireMoonTap('#homeSky'); armBixiIdle();
-  // Greeting: Juni speaks first (her bubble + the glowing moon), THEN Bixi adds his bead countdown. Spoken once per
-  // app visit (the first time sound is allowed) and again when today is finished; otherwise the bubbles just show.
+  homeMoon(done, total); wireMoonTap('#homeSky'); armBixiIdle();
+  // Greeting: Juni speaks (her bubble + the glowing moon), spoken once per app visit (the first time sound is
+  // allowed) and again when the level is finished; otherwise the bubble just shows. Bixi stays a silent sidekick.
   const canTalk = !!Speaker.gestured;   // sound is allowed once the child has tapped once
   if (!settings.name){
     // Juni leads the name ask from the window; tapping the moon opens the box. Bixi stays a quiet sidekick.
     Fun.Mascot.quiet(bh);
     juniSayOn($('#homeJuni'), $('#homeSky'), 'j_home_name', "I don't know your name yet. Tap me and tell me!");
   } else {
-    const [jKey, jText] = juniGreet(allDone), [bKey, bText] = bixiCount(steps, allDone);
+    const [jKey, jText] = juniGreet(allDone);
     const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
-    if (opts && opts.quietGreet){ showHomeBubbles(jText, bText); }
-    else if (speak){ Fun.data.seen++; greeted=true; if (allDone) renderHome.saidDone=true; speakHomeGreeting(jKey, jText, bKey, bText); }
-    else { showHomeBubbles(jText, bText); }
+    if (opts && opts.quietGreet){ showHomeBubbles(jText, ''); }
+    else if (speak){ Fun.data.seen++; greeted=true; if (allDone) renderHome.saidDone=true; speakHomeGreeting(jKey, jText, null, ''); }
+    else { showHomeBubbles(jText, ''); }
   }
   Fun.save();
-  $('#todayTitle').textContent = allDone ? 'All done!' : 'Today';
-  $('#greetSub').textContent = allDone ? 'See you tomorrow' : left===steps.length ? `${steps.length} little steps` : `${left} more to go`;
-  const shown = steps.filter(s=>s.done).concat(steps.filter(s=>!s.done));
-  $('#todaySteps').innerHTML = shown.map(s=>stepBead(s,nextI)).join('');
-  stepBead.seen = steps.map(s=>s.done);   // a step that turns done since the last visit pops (by its place in the plan)
-  const go=$('#todayGo'); go.classList.toggle('play', allDone);
-  $('#todayGoIc').innerHTML = TOY.icon(allDone ? 'star' : 'play', 64, '#fff', {stroke:3, accent:'#fff'});
-  $('#todayGoT').textContent = allDone ? 'Play' : (started ? 'Next' : 'Start');
-  go.setAttribute('aria-label', allDone ? 'Play a game' : `${started?'Next':'Start'}: ${nextS.label}`);
+  renderTrophy(done, total, allDone);
   Treats.renderJar();
+}
+// The level trophy sits above the big Practice button: ten little beads fill as sets are cleared, the cup lights
+// at 10/10. This is the child's motivator — one clear goal, no scattered tiles.
+const TROPHY_SVG = '<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">'
+  + '<path class="th-cup-handle" d="M14 16 H8 a7 7 0 0 0 7 11" fill="none" stroke-width="4" stroke-linecap="round"/>'
+  + '<path class="th-cup-handle" d="M50 16 H56 a7 7 0 0 1-7 11" fill="none" stroke-width="4" stroke-linecap="round"/>'
+  + '<path class="th-cup-bowl" d="M14 12 h36 v8 a18 18 0 0 1-36 0 z"/>'
+  + '<rect class="th-cup-stem" x="29" y="37" width="6" height="9"/>'
+  + '<rect class="th-cup-base" x="20" y="46" width="24" height="7" rx="3"/>'
+  + '<path class="th-cup-star" d="M32 15 l2.1 4.2 4.6.7-3.3 3.2.8 4.6-4.2-2.2-4.2 2.2.8-4.6-3.3-3.2 4.6-.7 z"/>'
+  + '</svg>';
+function renderTrophy(done, total, full){
+  const t=$('#homeTrophy'); if (!t) return;
+  const pips = Array.from({length:total},(_,i)=>`<i class="th-pip${i<done?' on':''}"></i>`).join('');
+  t.classList.toggle('full', full);
+  t.innerHTML = `<span class="th-cup${full?' lit':''}">${TROPHY_SVG}</span>`
+    + `<span class="th-pips">${pips}</span>`
+    + `<span class="th-trophy-lab">${full ? 'Level done!' : done + ' / ' + total}</span>`;
+  t.setAttribute('aria-label', full ? 'Level complete — trophy earned!' : `Level progress: ${done} of ${total} practice sets done`);
 }
 // Things on the home table that never change (kit drawings, no emoji).
 $('#grownups').innerHTML = TOY.icon('lock', 30, 'currentColor');
-$('#doorPracticeIc').innerHTML = TOY.icon('practice', 46, 'currentColor');
+$('#doorPracticeIc').innerHTML = TOY.icon('practice', 64, '#fff', {stroke:3, accent:'#fff'});
 $('#doorPlayIc').innerHTML = TOY.icon('star', 46, 'currentColor', {accent:'#FFFDF6'});
 $('#doorRoomIc').innerHTML = TOY.icon('room', 46, 'currentColor');
 $('#homeShelf').innerHTML = TOY.prop('rainbow', 150) + TOY.prop('plant', 170);
@@ -843,7 +854,7 @@ async function activityDone(kind, info={}){
   }
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
-$('#todayGo').addEventListener('click', ()=>{ Speaker.unlock(); const st=todaySteps(); const s=st.find(x=>!x.done); if (s) startStep(s); else goPlay(); });
+// (The old "Today" Start button is gone — the big Practice button, #doorPractice, launches the level run below.)
 function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
   Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');
@@ -2705,7 +2716,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.35';
+const APP_VERSION='4.36';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
