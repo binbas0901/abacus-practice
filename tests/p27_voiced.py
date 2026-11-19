@@ -61,6 +61,10 @@ async def main():
         intro_need = await pg.evaluate("""()=>window.Curriculum.NODES.filter(n=>n.intro && n.kind!=='flash').map(n=>'intro_'+n.id)""")
         intro_miss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", intro_need)
         check('every lesson intro card has a recorded voice line', not intro_miss, intro_miss)
+        # the finger-technique step lines must all be recorded
+        fing = ['fingers_intro','fingers_thumb','fingers_pointer','fingers_heaven','fingers_recap']
+        fmiss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", fing)
+        check('finger-technique step lines all have a voice', not fmiss, fmiss)
         # the locked-practice banner has a voice too
         banner = await pg.evaluate("""()=>{const r=window.Classroom.Voice.find('juni','j_door_first');return !!(r&&r[0]&&r[1]);}""")
         check('practice "sums come soon" banner has a voice line', banner)

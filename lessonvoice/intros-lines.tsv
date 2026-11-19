@@ -20,4 +20,9 @@ intro_anzan_2d	Picture two rods now: tens and units. Add the tens first, then th
 intro_four_digit	Thousands, hundreds, tens, units: four rods for each number. Left to right, one rod at a time, every friend still works.
 intro_mul_2x1	Start at 0. Go left to right: times each digit by the small number and add the answer to the abacus. Every times answer takes two rods.
 intro_mul_3x1	Same method, one more digit: hundreds, then tens, then units. A 0 digit gives 00, so nothing to add: just move one rod right.
-j_door_first	First we meet the beads. Sums come soon!
+j_door_first	Tap Learn and I'll show you the beads. More practice opens as you learn new skills.
+fingers_intro	You move the beads with just two fingers — your thumb and your pointer.
+fingers_thumb	Your thumb pushes the little earth beads up to the beam.
+fingers_pointer	Your pointer pushes them back down, away from the beam.
+fingers_heaven	Your pointer also moves the big heaven bead on top — pull it down to make five.
+fingers_recap	Thumb for up, pointer for down. That is the whole secret!

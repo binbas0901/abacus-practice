@@ -929,7 +929,7 @@ function renderDoor(){
   // Bixi stays on the table as a quiet, waving sidekick; Juni (the moon) leads the line from the window.
   const bd=$('#bixDoor'); toyBix(bd, 'wave', {size:190}); Fun.Mascot.quiet(bd);
   if (sums) juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_play', 'How would you like to practise today?');
-  else juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_first', 'First we meet the beads. Sums come soon!');
+  else juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_first', "Tap Learn and I'll show you the beads. More practice opens as you learn new skills.");
   $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
 }
 // My path: every skill is a bead on one brass rod that winds across the table. Learned beads are glossy teal, the
@@ -1022,7 +1022,7 @@ function startLesson(n, from){
   if (!lessonAb || lessonAb.rodsMade!==rods){ if (lessonAb) lessonAb.destroy(); lessonAb = DemoAbacus($('#lessonAbacus'), {rods, readout:true, onBead:()=>Sfx.tap(), onChange:(v)=>onLessonBeads(v)}); lessonAb.rodsMade=rods; }
   lessonAb.reset();
   if (L) clearTimeout(L.skipT), clearTimeout(L.tryT);
-  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, watchIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
+  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, watchIdx:0, fingerIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   toyBix($('#bixLesson'), 'happy', {size:116, keep:false, bubble:false}); toySky($('#lessonSky'));   // Bixi is the small classmate; Juni (the moon) leads
   $('#lesson').classList.add('cl-juni-forward'); wireMoonTap('#lessonSky');   // Juni leans in from the window to lead
@@ -1114,6 +1114,7 @@ function renderLessonSteps(){
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
   $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided'));
+  if (L.phase!=='fingers') hideHand();
   if (L.phase==='intro'){
     $('#capProb').innerHTML=''; $('#capProb').dataset.p='';
     if (!L.pages) L.pages=lessonPages(n);
@@ -1137,6 +1138,18 @@ async function renderLesson(){
       const t=w.text||'', dot=t.indexOf('. '), frac=dot>0?Math.min(0.72,Math.max(0.30,(dot+2)/t.length)):0.45;   // move the bead only when she reaches the second sentence ("pull it down / push it up"), not before
       await sleep(Math.round(clipMs*frac)); if(!live())return;
       await lessonAb.move(0, target, 700, live);
+    })();
+    return;
+  }
+  if (L.phase==='fingers'){ // first lesson: Juni shows which finger moves which bead, with the real hand
+    const s=FINGER_STEPS[L.fingerIdx]||FINGER_STEPS[0], last=L.fingerIdx>=FINGER_STEPS.length-1;
+    cap(`Your fingers ${L.fingerIdx+1} of ${FINGER_STEPS.length}`, s.text.replace(/\b(thumb|pointer|earth beads?|heaven bead|beam)\b/gi, m=>`<b>${m}</b>`), ''); lessonBtn(last?'Your turn':'Next', 'play'); lessonAb.setReadOnly(true);
+    const my=++animToken, live=()=>my===animToken;
+    (async()=>{
+      lessonAb.reset(); if (s.from) lessonAb.value=s.from; await sleep(60); if(!live())return; placeHand(s.pose, s.zone);
+      let clipMs = navigator.webdriver ? 700 : 2400; try{ if(!navigator.webdriver){ const r=Classroom.Voice.find('juni', s.k); if (r&&r[1]&&r[1][1]) clipMs=Math.round(r[1][1]*1000); } }catch(e){}
+      await sleep(360); if(!live())return; juniNarrate(s.k); capVoice(s.k,'juni');
+      if (s.val!=null){ await sleep(Math.round(clipMs*0.5)); if(!live())return; pushHand(s.dir); await lessonAb.move(0, s.val-(s.from||0), 650, live); }
     })();
     return;
   }
@@ -1188,6 +1201,30 @@ let animToken=0;
 // and the step holds until her line finishes. Falls back to a word-count estimate when a clip is missing or muted.
 // Each lesson step carries a stable key (step.k); her recording is filed under that key, not the sentence,
 // so rewording a caption or restyling the app never breaks playback — only re-recording that key does.
+// Finger-technique step (first lesson only): Juni shows which finger moves which bead, with the real hand image.
+const FINGER_STEPS=[
+  { k:'fingers_intro',   text:'You move the beads with just two fingers — your thumb and your pointer.', pose:'thumb',   zone:'earth' },
+  { k:'fingers_thumb',   text:'Your thumb pushes the little earth beads up to the beam.',               pose:'thumb',   zone:'earth', from:0, val:1, dir:'up'   },
+  { k:'fingers_pointer', text:'Your pointer pushes them back down, away from the beam.',                pose:'pointer', zone:'earth', from:1, val:0, dir:'down' },
+  { k:'fingers_heaven',  text:'Your pointer also moves the big heaven bead on top — pull it down to make five.', pose:'pointer', zone:'heaven', from:0, val:5, dir:'down' },
+  { k:'fingers_recap',   text:"Thumb for up, pointer for down. That's the whole secret!",               pose:'thumb',   zone:'earth' },
+];
+function hideHand(){ const h=$('#lessonHand'); if (h) h.style.opacity=0; }
+function placeHand(pose, zone){
+  const h=$('#lessonHand'), ab=$('#lessonAbacus'), left=ab&&ab.closest('.lesson-left'); if(!h||!ab||!left) return;
+  h.src='img/hands/'+(pose==='thumb'?'hand-thumb.png':'hand-pointer.png');
+  const svg=ab.querySelector('.abx-svg'); if(!svg) return;
+  let rod=null, maxx=-1; ab.querySelectorAll('.abx-rod').forEach(g=>{ const r=g.getBoundingClientRect(); if(r.left>maxx){maxx=r.left; rod=g;} });   // units = rightmost rod
+  const lr=left.getBoundingClientRect(), sr=svg.getBoundingClientRect(), rr=(rod||svg).getBoundingClientRect();
+  const hw=Math.max(90, Math.round(sr.width*0.5)); h.style.width=hw+'px';
+  const hh=hw*1448/1086, tipX=0.5, tipY=0.1;   // fingertip sits ~10% down, ~mid across the image
+  const rodCx=rr.left+rr.width/2-lr.left;
+  const targetY=(zone==='heaven'? sr.top+sr.height*0.30 : sr.top+sr.height*0.70)-lr.top;
+  h.style.left=Math.round(rodCx-hw*tipX)+'px';
+  h.style.top=Math.round(targetY-hh*tipY)+'px';
+  h.style.transform='translateY(0)'; h.style.opacity=1;
+}
+function pushHand(dir){ const h=$('#lessonHand'); if(h) h.style.transform = dir==='up'?'translateY(-30px)':'translateY(30px)'; }
 function narrateStep(s){ try{ if (s && s.k && window.Classroom) Classroom.Voice.play('juni', s.k, juniFig()); }catch(e){} }
 function lessonClipMs(s){
   const text = s && s.say;
@@ -1246,7 +1283,8 @@ function advanceLesson(){
   if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; }
     if (n.kind==='numbers'){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
     else { L.phase='demo'; L.demoIdx=0; } }
-  else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='numbers'; L.demoIdx=0; } }
+  else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='fingers'; L.fingerIdx=0; } }
+  else if (L.phase==='fingers'){ L.fingerIdx++; if (L.fingerIdx>=FINGER_STEPS.length){ L.phase='numbers'; L.demoIdx=0; } }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
   else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase = hasInterlude(n) ? 'help' : 'done'; }
@@ -2467,7 +2505,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.25';
+const APP_VERSION='4.26';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
