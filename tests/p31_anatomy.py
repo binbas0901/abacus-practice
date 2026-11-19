@@ -71,6 +71,9 @@ async def main():
                     if (await readout()) == '1': slid = True; break
                     await pg.wait_for_timeout(120)
                 check('step 1: a bead slides on the rod (readout reaches 1)', slid)
+            if i == 2:  # beam: a real colour highlight (not just a glow)
+                fill = await pg.evaluate("()=>{const b=document.querySelector('#lessonAbacus .abx-beam.abx-anat');return b?getComputedStyle(b).fill:'';}")
+                check('step 2: the beam takes a bright highlight colour', fill.replace(' ','') == 'rgb(242,182,50)', fill)
             if i == 3:  # heaven: the bead slides to the beam to show 5
                 shown = False
                 for _ in range(16):
@@ -78,14 +81,20 @@ async def main():
                     await pg.wait_for_timeout(120)
                 check('step 3: the heaven bead shows its value (readout reaches 5)', shown)
                 await pg.screenshot(path='/tmp/anat_heaven.png')
+            if i == 4:  # earth beads slide up and down like the heaven bead
+                moved = False
+                for _ in range(16):
+                    if (await readout()) == '4': moved = True; break
+                    await pg.wait_for_timeout(120)
+                check('step 4: the earth beads slide up and down (readout reaches 4)', moved)
             await pg.evaluate("()=>document.querySelector('#lessonNext').click()")
             await pg.wait_for_timeout(350)
 
-        # after the 5 parts come the "New skill" card, then the value/watch demos
+        # after the 5 parts it goes STRAIGHT to the finger step -- no redundant New-skill card, no watch demo
         ph = await pg.evaluate("()=>document.querySelector('#lesson').dataset.phase")
-        check('after naming the parts, the "New skill" intro card follows', ph == 'intro', ph)
-        intro_kind = (await pg.text_content('#capKind')) or ''
-        check('the value-rule card ("New skill") now comes AFTER the parts', 'New skill' in intro_kind, intro_kind)
+        check('after the parts, it goes straight to the finger step (no New-skill card, no watch)', ph == 'fingers', ph)
+        kind = (await pg.text_content('#capKind')) or ''
+        check('no leftover "New skill" or "Watch" card after the parts', ('New skill' not in kind) and ('Watch' not in kind), kind)
         stale = await pg.evaluate("()=>document.querySelectorAll('#lessonAbacus .abx-anat').length")
         check('the glow is cleared once the anatomy phase ends', stale == 0, stale)
 

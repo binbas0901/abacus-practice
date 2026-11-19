@@ -106,7 +106,8 @@
 
 /* "Parts of the abacus" step (first lesson): the part Juni names glows. The beam and rod (rects) glow directly;
    a bead glows via its visible lacquer only -- never the wide invisible tap slot, which would smear the glow down the rod. */
-#lessonAbacus .abx-beam.abx-anat,#lessonAbacus .abx-rodline.abx-anat{filter:drop-shadow(0 0 4px #FFC53D) drop-shadow(0 0 9px #FFB01F);animation:anat-pulse 1.1s ease-in-out infinite}
+#lessonAbacus .abx-rodline.abx-anat{filter:drop-shadow(0 0 4px #FFC53D) drop-shadow(0 0 9px #FFB01F);animation:anat-pulse 1.1s ease-in-out infinite}
+#lessonAbacus .abx-beam.abx-anat{fill:#F2B632 !important;filter:drop-shadow(0 0 5px #FFC53D) drop-shadow(0 0 11px #FFB01F);animation:anat-pulse 1.1s ease-in-out infinite}
 #lessonAbacus .abx-bead.abx-anat{animation:anat-pulse 1.1s ease-in-out infinite}
 #lessonAbacus .abx-bead.abx-anat .abx-lens,#lessonAbacus .abx-bead.abx-anat .abx-lac{filter:drop-shadow(0 0 4px #FFC53D) drop-shadow(0 0 7px #FFB01F)}
 @keyframes anat-pulse{0%,100%{opacity:1}50%{opacity:.66}}

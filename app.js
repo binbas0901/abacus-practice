@@ -1173,9 +1173,9 @@ async function renderLesson(){
       try{ if(!navigator.webdriver){ const r=Classroom.Voice.find('juni', s.k); if (r&&r[1]&&r[1][1]) clipMs=Math.round(r[1][1]*1000); } }catch(e){}
       if (s.show!=null){                         // heaven bead: slide it to the beam so the readout shows its value (5)
         await sleep(Math.round(clipMs*0.5)); if(!live())return; await lessonAb.move(0, s.show, 650, live);
-      } else if (s.anim==='slide'){              // rod: a bead slides up and down to show the rod
-        await sleep(Math.round(clipMs*0.32));
-        for (let i=0;i<2 && live();i++){ await lessonAb.move(0, 1, 460, live); if(!live())break; await sleep(150); await lessonAb.move(0, -1, 460, live); if(!live())break; await sleep(150); }
+      } else if (s.cycle){                        // rod / earth beads: slide up to the beam and back down, a couple of times
+        await sleep(Math.round(clipMs*0.3));
+        for (let i=0;i<2 && live();i++){ await lessonAb.move(0, s.cycle, 500, live); if(!live())break; await sleep(160); await lessonAb.move(0, -s.cycle, 500, live); if(!live())break; await sleep(160); }
       }
     })();
     return;
@@ -1261,10 +1261,10 @@ let animToken=0;
 // (heaven bead, earth beads, beam, rod) are introduced before they're used later. Each step glows its part.
 const ANATOMY_STEPS=[
   { k:'anat_abacus', text:'This is your abacus. Every bead on it helps you count.',        part:'all'    },
-  { k:'anat_rod',    text:'Each line of beads slides up and down on a rod.',                part:'rod',    anim:'slide' },
+  { k:'anat_rod',    text:'Each line of beads slides up and down on a rod.',                part:'rod',    cycle:1 },
   { k:'anat_beam',   text:'The bar across the middle is the beam.',                         part:'beam'   },
   { k:'anat_heaven', text:'Above the beam is the heaven bead. It is worth five.',           part:'heaven', show:5 },
-  { k:'anat_earth',  text:'Below the beam are the earth beads. Each one is worth one.',     part:'earth'  },
+  { k:'anat_earth',  text:'Below the beam are the earth beads. Each one is worth one.',     part:'earth',  cycle:4 },
 ];
 // Glow one named part of the lesson abacus (units rod for the beads). null clears it.
 function anatHL(part){
@@ -1360,7 +1360,7 @@ function advanceLesson(){
     if (n.kind==='flash'){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); }   // mental-math: the card IS the lesson; now straight into the flash drill
     if (n.kind==='numbers'){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
     else { L.phase='demo'; L.demoIdx=0; } }
-  else if (L.phase==='anatomy'){ L.anatIdx++; if (L.anatIdx>=ANATOMY_STEPS.length){ L.phase='intro'; L.page=0; } }   // after the parts, show the "New skill" card, then the value demos
+  else if (L.phase==='anatomy'){ L.anatIdx++; if (L.anatIdx>=ANATOMY_STEPS.length){ L.phase='fingers'; L.fingerIdx=0; } }   // the parts now teach the values too, so go straight to the finger step (no separate New-skill card or watch demo)
   else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='fingers'; L.fingerIdx=0; } }
   else if (L.phase==='fingers'){ L.fingerIdx++; if (L.fingerIdx>=FINGER_STEPS.length){ L.phase='numbers'; L.demoIdx=0; } }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
@@ -2583,7 +2583,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.31';
+const APP_VERSION='4.32';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
