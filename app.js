@@ -54,6 +54,20 @@ const firstRun = !progress;
 if (!progress){ progress = { current: 'beads', nodes:{} }; }
 function node(id){ return progress.nodes[id] || (progress.nodes[id] = {lesson:false, mastered:null, hist:[]}); }
 function saveProgress(){ save('progress', progress); }
+
+// ---- Practice-first level model (redesign) ----
+// A level (one skill) is 10 sets of 10 problems = 100. The 10 sets cycle through three REQUIRED types,
+// ear/eye/hand: Listen, Read, Build. All 10 must be finished to clear the level. A set finishes only when
+// all 10 are answered correctly (a miss comes back to be corrected). node(id).setsDone = 0..10.
+const LEVEL_SETS = 10, SET_LEN = 10, SET_TYPES = ['listen', 'read', 'build'];
+function setType(i){ return SET_TYPES[((i % SET_TYPES.length) + SET_TYPES.length) % SET_TYPES.length]; }   // set 0 listen, 1 read, 2 build, 3 listen…
+function setsDone(id){ return node(id).setsDone || 0; }
+function currentSetIndex(id){ return Math.min(setsDone(id), LEVEL_SETS - 1); }   // the set the child is on next
+function currentSetType(id){ return setType(currentSetIndex(id)); }
+function levelComplete(id){ return setsDone(id) >= LEVEL_SETS; }
+function completeSet(id){ const st = node(id); st.setsDone = Math.min(LEVEL_SETS, (st.setsDone || 0) + 1); saveProgress(); return st.setsDone; }
+function levelSetPlan(){ return Array.from({length: LEVEL_SETS}, (_, i) => setType(i)); }   // e.g. [listen,read,build,listen,…]
+window.__level = { LEVEL_SETS, SET_LEN, setType, setsDone, currentSetIndex, currentSetType, levelComplete, completeSet, levelSetPlan };
 // A child who had mastered the old last skill moves on to the new levels (4–6) automatically.
 if (!firstRun && C.advanceCurrent){ const nx=C.advanceCurrent(progress.current, id=>!!(progress.nodes[id]&&progress.nodes[id].mastered)); if (nx!==progress.current){ progress.current=nx; saveProgress(); } }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
