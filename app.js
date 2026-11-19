@@ -268,10 +268,33 @@ const Speaker = {
   kind(){ const v=settings.voice||'device'; if (v.startsWith('rec:')) return 'rec'; if (SPRITES[v]) return 'sprite'; return 'device'; },
   recPids(){ const v=settings.voice||''; if (v==='rec:turns') return profiles().map(p=>p.id); return v.startsWith('rec:') ? [v.slice(4)] : []; },
   isComplete(pid){ const r=this.recs[pid]; return !!r && RECORD_WORDS.every(w=>r[w]); },
-  ensureCtx(){ if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)(); return this.ctx; },
+  ensureCtx(){ if (!this.ctx || this.ctx.state==='closed') this.ctx = this.makeCtx(); return this.ctx; },
+  makeCtx(){
+    const c = new (window.AudioContext||window.webkitAudioContext)();
+    // iOS drops the context to 'suspended' (app backgrounded) or 'interrupted' (a call / Control Center / another app
+    // took audio) and fires statechange; nudge it back to running once the child has tapped at least once.
+    c.onstatechange = ()=>{ try{ Diag.add('ctx '+c.state); }catch(e){} if (this.gestured && c.state!=='running' && c.state!=='closed'){ try{ c.resume().catch(()=>{}); }catch(e){} } };
+    return c;
+  },
+  // Bring audio back after the app returns from the background. A plain resume() revives a 'suspended' context, but an
+  // 'interrupted' one (iOS, after a call or app switch) frequently can't be resumed and has to be rebuilt. Rebuilding
+  // is safe: the decoded clips replay on the new context, and the next play() call picks it up via ensureCtx().
+  async revive(){
+    if (!this.gestured) return;                       // nothing can play before the first tap anyway
+    const c = this.ensureCtx();
+    if (c.state==='running') return;
+    try{ await Promise.race([c.resume(), sleep(400)]); }catch(e){}
+    if (c.state==='running') return;
+    try{ c.close(); }catch(e){}
+    this.playing=[]; this.fitted={};                  // old sources + speed-stretched buffers belonged to the dead context
+    this.ctx = this.makeCtx();
+    try{ await Promise.race([this.ctx.resume(), sleep(400)]); }catch(e){}
+    try{ const b=this.ctx.createBuffer(1,1,22050), s=this.ctx.createBufferSource(); s.buffer=b; s.connect(this.ctx.destination); s.start(0); }catch(e){}
+    try{ Diag.add('ctx rebuilt -> '+this.ctx.state); }catch(e){}
+  },
   unlock(){ // must run inside a user gesture on iOS (a finger LIFT or click, not a touch-down)
     this.gestured=true;
-    try{ const c=this.ensureCtx(); if (c.state==='suspended') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
+    try{ const c=this.ensureCtx(); if (c.state!=='running') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
     if ('speechSynthesis' in window && !this.ttsReady){
       // iOS: speech is unlocked only once an utterance really starts inside a tap. Speak something
       // tiny and silent, and never cancel() it (cancelling before it starts leaves speech locked).
@@ -2505,7 +2528,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.26';
+const APP_VERSION='4.27';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
@@ -2516,7 +2539,12 @@ else { show('home'); renderHome(); }
 setTimeout(()=>{ if (settings.bixTalks!==false) Fun.BixVoice.load(); }, 1500);
 ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then(()=>{ saveSettings(); Speaker.init(); });
 // iPad Safari only allows sound to start on a finger lift / click, so try on every tap until it's on.
-['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)) Speaker.unlock(); }, true));
+['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)){ Speaker.unlock(); Speaker.revive(); } }, true));
+// Coming back from the background (minimise/reopen, tab switch, phone call, Control Center) can leave the audio context
+// suspended or 'interrupted' so faces move but no sound comes out. Revive it the moment the app is shown again.
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') Speaker.revive(); });
+window.addEventListener('pageshow', ()=>Speaker.revive());
+window.addEventListener('focus', ()=>Speaker.revive());
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   // Auto-update: when a NEW service worker takes control (sw.js does skipWaiting + clients.claim on deploy),
   // reload once so the device runs the new build instead of stale cached files. Only wire this when a worker
