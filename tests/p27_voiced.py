@@ -57,8 +57,9 @@ async def main():
         check('every demo line resolves to a recorded clip (no silent lines)', not probe,
               [k + ' = ' + k2s.get(k, '')[:40] for k in probe[:10]])
 
-        # every lesson that SHOWS a New-skill intro (all but flash/mental nodes) must have its intro line recorded
-        intro_need = await pg.evaluate("""()=>window.Curriculum.NODES.filter(n=>n.intro && n.kind!=='flash').map(n=>'intro_'+n.id)""")
+        # every node that SHOWS a New-skill intro card must have its intro line recorded -- now including the
+        # flash/mental (anzan) nodes, which show a voiced intro card before the drill (v4.28).
+        intro_need = await pg.evaluate("""()=>window.Curriculum.NODES.filter(n=>n.intro).map(n=>'intro_'+n.id)""")
         intro_miss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", intro_need)
         check('every lesson intro card has a recorded voice line', not intro_miss, intro_miss)
         # the finger-technique step lines must all be recorded

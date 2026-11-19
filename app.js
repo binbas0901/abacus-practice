@@ -737,6 +737,14 @@ function todaySteps(){
 }
 // Start a Today step. What actually runs is remembered (F.today.active), so finishing it ticks this step
 // even when the step had to run something else (e.g. a Look step that first teaches a newly unlocked skill).
+// Mental-math (flash / anzan) nodes: show Juni's voiced "New skill" intro card once, then flow straight into the
+// flash drill. Reuses the lesson intro machinery (startLesson -> intro phase -> advanceLesson sends flash nodes
+// into the drill). After the first time (node.lesson set), Flash goes straight to the drill.
+function startFlash(n, from){
+  n = (n && n.kind==='flash') ? n : NODES[curIdx()];
+  if (n && n.kind==='flash' && n.intro && !node(n.id).lesson) return startLesson(n, from);
+  return startDrill('flash', n);
+}
 function startStep(s){
   const n=NODES[curIdx()], F=Fun.data;
   const ran = (kind)=>{ if (F.today) { F.today.active={ at:s.at, kind }; Fun.save(); } };
@@ -747,7 +755,7 @@ function startStep(s){
     ran('game'); return Games.open(s.kind==='listen' ? 'build' : 'reader', {from:'home'});
   }
   if ((s.kind==='visual'||s.kind==='listen') && hasLesson(n) && !node(n.id).lesson){ ran('lesson'); return startLesson(n); }   // learn a new skill before drilling it
-  if (s.kind==='flash'){ ran('flash'); return startDrill('flash', n); }
+  if (s.kind==='flash'){ ran('flash'); return startFlash(n); }
   ran(s.kind); return startDrill(s.kind, n.kind==='flash' ? C.BY_ID.combined : n);
 }
 // Called whenever she finishes something: plants today's flower, gives a sticker, ticks today's step.
@@ -790,7 +798,7 @@ function startMode(m){ stopVoices();
   if (m==='play') return goPlay();
   if (m==='album') return goAlbum();
   if (m==='learn'){ const target = hasLesson(n) ? n : NODES.slice(0,curIdx()).reverse().find(x=>x.demos) || n; return startLesson(target); }
-  if (m==='flash') return startDrill('flash', n.kind==='flash' ? n : NODES[curIdx()]);
+  if (m==='flash') return startFlash(n.kind==='flash' ? n : NODES[curIdx()], 'door');
   return startDrill(m, n.kind==='flash' ? C.BY_ID.combined : n);
 }
 $('#doorPractice').addEventListener('click', openPractice);
@@ -951,7 +959,9 @@ function renderDoor(){
   renderDoorPath();
   // Bixi stays on the table as a quiet, waving sidekick; Juni (the moon) leads the line from the window.
   const bd=$('#bixDoor'); toyBix(bd, 'wave', {size:190}); Fun.Mascot.quiet(bd);
-  if (sums) juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_play', 'How would you like to practise today?');
+  // Coming straight back from the Learn screen is not a fresh visit -- don't replay Juni's door greeting (BB: repeating it is bad design); clear the stale bubble instead.
+  if (renderDoor.skipGreet){ renderDoor.skipGreet=false; const jb=$('#doorJuni'); if (jb){ jb.classList.remove('on'); jb.textContent=''; } }
+  else if (sums) juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_play', 'How would you like to practise today?');
   else juniSayOn($('#doorJuni'), $('#doorSky'), 'j_door_first', "Tap Learn and I'll show you the beads. More practice opens as you learn new skills.");
   $('#door').classList.toggle('intro', !renderDoor.seen); renderDoor.seen=true;
 }
@@ -1005,6 +1015,7 @@ $$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
   Speaker.unlock(); const m=b.dataset.door, n=NODES[curIdx()];
   if (!n.drill){ const to=DOOR_BEADS[m][5];                                   // nothing to drill yet (bead numbers): learn, make or read
     return to==='learn' ? startLesson(lessonTarget(n), 'door') : Games.open(to, {from:'door'}); }
+  if (m==='flash') return startFlash(doorDrillNode(m, n), 'door');              // mental-math: Juni's intro card first (once), then the drill
   startDrill(m, doorDrillNode(m, n));
 }));
 $('#exitDoor').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
@@ -1068,8 +1079,8 @@ function lessonRods(n){
   try{ if (n.kind==='numbers') mx=Math.max(0, ...n.lesson.numbers); else for (const p of [...(n.demos||[]), ...(n.guided||[])]){ const ls=lessonStep(n, p); mx=Math.max(mx, ls.start||0, ls.target||0); } }catch(e){ mx=99999; }
   return Math.max(3, String(Math.floor(mx)).length);
 }
-function lessonTotal(){ const n=L.node; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1+(hasInterlude(n)?1:0); }
-function lessonDone(){ const n=L.node; const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx : L.phase==='done'?lessonTotal() : 0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='help'? n.demos.length+n.guided.length : L.phase==='done'? lessonTotal() : 0; return d; }
+function lessonTotal(){ const n=L.node; if (n.kind==='flash') return L.pages?L.pages.length:1; const demos=n.kind==='numbers'? n.lesson.numbers.length : n.demos.length; const guided=n.kind==='numbers'?0:n.guided.length; return demos+guided+1+(hasInterlude(n)?1:0); }
+function lessonDone(){ const n=L.node; if (n.kind==='flash') return L.phase==='intro'?L.page:(L.pages?L.pages.length:1); const d=n.kind==='numbers'? L.phase==='numbers'?L.demoIdx : L.phase==='done'?lessonTotal() : 0 : L.phase==='demo'?L.demoIdx : L.phase==='guided'? n.demos.length+L.guidedIdx : L.phase==='help'? n.demos.length+n.guided.length : L.phase==='done'? lessonTotal() : 0; return d; }
 // The problem as wooden-tile maths: "+" in jade, "−" in red (same meaning as the number tiles).
 function probHtml(p){ return esc(p).replace(/\+/g,'<i class="plus">+</i>').replace(/−/g,'<i class="minus">−</i>').replace(/×/g,'<i class="times">×</i>'); }
 function cap(kind, text, prob){ $('#capKind').textContent=kind; const t=$('#capText'); t.classList.remove('tight'); t.innerHTML=text; if (capLines()>3) t.classList.add('tight'); if (prob!==undefined){ const el=$('#capProb'); el.dataset.p=prob||''; el.innerHTML = prob==='*' ? TOY.icon('star', 64, '#F2B632') : probHtml(prob||''); }
@@ -1142,7 +1153,7 @@ async function renderLesson(){
     $('#capProb').innerHTML=''; $('#capProb').dataset.p='';
     if (!L.pages) L.pages=lessonPages(n);
     const pg=L.pages[Math.min(L.page, L.pages.length-1)], last=L.page>=L.pages.length-1;
-    cap(pg.kind, pg.html, ''); lessonBtn(last?'Show me':'Next', last?'play':null);
+    cap(pg.kind, pg.html, ''); lessonBtn(last?(n.kind==='flash'?'Start':'Show me'):'Next', last?'play':null);
     if (L.page===0){ lessonAb.reset();
       const ok='intro_'+n.id;   // Juni reads the "New skill" card itself: each lesson has its own recorded line (intro_<nodeId>) matching the rule on screen (Voice.play auto-loads the juni-intro pack)
       juniNarrate(ok); capVoice(ok,'juni'); }
@@ -1299,11 +1310,12 @@ function onLessonBeads(v){
       Fun.Mascot.react($('#bixLesson'), 'happy'); cap('Yes!', `<b>${v}</b> — that's it.`); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
-function leaveLesson(){ animToken++; if (lessonFrom==='door'){ show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
+function leaveLesson(){ animToken++; if (lessonFrom==='door'){ renderDoor.skipGreet=true; show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
 function advanceLesson(){
   const n=L.node; animToken++; L.busy=false; L.won=false; lessonAb.clearHighlights();
   if ((L.phase==='numbers' || L.phase==='guided') && L.marks[turnIdx()]===undefined){ L.marks[turnIdx()]=false; L.skipped++; }   // skipped: not done
   if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; }
+    if (n.kind==='flash'){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); }   // mental-math: the card IS the lesson; now straight into the flash drill
     if (n.kind==='numbers'){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
     else { L.phase='demo'; L.demoIdx=0; } }
   else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='fingers'; L.fingerIdx=0; } }
@@ -2528,7 +2540,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.27';
+const APP_VERSION='4.28';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
