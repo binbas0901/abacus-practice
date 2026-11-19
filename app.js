@@ -68,6 +68,52 @@ function levelComplete(id){ return setsDone(id) >= LEVEL_SETS; }
 function completeSet(id){ const st = node(id); st.setsDone = Math.min(LEVEL_SETS, (st.setsDone || 0) + 1); saveProgress(); return st.setsDone; }
 function levelSetPlan(){ return Array.from({length: LEVEL_SETS}, (_, i) => setType(i)); }   // e.g. [listen,read,build,listen,…]
 window.__level = { LEVEL_SETS, SET_LEN, setType, setsDone, currentSetIndex, currentSetType, levelComplete, completeSet, levelSetPlan };
+
+// ---- Practice orchestrator (redesign): run a level as 10 sets of 10, cycling listen/read/build, all-correct to finish a set ----
+// Reuses the existing mechanics: listen -> the drill (with its fix pass looping misses until correct); read -> Bead
+// Detective (reader, with a miss re-queued); build -> Bead Builder (inherently all-correct). A guard (Practice.on) keeps
+// every existing drill/game flow unchanged when a practice level is NOT running.
+const Practice = {
+  on: false, node: null, type: null, _savedCount: null,
+  nodeObj(id){ return NODES[NODE_IDX[id]]; },
+  start(nodeId){ this.node = nodeId || NODES[curIdx()].id; this.on = true; Speaker.unlock(); this.runSet(); },
+  stop(){ this.on = false; if (this._savedCount != null){ settings.count = this._savedCount; this._savedCount = null; } },
+  runSet(){
+    if (!this.on) return;
+    const id = this.node;
+    if (levelComplete(id)) return this.levelDone();
+    const type = currentSetType(id); this.type = type;
+    const n = this.nodeObj(id);
+    if (type === 'listen' && n && n.drill){
+      this._savedCount = settings.count; settings.count = SET_LEN;
+      startDrill('listen', n);                                   // the drill's finish() hands back to Practice.setDone (see finish)
+    } else {
+      Games.runSet(type === 'listen' ? 'build' : type, SET_LEN, () => this.setDone());   // read/build (and listen on a no-sums level) run through the game set-runner
+    }
+  },
+  setDone(){
+    if (!this.on) return;
+    if (this._savedCount != null){ settings.count = this._savedCount; this._savedCount = null; }
+    this.celebrate(completeSet(this.node));
+  },
+  async celebrate(doneN){
+    stopVoices();
+    if (levelComplete(this.node)) return this.levelDone();
+    const left = LEVEL_SETS - doneN;
+    const go = await TOY.confirm(`Set ${doneN} of ${LEVEL_SETS} done!`, `Great practicing! ${left} more set${left === 1 ? '' : 's'} to finish this level.`, { ok: 'Next set', cancel: 'Done for now' });
+    if (!this.on) return;
+    if (go) this.runSet(); else { this.stop(); renderHome(); show('home'); }
+  },
+  async levelDone(){
+    const id = this.node, st = node(id);
+    if (!st.mastered) st.mastered = 'auto'; st.lesson = true;
+    if (NODE_IDX[id] === curIdx() && curIdx() < NODES.length - 1) progress.current = NODES[curIdx() + 1].id;
+    saveProgress(); this.stop(); stopVoices();
+    await TOY.confirm('Level complete!', `You finished all ${LEVEL_SETS} sets and unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
+    renderHome(); show('home');
+  }
+};
+window.__practice = Practice;
 // A child who had mastered the old last skill moves on to the new levels (4–6) automatically.
 if (!firstRun && C.advanceCurrent){ const nx=C.advanceCurrent(progress.current, id=>!!(progress.nodes[id]&&progress.nodes[id].mastered)); if (nx!==progress.current){ progress.current=nx; saveProgress(); } }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
@@ -2068,6 +2114,16 @@ $('#sumSay').addEventListener('click', saySummary);
 $('#bixSum').addEventListener('click', saySummary);
 function finish(){
   if (LT) return finishLevelTest();
+  if (Practice.on){   // practice set: no standard summary — polish any misses to all-correct, then hand back to the level flow
+    const toFix = problems.map((p,i)=>results[i]===false && !p._fixed ? i : -1).filter(i=>i>=0);
+    if (!reviewing && toFix.length){
+      reviewQueue = toFix; reviewing = true; idx = reviewQueue[0]; t0 = Date.now();
+      setStages(); toySky('#drillSky'); show('drill'); presentProblem();
+      const one = reviewQueue.length===1; JB.say(POLISH_LINE[one?'fix_one':'fix_start'], one?'j_fix_one':'j_fix_start', 2200);
+      return;
+    }
+    endDrill(); Practice.setDone(); return;
+  }
   endDrill(); const correct=results.filter(r=>r===true).length; const secs=Math.round((Date.now()-t0)/1000); let leveled=false;
   if (!reviewing){
     const checked=problems.filter(p=>p._method!==undefined);
@@ -2122,9 +2178,9 @@ $('#fixBtn').addEventListener('click', ()=>{
 });
 $('#showMeBtn').addEventListener('click', async()=>{ if(locked||demoing) return; locked=true; await showMe(problems[idx]); locked=false; if (Tool.kind==='beads' && $('#drill').classList.contains('active')){ Tool.reset(); markTiles(); JB.setBase('Your turn! Move the beads, then tap Check.'); } });
 $('#againBtn').addEventListener('click', ()=>startDrill(mode, drillNode));
-$('#homeBtn').addEventListener('click', ()=>{ stopVoices(); pendingTest=null; renderHome(); show('home'); });
+$('#homeBtn').addEventListener('click', ()=>{ stopVoices(); pendingTest=null; Practice.stop(); renderHome(); show('home'); });
 $('#testBtn').addEventListener('click', ()=>{ const id=pendingTest; pendingTest=null; startLevelTest(id); });
-$('#exitDrill').addEventListener('click', ()=>{ stopVoices(); endDrill(); LT=null; renderHome(); show('home'); });
+$('#exitDrill').addEventListener('click', ()=>{ stopVoices(); endDrill(); LT=null; Practice.stop(); renderHome(); show('home'); });
 
 /* ---- show me: the bead moves for each number, on the Workshop soroban ---- */
 let showAb=null, showToken=0, demoToken=0, demoing=false;

@@ -262,19 +262,22 @@
      Bead Detective: beads show briefly, then get covered. Read them.
      Peeks get shorter when she's right; adds rods after 3 in a row.
      ========================================================= */
-  async function reader(tok) {
+  async function reader(tok, opts) {
+    opts = opts || {};
     const a = App(), st = $('#gameStage');
-    const maxR = levelRods(); const N = a.gameReads || 10;   // never ramp past the current skill's digit level
+    const requireAll = !!opts.requireAll;   // practice set: a miss repeats the SAME number until it's read right (all-correct)
+    const maxR = levelRods(); const N = (opts.n != null ? opts.n : (a.gameReads || 10));
     let rods = 1, show = 2.0, streak = 0, misses = 0, score = 0; const marks = [];
     st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${TI('eye', 76, '#7A4A24', { stroke: 2.2, accent: '#FFFDF6' })}<b>?</b></span></div></div></div>
       <div class="rd-right"><div class="rd-slip"><div class="answer empty" id="rdAns">?</div><div class="feedback" id="rdFb" aria-live="polite"></div></div><div class="g-pad" id="rdPad"></div></div></div>`;
     const P = pad($('#rdPad'), $('#rdAns'));
-    let ab = null, abRods = 0;
-    for (let i = 0; i < N; i++) {
+    let ab = null, abRods = 0, i = 0, curV = null;
+    while (i < N) {
       if (tok !== token) return null;
       setScore(beadDots(N, i, marks)); $('#rdFb').textContent = ''; $('#rdFb').className = 'feedback';
       if (abRods !== rods) { if (ab) ab.destroy(); ab = demoAbacus($('#rdAb'), { rods, readOnly: true }); abRods = rods; $('#rdAb').dataset.rods = rods; }
-      const v = rods === 1 ? rnd(1, 9) : rnd(Math.pow(10, rods - 1), Math.pow(10, rods) - 1);
+      if (curV === null) curV = rods === 1 ? rnd(1, 9) : rnd(Math.pow(10, rods - 1), Math.pow(10, rods) - 1);
+      const v = curV;
       ab.value = v; root.__rdVal = v;   // test hook
       // Bix's bubble is the one instruction (spoken on the first number; afterwards a quiet caption, tap to hear it).
       $('#rdCover').classList.remove('on'); juniLine('j_read_look', 'Look closely at the beads.', i > 0);
@@ -287,11 +290,19 @@
         $('#rdFb').innerHTML = `${TI('check', 26, '#fff', { stroke: 3.4 })}Yes!`; $('#rdFb').className = 'feedback ok'; $('#rdAns').classList.add('is-right'); a.Sfx.ok(); root.Fun.Mascot.react(bix(), 'happy');
         if (streak >= 3 && rods < maxR) { rods++; streak = 0; show = 2.2; root.Fun.Mascot.react(bix(), 'cheer'); juniLine('j_read_levelup', 'Wonderful! Let’s try more beads now.'); await sleep(1500); }
         else await sleep(900);
+        i++; curV = null;
       } else {
-        streak = 0; misses++; show = Math.min(3.5, show * 1.25); marks[i] = false; setScore(beadDots(N, i + 1, marks));
-        $('#rdFb').innerHTML = `It was <b>${v}</b>`; $('#rdFb').className = 'feedback bad'; $('#rdAns').classList.add('is-wrong'); juniLine(null, `It was ${v}. Next one!`, true); a.Sfx.soft(); root.Fun.Mascot.react(bix(), 'oops');
-        if (misses >= 2 && rods > 1) { rods--; misses = 0; }
-        await sleep(1800);
+        streak = 0; misses++; show = Math.min(3.5, show * 1.25); $('#rdAns').classList.add('is-wrong'); a.Sfx.soft(); root.Fun.Mascot.react(bix(), 'oops');
+        if (requireAll) {
+          $('#rdFb').innerHTML = `It was <b>${v}</b> — let’s look again`; $('#rdFb').className = 'feedback bad'; juniLine(null, `It was ${v}. Let’s look again.`, true);
+          await sleep(1600);   // same number comes back (curV kept, i not advanced)
+        } else {
+          marks[i] = false; setScore(beadDots(N, i + 1, marks));
+          $('#rdFb').innerHTML = `It was <b>${v}</b>`; $('#rdFb').className = 'feedback bad'; juniLine(null, `It was ${v}. Next one!`, true);
+          if (misses >= 2 && rods > 1) { rods--; misses = 0; }
+          await sleep(1800);
+          i++; curV = null;
+        }
       }
       if (tok !== token) return null;
       P.clear(); $('#rdAns').classList.remove('is-right', 'is-wrong');
@@ -302,9 +313,10 @@
   /* =========================================================
      Bead Builder: "Make 47!" — set it on the abacus. No clock: the round is 8 numbers.
      ========================================================= */
-  async function build(tok) {
+  async function build(tok, opts) {
+    opts = opts || {};
     const a = App(), st = $('#gameStage'), i = a.nodeIndex();
-    const rods = levelRods(); const N = a.gameNumbers || 8;   // make numbers stay within the current skill's level
+    const rods = levelRods(); const N = (opts.n != null ? opts.n : (a.gameNumbers || 8));   // make numbers stay within the current skill's level
     st.innerHTML = `<div class="bd-wrap"><div class="bd-q"><div class="toy-clipboard bd-board"><div class="toy-paper"><div class="bd-k">Make</div><div class="bd-num" id="bdNum" aria-live="polite"></div></div></div><div class="bd-tools"><button type="button" class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="bdSay" aria-label="Say the number again">${TI('speaker', 30, 'currentColor')}Again</button><button type="button" class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="bdClear" aria-label="Clear the abacus">${TI('retry', 28, 'currentColor')}Clear</button></div></div><div class="bd-ab" id="bdAb"></div></div>`;
     let want = null, hit = null;
     const ab = demoAbacus($('#bdAb'), { rods: Math.max(2, rods), scale: 1.6, onBead: () => a.Sfx.tap(), onChange: v => { if (want !== null && v === want && hit) { const h = hit; hit = null; h(); } } });
@@ -333,14 +345,22 @@
   /* ---------- runner ---------- */
   // from: where Done goes back to ('home' for a Today step, 'door' for the Practice door; otherwise the Play hub).
   let cameFrom = '';
+  let practiceCB = null, practiceOpts = null;   // set by runSet: when present, open() runs ONE orchestrated set and calls back instead of showing its own results
+  // Run one practice set of a game-based type ('read'->reader, 'build'->build): n items, all-correct, then onDone({allCorrect,...}).
+  async function runSet(type, n, onDone) {
+    practiceCB = onDone; practiceOpts = { n, requireAll: type === 'read' };
+    await open(type === 'read' ? 'reader' : 'build', { from: 'practice' });
+  }
   async function open(id, o) {
     const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim(); if (o) cameFrom = o.from || '';
     $('#exitGame').setAttribute('aria-label', cameFrom === 'home' ? 'Back home' : cameFrom === 'door' ? 'Back to Practice' : 'Back to the games');
     const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
     root.Fun.Mascot.mount(bix(), { size: 76 }); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
     a.show('game');
-    const r = id === 'pop' ? await pop(my) : id === 'reader' ? await reader(my) : await build(my);
+    const r = id === 'pop' ? await pop(my) : id === 'reader' ? await reader(my, practiceOpts) : await build(my, practiceOpts);
     if (!r || my !== token) return;
+    // Practice set (orchestrated by the level flow): no results card / leveling here — hand the result back and stop.
+    if (practiceCB) { const cb = practiceCB; practiceCB = null; practiceOpts = null; const marks = id === 'reader' ? r.marks : Array(r.n).fill(true); cb({ allCorrect: marks.every(m => m !== false), score: r.score != null ? r.score : r.n, of: r.of != null ? r.of : r.n, marks }); return; }
     const best = root.Fun.data.best; let isBest = false, card;
     if (id === 'pop') {
       best.popTotal = popTotal(best) + r.score; isBest = r.wrong === 0;
@@ -385,5 +405,5 @@
     }
   }
   root.DemoAbacus = demoAbacus;
-  root.Games = { GAMES, open, stop, leave, renderHub, family, demoAbacus };
+  root.Games = { GAMES, open, stop, leave, renderHub, family, demoAbacus, runSet };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
