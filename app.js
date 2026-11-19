@@ -82,8 +82,17 @@ const Practice = {
     if (!this.on) return;
     const id = this.node;
     if (levelComplete(id)) return this.levelDone();
-    const type = currentSetType(id); this.type = type;
     const n = this.nodeObj(id);
+    // Teach first: a not-yet-learned skill gets its lesson before the first set. leaveLesson (lessonFrom==='practice')
+    // continues into runSet once the lesson is finished (node.lesson is then set, so this gate won't re-fire).
+    if (n && n.kind !== 'flash' && hasLesson(n) && !node(id).lesson){ this.type = 'lesson'; return startLesson(n, 'practice'); }
+    // Mental math (anzan): practised in the head with the Flash drill — never a visible-abacus set. startFlash shows
+    // the one-time intro card (the flash lesson) then the flash drill; its finish() hands back to setDone like any drill.
+    if (n && n.kind === 'flash'){
+      this._savedCount = settings.count; settings.count = SET_LEN; this.type = 'flash';
+      return startFlash(n);
+    }
+    const type = currentSetType(id); this.type = type;
     if (type === 'listen' && n && n.drill){
       this._savedCount = settings.count; settings.count = SET_LEN;
       startDrill('listen', n);                                   // the drill's finish() hands back to Practice.setDone (see finish)
@@ -1446,7 +1455,9 @@ function onLessonBeads(v){
       Fun.Mascot.react($('#bixLesson'), 'happy'); lessonAb.clearHighlights(); L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 900); }
   }
 }
-function leaveLesson(){ animToken++; if (lessonFrom==='door'){ renderDoor.skipGreet=true; show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
+function leaveLesson(){ animToken++;
+  if (lessonFrom==='practice'){ lessonFrom='home'; const learned = !!(Practice.node && node(Practice.node).lesson); if (learned && Practice.on) return Practice.runSet(); Practice.stop(); renderHome(); show('home'); return; }   // learned -> into the level's sets; exited early or mostly-skipped -> home (no re-loop)
+  if (lessonFrom==='door'){ renderDoor.skipGreet=true; show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
 // Whether there is a previous step to go back to (false only on the very first step of the lesson).
 function lessonCanBack(){
   if (!L) return false;
@@ -2712,11 +2723,14 @@ window.__drillSay = text=>PB.say(text, 'happy', null, 0);
 // Test hooks for lessons: where the lesson is, and "she moved the beads to v".
 window.__lesson = ()=>L ? { phase:L.phase, target:L.target, demoIdx:L.demoIdx, guidedIdx:L.guidedIdx, busy:!!L.busy, value: lessonAb ? lessonAb.value : null, did:L.did||0, skipped:L.skipped||0 } : null;
 window.__lessonSet = v=>{ if (lessonAb) lessonAb.poke(v); };
+// Test hook: finish the current lesson as a true (learned) completion and run the real end path (advanceLesson -> leaveLesson).
+window.__lessonFinish = ()=>{ if (!L) return null; node(L.node.id).lesson=true; saveProgress(); L.phase='done'; advanceLesson(); return true; };
+window.__prog = (id)=>({ current: progress.current, node: id ? (progress.nodes[id]||null) : undefined });   // test hook: current skill + a node's saved flags
 window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.37';
+const APP_VERSION='4.38';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
