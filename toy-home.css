@@ -142,14 +142,14 @@
 .th-trophy.full .th-trophy-lab{color:var(--toy-teal-dk,#1f7a6b)}
 
 /* doors on the felt mat, loose beads, the bead bowl */
-.th-doors{grid-column:1/-1;grid-row:4;justify-self:center;align-self:end;display:flex;gap:calc(var(--u)*24);padding:calc(var(--u)*22) calc(var(--u)*26) calc(var(--u)*29)}
+.th-doors{position:absolute;top:max(92px,calc(var(--u)*104));right:0;display:flex;flex-direction:column;align-items:flex-end;gap:calc(var(--u)*12);padding:0;z-index:5}
 #home .th-door{min-width:0;width:calc(var(--u)*200);min-height:0;height:calc(var(--u)*112);gap:calc(var(--u)*12);padding:calc(var(--u)*6) calc(var(--u)*14) calc(var(--u)*4);font-size:max(22px,calc(var(--u)*29));white-space:nowrap}
 .th-door-ic{display:inline-flex;line-height:0}
 .th-door-ic .toy-icon{width:calc(var(--u)*48);height:calc(var(--u)*48)}
 /* Play and My room are earned breaks: smaller, dimmer, clearly below Practice (never competing with it). */
-#home .th-doors--mini{gap:calc(var(--u)*18);padding:calc(var(--u)*14) calc(var(--u)*22) calc(var(--u)*18);opacity:.8}
-#home .th-door--mini{width:calc(var(--u)*158);height:calc(var(--u)*84);font-size:max(18px,calc(var(--u)*22));filter:saturate(.74)}
-#home .th-door--mini .toy-icon{width:calc(var(--u)*36);height:calc(var(--u)*36)}
+#home .th-doors--mini{gap:calc(var(--u)*12);padding:0;opacity:.82}
+#home .th-door--mini{width:auto;min-width:0;padding:0 calc(var(--u)*18);height:max(62px,calc(var(--u)*62));gap:calc(var(--u)*8);font-size:max(15px,calc(var(--u)*19));filter:saturate(.78)}
+#home .th-door--mini .toy-icon{width:max(22px,calc(var(--u)*28));height:max(22px,calc(var(--u)*28))}
 .th-loose{grid-column:1;grid-row:4;align-self:end;justify-self:start;position:relative;width:calc(var(--u)*200);height:calc(var(--u)*170);pointer-events:none}
 .th-loose .toy-bead{position:absolute;height:auto}
 .th-loose .toy-bead:nth-child(1){left:calc(var(--u)*34);top:0;width:calc(var(--u)*64);transform:rotate(8deg)}
@@ -186,8 +186,8 @@
   #home .th-practice{--d:calc(var(--u)*252)}
   .th-loose{grid-row:4;align-self:center}
   .th-bowl{grid-row:4;align-self:center;margin:0 0 calc(var(--u)*10)}
-  .th-doors{grid-row:5;gap:calc(var(--u)*20);padding:calc(var(--u)*24) calc(var(--u)*24) calc(var(--u)*32)}
-  #home .th-door--mini{width:calc(var(--u)*184);height:calc(var(--u)*98)}
+  .th-doors{top:max(92px,calc(var(--u)*104));gap:calc(var(--u)*12);padding:0}
+  #home .th-door--mini{width:auto;padding:0 calc(var(--u)*16);height:max(62px,calc(var(--u)*58))}
 }
 
 /* =====================================================================
