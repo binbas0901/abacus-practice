@@ -103,3 +103,8 @@
   .cl-bubble.pop{animation:none}
   .td-lesson.cl-juni-forward .toy-sky-moon-in,.td-lesson .toy-sky-moon-in{transition:none}
 }
+
+/* "Parts of the abacus" step (first lesson): the part Juni names glows. */
+#lessonAbacus .abx-anat{filter:drop-shadow(0 0 4px #FFC53D) drop-shadow(0 0 9px #FFB01F);animation:anat-pulse 1.1s ease-in-out infinite}
+@keyframes anat-pulse{0%,100%{opacity:1}50%{opacity:.66}}
+@media (prefers-reduced-motion:reduce){#lessonAbacus .abx-anat{animation:none}}

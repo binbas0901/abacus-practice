@@ -1056,7 +1056,7 @@ function startLesson(n, from){
   if (!lessonAb || lessonAb.rodsMade!==rods){ if (lessonAb) lessonAb.destroy(); lessonAb = DemoAbacus($('#lessonAbacus'), {rods, readout:true, onBead:()=>Sfx.tap(), onChange:(v)=>onLessonBeads(v)}); lessonAb.rodsMade=rods; }
   lessonAb.reset();
   if (L) clearTimeout(L.skipT), clearTimeout(L.tryT);
-  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, watchIdx:0, fingerIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
+  L = { node:n, phase:'intro', page:0, pages:null, demoIdx:0, watchIdx:0, anatIdx:0, fingerIdx:0, step:0, guidedIdx:0, steps:null, busy:false, marks:[], did:0, skipped:0, tries:0 };
   $('#lessonTitle').textContent=n.title; $('#capFriends').innerHTML=friendsHtml(n);
   toyBix($('#bixLesson'), 'happy', {size:116, keep:false, bubble:false}); toySky($('#lessonSky'));   // Bixi is the small classmate; Juni (the moon) leads
   $('#lesson').classList.add('cl-juni-forward'); wireMoonTap('#lessonSky');   // Juni leans in from the window to lead
@@ -1149,6 +1149,7 @@ async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
   $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided'));
   if (L.phase!=='fingers') hideHand();
+  if (L.phase!=='anatomy') anatHL(null);
   if (L.phase==='intro'){
     $('#capProb').innerHTML=''; $('#capProb').dataset.p='';
     if (!L.pages) L.pages=lessonPages(n);
@@ -1157,6 +1158,14 @@ async function renderLesson(){
     if (L.page===0){ lessonAb.reset();
       const ok='intro_'+n.id;   // Juni reads the "New skill" card itself: each lesson has its own recorded line (intro_<nodeId>) matching the rule on screen (Voice.play auto-loads the juni-intro pack)
       juniNarrate(ok); capVoice(ok,'juni'); }
+    return;
+  }
+  if (L.phase==='anatomy'){ // first lesson: Juni names each part of the abacus (it glows) before any values or finger moves
+    const s=ANATOMY_STEPS[L.anatIdx]||ANATOMY_STEPS[0], last=L.anatIdx>=ANATOMY_STEPS.length-1;
+    cap(`Parts of the abacus ${L.anatIdx+1} of ${ANATOMY_STEPS.length}`, s.text.replace(/\b(abacus|rod|beam|heaven bead|earth beads?)\b/gi, m=>`<b>${m}</b>`), '');
+    lessonBtn(last?'Show me':'Next', 'play'); lessonAb.setReadOnly(true);
+    const my=++animToken, live=()=>my===animToken;
+    (async()=>{ lessonAb.reset(); await sleep(80); if(!live())return; anatHL(s.part); juniNarrate(s.k); capVoice(s.k,'juni'); })();
     return;
   }
   if (L.phase==='watch'){ // beads node: Juni SHOWS the bead values (move the 5-bead, then a 1-bead) before the child's turn
@@ -1236,6 +1245,27 @@ let animToken=0;
 // Each lesson step carries a stable key (step.k); her recording is filed under that key, not the sentence,
 // so rewording a caption or restyling the app never breaks playback — only re-recording that key does.
 // Finger-technique step (first lesson only): Juni shows which finger moves which bead, with the real hand image.
+// First lesson only: Juni names the parts of the abacus BEFORE any values or finger moves, so the words
+// (heaven bead, earth beads, beam, rod) are introduced before they're used later. Each step glows its part.
+const ANATOMY_STEPS=[
+  { k:'anat_abacus', text:'This is your abacus. Every bead on it helps you count.',        part:'all'    },
+  { k:'anat_rod',    text:'Each line of beads slides up and down on a rod.',                part:'rod'    },
+  { k:'anat_beam',   text:'The bar across the middle is the beam.',                         part:'beam'   },
+  { k:'anat_heaven', text:'Above the beam is the heaven bead. It is worth five.',           part:'heaven' },
+  { k:'anat_earth',  text:'Below the beam are the earth beads. Each one is worth one.',     part:'earth'  },
+];
+// Glow one named part of the lesson abacus (units rod for the beads). null clears it.
+function anatHL(part){
+  const ab=$('#lessonAbacus'); if(!ab) return;
+  ab.querySelectorAll('.abx-anat').forEach(e=>e.classList.remove('abx-anat'));
+  if(!part) return;
+  const rod0=ab.querySelector('.abx-rod[data-rod="0"]');
+  if (part==='all') ab.querySelectorAll('.abx-bead,.abx-beam').forEach(e=>e.classList.add('abx-anat'));
+  else if (part==='beam'){ const b=ab.querySelector('.abx-beam'); if(b) b.classList.add('abx-anat'); }
+  else if (part==='rod'){ const rl=rod0&&rod0.querySelector('.abx-rodline'); if(rl) rl.classList.add('abx-anat'); }
+  else if (part==='heaven'){ const h=rod0&&rod0.querySelector('.abx-bead[data-kind="h"]'); if(h) h.classList.add('abx-anat'); }
+  else if (part==='earth'){ (rod0||ab).querySelectorAll('.abx-bead[data-kind="e"]').forEach(e=>e.classList.add('abx-anat')); }
+}
 const FINGER_STEPS=[
   { k:'fingers_intro',   text:'You move the beads with just two fingers — your thumb and your pointer.', pose:'thumb',   zone:'earth' },
   { k:'fingers_thumb',   text:'Your thumb pushes the little earth beads up to the beam.',               pose:'thumb',   zone:'earth', from:0, val:1, dir:'up'   },
@@ -1316,8 +1346,12 @@ function advanceLesson(){
   if ((L.phase==='numbers' || L.phase==='guided') && L.marks[turnIdx()]===undefined){ L.marks[turnIdx()]=false; L.skipped++; }   // skipped: not done
   if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; }
     if (n.kind==='flash'){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); }   // mental-math: the card IS the lesson; now straight into the flash drill
-    if (n.kind==='numbers'){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
+    if (n.kind==='numbers'){
+      if (n.id==='beads'){ L.phase='anatomy'; L.anatIdx=0; }   // first lesson: name the parts of the abacus before anything else
+      else { const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
+    }
     else { L.phase='demo'; L.demoIdx=0; } }
+  else if (L.phase==='anatomy'){ L.anatIdx++; if (L.anatIdx>=ANATOMY_STEPS.length){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } } }
   else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='fingers'; L.fingerIdx=0; } }
   else if (L.phase==='fingers'){ L.fingerIdx++; if (L.fingerIdx>=FINGER_STEPS.length){ L.phase='numbers'; L.demoIdx=0; } }
   else if (L.phase==='numbers'){ L.demoIdx++; if (L.demoIdx>=n.lesson.numbers.length) L.phase='done'; }
@@ -2540,7 +2574,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.29';
+const APP_VERSION='4.30';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

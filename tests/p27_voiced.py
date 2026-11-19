@@ -66,6 +66,10 @@ async def main():
         fing = ['fingers_intro','fingers_thumb','fingers_pointer','fingers_heaven','fingers_recap']
         fmiss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", fing)
         check('finger-technique step lines all have a voice', not fmiss, fmiss)
+        # the "parts of the abacus" (anatomy) step lines must all be recorded too
+        anat = ['anat_abacus','anat_rod','anat_beam','anat_heaven','anat_earth']
+        amiss = await pg.evaluate("""(keys)=>{const V=window.Classroom.Voice,m=[];for(const k of keys){const r=V.find('juni',k);if(!(r&&r[0]&&r[1]))m.push(k);}return m;}""", anat)
+        check('parts-of-the-abacus step lines all have a voice', not amiss, amiss)
         # the locked-practice banner has a voice too
         banner = await pg.evaluate("""()=>{const r=window.Classroom.Voice.find('juni','j_door_first');return !!(r&&r[0]&&r[1]);}""")
         check('practice "sums come soon" banner has a voice line', banner)

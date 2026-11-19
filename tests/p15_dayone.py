@@ -24,7 +24,7 @@ async def collect_all(pg, first=15000):
 async def steps_done(pg): return await pg.eval_on_selector_all('#todaySteps .step','els=>els.map(e=>e.className.includes("done"))')
 async def plan(pg): return await pg.evaluate("JSON.parse(window.__legacy('fun')).today.steps.map(s=>s.kind+(s.game?':'+s.game:'')+(s.done?'*':''))")
 async def to_turns(pg):
-    for _ in range(12):
+    for _ in range(24):   # intro + "parts of the abacus" (5) + watch + fingers, then the Your-turn phase
         if (await pg.evaluate("__lesson().phase")) in ('numbers','guided','demo'): return
         await pg.click('#lessonNext'); await pg.wait_for_timeout(150)
 async def do_turns(pg, phase):
