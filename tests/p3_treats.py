@@ -6,7 +6,7 @@ async def gate(pg):
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(400)
 async def collect_all(pg):
     while True:
-        try: await pg.wait_for_selector('#stickerReveal.active', timeout=3500)
+        try: await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
         except Exception: return
         await pg.click('#rvPack', force=True); await pg.wait_for_timeout(450); await pg.click('#rvOk'); await pg.wait_for_timeout(350)
 async def main():

@@ -8,6 +8,10 @@
   const App = () => root.App;
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  // The current skill's number ceiling and rod count, so a game never shows numbers above the level.
+  // The beads lesson has no drill -> single digit (9). Every other skill uses its drill's maxTotal.
+  const levelMax = () => { const a = App(), n = a.currentNode && a.currentNode(); return (n && n.drill && n.drill.maxTotal) || 9; };
+  const levelRods = () => String(levelMax()).length;
 
   /* ---------- Toy Table helpers shared by My Room, the shop, the Play menu and the games (window.ToyRoom) ---------- */
   const T = () => root.TOY;
@@ -260,7 +264,7 @@
      ========================================================= */
   async function reader(tok) {
     const a = App(), st = $('#gameStage');
-    const maxR = a.nodeIndex() >= a.idx('bf_add_a') ? 3 : 2; const N = a.gameReads || 10;
+    const maxR = levelRods(); const N = a.gameReads || 10;   // never ramp past the current skill's digit level
     let rods = 1, show = 2.0, streak = 0, misses = 0, score = 0; const marks = [];
     st.innerHTML = `<div class="rd-wrap"><div class="rd-left"><div class="rd-ab"><div id="rdAb"></div><div class="rd-cover" id="rdCover"><span>${TI('eye', 76, '#7A4A24', { stroke: 2.2, accent: '#FFFDF6' })}<b>?</b></span></div></div></div>
       <div class="rd-right"><div class="rd-slip"><div class="answer empty" id="rdAns">?</div><div class="feedback" id="rdFb" aria-live="polite"></div></div><div class="g-pad" id="rdPad"></div></div></div>`;
@@ -271,7 +275,7 @@
       setScore(beadDots(N, i, marks)); $('#rdFb').textContent = ''; $('#rdFb').className = 'feedback';
       if (abRods !== rods) { if (ab) ab.destroy(); ab = demoAbacus($('#rdAb'), { rods, readOnly: true }); abRods = rods; $('#rdAb').dataset.rods = rods; }
       const v = rods === 1 ? rnd(1, 9) : rnd(Math.pow(10, rods - 1), Math.pow(10, rods) - 1);
-      ab.value = v;
+      ab.value = v; root.__rdVal = v;   // test hook
       // Bix's bubble is the one instruction (spoken on the first number; afterwards a quiet caption, tap to hear it).
       $('#rdCover').classList.remove('on'); juniLine('j_read_look', 'Look closely at the beads.', i > 0);
       await sleep(show * 1000); if (tok !== token) return null;
@@ -300,7 +304,7 @@
      ========================================================= */
   async function build(tok) {
     const a = App(), st = $('#gameStage'), i = a.nodeIndex();
-    const rods = i >= a.idx('two_digit') ? 3 : i >= a.idx('add_direct') ? 2 : 1; const N = a.gameNumbers || 8;
+    const rods = levelRods(); const N = a.gameNumbers || 8;   // make numbers stay within the current skill's level
     st.innerHTML = `<div class="bd-wrap"><div class="bd-q"><div class="toy-clipboard bd-board"><div class="toy-paper"><div class="bd-k">Make</div><div class="bd-num" id="bdNum" aria-live="polite"></div></div></div><div class="bd-tools"><button type="button" class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="bdSay" aria-label="Say the number again">${TI('speaker', 30, 'currentColor')}Again</button><button type="button" class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="bdClear" aria-label="Clear the abacus">${TI('retry', 28, 'currentColor')}Clear</button></div></div><div class="bd-ab" id="bdAb"></div></div>`;
     let want = null, hit = null;
     const ab = demoAbacus($('#bdAb'), { rods: Math.max(2, rods), scale: 1.6, onBead: () => a.Sfx.tap(), onChange: v => { if (want !== null && v === want && hit) { const h = hit; hit = null; h(); } } });

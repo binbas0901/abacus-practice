@@ -10,7 +10,7 @@ async def collect(pg, n=1):
 async def collect_all(pg):
     titles=[]
     while True:
-        try: await pg.wait_for_selector('#stickerReveal.active', timeout=3000)
+        try: await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
         except Exception: return titles
         titles.append(await pg.text_content('#rvTitle')); await pg.click('#rvPack', force=True); await pg.wait_for_timeout(500); await pg.click('#rvOk'); await pg.wait_for_timeout(400)
 async def solve_drill(pg):

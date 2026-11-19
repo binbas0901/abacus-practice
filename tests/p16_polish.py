@@ -13,7 +13,7 @@ async def said(pg): return await pg.evaluate("window.__said.splice(0)")
 norm = lambda s: re.sub(r"[^a-z0-9 ]", '', s.lower().replace('’', "'").replace("'", ''))
 async def collect_all(pg):
     while True:
-        try: await pg.wait_for_selector('#stickerReveal.active', timeout=3200)
+        try: await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
         except Exception: return
         await pg.click('#rvPack', force=True); await pg.wait_for_timeout(450); await pg.click('#rvOk'); await pg.wait_for_timeout(350)
 async def answer(pg, v):

@@ -176,7 +176,19 @@
   }
   function next() {
     const item = queue.shift(); if (!item) { showing = false; return; }
-    showing = true; const { s } = item;
+    showing = true; whenVoiceIdle(() => reveal(item));
+  }
+  // Wait until no character (Juni/Bixi) is still talking before popping the reward, so the sticker never
+  // talks over the line that earned it (a lesson's closing words, a game's praise, etc.). 6s safety cap.
+  function whenVoiceIdle(cb) {
+    const C = root.Classroom, B = BixVoice;
+    const busy = () => { try { return !!(C && C.Voice && C.Voice.busy && C.Voice.busy()) || !!B.src || B.queued > 0; } catch (e) { return false; } };
+    if (!busy()) return cb();
+    let waited = 0;
+    const iv = setInterval(() => { waited += 120; if (!busy() || waited >= 6000) { clearInterval(iv); setTimeout(cb, 200); } }, 120);
+  }
+  function reveal(item) {
+    const { s } = item;
     const ov = $('#stickerReveal'); const pack = $('#rvPack'), face = $('#rvFace');
     $('#rvTitle').textContent = item.title || (s.gold ? 'A GOLD sticker!' : 'You earned a sticker!');
     BixVoice.play(item.voice || (s.gold ? 'gift_gold' : 'gift'), null);

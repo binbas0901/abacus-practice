@@ -12,7 +12,7 @@ async def shot(pg, name):
     if SHOTS: await pg.wait_for_timeout(450); await pg.screenshot(path=f'{SHOTS}/{name}_{VP}.png')
 async def collect_all(pg):
     while True:
-        try: await pg.wait_for_selector('#stickerReveal.active', timeout=3200)
+        try: await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
         except Exception: return
         await pg.click('#rvPack', force=True); await pg.wait_for_timeout(450); await pg.click('#rvOk'); await pg.wait_for_timeout(350)
 async def drill(pg): return await pg.evaluate("window.__drill()")
