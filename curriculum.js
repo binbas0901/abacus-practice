@@ -60,7 +60,7 @@
   const NODE_SPECS = [
     { id: 'beads', title: 'Beads & numbers', short: 'Beads', icon: 'ball', kind: 'numbers',
       intro: 'The top bead is worth 5. Each bottom bead is worth 1. A bead counts when it touches the bar.',
-      lesson: { numbers: [1, 3, 5, 7, 9, 4, 6, 10, 23] },
+      lesson: { numbers: [1, 3, 5, 7, 9, 2, 4, 6, 8] },   // first lesson stays on ONE rod (single digits) -- the tens rod / "10 bead" comes in later skills
       drill: null },
     { id: 'add_direct', title: 'Adding, just beads', short: 'Add', icon: 'balloon',
       intro: 'When there are enough beads, just push them to the bar. No tricks yet.',

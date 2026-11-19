@@ -1164,7 +1164,7 @@ function renderLessonSteps(){
 }
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
-  $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided'));
+  $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided')); renderBackBtn();
   if (L.phase!=='fingers') hideHand();
   if (L.phase!=='anatomy') anatHL(null);
   if (L.phase==='intro'){
@@ -1369,6 +1369,34 @@ function onLessonBeads(v){
   }
 }
 function leaveLesson(){ animToken++; if (lessonFrom==='door'){ renderDoor.skipGreet=true; show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
+// Whether there is a previous step to go back to (false only on the very first step of the lesson).
+function lessonCanBack(){
+  if (!L) return false;
+  if (L.phase==='anatomy') return L.anatIdx>0;   // anatomy is the first phase (beads)
+  if (L.phase==='intro') return L.page>0;        // intro is the first phase (demo nodes)
+  return true;                                   // every later phase has a step before it
+}
+// Clear a completed your-turn mark so stepping back lets the child redo that number cleanly (keeps the tally honest).
+function clearMark(i){ if (i>=0 && L.marks[i]!==undefined){ if (L.marks[i]===true) L.did=Math.max(0,L.did-1); else L.skipped=Math.max(0,L.skipped-1); L.marks[i]=undefined; } }
+// Go back one step. renderLesson re-runs the step fresh, so the voice + bead animation re-sync on the way back too.
+function lessonBack(){
+  if (!L || !lessonCanBack()) return;
+  const n=L.node; animToken++; L.busy=false; L.won=false; if (lessonAb) lessonAb.clearHighlights();
+  switch (L.phase){
+    case 'intro':   L.page=Math.max(0, L.page-1); break;
+    case 'anatomy': L.anatIdx=Math.max(0, L.anatIdx-1); break;
+    case 'fingers': if (L.fingerIdx>0) L.fingerIdx--; else { L.phase='anatomy'; L.anatIdx=ANATOMY_STEPS.length-1; } break;
+    case 'watch':   if (L.watchIdx>0) L.watchIdx--; else { L.phase='anatomy'; L.anatIdx=ANATOMY_STEPS.length-1; } break;
+    case 'numbers': if (L.demoIdx>0) L.demoIdx--; else { L.phase='fingers'; L.fingerIdx=FINGER_STEPS.length-1; } break;
+    case 'demo':    if (L.demoIdx>0) L.demoIdx--; else { L.phase='intro'; L.pages=L.pages||lessonPages(n); L.page=L.pages.length-1; } break;
+    case 'guided':  if (L.guidedIdx>0) L.guidedIdx--; else { L.phase='demo'; L.demoIdx=n.demos.length-1; } break;
+    case 'help':    L.phase='guided'; L.guidedIdx=n.guided.length-1; break;
+    case 'done':    if (n.kind==='numbers'){ L.phase='numbers'; L.demoIdx=n.lesson.numbers.length-1; } else { L.phase='guided'; L.guidedIdx=n.guided.length-1; } break;
+  }
+  if (L.phase==='numbers' || L.phase==='guided') clearMark(turnIdx());   // redo the landed-on turn fresh
+  $('#lessonNext').style.visibility=''; renderLesson();
+}
+function renderBackBtn(){ const b=$('#lessonBack'); if (!b) return; if (!b.innerHTML.trim()) b.innerHTML=BACK_ICON()+'<span class="toy-block-label">Back</span>'; b.style.display = lessonCanBack() ? '' : 'none'; }
 function advanceLesson(){
   const n=L.node; animToken++; L.busy=false; L.won=false; lessonAb.clearHighlights();
   if ((L.phase==='numbers' || L.phase==='guided') && L.marks[turnIdx()]===undefined){ L.marks[turnIdx()]=false; L.skipped++; }   // skipped: not done
@@ -1387,6 +1415,7 @@ function advanceLesson(){
   renderLesson();
 }
 $('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; advanceLesson(); });   // (the step she just got right moves on by itself)
+$('#lessonBack').addEventListener('click', ()=>{ Speaker.unlock(); lessonBack(); });        // go back a step if the child missed something
 // Other screens and the tests can open any skill's lesson.
 window.Lessons = { start: (n, from)=>startLesson(typeof n==='string' ? C.BY_ID[n] : n, from) };
 // What to do on a "your turn" step, in words (multiplication starts from 0 and ends on the product).
@@ -2599,7 +2628,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.33';
+const APP_VERSION='4.34';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
