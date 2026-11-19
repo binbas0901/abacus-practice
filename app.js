@@ -100,6 +100,8 @@ const Practice = {
     stopVoices();
     if (levelComplete(this.node)) return this.levelDone();
     const left = LEVEL_SETS - doneN;
+    Fun.confetti(70); Sfx.star();                                 // a small burst + Juni's spoken praise for finishing a set
+    juniNarrate('j_end_good');
     const go = await TOY.confirm(`Set ${doneN} of ${LEVEL_SETS} done!`, `Great practicing! ${left} more set${left === 1 ? '' : 's'} to finish this level.`, { ok: 'Next set', cancel: 'Done for now' });
     if (!this.on) return;
     if (go) this.runSet(); else { this.stop(); renderHome(); show('home'); }
@@ -109,7 +111,11 @@ const Practice = {
     if (!st.mastered) st.mastered = 'auto'; st.lesson = true;
     if (NODE_IDX[id] === curIdx() && curIdx() < NODES.length - 1) progress.current = NODES[curIdx() + 1].id;
     saveProgress(); this.stop(); stopVoices();
-    await TOY.confirm('Level complete!', `You finished all ${LEVEL_SETS} sets and unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
+    juniNarrate('j_unlock');                                      // Juni's unlock line, then the gold sticker (waits for her voice), then the level card
+    await Fun.give({ gold: true, title: 'Level complete — a gold sticker!' });
+    try { Treats.earn(Treats.EARN.skill, 'new skill unlocked!'); } catch (e) {}
+    Fun.confetti(120); Sfx.star();
+    await TOY.confirm('Level complete!', `You finished all ${LEVEL_SETS} sets — you unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
     renderHome(); show('home');
   }
 };
@@ -844,7 +850,7 @@ function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
-$('#exitGame').addEventListener('click', ()=>{ stopVoices(); Games.stop(); Games.leave(); });
+$('#exitGame').addEventListener('click', ()=>{ stopVoices(); if (Practice.on){ Games.stop(); Practice.stop(); renderHome(); show('home'); return; } Games.stop(); Games.leave(); });   // G3: during a practice set, leave cleanly to home and clear Practice.on (never the Play hub)
 // The three doors. Practice opens the Practice door screen (#door).
 function openPractice(){ stopVoices();
   Speaker.unlock();

@@ -203,6 +203,11 @@ async def main():
             await listen_ready(pg)
             d = await pg.evaluate("()=>window.__drill()")
             await listen_answer(pg, d['answer'])
+        # level-complete awards a gold sticker present first (the reward); collect it, then the level card appears
+        await pg.wait_for_selector('#stickerReveal.active', timeout=20000)
+        check('level: a gold sticker present is awarded on level-complete', True, None)
+        await pg.click('#rvPack'); await pg.wait_for_timeout(500)
+        await pg.click('#rvOk'); await pg.wait_for_timeout(300)
         await pg.wait_for_selector('.toy-dialog', timeout=20000)
         title = await pg.text_content('.toy-dialog-title')
         check('level: the 10th set clears the level -> "Level complete!"', 'Level complete' in (title or ''), title)

@@ -385,7 +385,7 @@
     if (choice === 'again') open(id); else { token++; clearScrim(); leave(); }
   }
   function leave() { const a = App(), f = cameFrom; cameFrom = ''; if (f === 'home') a.goHome(); else if (f === 'door') a.goDoor(); else a.goPlay(); }
-  function stop() { token++; clearScrim(); }
+  function stop() { token++; clearScrim(); practiceCB = null; practiceOpts = null; }   // bumping token aborts any in-flight set; clear the practice callback so no stale set-done fires
   function clearScrim() { document.querySelectorAll('#game .gscrim').forEach(e => e.remove()); }
   // Friends popped so far. Older versions kept only a best round in best.pop (a timed score): a child who played
   // then has played Friend Pop, so it counts towards the total and her card never says "New!" again.
