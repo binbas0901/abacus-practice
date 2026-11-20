@@ -2433,7 +2433,9 @@ function openGate(next){
   toySky('#gateSky'); show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); Fun.Mascot.quiet(bg);
   juniSayOn($('#gateJuni'), $('#gateSky'), 'j_gate_grownup', 'This part is for a grown-up. Can you go and get one?');
 }
-function leaveGate(){ gateCb=null; $('#gateA').blur(); GateHold.reset(); Fun.BixVoice.stop(); if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
+function leaveGate(){ gateCb=null; $('#gateA').blur(); GateHold.reset(); Fun.BixVoice.stop();
+  if (gateFrom==='setup' && !settings.name){ Setup.open(); return; }   // first-run setup stays behind the gate: don't strand on a blank setup
+  if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
 $('#gateOk').addEventListener('click', ()=>{
   if ($('#gateCard').dataset.step!=='ask') return;
@@ -2707,6 +2709,7 @@ window.App = {
     const leveled=checkMastery(n.id); saveProgress(); return leveled;
   },
   goDoor(){ renderDoor.skipGreet=true; show('door'); },   // returning from Make/Read is not a fresh door visit -- don't replay Juni's greeting
+  openGate,   // first-run onboarding gates its setup behind the grown-up challenge
 };
 // A voice that is not in the default offline install (Boy) is saved for offline use when it is the chosen one:
 // asked of the service worker when a grown-up picks it and at every start (so a new app version keeps it).
@@ -2730,7 +2733,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.39';
+const APP_VERSION='4.40';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
