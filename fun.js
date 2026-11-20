@@ -259,17 +259,14 @@
       + `<rect x="48" y="206" width="134" height="16" rx="8" fill="#C9BBA0"/><rect class="g-rim" x="48" y="198" width="134" height="18" rx="9" fill="#FFF9EE"/><rect x="58" y="201" width="60" height="4" rx="2" fill="#fff"/>`;
     return `<svg viewBox="0 0 230 300" width="230" height="300" aria-hidden="true">${sh(132, 291, 96, 12, .5)}${sh(120, 290, 70, 9, .95)}${stems}${leaves}${sp}${heads}${pot}</svg>`;
   }
-  function renderGarden(el, labelEl, days) {
-    if (!el) return;
-    const now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate(), fl = [];
-    let practisedToday = false;
-    for (let d = 1; d <= today; d++) {
-      const key = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-      if (days[key]) { fl.push({ d, full: data.garden[key] === 'full', today: d === today }); if (d === today) practisedToday = true; }
-    }
-    el.innerHTML = potSVG(fl, !practisedToday);
-    const n = fl.length;
-    if (labelEl) labelEl.textContent = n === 0 ? 'Practise to grow a flower!' : `${n} flower${n === 1 ? '' : 's'} this month`;
+  // The garden grows one flower for every SKILL the child has MASTERED (not for days shown up). It never wilts.
+  // `mastered` is the count of mastered skills (passed in from renderRoom).
+  function renderGarden(el, labelEl, mastered) {
+    if (!el) return 0;
+    const n = Math.max(0, mastered | 0), fl = [];
+    for (let i = 0; i < n; i++) fl.push({ d: i + 1, full: i === n - 1, today: false });   // the newest skill's flower glows
+    el.innerHTML = potSVG(fl, n === 0);
+    if (labelEl) labelEl.textContent = n === 0 ? 'Master a skill to grow a flower!' : `${n} skill${n === 1 ? '' : 's'} learned`;
     return n;
   }
 

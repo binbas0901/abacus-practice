@@ -111,6 +111,7 @@ const Practice = {
     const left = LEVEL_SETS - doneN;
     Fun.confetti(70); Sfx.star();                                 // a small burst + Juni's spoken praise for finishing a set
     juniNarrate('j_end_good');
+    try { Treats.earn(Treats.EARN.set, 'for a good practice set'); } catch (e) {}   // real practice earns a bead toward a treat
     const go = await TOY.confirm(`Set ${doneN} of ${LEVEL_SETS} done!`, `Great practicing! ${left} more set${left === 1 ? '' : 's'} to finish this level.`, { ok: 'Next set', cancel: 'Done for now' });
     if (!this.on) return;
     if (go) this.runSet(); else { this.stop(); renderHome(); show('home'); }
@@ -120,9 +121,9 @@ const Practice = {
     if (!st.mastered) st.mastered = 'auto'; st.lesson = true;
     if (NODE_IDX[id] === curIdx() && curIdx() < NODES.length - 1) progress.current = NODES[curIdx() + 1].id;
     saveProgress(); this.stop(); stopVoices();
-    juniNarrate('j_unlock');                                      // Juni's unlock line, then the gold sticker (waits for her voice), then the level card
-    await Fun.give({ gold: true, title: 'Level complete — a gold sticker!' });
-    try { Treats.earn(Treats.EARN.skill, 'new skill unlocked!'); } catch (e) {}
+    juniNarrate('j_unlock');                                      // Juni's unlock line, then the level card
+    try { Treats.earn(Treats.EARN.skill, 'you mastered a new skill!'); } catch (e) {}   // mastering a skill earns more beads
+    await sleep(1200);                                            // let Juni's unlock line land before the card
     Fun.confetti(120); Sfx.star();
     await TOY.confirm('Level complete!', `You finished all ${LEVEL_SETS} sets — you unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
     renderHome(); show('home');
@@ -851,22 +852,15 @@ async function activityDone(kind, info={}){
     const a=F.today.active, own = a && a.kind===kind && F.today.steps[a.at] && !F.today.steps[a.at].done ? F.today.steps[a.at] : null;
     const st = own || F.today.steps.find(s=>!s.done && s.kind===kind); if (st) st.done=true; F.today.active=null; }
   Fun.save();
-  await Fun.give({gold: !!info.gold});
-  Treats.earn(Treats.EARN.activity + (info.gold ? Treats.EARN.gold : 0), info.gold ? 'finished + gold sticker' : 'for finishing');
-  const gap = info.gap || 2300;   // a pause between rewards (shorter after a game: nothing else is landing on the screen)
-  if (info.leveled){ await sleep(gap); Treats.earn(Treats.EARN.skill, 'new skill unlocked!'); }
-  if (F.today && F.today.day===todayKey() && F.today.steps.every(s=>s.done) && !F.today.celebrated){
-    F.today.celebrated=true; F.garden[todayKey()]='full'; Fun.save();
-    await sleep(gap); Fun.confetti(120); Sfx.star();
-    await Fun.give({gold:true, title:'Today’s practice is done!', voice:'today_done'});
-    Treats.earn(Treats.EARN.today, 'Today’s practice done!');
-  }
+  // Rewards no longer trickle out per activity: beads come only from finishing a practice SET (Practice.celebrate)
+  // and mastering a skill (Practice.levelDone). Games, lessons and "just showing up" earn nothing, and there is no
+  // collectible sticker album. activityDone now only records the day and refreshes the home screen.
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 // (The old "Today" Start button is gone — the big Practice button, #doorPractice, launches the level run below.)
 function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
-  Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');
+  Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game to play!');
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
@@ -926,11 +920,10 @@ $('#exitPlay').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitGame').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#roomWishIc').innerHTML = TOY.icon('star', 30, '#4A2C06');
 function renderRoom(){
-  toySky('#roomSky'); $('#roomBookArt').innerHTML = bookSVG(Fun.count());
-  const unseen = Fun.count() - (Fun.data.albumSeen||0), bd=$('#albumBadge');
-  bd.textContent = unseen>0 ? `${unseen} new` : ''; bd.classList.toggle('on', unseen>0);
-  $('#roomStickers').setAttribute('aria-label', `Sticker book: ${Fun.count()} stickers` + (unseen>0 ? `, ${unseen} new` : ''));
-  const n = Fun.renderGarden($('#garden'), $('#gardenLabel'), days);
+  toySky('#roomSky');
+  // The garden is the one progress visual: it grows a flower for every skill mastered (not for days shown up).
+  const masteredN = NODES.filter(nd => node(nd.id).mastered).length;
+  const n = Fun.renderGarden($('#garden'), $('#gardenLabel'), masteredN);
   $('#roomGarden').setAttribute('aria-label', `My garden: ${$('#gardenLabel').textContent}`);
   Treats.renderJar();
   $('#roomWish').classList.toggle('tr-nudge', !Treats.goal());   // nudge only to pick a goal, never to spend
@@ -946,7 +939,6 @@ function goRoom(){ stopVoices();
   juniSayOn($('#roomJuni'), $('#roomSky'), jKey, jText);
 }
 $('#exitRoom').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
-$('#roomStickers').addEventListener('click', ()=>{ Sfx.tap(); goAlbum(); });
 $('#roomGarden').addEventListener('click', ()=>{
   Sfx.boing(); const pot=$('#garden'); pot.classList.remove('wiggle'); void pot.offsetWidth; pot.classList.add('wiggle');
   const n=Object.keys(days).filter(k=>k.startsWith(todayKey().slice(0,8))).length, br=$('#bixRoom');
@@ -2032,7 +2024,7 @@ function feedBixi(){
 function bixiFull(){
   pulseEnergy('full');
   PB.say('Yum! I’m all full — thank you!', 'proud', null, 3000);
-  try{ Treats.earn(2, 'You filled Bixi up!'); }catch(e){}
+  // Feeding Bixi is just encouragement during the set; beads are earned for finishing the whole set, not per streak.
   try{ Sfx.ok(); }catch(e){}
 }
 
@@ -2177,7 +2169,7 @@ function finish(){
   $('#sumNote').textContent = say + fixLine;
   // Golden beads earned here (handed out by activityDone below) all land in ONE place: the chip at the top right,
   // after the headline has settled (the floating "+n" toasts stay off this screen, see screens-practice.css).
-  const gold = !reviewing ? Treats.EARN.activity + (n===3 ? Treats.EARN.gold : 0) + (leveled ? Treats.EARN.skill : 0) : 0;
+  const gold = 0;   // beads are earned via Practice.celebrate (set) / levelDone (skill), not on this summary screen
   sumBeads(problems.map((p,i)=>results[i]===true||p._fixed?'jade':results[i]===false?'fix':'pale'), gold);
   drawMoon($('#sumSky'), $('#sumMoons'), reviewing ? null : mode);
   $('#sumGold').hidden = !gold; $('#sumGold').innerHTML = gold ? TOY.bead('mustard', 44, {shadow:false})+`<span>+${gold} golden bead${gold===1?'':'s'}</span>` : '';
@@ -2733,7 +2725,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.40';
+const APP_VERSION='4.41';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

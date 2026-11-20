@@ -12,7 +12,7 @@ async def shot(pg, name):
     if SHOTS: await pg.wait_for_timeout(450); await pg.screenshot(path=f'{SHOTS}/{name}_{VP}.png')
 async def collect_all(pg):
     while True:
-        try: await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
+        try: await pg.wait_for_selector('#stickerReveal.active', timeout=1500)
         except Exception: return
         await pg.click('#rvPack', force=True); await pg.wait_for_timeout(450); await pg.click('#rvOk'); await pg.wait_for_timeout(350)
 async def drill(pg): return await pg.evaluate("window.__drill()")
@@ -106,7 +106,7 @@ async def main():
         head = await pg.text_content('#sumScore'); text = await pg.text_content('#summary')
         check('end of set: "8 shiny beads!" headline (the beads are teal, so no colour word), no N/10 score', head.strip() == '8 shiny beads!' and not re.search(r'\d+\s*/\s*\d+', text), head)
         check('end of set: 10 beads (8 green dropped in the bowl, 2 to polish on the mat)', await pg.evaluate("document.querySelectorAll('#sumStars .tp-b:not(.tp-gold), #sumFix .tp-b').length") == 10 and await pg.evaluate("document.querySelectorAll('#sumStars .tp-b.in:not(.tp-gold)').length") == 8 and await pg.evaluate("document.querySelectorAll('#sumFix .tp-b').length") == 2)
-        check('end of set: golden bead chip + the Fix button + "I\'m done"', await pg.locator('#sumGold').is_visible() and 'golden bead' in await pg.text_content('#sumGold')
+        check('end of set: the Fix button + "I\'m done" (the summary no longer shows a golden-bead chip)', not await pg.locator('#sumGold').is_visible()
               and await pg.locator('#fixBtn').is_visible() and await pg.locator('#homeBtn').is_visible())
         check('end of set: one phrase family - "Beads to polish" on the mat, "Polish these with Bix" on the button, no "green"', (await pg.text_content('#fixBtn')).strip() == 'Polish these with Bix' and (await pg.text_content('#summary .tp-fixcap')).strip() == 'Beads to polish' and not re.search(r'green', text, re.I), await pg.text_content('#fixBtn'))
         nored = await pg.evaluate("[/\\bred\\b/i.test(document.querySelector('#summary').innerText), document.querySelector('#fixBtn').classList.contains('toy-block--red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-walnut'), !!document.querySelector('#summary .tp-fixcap') && document.querySelector('#summary .tp-fixcap').getClientRects().length>0]")

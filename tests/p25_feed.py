@@ -58,7 +58,7 @@ async def main():
             await solve(pg)
         ef = await energy(pg); after = await beads(pg)
         check('bar fills to full at the goal (width 100%)', ef['full'] and ef['n'] == ef['goal'] and ef['width'] == '100%', ef)
-        check('filling Bixi up awards a bead reward', after > before, [before, after])
+        check('filling Bixi up gives no beads (encouragement only; beads come from finishing the set)', after == before, [before, after])
 
         # 5. once full, extra correct answers never over-feed or re-reward
         await solve(pg); eo = await energy(pg); after2 = await beads(pg)

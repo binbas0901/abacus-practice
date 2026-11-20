@@ -195,6 +195,7 @@ async def main():
         ctx, pg, errs = await new_page(b)
         await setup_node(pg, 'sub_direct', 9)        # on the last set; set index 9 == listen
         nxt = await pg.evaluate("()=>{const N=window.App.nodes(); const i=window.App.idx('sub_direct'); return N[i+1] && N[i+1].id;}")
+        b0 = await pg.evaluate("window.Treats.wallet().beads"); skillBonus = await pg.evaluate("window.Treats.EARN.skill")
         await pg.evaluate("window.__practice.start('sub_direct')")
         await pg.wait_for_selector('#drill.active', timeout=15000)
         await pg.wait_for_selector('#listenGo', state='visible', timeout=15000)
@@ -203,11 +204,7 @@ async def main():
             await listen_ready(pg)
             d = await pg.evaluate("()=>window.__drill()")
             await listen_answer(pg, d['answer'])
-        # level-complete awards a gold sticker present first (the reward); collect it, then the level card appears
-        await pg.wait_for_selector('#stickerReveal.active', timeout=20000)
-        check('level: a gold sticker present is awarded on level-complete', True, None)
-        await pg.click('#rvPack'); await pg.wait_for_timeout(500)
-        await pg.click('#rvOk'); await pg.wait_for_timeout(300)
+        # level-complete no longer pops a collectible sticker; it earns the skill-mastery bead bonus, then shows the card
         await pg.wait_for_selector('.toy-dialog', timeout=20000)
         title = await pg.text_content('.toy-dialog-title')
         check('level: the 10th set clears the level -> "Level complete!"', 'Level complete' in (title or ''), title)
@@ -219,6 +216,8 @@ async def main():
         check('level: all 10 sets done', after['done'] == 10, after)
         check('level: the finished skill is marked mastered', bool(after['mastered']), after)
         check('level: current advances to the next skill', after['current'] == nxt, {'current': after['current'], 'expected': nxt})
+        beadsAfter = await pg.evaluate("window.Treats.wallet().beads")
+        check('level: mastering the skill earns the bead bonus (not a sticker)', beadsAfter == b0 + skillBonus, [b0, beadsAfter, skillBonus])
         check('level: no page errors', not errs, errs[:3])
         await ctx.close()
 

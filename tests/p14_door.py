@@ -135,13 +135,7 @@ async def main():
                 try: await pg.locator(f'.bub[data-v="{ans}"]:not(.popped)').first.dispatch_event('pointerdown')
                 except Exception: pass
             await pg.wait_for_timeout(80)
-        # the sticker present comes first, on its own; the result card follows once it has been collected
-        await pg.wait_for_selector('#stickerReveal.active', timeout=10000)
-        check('Friend Pop: the sticker present comes alone, the result card after it', await pg.locator('#game .gresult').count()==0)
-        for _ in range(4):
-            await pg.click('#rvPack', force=True); await pg.wait_for_timeout(400); await pg.click('#rvOk'); await pg.wait_for_timeout(400)
-            try: await pg.wait_for_selector('#stickerReveal.active', timeout=1500)
-            except Exception: break
+        # games no longer award a collectible sticker; the result card appears directly
         await pg.wait_for_selector('.gresult', timeout=10000)
         txt=await pg.text_content('.gresult')
         sc=await pg.evaluate("(()=>{const s=document.querySelector('#game .gscrim'), r=s&&s.getBoundingClientRect(), st=document.querySelector('#gameStage').getBoundingClientRect(), bg=s&&getComputedStyle(s).backgroundColor; return s? {covers: r.left<=st.left && r.top<=st.top && r.right>=st.right && r.bottom>=st.bottom, bg, card: !!s.querySelector('.gresult')} : null})()")

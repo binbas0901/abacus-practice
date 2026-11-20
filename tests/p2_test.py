@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 
 async def _collect_all(pg):
     while True:
-        try: await pg.wait_for_selector('#stickerReveal.active', timeout=8000)
+        try: await pg.wait_for_selector('#stickerReveal.active', timeout=1500)
         except Exception: return
         await pg.click('#rvPack', force=True); await pg.wait_for_timeout(450); await pg.click('#rvOk'); await pg.wait_for_timeout(350)
 async def main():
