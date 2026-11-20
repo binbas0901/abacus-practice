@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Abacus">
+<meta name="theme-color" content="#DCEBFF">
+<title>Abacus Practice</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+
+
+<link rel="stylesheet" href="styles.css?v=4.39">
+<link rel="stylesheet" href="abacus-input.css?v=4.39">
+<link rel="stylesheet" href="toy.css?v=4.39">
+<link rel="stylesheet" href="toy-home.css?v=4.39">
+<link rel="stylesheet" href="toy-practice.css?v=4.39">
+<link rel="stylesheet" href="toy-door.css?v=4.39">
+<link rel="stylesheet" href="toy-room.css?v=4.39">
+<link rel="stylesheet" href="toy-grown.css?v=4.39">
+<link rel="stylesheet" href="classroom.css?v=4.39">
+<link rel="stylesheet" href="onboarding.css?v=4.39">
+</head>
+<body>
+<div id="app">
+
+<section id="home" class="screen toy-scene th">
+  <div id="homeSky" class="th-sky" aria-hidden="true"></div>
+  <div id="homeJuni" class="th-jbub cl-bubble" data-who="juni" aria-live="polite"><i class="th-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <header class="th-top">
+    <div class="th-tagpos"><button class="th-tagbtn" id="switchKid" style="display:none" aria-label="Switch child"></button><span class="th-tagfix" id="homeTag"></span></div>
+    <div class="th-shelf" id="homeShelf" aria-hidden="true"></div>
+    <button class="toy-iconbtn th-lock" id="grownups" aria-label="Grown-ups"></button>
+    <nav class="th-doors th-doors--mini" aria-label="Breaks">
+      <button type="button" class="toy-block toy-block--mustard th-door th-door--mini" id="doorPlay"><span class="th-door-ic" id="doorPlayIc"></span><span class="toy-block-label">Play</span></button>
+      <button type="button" class="toy-block toy-block--red th-door th-door--mini" id="doorRoom"><span class="th-door-ic" id="doorRoomIc"></span><span class="toy-block-label">My room</span></button>
+    </nav>
+  </header>
+  <div class="th-table">
+    <div id="bixHome" class="th-bix"></div>
+    <div class="th-hero">
+      <div class="th-trophy" id="homeTrophy" aria-live="polite"></div>
+      <button type="button" class="toy-start th-practice" id="doorPractice"><span class="toy-start-dome"><span class="th-start-ic" id="doorPracticeIc"></span><span class="toy-start-label">Let's go!</span></span></button>
+    </div>
+  </div>
+  <div class="th-bottom">
+    <div class="th-loose" id="homeLoose" aria-hidden="true"></div>
+    <div class="th-bowl"><span class="th-bowl-art" id="homeBowl" aria-hidden="true"></span><span class="toy-chip th-beadchip" id="roomBeads" aria-label="golden beads"></span></div>
+  </div>
+  <div id="bixHomeCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
+  <div id="ver" class="th-ver">v4.39</div>
+</section>
+
+<section id="who" class="screen toy-scene tw">
+  <div id="whoSky" aria-hidden="true"></div>
+  <div id="whoJuni" class="tw-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <div class="tw-shelf" id="whoShelf" aria-hidden="true"></div>
+  <div class="tw-body">
+    <div id="bixWho" class="tw-bix"></div>
+    <div class="toy-felt tw-mat"><div class="tw-list" id="whoList"></div></div>
+  </div>
+</section>
+<section id="room" class="screen toy-scene toy-scene--evening tr-room">
+  <div id="roomSky"></div>
+  <div id="roomJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitRoom" aria-label="Back home"></button><h1 class="toy-plaque tr-title">My room</h1></header>
+  <div class="tr-lamp" id="roomLamp" aria-hidden="true"></div>
+  <div class="tr-shelfwrap" aria-hidden="true"><div class="tr-shelf-things" id="roomShelfArt"></div><div class="rm-shelf"></div></div>
+  <div class="tr-things">
+    <div class="tr-col tr-col-book"><button class="tr-thing" id="roomStickers" aria-label="Sticker book"><span class="tr-art" id="roomBookArt"></span><span class="tr-new" id="albumBadge"></span></button><span class="toy-chip tr-label">Stickers</span></div>
+    <div class="tr-col tr-col-pot"><button class="tr-thing" id="roomGarden" aria-label="My garden"><span class="tr-art" id="garden"></span></button><span class="toy-chip tr-label">My garden</span><span class="tr-sr" id="gardenLabel"></span></div>
+    <div class="tr-col tr-col-jar"><button class="tr-thing" id="jar" aria-label="Treat jar"></button><span class="toy-chip tr-label">Treat jar</span></div>
+  </div>
+  <footer class="tr-foot">
+    <div id="bixRoom" class="tr-bix"></div>
+    <button class="toy-block toy-block--mustard toy-block--sm tr-wish" id="roomWish" aria-label="Treats: pick a treat to save for"><span id="roomWishIc"></span>Treats</button>
+  </footer>
+  <div id="bixRoomCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
+</section>
+<section id="setup" class="screen toy-scene to cl-onboard">
+  <div id="setupSky" aria-hidden="true"></div>
+  <div class="to-shelf" id="setupShelf" aria-hidden="true"></div>
+  <div class="to-body">
+    <!-- Juni the teacher leads from the very first screen: her figure, then her speech bubble. -->
+    <div id="juniStage">
+      <div id="juniSetup" aria-hidden="true"></div>
+      <div id="juniBubble" class="toy-bubble cl-su-bubble" aria-live="polite"><div class="ctext"></div></div>
+    </div>
+    <!-- Bixi the classmate: rolls in for his introduction, then settles to the side (positioned off the step flow). -->
+    <div id="bixSetup" class="cl-bixi"></div>
+    <div id="bixiSetupBubble" class="toy-bubble toy-bubble--right cl-su-bubble" aria-live="polite"><div class="ctext"></div></div>
+    <div class="su-step to-step" id="suMeet" aria-hidden="true"></div>
+    <div class="su-step to-step" id="suName">
+      <h2 class="to-sr">What’s your name?</h2>
+      <div class="toy-felt to-namemat">
+        <input id="suNameIn" class="to-input" type="text" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Your name" aria-label="Your name">
+        <button type="button" class="toy-block toy-block--teal to-next" id="suNameGo"><span class="toy-block-label">Next</span><span class="su-ic-next"></span></button>
+      </div>
+    </div>
+    <div class="su-step to-step" id="suAbacus">
+      <h2 class="toy-plaque toy-h2 to-h" id="suAbacusH">Abacus</h2>
+      <div class="to-cards to-cards-3">
+        <button type="button" class="to-card" data-abacus="yes"><span class="su-art" data-art="yes"></span><b>Yes</b></button>
+        <button type="button" class="to-card" data-abacus="no"><span class="su-art" data-art="no"></span><b>No</b></button>
+        <button type="button" class="to-card" data-abacus="unsure"><span class="su-art" data-art="unsure"></span><b>Not sure</b></button>
+      </div>
+    </div>
+    <div class="su-step to-step" id="suLevel">
+      <h2 class="toy-plaque toy-h2 to-h">Starting point</h2>
+      <div class="to-cards">
+        <button type="button" class="to-card" data-lv="new"><span class="su-art" data-art="new"></span><b>I’m new to the abacus</b><small>Start from the very beginning</small></button>
+        <button type="button" class="to-card" data-lv="check"><span class="su-art" data-art="check"></span><b>Find my level</b><small>A few quick problems on your abacus</small></button>
+        <button type="button" class="to-card" data-lv="pick"><span class="su-art" data-art="pick"></span><b>A grown-up will choose</b><small>Pick the skill your class is on</small></button>
+      </div>
+    </div>
+    <div class="su-step to-step" id="suPick">
+      <div class="to-pickhead"><button type="button" class="toy-iconbtn" id="suPickBack" aria-label="Back"></button><h2 class="toy-plaque toy-h2 to-h">Skills</h2></div>
+      <div class="toy-felt to-skillmat"><div class="to-skills toy-scroll" id="suPickList"></div></div>
+    </div>
+    <div class="su-step to-step" id="suCheck">
+      <div class="to-checkhead"><div class="toy-plaque to-lname" id="suLevelName"></div><div class="to-dots" id="suDots"></div><button type="button" class="toy-block toy-block--wood toy-block--sm" id="suStop" aria-label="Too tricky? Stop here and start practising this one"><span class="toy-block-label">Stop here</span></button></div>
+      <div class="to-checkbody"><div class="toy-clipboard to-board"><div class="toy-paper to-sheet"><div class="to-prob" id="suProb"></div><div class="to-rule" aria-hidden="true"></div><div class="to-ansrow"><div class="to-fb" id="suFb"></div><div class="to-answer" id="suAns">&nbsp;</div></div></div></div>
+        <div class="to-entry"><div class="to-padrow"><div class="to-pad" id="suPad"></div><button type="button" class="toy-start toy-start--sm to-go" id="suGo" aria-label="Check" disabled><span class="toy-start-dome"><span class="th-start-ic" id="suGoIc"></span></span></button></div></div></div>
+    </div>
+    <div class="su-step to-step" id="suDone">
+      <div class="toy-paper to-done">
+        <h2 class="toy-h1" id="suDoneH"></h2>
+        <p class="to-p" id="suDoneP"></p>
+        <div class="to-install" id="suInstall"><b>Grown-up: add this to the Home Screen</b> so progress is kept safe. Tap the Share button <span class="to-share" id="suShareIc"></span> then <b>Add to Home Screen</b>, and open it from the new icon.</div>
+        <p class="to-p to-note">Treats, voices and progress for grown-ups are behind the lock on the home screen.</p>
+      </div>
+      <button type="button" class="toy-block toy-block--teal to-next to-start" id="suStart"><span class="toy-block-label">Let’s go!</span><span class="su-ic-next"></span></button>
+    </div>
+  </div>
+</section>
+
+<section id="play" class="screen toy-scene tr-play">
+  <div id="playSky"></div>
+  <div id="playJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitPlay" aria-label="Back home"></button><h1 class="toy-plaque tr-title"><span class="tr-title-ic toy-lac--mustard" id="playIc" aria-hidden="true"></span>Play</h1></header>
+  <div class="tr-play-body"><div class="tr-boxes" id="playCards"></div></div>
+  <div class="tr-play-bix" id="bixPlay"></div>
+  <div id="bixPlayCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
+</section>
+
+<section id="door" class="screen toy-scene td-door">
+  <header class="td-top"><button class="toy-iconbtn exit" id="exitDoor" aria-label="Back home"></button><h1 class="td-sign">Practice</h1></header>
+  <div class="td-sky" id="doorSky" aria-hidden="true"></div>
+  <div id="doorJuni" class="td-jbub cl-bubble" data-who="juni" aria-live="polite"><span class="ctext"></span></div>
+  <div class="td-shelf" id="doorProps" aria-hidden="true"></div>
+  <div class="td-stage">
+    <div class="c-topbix td-bixspot" id="bixDoor"></div>
+    <div class="door-blocks" role="group" aria-label="How do you want to practise?">
+      <button class="td-toy td-toy--indigo door-block" id="doorLook" data-door="visual" aria-label="Look: read the numbers"></button>
+      <button class="td-toy td-toy--mustard door-block" id="doorListen" data-door="listen" aria-label="Listen: hear the numbers"></button>
+      <button class="td-toy td-toy--red door-block" id="doorFlash" data-door="flash" aria-label="Flash: numbers pop up fast"></button>
+    </div>
+  </div>
+  <div class="door-pathwrap">
+    <div class="door-pathhead"><h2 class="td-pathtitle">My path</h2><button class="door-all" id="doorAll" aria-label="See all skills (for grown-ups)"></button></div>
+    <div class="td-path" id="doorPath"></div>
+  </div>
+</section>
+
+<section id="game" class="screen toy-scene toy-scene--calm tr-game">
+  <div id="gameSky"></div>
+  <div id="gameJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitGame" aria-label="Back to the games"></button><div class="toy-plaque tr-title tr-gtitle" id="gameTitle"></div><div class="tr-gscore" id="gameScore" aria-live="polite"></div></header>
+  <div class="tr-stage" id="gameStage"></div>
+  <div class="tr-gbix" id="bixGame"></div>
+</section>
+
+<section id="shop" class="screen toy-scene toy-scene--table tr-shop">
+  <div class="tr-awning" aria-hidden="true"></div>
+  <header class="tr-top"><button class="toy-iconbtn" id="exitShop" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">Treats</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="shopWallet" aria-label="golden beads"><span id="shopBeadIc"></span><b id="shopBeads">0</b></span></header>
+  <div class="tr-shop-body toy-scroll sh-body">
+    <div class="tr-shop-top"><div id="bixShop" class="tr-shop-bix"></div><div id="shopTickets" class="tr-tickets"></div></div>
+    <div class="tr-stall" id="shopCards"></div>
+    <div class="tr-how">Golden beads come from finishing things: a lesson, drill or game +1 · gold sticker +1 · all of Today +3 · a new skill +5</div>
+  </div>
+  <div id="shopAsk" class="tr-ask"><div class="toy-paper tr-ask-card"><div class="tr-ask-t" id="askText"></div><div class="tr-ask-row"><button type="button" class="toy-block toy-block--teal toy-block--sm" id="askYes">Yes please!</button><button type="button" class="toy-block toy-block--wood toy-block--sm" id="askNo">Not yet</button></div></div></div>
+</section>
+
+<section id="album" class="screen toy-scene toy-scene--table tr-album">
+  <header class="tr-top"><button class="toy-iconbtn" id="exitAlbum" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">My stickers</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="albumCount"></span></header>
+  <div class="tr-album-body toy-scroll" id="albumPages"></div>
+</section>
+
+<section id="lesson" class="screen toy-scene toy-scene--calm td-lesson">
+  <header class="td-top"><button class="toy-iconbtn exit" id="exitLesson" aria-label="Stop the lesson"></button>
+    <div class="td-board"><div class="lvl" id="lessonTitle"></div><div class="lesson-steps" id="lessonSteps" role="img" aria-label=""></div></div></header>
+  <div class="td-sky" id="lessonSky" aria-hidden="true"></div>
+  <div class="lesson-body">
+    <div class="lesson-left"><div class="lesson-ab" id="lessonAbacus"></div><img id="lessonHand" class="lesson-hand" alt="" aria-hidden="true"><div class="lesson-pair" id="lessonPair"></div></div>
+    <div class="lesson-side">
+      <div class="caption toy-bubble toy-bubble--left" id="lessonCap" aria-live="polite"><div class="k" id="capKind"></div><span class="ws-say td-say" id="capSay" hidden></span><div class="prob" id="capProb"></div><div class="ctext" id="capText"></div><div class="friends" id="capFriends"></div></div>
+      <div class="lesson-floor">
+        <div class="lesson-bix" id="bixLesson"></div>
+        <div class="cl-bixi-bubble toy-bubble toy-bubble--right" id="bixiBubble" aria-live="polite"><div class="ctext"></div></div>
+        <div class="lesson-nav"><button class="toy-block toy-block--wood toy-block--sm td-back" id="lessonBack" style="display:none" aria-label="Go back a step"></button><button class="toy-block toy-block--wood toy-block--sm" id="lessonHint" style="display:none"></button><button class="toy-block toy-block--teal td-next" id="lessonNext">Next</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="drill" class="screen toy-scene toy-scene--calm tp">
+  <div id="drillSky" aria-hidden="true"></div>
+  <div id="drillJuni" class="tp-jbub cl-bubble toy-bubble" data-who="juni" aria-live="polite"><span class="ctext"></span></div>
+  <div class="tp-top">
+    <button class="toy-iconbtn" id="exitDrill" aria-label="Leave practice"><span class="pr-ic" data-ic="close" data-sz="30"></span></button>
+    <button class="toy-iconbtn tp-gear" id="speedGear" aria-label="Speed" aria-haspopup="dialog" hidden><span class="pr-ic" data-ic="gear" data-sz="30"></span></button>
+    <div class="tp-topright">
+      <span class="toy-chip tp-fixlabel" id="fixLabel" hidden>Polishing</span>
+      <div class="tp-rodwrap"><i class="tp-post"></i><div class="tp-rod" id="strip" role="list" aria-label="Problems in this set"></div><i class="tp-post"></i></div>
+    </div>
+  </div>
+  <div class="tp-body">
+    <div class="tp-bixcol">
+      <div class="tp-props">
+        <button class="tp-switch" id="toolSwitch"></button>
+        <button class="toy-block toy-block--indigo toy-block--sm tp-showme" id="showMeBtn" style="display:none"><span class="pr-ic" data-ic="eye" data-sz="30"></span><span class="toy-block-label">Show me</span></button>
+      </div>
+      <div class="tp-bix" id="bixDrill"></div>
+    </div>
+    <div class="toy-clipboard tp-board"><div class="toy-paper tp-sheet" id="sheet">
+      <div class="tp-problem" id="problemArea" aria-label="The problem"></div>
+      <div class="tp-listen" id="listenStage" style="display:none">
+        <div class="tp-ear toy-lac--mustard" id="ear"><span class="pr-ic" data-ic="ear" data-sz="60"></span></div>
+        <div class="tp-msg" id="listenMsg" aria-live="polite">Listen…</div>
+        <button class="toy-block toy-block--mustard toy-block--sm toy-block--compact" id="listenGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
+        <button class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="replayBtn"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Say it again</span></button>
+      </div>
+      <div class="tp-flash" id="flashStage" style="display:none">
+        <div class="tp-flashdots" id="flashDots" aria-hidden="true"></div>
+        <div class="flash-num" id="flashNum" aria-live="polite"></div>
+        <div class="tp-msg" id="flashMsg"></div>
+        <button class="toy-block toy-block--teal toy-block--sm toy-block--compact" id="flashGo" style="display:none"><span class="pr-ic" data-ic="play" data-sz="30"></span><span class="toy-block-label">Ready</span></button>
+        <button class="toy-block toy-block--wood toy-block--sm" id="flashAgain" style="display:none"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Show again</span></button>
+      </div>
+      <div class="tp-rule" aria-hidden="true"></div>
+      <div class="tp-readout" id="readout"><span class="tp-rolabel" id="readoutLabel">beads show</span><b id="answer">&nbsp;</b></div>
+    </div></div>
+    <div class="tp-tool" id="answerTool">
+      <div class="tp-abacus" id="abHost"></div>
+      <div class="tp-pad" id="pad">
+      <div class="tp-keys" id="padKeys"></div>
+      <div class="tp-foot">
+        <span class="tp-bowl" id="drillBowl" aria-hidden="true"></span>
+        <button class="toy-start toy-start--sm tp-check" data-k="go" id="checkBtn" aria-label="Check"><span class="toy-start-dome"><span class="pr-ic" data-ic="check" data-sz="64" data-stroke="3"></span></span></button>
+      </div>
+      </div>
+      <div class="tp-sr" id="feedback" aria-live="polite"></div>
+    </div>
+  </div>
+  <div id="drillEnergy" class="tp-energy" role="img" aria-label="Bixi's snack bar: empty">
+    <span class="tp-en-face" aria-hidden="true"></span>
+    <div class="tp-en-track"><i class="tp-en-fill"></i><i class="tp-en-pop" aria-hidden="true"></i></div>
+  </div>
+  <!-- Speed panel (Listen and Flash): before a set (with Start) and from the gear during one (with Done). SpeedPanel in app.js. -->
+  <div class="sp" id="speedPop" role="dialog" aria-labelledby="spTitle" hidden>
+    <div class="toy-paper sp-card">
+      <div class="sp-head"><span class="sp-bix" id="bixSpeed" aria-hidden="true"></span><div><h2 class="sp-title" id="spTitle">Pick your speed</h2><p class="sp-sub" id="spSub"></p></div></div>
+      <div class="sp-ctrls" id="spCtrls"></div>
+      <div class="sp-preview" id="spPreview" aria-live="polite" hidden></div>
+      <div class="sp-foot">
+        <button type="button" class="toy-block toy-block--wood toy-block--sm" id="spTry"><span class="pr-ic" data-ic="speaker" data-sz="28"></span><span class="toy-block-label">Try it</span></button>
+        <span class="sp-goslot" id="spGoSlot"></span>
+        <button type="button" class="toy-block toy-block--teal toy-block--sm" id="spDone"><span class="pr-ic" data-ic="check" data-sz="28"></span><span class="toy-block-label">Done</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="summary" class="screen toy-scene tp tp-sum">
+  <div class="tp-sumwall">
+    <span class="tp-sky" id="sumSky" aria-hidden="true"></span>
+    <div class="tp-rewards" id="sumRewards" aria-live="polite"><div class="toy-chip tp-goldchip" id="sumGold" hidden></div><div class="toy-chip tp-newchip" id="sumNew" hidden></div></div>
+    <div class="tp-headslot"><div class="toy-plaque tp-sumhead"><h1 class="toy-h1" id="sumScore"></h1></div></div>
+    <div class="toy-plaque tp-moons" id="sumMoons"></div>
+  </div>
+  <div class="tp-sumstage">
+    <div class="tp-sumbixcol">
+      <div class="toy-bubble toy-bubble--left tp-sumbub cl-bubble" id="sumJuni" data-who="juni"><p class="tp-sumnote" id="sumNote"></p><button class="toy-iconbtn tp-saybtn" id="sumSay" aria-label="Hear it again"><span class="pr-ic" data-ic="speaker" data-sz="30"></span></button></div>
+      <div class="tp-summoon" id="sumJuniMoon" aria-hidden="true"></div>
+      <div class="tp-sumbix" id="bixSum"></div>
+    </div>
+    <div class="tp-catch" id="sumStars" role="list" aria-label="Your beads"></div>
+    <div class="tp-fixside"><span class="toy-chip tp-fixcap">Beads to polish</span><div class="toy-felt tp-fixmat" id="sumFix" role="list" aria-label="Beads to polish"></div></div>
+  </div>
+  <div class="tp-sumbtns">
+    <button class="toy-block toy-block--md toy-block--mustard" id="testBtn" style="display:none"><span class="pr-ic" data-ic="star" data-sz="40"></span><span class="toy-block-label">Level test</span></button>
+    <button class="toy-block toy-block--md toy-block--mustard" id="fixBtn"><span class="pr-ic" data-ic="retry" data-sz="40"></span><span class="toy-block-label">Polish these with Bix</span></button>
+    <button class="toy-block toy-block--md toy-block--teal" id="againBtn"></button>
+    <button class="toy-block toy-block--md toy-block--wood" id="homeBtn"><span class="toy-block-label">I’m done</span></button>
+  </div>
+</section>
+
+<section id="certificate" class="screen toy-scene tp tp-cert">
+  <span class="tp-sky" id="certSky" aria-hidden="true"></span>
+  <div class="tp-certstage">
+    <div class="tp-certbix" id="certBix"></div>
+    <div class="tp-certpaper"><div class="tp-certcard" id="certCard">
+      <div class="tp-certkick">Certificate of mastery</div>
+      <div class="tp-certname" id="certName"></div>
+      <div class="tp-certline">has mastered</div>
+      <div class="tp-certskill" id="certSkill"></div>
+      <div class="tp-certbeads" id="certBeads" aria-hidden="true"></div>
+      <div class="tp-certmeta"><span id="certDate"></span><span class="dot">·</span><span>Bix Abacus</span></div>
+      <div class="tp-certseal" id="certSeal" aria-hidden="true"></div>
+    </div></div>
+  </div>
+  <div class="tp-certbtns"><button class="toy-block toy-block--indigo" id="certPrint"></button><button class="toy-block toy-block--teal" id="certDone"><span class="pr-ic" data-ic="check" data-sz="40"></span><span class="toy-block-label">Done</span></button></div>
+</section>
+
+<div id="showme" class="tp-show" role="dialog" aria-label="Show me"><div class="tp-showcard toy-felt">
+  <div class="tp-showleft"><div class="tp-showbix" id="showmeBix"></div>
+    <div class="toy-paper tp-shownote"><div class="tp-showprob" id="showmeProb"></div><div class="tp-showtext" id="showmeText" aria-live="polite"></div></div>
+    <div class="tp-showbtns"><button class="toy-block toy-block--wood toy-block--sm toy-block--compact" id="showmeReplay"><span class="pr-ic" data-ic="retry" data-sz="26"></span><span class="toy-block-label">Again</span></button><button class="toy-block toy-block--teal toy-block--sm toy-block--compact" id="showmeClose"><span class="pr-ic" data-ic="check" data-sz="30"></span><span class="toy-block-label">Got it</span></button></div></div>
+  <div class="tp-showab" id="showmeAbacus"></div>
+</div></div>
+
+<div id="stickerReveal" role="dialog" aria-label="A sticker for you"><div class="rv-card toy-paper"><div class="rv-title toy-h2" id="rvTitle"></div><button class="rv-pack" id="rvPack" aria-label="Open the present"><span class="rv-wrap" id="rvWrap"></span><span class="rv-hint toy-chip" id="rvHint">Tap to open</span><span class="rv-face" id="rvFace"></span></button><div class="rv-name" id="rvName"></div><button class="toy-block toy-block--teal toy-block--sm" id="rvOk"><span id="rvOkIc"></span>Add to my album</button></div></div>
+
+<div id="nameAsk" class="askm tn"><div class="toy-paper tn-card"><div id="bixName" class="tn-bix"></div><div class="toy-h1 tn-t">What’s your name?</div><input id="nameAskIn" class="to-input" type="text" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Your name" aria-label="Your name"><div class="tn-row"><button type="button" class="toy-block toy-block--wood toy-block--sm" id="nameAskNo"><span class="toy-block-label">Later</span></button><button type="button" class="toy-block toy-block--teal toy-block--sm" id="nameAskOk"><span class="toy-block-label">That’s me!</span></button></div></div></div>
+
+
+<section id="gate" class="screen toy-scene toy-scene--calm tg">
+  <div id="gateSky" aria-hidden="true"></div>
+  <div id="gateJuni" class="tg-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <header class="tg-top"><button type="button" class="toy-iconbtn" id="gateBack" aria-label="Back"></button></header>
+  <div class="tg-body">
+    <div class="tg-kid"><div class="gate-bix tg-bix" id="bixGate"></div><div class="tg-art" id="gateArt" aria-hidden="true"></div></div>
+    <div class="toy-clipboard tg-board">
+    <div class="toy-paper tg-card" id="gateCard" data-step="hold" role="group" aria-labelledby="gateHoldT">
+      <div class="tg-hold">
+        <div class="tg-q"><small>For grown-ups</small><span id="gateHoldT">Press and hold for 3 seconds</span></div>
+        <button class="tg-holdbtn" id="gateHold" type="button" aria-describedby="gateHoldT"><i class="gh-fill" aria-hidden="true"></i><span class="gh-label"><span class="gh-ic" aria-hidden="true"></span><span id="gateHoldL">Hold</span></span></button>
+      </div>
+      <div class="tg-ask">
+        <div class="tg-q" id="gateQ"></div>
+        <input id="gateA" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="?" aria-label="Your answer">
+        <button type="button" class="toy-block toy-block--teal toy-block--sm tg-open" id="gateOk"><span class="toy-block-label">Open</span></button>
+      </div>
+      <div class="tg-msg" id="gateMsg" role="status" aria-live="polite"></div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<section id="parent" class="screen gu" aria-label="Grown-ups">
+<div class="gu-wrap">
+  <header class="gu-head">
+    <button class="toy-iconbtn gu-back" id="parentDone" aria-label="Done: back to the app"></button>
+    <span class="gu-where">Grown-ups</span>
+    <div class="gu-kids" id="repKids" role="group" aria-label="Whose report"></div>
+    <button class="gu-share" id="repShare"></button>
+  </header>
+  <div class="gu-toast" id="repToast" role="status" aria-live="polite"></div>
+
+  <div class="toy-clipboard rep-board">
+  <section class="rep toy-paper" id="report" aria-label="This week's report">
+    <header class="rep-head">
+      <div class="gu-title"><h1 class="rep-title" id="repTitle">This week</h1><span class="gu-sub" id="repDates"></span></div>
+      <span class="rep-mark">Weekly report</span>
+    </header>
+    <div class="rep-cards">
+      <div class="rep-card" id="repDays"></div>
+      <div class="rep-card" id="repMastered"></div>
+      <div class="rep-card" id="repWorking"></div>
+    </div>
+    <div class="rep-row">
+      <div class="rep-tip" id="repTip"></div>
+      <div class="rep-side"><div class="rep-missed" id="repMissed"></div><div class="rep-alerts" id="repAlerts"></div></div>
+    </div>
+  </section>
+  </div>
+
+  <nav class="gu-nav" aria-label="Settings">
+    <a href="#guSetup">Set-up</a><a href="#guSkills">Skills</a><a href="#guKids">Children</a><a href="#guTreats">Treats</a><a href="#guPractice">Practice</a><a href="#guVoices">Bix &amp; voices</a><a href="#guLog">Sessions</a><a href="#guBackup">Backup</a>
+  </nav>
+
+  <div class="gu-panels">
+  <section class="toy-paper gu-panel wide" id="guSetup" aria-labelledby="guSetupH">
+    <h2 id="guSetupH">Set-up checklist</h2>
+    <div class="checkl" id="setupList"></div>
+  </section>
+
+  <section class="toy-paper gu-panel wide" id="guSkills" aria-labelledby="guSkillsH">
+    <h2 id="guSkillsH">Where they are</h2>
+    <div class="field"><label for="sNode">Current skill<span class="hint">Everything before it counts as learned. Change this if your child already knows more.</span></label><select id="sNode"></select></div>
+    <div class="note gu-skillnote" id="sNodeNote" hidden></div>
+    <div class="field"><label for="sName">Child's name<span class="hint">Bix uses it to greet them</span></label><input type="text" id="sName" class="txt" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"></div>
+    <div class="row gu-row"><button class="btn small ghost" id="levelAgain">Run the level check again</button></div>
+    <div class="gu-tablewrap"><table class="nodetable" id="nodeTable"><thead><tr><th>Skill</th><th>Lesson</th><th>Accuracy (last 20)</th><th>Days</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+    <div class="note">A skill unlocks the next one automatically at 80% or better over the last 20 problems, practised on at least 2 different days. You can mark any skill learned or not learned by hand.</div>
+  </section>
+
+  <section class="toy-paper gu-panel" id="guKids" aria-labelledby="guKidsH">
+    <h2 id="guKidsH">Children</h2>
+    <p class="hint">Each child on this device has their own progress, stickers, garden, beads and treats. Recorded voices are shared.</p>
+    <div id="kidsList" class="kids"></div>
+    <div class="row gu-row"><button class="btn small" id="kidAdd">Add a child</button></div>
+  </section>
+
+  <section class="toy-paper gu-panel" id="guPractice" aria-labelledby="guPracticeH">
+    <h2 id="guPracticeH">Practice</h2>
+    <div class="field gu-slide"><label for="sCount">Problems per set</label><div><input type="range" id="sCount" min="5" max="20" step="1"><span class="val" id="sCountV"></span></div></div>
+    <div class="field gu-slide"><label for="sOperands">Numbers per problem<span class="hint">0 = use each skill's own default (3–4)</span></label><div><input type="range" id="sOperands" min="0" max="8" step="1"><span class="val" id="sOperandsV"></span></div></div>
+    <div class="field gu-slide"><label for="sFlash">Flash: seconds each number stays<span class="hint">The child can also change this on the Flash screen.</span></label><div><input type="range" id="sFlash" min="0.3" max="3" step="0.1"><span class="val" id="sFlashV"></span></div></div>
+    <div class="field gu-slide"><label for="sFlashGap">Flash: pause between numbers</label><div><input type="range" id="sFlashGap" min="0.05" max="1" step="0.05"><span class="val" id="sFlashGapV"></span></div></div>
+    <div class="field gu-slide"><label for="sFlashN">Flash: numbers per problem</label><div><input type="range" id="sFlashN" min="2" max="8" step="1"><span class="val" id="sFlashNV"></span></div></div>
+    <div class="field"><label>Sound effects</label><button class="switch" id="sSfx" aria-label="Sound effects"></button></div>
+    <div class="field"><label>Spoken feedback ("Yes!" / "Not quite")</label><button class="switch" id="sSpeakFb" aria-label="Spoken feedback"></button></div>
+  </section>
+
+  <section class="toy-paper gu-panel wide" id="guTreats" aria-labelledby="guTreatsH">
+    <h2 id="guTreatsH">Treats &amp; golden beads</h2>
+    <div class="note">They earn golden beads for finishing things (lesson, drill or game +1; gold sticker +1; all of Today's practice +3; new skill unlocked +5) and spend them in the Treat Shop. When they buy a treat, a ticket appears here for you to hand over.</div>
+    <div class="field"><label>Golden beads they have<span class="hint" id="tpTotal"></span></label><div class="row gu-adj"><button class="btn small ghost" data-adj="-5">−5</button><button class="btn small ghost" data-adj="-1">−1</button><span class="val" id="tpBeads"></span><button class="btn small ghost" data-adj="1">+1</button><button class="btn small ghost" data-adj="5">+5</button></div></div>
+    <div class="field gu-top"><label>Rewards to give</label><div id="tpTickets" class="gu-tickets"></div></div>
+    <div class="gu-tablewrap"><table class="tptable"><thead><tr><th>Icon</th><th>Treat</th><th>Price</th><th></th></tr></thead><tbody id="tpList"></tbody></table></div>
+    <div class="row gu-row"><button class="btn small ghost" id="tpAdd">Add a treat</button><button class="btn small ghost" id="tpDefaults">Reset to original list</button></div>
+  </section>
+
+  <section class="toy-paper gu-panel wide" id="guVoices" aria-labelledby="guVoicesH">
+    <h2 id="guVoicesH">Bix &amp; voices</h2>
+    <h3>Bix</h3>
+    <div class="field"><label>Bix talks out loud<span class="hint">Greetings, jokes, cheers and tips. Bix stays quiet while numbers are being read in Listen mode.</span></label><button class="switch" id="sBixTalks" aria-label="Bix talks out loud"></button></div>
+    <div class="field"><label for="sBixVoice">Bix's voice</label><div><select id="sBixVoice"></select> <button class="btn small ghost" id="sBixTest">Test</button></div></div>
+    <h3>Classroom</h3>
+    <div class="field"><label>Bixi makes mistakes in lessons<span class="hint">Bixi tries a sum the common wrong way, then asks the child to help put it right. Turn off to skip these moments.</span></label><button class="switch" id="sBixiMistakes" aria-label="Bixi makes mistakes in lessons"></button></div>
+    <div class="field"><label for="sBixiSilly">Bixi's silliness<span class="hint">How often Bixi plays a bit or tells a joke between activities. Quiet means only when tapped, never between activities.</span></label><select id="sBixiSilly"><option value="more">More</option><option value="normal">Normal</option><option value="quiet">Quiet</option></select></div>
+    <h3>Listening</h3>
+    <div class="field gu-slide"><label for="sGap">Pause between numbers<span class="hint">The silence after one number before the next is said, and before “equals”. The child can also change this, and the voice speed, on the Listen screen: these are the same two settings.</span></label><div><input type="range" id="sGap" min="0.05" max="1.2" step="0.05"><span class="val" id="sGapV"></span></div></div>
+    <div class="field gu-slide"><label for="sRate">Voice speed<span class="hint">100% is the voice as it was recorded. Faster or slower keeps the pitch.</span></label><div><input type="range" id="sRate" min="0.7" max="1.5" step="0.1"><span class="val" id="sRateV"></span></div></div>
+    <div class="field"><label>Say "plus" before added numbers<span class="hint">Off = only "minus" is spoken</span></label><button class="switch" id="sSayPlus" aria-label="Say plus before added numbers"></button></div>
+    <div class="field"><label for="sVoice">Voice<span class="hint">"Recorded" voices are family members' own recordings. "Device" uses the iPad's own voice.</span></label><div><select id="sVoice"></select> <button class="btn small ghost" id="sVoiceTest">Test</button></div></div>
+    <div class="recpanel" id="recPanel">
+      <div class="note">Record family voices. Each person records the same 33 short words once (about 3 minutes), and “equals” if they like; the app builds every number from them. Pick a voice above, or "Take turns" once two or more people have finished.</div>
+      <div class="recrow"><input id="recNew" type="text" placeholder="Add a person, e.g. Mom" class="txt" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"><button class="btn small" id="recAdd"><span class="gu-ic" data-ic="plus"></span>Add person</button></div>
+      <div class="recrow" id="recWhoRow"><label class="note gu-reclabel" for="recWho">Recording for</label><select id="recWho" class="txt"></select><label class="note" for="recName">Name</label><input id="recName" type="text" class="txt gu-recname" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" enterkeyhint="done"><button class="btn small ghost" id="recDelete">Delete person</button></div>
+      <div id="recBody">
+        <div class="recrow"><button class="btn small ghost" id="recStart">Start recording</button><button class="btn small ghost gu-sq" id="recPrev" aria-label="Previous word"><span class="gu-ic" data-ic="back"></span></button><div class="recword"><div id="recWord">—</div><div class="note" id="recCount"></div></div><button class="btn small ghost gu-sq gu-flip" id="recNext" aria-label="Next word"><span class="gu-ic" data-ic="back"></span></button><button class="btn small ghost gu-sq" id="recPlay" aria-label="Play this word" disabled><span class="gu-ic" data-ic="speaker"></span></button></div>
+        <div class="recrow"><button id="recBtn" class="btn"><span class="gu-recdot" aria-hidden="true"></span>Hold to record</button></div>
+      </div>
+      <div class="note" id="recStatus"></div>
+    </div>
+    <div class="field gu-slide"><label for="sPause">Pause before "Your answer?"</label><div><input type="range" id="sPause" min="0" max="5" step="0.5"><span class="val" id="sPauseV"></span></div></div>
+  </section>
+
+  <section class="toy-paper gu-panel wide" id="guLog" aria-labelledby="guLogH">
+    <h2 id="guLogH">Recent sessions</h2>
+    <div class="gu-tablewrap"><table id="sessions"><thead><tr><th>When</th><th>Mode</th><th>Skill</th><th>Score</th><th>Time</th><th>Missed</th></tr></thead><tbody></tbody></table></div>
+    <h3 id="guTech">Technique checklist (watch for these)</h3>
+    <ul class="checklist note">
+      <li><b>Thumb</b> pushes 1-beads <b>up</b>; <b>index finger</b> pushes them <b>down</b> and moves the 5-bead both ways.</li>
+      <li>Work <b>left to right</b> on multi-digit numbers; one fixed movement per case, never counting beads one by one.</li>
+      <li>Small friends (make 5): 1&amp;4, 2&amp;3. Have them <b>say the partner out loud</b> before moving.</li>
+      <li>Big friends (make 10): 1&amp;9, 2&amp;8, 3&amp;7, 4&amp;6, 5&amp;5. "+7 is +10, take 3."</li>
+      <li>The beads are the authority: read the answer <b>off the abacus</b>, don't compute in the head and then set it.</li>
+      <li>Short daily sessions beat long weekly ones. Stop while they still have energy.</li>
+    </ul>
+  </section>
+
+  <section class="toy-paper gu-panel" id="guBackup" aria-labelledby="guBackupH">
+    <h2 id="guBackupH">Backup</h2>
+    <div class="note">Progress, settings and recorded voices are kept on this device only. Save a backup file now and then (Files → iCloud Drive works well) so nothing is lost if the iPad is reset or replaced. You can restore it here or on another device.</div>
+    <div class="row gu-row"><button class="btn small" id="bkMake">1. Prepare backup</button><button class="btn small coral" id="bkSave" style="display:none">2. Save file</button><button class="btn small ghost" id="bkOpen">Restore from a file…</button><input type="file" id="bkFile" accept=".json,application/json" style="display:none"></div>
+    <div class="note" id="bkInfo"></div>
+  </section>
+
+  <section class="toy-paper gu-panel" id="guSound" aria-labelledby="guSoundH">
+    <h2 id="guSoundH">Sound check</h2>
+    <p class="hint">No sound? Check the iPad volume and that the side switch or Control Centre is not on silent, then tap Test sound.</p>
+    <div class="row gu-row"><button class="btn small ghost" id="soundTest"><span class="gu-ic" data-ic="speaker"></span>Test sound</button></div>
+    <div class="gu-diag" id="guDiag" hidden>
+      <h3>Diagnostics</h3>
+      <div class="note" id="diagState"></div>
+      <div class="row gu-row"><button class="btn small ghost" id="diagTts">Test device voice</button><button class="btn small ghost" id="diagBeep">Test beep</button></div>
+      <textarea id="diagLog" readonly placeholder="Sound log appears here" aria-label="Sound log"></textarea>
+    </div>
+  </section>
+  </div>
+  <footer class="gu-foot"><span class="gu-sign" id="guSign" aria-hidden="true"></span><button class="gu-ver" id="guVer" type="button" aria-label="App version"></button></footer>
+</div>
+</section>
+
+</div>
+<script src="store.js?v=4.39"></script>
+<script src="toykit.js?v=4.39"></script>
+<script src="toystickers.js?v=4.39"></script>
+<script src="engine.js?v=4.39"></script>
+<script src="curriculum.js?v=4.39"></script>
+<script src="audio/bix-lines.js?v=4.39"></script>
+<script src="abacus-input.js?v=4.39"></script>
+<script src="parent-brain.js?v=4.39"></script>
+<script src="fun.js?v=4.39"></script>
+<script src="audio/lines-manifest.js?v=4.39"></script>
+<script src="audio/lessons.js?v=4.39"></script>
+<script>window.LINE_PACKS=["juni","bixi","juni-lesson","juni-intro","juni-anat","juni-praise"];</script>
+<script src="classroom.js?v=4.39"></script>
+<script src="games.js?v=4.39"></script>
+<script src="treats.js?v=4.39"></script>
+<script src="onboarding.js?v=4.39"></script>
+<script src="app.js?v=4.39"></script>
+</body>
+</html>

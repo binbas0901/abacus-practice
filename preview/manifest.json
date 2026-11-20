@@ -1,0 +1,11 @@
+{
+  "name": "Abacus Practice",
+  "short_name": "Abacus",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#FFF7E6",
+  "theme_color": "#FFF7E6",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
+}

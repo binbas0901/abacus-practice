@@ -1,0 +1,86 @@
+/* Onboarding (first run), Juni-led. Juni (the moon teacher) is the large central lead from the welcome on;
+   Bixi (the bead classmate) rolls in once for his introduction, then settles to the side as the smaller sidekick.
+   All rules are scoped to #setup.cl-onboard so the shared setup markup in toy-home.css is left untouched.
+   Transform/opacity only, no filters (BRIEF2 perf rules); every stunt stops under reduced motion. */
+
+/* ---------------- Juni: the central lead ---------------- */
+/* Juni's stage (her figure above her speech bubble) takes the lead slot, centred, as the visual anchor. */
+#setup.cl-onboard #juniStage{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:none;min-width:0}
+#setup.cl-onboard #juniSetup{line-height:0;flex:none;--jh:clamp(190px,30vh,300px)}
+#setup.cl-onboard #juniSetup .toy-moon{display:block}
+#setup.cl-onboard #juniSetup svg{display:block;width:var(--jh);height:auto;max-width:100%}
+
+/* Juni's and Bixi's speech bubbles: paper cards marked with the speaker's name chip (classroom.css draws the chip).
+   Hidden until their line plays; shown with a pop. */
+#setup.cl-onboard .cl-su-bubble{visibility:hidden;max-width:min(440px,calc(100vw - 80px));margin:0;
+  font:500 clamp(19px,2vw,23px)/1.3 var(--toy-body);text-align:center}
+#setup.cl-onboard .cl-su-bubble .ctext{display:block;min-height:1.3em}
+#setup.cl-onboard .cl-su-bubble.on{visibility:visible}
+#setup.cl-onboard .cl-su-bubble.pop{animation:toy-saypop .34s cubic-bezier(.2,1.4,.4,1) both}
+
+/* Juni's bubble travels with her stage (just under her), so she clearly owns the words. */
+#setup.cl-onboard #juniBubble{margin-top:14px}
+
+/* ---------------- the Juni + step column ---------------- */
+/* The one visible step sits under Juni. Keep her band clear so nothing overlaps. */
+#setup.cl-onboard .to-body{gap:clamp(10px,2vh,22px)}
+
+/* ---------------- Bixi: the classmate who rolls in, then sits to the side ---------------- */
+/* Bixi is positioned off the step flow so he never disturbs the fit-tested setup layout.
+   He is hidden until Juni introduces him (cl-bixi-here), then settles small to the side (cl-bixi-side). */
+#setup.cl-onboard #bixSetup{position:absolute;right:clamp(16px,5vw,70px);bottom:clamp(14px,4vh,48px);
+  z-index:7;--tb:clamp(150px,22vh,210px);opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .45s ease,transform .5s ease,right .5s ease,bottom .5s ease,--tb .5s ease;
+  transform:translateY(10px)}
+#setup.cl-onboard.cl-bixi-here #bixSetup{opacity:1;visibility:visible;pointer-events:auto;transform:none}
+/* settled: smaller, tucked to the side as the sidekick */
+#setup.cl-onboard.cl-bixi-side #bixSetup{--tb:clamp(104px,15vh,150px)}
+
+/* Bixi's bubble sits just above him and tails down toward him. */
+#setup.cl-onboard #bixiSetupBubble{position:absolute;right:clamp(10px,5vw,60px);
+  bottom:calc(clamp(14px,4vh,48px) + var(--tb,150px) - 8px);z-index:8;max-width:min(300px,calc(100vw - 90px));
+  font:600 clamp(18px,1.9vw,22px)/1.25 var(--toy-display)}
+
+/* ---------------- per-step staging ---------------- */
+/* Welcome + name: Juni is largest and central. */
+#setup.cl-onboard[data-step=suName] #juniSetup{--jh:clamp(170px,28vh,280px)}
+#setup.cl-onboard[data-step=suMeet] #juniSetup{--jh:clamp(160px,25vh,250px)}
+/* Setup questions: Juni stays the lead but a touch smaller so the cards have room. */
+#setup.cl-onboard[data-step=suAbacus] #juniSetup,
+#setup.cl-onboard[data-step=suLevel] #juniSetup{--jh:clamp(150px,22vh,230px)}
+
+/* The done card: Juni becomes a compact top band so the card and the one obvious Start button stay fully on screen. */
+#setup.cl-onboard[data-step=suDone] .to-body{justify-content:flex-start;padding-top:clamp(10px,2vh,24px)}
+#setup.cl-onboard[data-step=suDone] #juniStage{flex-direction:row;align-items:center;gap:12px}
+#setup.cl-onboard[data-step=suDone] #juniSetup{--jh:clamp(92px,13vh,134px)}
+#setup.cl-onboard[data-step=suDone] #juniBubble{margin-top:0;font-size:clamp(17px,1.7vw,20px);text-align:left;max-width:min(360px,52vw)}
+
+/* The dense steps (level check, skill picker): lift Juni's band out of the flow into the top-left wall area, so the
+   board / keypad / skill list keep the full column (the fit-tested layout) and nothing is clipped. */
+#setup.cl-onboard[data-step=suCheck] #juniStage,
+#setup.cl-onboard[data-step=suPick] #juniStage{position:absolute;left:clamp(10px,2.5vw,34px);top:clamp(6px,1.4vh,16px);
+  z-index:6;flex-direction:row;align-items:center;gap:10px;max-width:min(60vw,560px)}
+#setup.cl-onboard[data-step=suCheck] #juniSetup,
+#setup.cl-onboard[data-step=suPick] #juniSetup{--jh:clamp(80px,11vh,116px)}
+#setup.cl-onboard[data-step=suCheck] #juniBubble,
+#setup.cl-onboard[data-step=suPick] #juniBubble{margin-top:0;font-size:clamp(16px,1.6vw,19px);text-align:left;max-width:min(340px,42vw)}
+#setup.cl-onboard[data-step=suCheck] #bixSetup,
+#setup.cl-onboard[data-step=suPick] #bixSetup{--tb:clamp(84px,11vh,120px)}
+
+/* ---------------- keyboard up (v4.5): never hide the name field or its button ---------------- */
+/* When the on-screen keyboard is up on the name step, Juni steps back so the input and Next stay in view. */
+html.kb-up #setup.cl-onboard[data-step=suName] #juniSetup{--jh:clamp(84px,calc(var(--vv-h,480px)*.26),150px)}
+html.kb-up #setup.cl-onboard[data-step=suName] #juniBubble{margin-top:6px;font-size:19px}
+html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
+
+/* ---------------- portrait (lower wall, taller page) ---------------- */
+@media (orientation:portrait){
+  #setup.cl-onboard #bixiSetupBubble{max-width:min(280px,calc(100vw - 70px))}
+  #setup.cl-onboard[data-step=suName] #juniSetup{--jh:clamp(160px,22vh,260px)}
+}
+
+/* ---------------- reduced motion ---------------- */
+@media (prefers-reduced-motion:reduce){
+  #setup.cl-onboard #juniSetup,#setup.cl-onboard #bixSetup{transition:none}
+  #setup.cl-onboard .cl-su-bubble.pop{animation:none}
+}

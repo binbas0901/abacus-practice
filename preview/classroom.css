@@ -1,0 +1,114 @@
+/* Classroom: the two-character layer. Juni (the moon) teaches; Bixi (the bead) is the classmate.
+   Transform-only animation, no filters (BRIEF2 perf rules). Everything idle/stunt stops under reduced motion. */
+
+/* ---------------- who-marked speech bubble ---------------- */
+/* A bubble says who is speaking: Juni's lines carry her name chip, Bixi's carry his. */
+.cl-bubble{position:relative}
+.cl-bubble[data-who]::after{content:attr(data-who);position:absolute;top:-13px;right:20px;
+  padding:2px 12px;border-radius:12px;font:700 15px/1.3 var(--toy-display);text-transform:capitalize;
+  color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),2px 3px 6px rgba(58,30,6,.28)}
+.cl-bubble[data-who="juni"]::after{content:"Juni";background:linear-gradient(var(--toy-indigo),#2d3c86)}
+.cl-bubble[data-who="bixi"]::after{content:"Bixi";background:linear-gradient(var(--toy-red,#E5402F),#c0301f)}
+/* the lesson caption, when it is Juni's, leans toward the window (teacher side) */
+#lessonCap.cl-bubble[data-who="juni"]{border-top:3px solid rgba(63,82,168,.35)}
+#lessonCap.cl-bubble[data-who="bixi"]{border-top:3px solid rgba(229,64,47,.4)}
+
+/* ---------------- hanging sign: Juni's words hang from the window on cords (the "B" look) ----------------
+   Reusable across every window screen. Sizes are in em (relative to the sign's own font) so it scales with
+   each screen's text; each screen only sets the sign's position (centred under its moon) + transform:translateX(-50%). */
+.cl-sign{text-align:center;text-wrap:balance;transform-origin:50% -1.7em}
+.cl-sign .cl-jhang{position:absolute;left:0;right:0;top:-2.2em;height:2.3em;pointer-events:none;
+  background:radial-gradient(circle at 50% .36em,#b5803f 0 .4em,#80501f .4em .48em,transparent .48em) center top no-repeat}
+.cl-sign .cl-jhang::before,.cl-sign .cl-jhang::after{content:"";position:absolute;top:.42em;left:calc(50% - .15em);width:.3em;height:2.05em;border-radius:.18em;
+  background:linear-gradient(90deg,#9a6f34,#d8b074 48%,#9a6f34);box-shadow:0 1px 1px rgba(58,30,6,.22);transform-origin:50% -.05em}
+.cl-sign .cl-jhang::before{transform:rotate(-33deg)}
+.cl-sign .cl-jhang::after{transform:rotate(33deg)}
+.cl-sign.on{animation:cl-sign-sway 6s ease-in-out infinite}
+.cl-sign.pop{animation:cl-sign-in .4s cubic-bezier(.2,1.4,.4,1) both,cl-sign-sway 6s ease-in-out .4s infinite}
+@keyframes cl-sign-sway{0%,100%{transform:translateX(-50%) rotate(-1.4deg)}50%{transform:translateX(-50%) rotate(1.4deg)}}
+@keyframes cl-sign-in{0%{opacity:0;transform:translateX(-50%) rotate(-5deg) scale(.86)}100%{opacity:1;transform:translateX(-50%) rotate(-1.4deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.cl-sign.on,.cl-sign.pop{animation:none;transform:translateX(-50%) rotate(-1.4deg)}}
+
+/* ---------------- Juni as a speaker (Part 2) ---------------- */
+/* Juni leans in from the window during a lesson (bigger, brighter), and sits back otherwise. */
+.td-lesson .toy-sky-moon{z-index:2}
+.td-lesson.cl-juni-forward .toy-sky-moon-in{width:calc(var(--_h)*1.28);height:calc(var(--_h)*1.28);
+  transition:width .5s ease,height .5s ease,transform .5s ease;transform:translate(-50%,-50%)}
+.td-lesson .toy-sky-moon-in{transition:width .5s ease,height .5s ease,transform .5s ease}
+.cl-juni-forward .toy-sky-moon .toy-moon-halo{opacity:.9}
+/* Juni's talking mouth, the same idea as Bix's (open/close while a clip plays). */
+.toy-moon-mouth{transform-box:fill-box;transform-origin:50% 25%}
+.toy-moon.talking .toy-moon-mouth{animation:cl-talk .22s ease-in-out infinite alternate}
+@keyframes cl-talk{from{transform:scale(.9,.5)}to{transform:scale(1.05,1.18)}}
+/* a soft attention pulse on Juni when it is her turn to lead (calm, slow) */
+.cl-juni-forward .toy-sky-moon .toy-moon{animation:cl-lean 5.5s ease-in-out infinite}
+@keyframes cl-lean{0%,100%{transform:translateY(0)}50%{transform:translateY(2%)}}
+
+/* ---------------- Bixi's new moves (Part 3) ---------------- */
+/* All are on the .bix figure (which wraps TOY.bix). Cheap transforms only. */
+.bix{will-change:transform}
+.bix.cl-roll{animation:cl-roll 1.1s ease-in-out both}
+@keyframes cl-roll{0%{transform:translateX(0) rotate(0)}45%{transform:translateX(-120%) rotate(-420deg)}55%{transform:translateX(-120%) rotate(-420deg)}100%{transform:translateX(0) rotate(0)}}
+.bix.cl-rollback{animation:cl-rollback 1.1s ease-in-out both}
+@keyframes cl-rollback{0%{transform:translateX(130%) rotate(540deg);opacity:.2}30%{opacity:1}100%{transform:translateX(0) rotate(0)}}
+.bix.cl-dizzy{animation:cl-spin .5s linear 3,cl-wobble .5s ease-in-out 1.5s 2}
+@keyframes cl-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes cl-wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+.bix.cl-tip{animation:cl-tip 1.3s ease-in-out both}
+@keyframes cl-tip{0%{transform:rotate(0)}30%{transform:rotate(-82deg)}70%{transform:rotate(-82deg)}100%{transform:rotate(0)}}
+.bix.cl-sleep{animation:cl-sleep 2.4s ease-in-out both}
+@keyframes cl-sleep{0%{transform:rotate(0)}20%{transform:rotate(-16deg) translateY(4%)}80%{transform:rotate(-16deg) translateY(4%)}100%{transform:rotate(0)}}
+.bix.cl-wake{animation:cl-wake 1.2s ease-out both}
+@keyframes cl-wake{0%{transform:rotate(-16deg)}18%{transform:translateY(-10%) scale(1.04,.96)}40%{transform:translateY(0) rotate(4deg)}60%{transform:rotate(-3deg)}100%{transform:rotate(0)}}
+.bix.cl-warmup{animation:cl-warmup 1.6s ease-in-out both}
+@keyframes cl-warmup{0%,100%{transform:translateY(0) rotate(0)}20%{transform:translateY(-8%) rotate(-6deg)}40%{transform:translateY(0) rotate(6deg)}60%{transform:translateY(-8%) rotate(-6deg)}80%{transform:translateY(0) rotate(6deg)}}
+.bix.cl-bow{animation:cl-bow 1.3s ease-in-out both}
+@keyframes cl-bow{0%,100%{transform:rotate(0) translateY(0)}40%{transform:rotate(22deg) translateY(6%)}60%{transform:rotate(22deg) translateY(6%)}}
+
+/* Juni is tappable (plays a calm fact / habit line). The sky moon is normally pointer-transparent and sits
+   behind the header/content; lift just the moon's own pixels so a tap on her lands (the rest of the sky stays
+   transparent, so the header buttons beside her keep working). The click bubbles to the sky handler. */
+.cl-moon-tap .toy-sky-moon{z-index:6}
+.cl-moon-tap .toy-sky-moon-in{pointer-events:none}
+.cl-moon-tap .toy-moon{pointer-events:auto;cursor:pointer}
+.cl-moon-tap .toy-moon:focus-visible{outline:4px solid var(--toy-ink);outline-offset:-4px;border-radius:50%}
+
+/* Bixi's own bubble in a lesson (the classmate speaks from beside the bead). Absolutely positioned so it never
+   shifts the fit-tested layout; shown only during the Bixi interlude. */
+/* Bixi's bubble sits in the empty right part of the lesson-floor (his bead is on the left), bottom-anchored so it grows
+   upward and never reaches Juni's caption above. Tail points left, toward Bixi. */
+#bixiBubble{position:absolute;right:8px;bottom:18px;left:auto;top:auto;z-index:9;
+  width:clamp(180px,56%,260px);box-sizing:border-box;padding:14px 22px 16px;border:0;border-radius:24px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));color:var(--toy-ink);font:600 20px/1.25 var(--toy-display);
+  box-shadow:inset 0 2px 0 #fff,6px 10px 16px rgba(58,30,6,.3);visibility:hidden}
+#bixiBubble.on{visibility:visible}
+#bixiBubble::after{content:"";position:absolute;left:-15px;bottom:30px;width:30px;height:34px;
+  background:linear-gradient(var(--toy-paper),var(--toy-paper-dk));clip-path:polygon(100% 0,100% 100%,0 55%)}
+/* the tail owns ::after, so Bixi's name chip rides on ::before (same look as the lesson bubbles' chip) */
+#bixiBubble::before{content:"Bixi";position:absolute;top:-13px;right:20px;z-index:1;
+  padding:2px 12px;border-radius:12px;font:700 15px/1.3 var(--toy-display);
+  color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),2px 3px 6px rgba(58,30,6,.28);
+  background:linear-gradient(var(--toy-red,#E5402F),#c0301f)}
+.lesson-floor{position:relative}
+/* Portrait: the floor is display:contents inside the lesson grid, so anchor to #lesson. Bixi's bubble sits in the open
+   band between his bead and the number friends on the right, so it never covers the soroban (where he demos the moves). */
+@media (orientation:portrait){
+  #bixiBubble{right:clamp(12px,3vw,30px);left:auto;bottom:auto;top:clamp(600px,56vh,690px);width:clamp(220px,40vw,300px)}
+  #bixiBubble::after{left:auto;right:40px;top:-15px;bottom:auto;clip-path:polygon(0 100%,100% 100%,35% 0)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .toy-moon.talking .toy-moon-mouth,.cl-juni-forward .toy-sky-moon .toy-moon,
+  .bix.cl-roll,.bix.cl-rollback,.bix.cl-dizzy,.bix.cl-tip,.bix.cl-sleep,.bix.cl-wake,.bix.cl-warmup,.bix.cl-bow,
+  .cl-bubble.pop{animation:none}
+  .td-lesson.cl-juni-forward .toy-sky-moon-in,.td-lesson .toy-sky-moon-in{transition:none}
+}
+
+/* "Parts of the abacus" step (first lesson): the part Juni names glows. The beam and rod (rects) glow directly;
+   a bead glows via its visible lacquer only -- never the wide invisible tap slot, which would smear the glow down the rod. */
+#lessonAbacus .abx-rodline.abx-anat{filter:drop-shadow(0 0 4px #FFC53D) drop-shadow(0 0 9px #FFB01F);animation:anat-pulse 1.1s ease-in-out infinite}
+#lessonAbacus .abx-beam.abx-anat{fill:#F2B632 !important;filter:drop-shadow(0 0 5px #FFC53D) drop-shadow(0 0 11px #FFB01F);animation:anat-pulse 1.1s ease-in-out infinite}
+#lessonAbacus .abx-bead.abx-anat{animation:anat-pulse 1.1s ease-in-out infinite}
+#lessonAbacus .abx-bead.abx-anat .abx-lens,#lessonAbacus .abx-bead.abx-anat .abx-lac{filter:drop-shadow(0 0 4px #FFC53D) drop-shadow(0 0 7px #FFB01F)}
+@keyframes anat-pulse{0%,100%{opacity:1}50%{opacity:.66}}
+@media (prefers-reduced-motion:reduce){#lessonAbacus .abx-anat{animation:none}}
