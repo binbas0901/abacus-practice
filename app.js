@@ -57,8 +57,10 @@ function saveProgress(){ save('progress', progress); }
 
 // ---- Practice-first level model (redesign) ----
 // A level (one skill) is 10 sets of 10 problems = 100. The 10 sets cycle through three REQUIRED types,
-// ear/eye/hand: Listen, Read, Build. All 10 must be finished to clear the level. A set finishes only when
-// all 10 are answered correctly (a miss comes back to be corrected). node(id).setsDone = 0..10.
+// v4.42 model: two modes — Reading + Listening — 7 sessions each; BOTH must be finished to clear a level.
+// A session is a set of SET_LEN problems; a miss does NOT interrupt — misses are corrected in a pass AFTER the
+// set (the existing drill/game fix pass). Per-mode counts live in node(id).modes = {reading, listening}. A third
+// mode (flash/anzan) is added in a later slice; PRACTICE_MODES is kept extensible for it.
 const MODE_SESSIONS = 7, SET_LEN = 10, PRACTICE_MODES = ['reading', 'listening'];
 function _modes(id){ const nd = node(id); nd.modes = nd.modes || {}; return nd.modes; }
 function modeDone(id, mode){ return Math.min(MODE_SESSIONS, _modes(id)[mode] || 0); }
@@ -78,7 +80,7 @@ window.__level = { MODE_SESSIONS, SET_LEN, PRACTICE_MODES, modeDone, modeComplet
     const useR = r < MODE_SESSIONS && (r <= l || modeComplete(id, 'listening'));
     bumpMode(id, useR ? 'reading' : 'listening'); return levelDoneCount(id); } };
 
-// ---- Practice orchestrator (redesign): run a level as 10 sets of 10, cycling listen/read/build, all-correct to finish a set ----
+// ---- Practice orchestrator (v4.42): run a level as Reading(7)+Listening(7) sessions; both required; correction pass after each set ----
 // Reuses the existing mechanics: listen -> the drill (with its fix pass looping misses until correct); read -> Bead
 // Detective (reader, with a miss re-queued); build -> Bead Builder (inherently all-correct). A guard (Practice.on) keeps
 // every existing drill/game flow unchanged when a practice level is NOT running.
