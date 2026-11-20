@@ -66,7 +66,7 @@ async def main():
         await pg.click('#suStart'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(600)
         pr=json.loads(await pg.evaluate("window.__legacy('progress')")); st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         trophy=await pg.text_content('#homeTrophy')
-        check("I'm new -> starts at Beads, name saved, Practice hero + empty trophy", pr['current']=='beads' and st['name']=='Leo' and await pg.locator('#doorPractice').count()==1 and '0 / 10' in trophy, f"{pr['current']} | {st['name']} | {trophy} | {await pg.text_content('#bixHomeCard .ctext')}")
+        check("I'm new -> starts at Beads, name saved, Practice hero + empty trophy", pr['current']=='beads' and st['name']=='Leo' and await pg.locator('#doorPractice').count()==1 and 'read0/7' in trophy.replace(' ','').lower() and 'listen0/7' in trophy.replace(' ','').lower(), f"{pr['current']} | {st['name']} | {trophy} | {await pg.text_content('#bixHomeCard .ctext')}")
         await pg.screenshot(path='/tmp/su_home_new.png')
         await pg.reload(); await pg.wait_for_timeout(800)
         check('after setup, reopening goes straight home', await pg.locator('#home.active').count()==1)
