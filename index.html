@@ -14,16 +14,16 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=4.41">
-<link rel="stylesheet" href="abacus-input.css?v=4.41">
-<link rel="stylesheet" href="toy.css?v=4.41">
-<link rel="stylesheet" href="toy-home.css?v=4.41">
-<link rel="stylesheet" href="toy-practice.css?v=4.41">
-<link rel="stylesheet" href="toy-door.css?v=4.41">
-<link rel="stylesheet" href="toy-room.css?v=4.41">
-<link rel="stylesheet" href="toy-grown.css?v=4.41">
-<link rel="stylesheet" href="classroom.css?v=4.41">
-<link rel="stylesheet" href="onboarding.css?v=4.41">
+<link rel="stylesheet" href="styles.css?v=4.42">
+<link rel="stylesheet" href="abacus-input.css?v=4.42">
+<link rel="stylesheet" href="toy.css?v=4.42">
+<link rel="stylesheet" href="toy-home.css?v=4.42">
+<link rel="stylesheet" href="toy-practice.css?v=4.42">
+<link rel="stylesheet" href="toy-door.css?v=4.42">
+<link rel="stylesheet" href="toy-room.css?v=4.42">
+<link rel="stylesheet" href="toy-grown.css?v=4.42">
+<link rel="stylesheet" href="classroom.css?v=4.42">
+<link rel="stylesheet" href="onboarding.css?v=4.42">
 </head>
 <body>
 <div id="app">
@@ -52,7 +52,7 @@
     <div class="th-bowl"><span class="th-bowl-art" id="homeBowl" aria-hidden="true"></span><span class="toy-chip th-beadchip" id="roomBeads" aria-label="golden beads"></span></div>
   </div>
   <div id="bixHomeCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
-  <div id="ver" class="th-ver">v4.41</div>
+  <div id="ver" class="th-ver">v4.42</div>
 </section>
 
 <section id="who" class="screen toy-scene tw">
@@ -165,6 +165,13 @@
   </div>
 </section>
 
+<section id="practicePick" class="screen toy-scene pp">
+  <header class="td-top"><button class="toy-iconbtn exit" id="exitPick" aria-label="Back home"></button><h1 class="td-sign" id="ppTitle">Practice</h1></header>
+  <div class="td-sky" id="ppSky" aria-hidden="true"></div>
+  <div class="pp-jbub cl-bubble" id="ppJuni" data-who="juni" aria-live="polite"><span class="ctext"></span></div>
+  <div class="pp-cards" id="ppCards" role="group" aria-label="How do you want to practise?"></div>
+</section>
+
 <section id="game" class="screen toy-scene toy-scene--calm tr-game">
   <div id="gameSky"></div>
   <div id="gameJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
@@ -200,7 +207,7 @@
       <div class="lesson-floor">
         <div class="lesson-bix" id="bixLesson"></div>
         <div class="cl-bixi-bubble toy-bubble toy-bubble--right" id="bixiBubble" aria-live="polite"><div class="ctext"></div></div>
-        <div class="lesson-nav"><button class="toy-block toy-block--wood toy-block--sm td-back" id="lessonBack" style="display:none" aria-label="Go back a step"></button><button class="toy-block toy-block--wood toy-block--sm" id="lessonHint" style="display:none"></button><button class="toy-block toy-block--teal td-next" id="lessonNext">Next</button></div>
+        <div class="lesson-nav"><button class="toy-block toy-block--wood toy-block--sm td-back" id="lessonBack" style="display:none" aria-label="Go back a step"></button><button class="toy-block toy-block--wood toy-block--sm td-skip" id="lessonSkip" aria-label="Skip to practice">Skip</button><button class="toy-block toy-block--wood toy-block--sm" id="lessonHint" style="display:none"></button><button class="toy-block toy-block--teal td-next" id="lessonNext">Next</button></div>
       </div>
     </div>
   </div>
@@ -489,22 +496,22 @@
 </section>
 
 </div>
-<script src="store.js?v=4.41"></script>
-<script src="toykit.js?v=4.41"></script>
-<script src="toystickers.js?v=4.41"></script>
-<script src="engine.js?v=4.41"></script>
-<script src="curriculum.js?v=4.41"></script>
-<script src="audio/bix-lines.js?v=4.41"></script>
-<script src="abacus-input.js?v=4.41"></script>
-<script src="parent-brain.js?v=4.41"></script>
-<script src="fun.js?v=4.41"></script>
-<script src="audio/lines-manifest.js?v=4.41"></script>
-<script src="audio/lessons.js?v=4.41"></script>
+<script src="store.js?v=4.42"></script>
+<script src="toykit.js?v=4.42"></script>
+<script src="toystickers.js?v=4.42"></script>
+<script src="engine.js?v=4.42"></script>
+<script src="curriculum.js?v=4.42"></script>
+<script src="audio/bix-lines.js?v=4.42"></script>
+<script src="abacus-input.js?v=4.42"></script>
+<script src="parent-brain.js?v=4.42"></script>
+<script src="fun.js?v=4.42"></script>
+<script src="audio/lines-manifest.js?v=4.42"></script>
+<script src="audio/lessons.js?v=4.42"></script>
 <script>window.LINE_PACKS=["juni","bixi","juni-lesson","juni-intro","juni-anat","juni-praise"];</script>
-<script src="classroom.js?v=4.41"></script>
-<script src="games.js?v=4.41"></script>
-<script src="treats.js?v=4.41"></script>
-<script src="onboarding.js?v=4.41"></script>
-<script src="app.js?v=4.41"></script>
+<script src="classroom.js?v=4.42"></script>
+<script src="games.js?v=4.42"></script>
+<script src="treats.js?v=4.42"></script>
+<script src="onboarding.js?v=4.42"></script>
+<script src="app.js?v=4.42"></script>
 </body>
 </html>

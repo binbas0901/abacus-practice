@@ -39,10 +39,10 @@ async def main():
         await pg.evaluate("()=>window.__practice.start('add_direct')"); await pg.wait_for_timeout(900)
         check('untaught skill -> lesson shows before the first set', await active(pg, '#lesson'))
         check('untaught skill -> not dropped into a drill/game', not (await active(pg, '#drill')) and not (await active(pg, '#game')))
-        # finishing the lesson flows into the set
+        # v4.42: finishing a (non-flash) lesson flows into the Reading/Listening PICKER, not straight into a set
         await pg.evaluate("()=>window.__lessonFinish()"); await pg.wait_for_timeout(1200)
-        after = await pg.evaluate("()=>({drill:!!document.querySelector('#drill.active'), game:!!document.querySelector('#game.active'), on:window.__practice.on, learned:(window.__prog('add_direct').node||{}).lesson})")
-        check('finishing the lesson flows into the first set', (after['drill'] or after['game']) and after['on'] is True, after)
+        after = await pg.evaluate("()=>({pick:!!document.querySelector('#practicePick.active'), on:window.__practice.on, learned:(window.__prog('add_direct').node||{}).lesson})")
+        check('finishing the lesson flows into the Reading/Listening picker', after['pick'] and after['on'] is True, after)
         check('the skill is now marked learned', after['learned'] is True, after)
         check('no page errors (untaught -> lesson -> set)', not errs, errs[:3])
         await ctx.close()
@@ -56,7 +56,7 @@ async def main():
         # FIX 1.3 - exiting the lesson early goes home and stops practice (no loop)
         ctx, pg, errs = await boot(b, {"current": "add_direct", "nodes": {"beads": {"lesson": True, "mastered": "parent", "hist": []}, "add_direct": {"lesson": False, "mastered": None, "hist": []}}})
         await pg.evaluate("()=>window.__practice.start('add_direct')"); await pg.wait_for_timeout(800)
-        await pg.click('#exitLesson'); await pg.wait_for_timeout(600)
+        await pg.evaluate("()=>{const b=document.querySelector('#exitLesson'); if(b) b.click();}"); await pg.wait_for_timeout(600)
         ex = await pg.evaluate("()=>({home:!!document.querySelector('#home.active'), on:window.__practice.on, lesson:!!document.querySelector('#lesson.active')})")
         check('exiting the lesson early -> home, practice stopped, no re-loop', ex['home'] and ex['on'] is False and not ex['lesson'], ex)
         await ctx.close()
@@ -64,7 +64,7 @@ async def main():
         # FIX 1.4 - an already-taught skill goes straight to practice (no lesson)
         ctx, pg, errs = await boot(b, {"current": "add_direct", "nodes": {"add_direct": {"lesson": True, "mastered": None, "hist": []}}})
         await pg.evaluate("()=>window.__practice.start('add_direct')"); await pg.wait_for_timeout(900)
-        check('already-taught skill -> straight into a set (no lesson)', not (await active(pg, '#lesson')) and (await active(pg, '#drill') or await active(pg, '#game')))
+        check('already-taught skill -> straight to the Reading/Listening picker (no lesson)', not (await active(pg, '#lesson')) and (await active(pg, '#practicePick')))
         await ctx.close()
 
         # FIX 2.1 - anzan (learned) runs a real Flash drill with the abacus hidden

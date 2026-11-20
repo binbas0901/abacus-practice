@@ -37,8 +37,8 @@ async def main():
         spoke=await pg.evaluate("window.__spoke.slice(0)")
         check('home greeting: Juni greets alone (j_hello_*); Bixi stays a silent sidekick (no countdown)',
               bool(spoke) and spoke[0].startswith('juni:j_hello_') and not any(x.startswith('bixi:b_home_steps') for x in spoke[1:]), spoke)
-        check('home: one big Practice button and the level trophy (10 beads); the old Today strip is gone',
-              await pg.locator('#doorPractice').count()==1 and await pg.locator('#homeTrophy .th-pip').count()==10 and await pg.locator('#todaySteps, #todayGo').count()==0)
+        check('home: one big Practice button and the level trophy (14 beads: 7 Reading + 7 Listening); the old Today strip is gone',
+              await pg.locator('#doorPractice').count()==1 and await pg.locator('#homeTrophy .th-pip').count()==14 and await pg.locator('#todaySteps, #todayGo').count()==0)
         doors=await pg.eval_on_selector_all('.th-doors > button .toy-block-label','els=>els.map(e=>e.textContent.trim())')
         check('home: two earned-break doors (Play / My room) with the bead chip',
               doors==['Play','My room'] and (await pg.text_content('#roomBeads')).strip()=='12', doors)
@@ -51,16 +51,18 @@ async def main():
         check('home: the demoted doors are still real tap targets (>= 60px tall)',
               await pg.evaluate("[...document.querySelectorAll('.th-door--mini')].every(e=>e.getBoundingClientRect().height>=60)"))
         check('home: one child -> no "Switch child"', not await pg.is_visible('#switchKid'))
-        # the trophy fills as practice sets are cleared; the cup lights at 10/10 (driven through the real level API)
+        # the trophy fills as practice sessions are cleared; the cup lights at 14/14 (7 Reading + 7 Listening), driven
+        # through the real level API. completeSet alternates the two modes, so 4 sessions == Read 2/7 + Listen 2/7.
         cid=await pg.evaluate("App.currentNode().id")
         await pg.evaluate("id=>{ for(let i=0;i<4;i++) window.__level.completeSet(id); App.renderHome(); }", cid); await pg.wait_for_timeout(200)
-        check('trophy: 4 of 10 beads filled, label "4 / 10", cup not yet lit',
-              await pg.locator('#homeTrophy .th-pip.on').count()==4 and '4 / 10' in await pg.text_content('#homeTrophy') and await pg.locator('#homeTrophy .th-cup.lit').count()==0)
-        await pg.evaluate("id=>{ for(let i=0;i<6;i++) window.__level.completeSet(id); App.renderHome(); }", cid); await pg.wait_for_timeout(200)
-        check('level done: 10 beads filled, cup lit, "Level done!", home shows the finished state',
-              await pg.locator('#homeTrophy .th-pip.on').count()==10 and await pg.locator('#homeTrophy .th-cup.lit').count()==1 and 'Level done' in await pg.text_content('#homeTrophy') and await pg.locator('#home.is-done').count()==1)
-        # reset this level's progress for the rest of the walkthrough
-        await pg.evaluate("(()=>{ const p=Store.get('progress'); p.nodes[p.current].setsDone=0; Store.set('progress',p); })()"); await pg.reload(); await pg.wait_for_timeout(900); await pg.wait_for_selector('#home.active')
+        lab=await pg.text_content('#homeTrophy .th-trophy-lab')
+        check('trophy: 4 of 14 beads filled, per-mode label "Read 2/7 · Listen 2/7", cup not yet lit',
+              await pg.locator('#homeTrophy .th-pip.on').count()==4 and 'Read 2/7' in lab and 'Listen 2/7' in lab and await pg.locator('#homeTrophy .th-cup.lit').count()==0, lab)
+        await pg.evaluate("id=>{ for(let i=0;i<10;i++) window.__level.completeSet(id); App.renderHome(); }", cid); await pg.wait_for_timeout(200)
+        check('level done: 14 beads filled, cup lit, "Level done!", home shows the finished state',
+              await pg.locator('#homeTrophy .th-pip.on').count()==14 and await pg.locator('#homeTrophy .th-cup.lit').count()==1 and 'Level done' in await pg.text_content('#homeTrophy') and await pg.locator('#home.is-done').count()==1)
+        # reset this level's progress for the rest of the walkthrough (clear both modes)
+        await pg.evaluate("(()=>{ const p=Store.get('progress'); p.nodes[p.current].modes={}; Store.set('progress',p); })()"); await pg.reload(); await pg.wait_for_timeout(900); await pg.wait_for_selector('#home.active')
         await pg.click('#doorPlay'); await pg.wait_for_selector('#play.active'); await pg.click('#exitPlay'); await pg.wait_for_selector('#home.active')
 
         # (The old frozen "Today" 3-step plan is retired: practice is now one 10x10 level driven by the Practice hero.)

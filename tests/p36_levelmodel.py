@@ -1,7 +1,7 @@
 import asyncio, os
 from playwright.async_api import async_playwright
-# Practice-first level model: a level is 10 sets x 10 problems, the 10 sets cycle through three REQUIRED types
-# (listen, read, build), all three appear, and the level clears only when all 10 sets are done.
+# Practice model (v4.42): a level is practised in two modes, Reading and Listening, 7 sessions each.
+# The level clears only when BOTH modes reach 7. Progress is per-mode and persists across reload.
 fails = []
 def check(label, ok, extra=''):
     print(('PASS ' if ok else 'FAIL ') + label + (('  ' + str(extra)) if not ok and extra != '' else ''))
@@ -18,39 +18,38 @@ async def main():
         await pg.goto(URL)
         await pg.wait_for_function("window.App && window.__level", timeout=30000)
 
-        L = await pg.evaluate("()=>({sets:window.__level.LEVEL_SETS, len:window.__level.SET_LEN, plan:window.__level.levelSetPlan()})")
-        check('a level is 10 sets', L['sets'] == 10, L['sets'])
-        check('a set is 10 problems', L['len'] == 10, L['len'])
-        check('the level has 10 sets planned', len(L['plan']) == 10, L['plan'])
-        check('all three types (listen, read, build) appear', set(L['plan']) == {'listen', 'read', 'build'}, L['plan'])
-        check('sets cycle ear/eye/hand in order', L['plan'][:4] == ['listen', 'read', 'build', 'listen'], L['plan'][:4])
+        L = await pg.evaluate("()=>({ms:window.__level.MODE_SESSIONS, len:window.__level.SET_LEN, modes:window.__level.PRACTICE_MODES})")
+        check('each mode has 7 sessions', L['ms'] == 7, L['ms'])
+        check('a session is 10 problems', L['len'] == 10, L['len'])
+        check('the two modes are reading and listening', L['modes'] == ['reading', 'listening'], L['modes'])
 
-        types = await pg.evaluate("()=>[0,1,2,3,9].map(i=>window.__level.setType(i))")
-        check('setType cycles correctly', types == ['listen', 'read', 'build', 'listen', 'listen'], types)
-
-        # fresh node: on set 0 (a listen set), level not complete
-        st = await pg.evaluate("""()=>{
-          const n='sub_direct';
-          return {idx:window.__level.currentSetIndex(n), type:window.__level.currentSetType(n), done:window.__level.levelComplete(n)};
-        }""")
-        check('a fresh level starts on set 0', st['idx'] == 0, st)
-        check('set 0 is a listen set', st['type'] == 'listen', st)
+        st = await pg.evaluate("""()=>{const n='sub_direct';return {
+          r:window.__level.modeDone(n,'reading'), l:window.__level.modeDone(n,'listening'),
+          done:window.__level.levelComplete(n), total:window.__level.levelTotalCount(n)};}""")
+        check('a fresh level has 0/0 sessions', st['r'] == 0 and st['l'] == 0, st)
         check('a fresh level is not complete', st['done'] is False, st)
+        check('a level is 14 sessions total', st['total'] == 14, st)
 
-        # complete sets one by one; the level clears exactly at 10
-        prog = await pg.evaluate("""()=>{
-          const n='sub_direct', out=[];
-          for (let i=0;i<10;i++){ const d=window.__level.completeSet(n); out.push([d, window.__level.levelComplete(n)]); }
-          return out;
-        }""")
-        check('completing sets counts up to 10', prog[-1][0] == 10, prog[-1])
-        check('level is NOT complete before 10 sets', all(not c for d, c in prog[:9]), prog[:9])
-        check('level IS complete at 10 sets', prog[9][1] is True, prog[9])
-        # persists across a reload
+        # finish Reading only -> still not complete; then finish Listening -> complete exactly when both are done
+        prog = await pg.evaluate("""()=>{const n='sub_direct', out={};
+          for(let i=0;i<7;i++)window.__level.bumpMode(n,'reading');
+          out.readingDone = [window.__level.modeComplete(n,'reading'), window.__level.levelComplete(n)];
+          for(let i=0;i<6;i++)window.__level.bumpMode(n,'listening');
+          out.listening6 = window.__level.levelComplete(n);
+          window.__level.bumpMode(n,'listening');
+          out.bothDone = window.__level.levelComplete(n);
+          out.count = window.__level.levelDoneCount(n);
+          return out;}""")
+        check('Reading done but Listening not -> level NOT complete', prog['readingDone'] == [True, False], prog['readingDone'])
+        check('Listening at 6/7 -> level NOT complete', prog['listening6'] is False, prog)
+        check('BOTH modes at 7/7 -> level complete', prog['bothDone'] is True, prog)
+        check('done count reaches 14', prog['count'] == 14, prog)
+
+        # per-mode progress persists across reload
         await pg.evaluate("()=>window.App.Speaker.unlock()")
         await pg.reload(); await pg.wait_for_function("window.App && window.__level", timeout=30000)
-        persisted = await pg.evaluate("()=>window.__level.setsDone('sub_direct')")
-        check('set progress persists across reload', persisted == 10, persisted)
+        persisted = await pg.evaluate("()=>[window.__level.modeDone('sub_direct','reading'), window.__level.modeDone('sub_direct','listening')]")
+        check('per-mode progress persists across reload', persisted == [7, 7], persisted)
 
         check('no page errors', not errs, errs[:4])
         await b.close()

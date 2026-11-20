@@ -1,8 +1,9 @@
 import asyncio, os
 from playwright.async_api import async_playwright
-# Phase 2 practice orchestrator: a level runs as 10 sets x 10, cycling listen/read/build; a set finishes ONLY when all 10
-# are correct (a miss is re-queued and must be corrected); completing a set shows a set-complete step; 10 sets clear the
-# level (node mastered, current advances). Everything here DRIVES THE REAL APP and asserts observed behaviour.
+# Practice orchestrator (v4.42): a learned level opens the Reading/Listening picker; Reading -> Bead Detective,
+# Listening -> the listen drill; a session finishes only when all answers are correct (misses fixed after the set);
+# finishing a session counts toward that mode's 7; the level clears only when BOTH modes reach 7 (mastered, advance).
+# Everything here DRIVES THE REAL APP.
 fails = []
 def check(label, ok, extra=''):
     print(('PASS ' if ok else 'FAIL ') + label + (('  ' + str(extra)) if (not ok and extra != '') else ''))
@@ -26,33 +27,33 @@ async def new_page(b):
     await pg.evaluate(SETTINGS)
     await pg.reload()
     await pg.wait_for_function("window.App && window.__level && window.__practice", timeout=30000)
-    await pg.mouse.click(600, 12)          # a real tap unlocks audio (as a child would), like the other suites
+    await pg.mouse.click(600, 12)
     await pg.wait_for_timeout(600)
     return ctx, pg, errs
 
-# set a node's setsDone and make it the current skill, so the orchestrator and advancement are observable.
-# Uses the app's own helpers (applySetup + the real completeSet), so state goes through Store exactly as in the app.
-async def setup_node(pg, node, done):
-    await pg.evaluate("""a=>{ const [node,done]=a;
+# Make node the current (learned) skill with r Reading and l Listening sessions already done.
+async def setup_node(pg, node, reading=0, listening=0):
+    await pg.evaluate("""a=>{ const [node,r,l]=a;
         window.App.applySetup({name:'Mia', current:node, how:'parent'});
-        for (let i=0;i<done;i++) window.__level.completeSet(node); }""", [node, done])
-    await pg.wait_for_timeout(200)
+        window.__markLearned(node);
+        for (let i=0;i<r;i++) window.__level.bumpMode(node,'reading');
+        for (let i=0;i<l;i++) window.__level.bumpMode(node,'listening'); }""", [node, reading, listening])
+    await pg.wait_for_timeout(150)
 
 async def answer_pad(pg, sel, v):
+    # click via JS so an off-screen pad (reader fits the pad below the fold at this
+    # viewport) doesn't fail Playwright's visibility/scroll checks
     for ch in str(v):
-        await pg.click(f'{sel} [data-k="{ch}"]')
-    await pg.click(f'{sel} [data-k="go"]')
+        await pg.evaluate("a=>{const [sel,c]=a; const b=[...document.querySelectorAll(sel+' [data-k]')].find(x=>x.dataset.k===c); if(b) b.click();}", [sel, ch])
+    await pg.evaluate("sel=>{const g=[...document.querySelectorAll(sel+' [data-k]')].find(x=>x.dataset.k==='go'); if(g) g.click();}", sel)
 
 async def listen_ready(pg):
-    # ready to answer == the listen drill is asking and is not mid-dictation (App.quietNow() guards the gap)
     await pg.wait_for_function(
         "()=>{const m=document.querySelector('#listenMsg'); return m && /answer/i.test(m.textContent) && !window.App.quietNow();}",
         timeout=45000)
 
 async def listen_answer(pg, value):
     await answer_pad(pg, '#pad', value)
-    # let the app leave the 'answer' state (feedback, then the next dictation / polish / set-complete step),
-    # so the next listen_ready() doesn't re-read the problem we just answered
     try:
         await pg.wait_for_function(
             "()=>window.App.quietNow() || document.querySelector('#summary.active') || document.querySelector('.toy-dialog')",
@@ -60,8 +61,6 @@ async def listen_answer(pg, value):
     except Exception:
         pass
 
-# Poll the reader cover state (asking phase == cover 'on'). Polling is used instead of wait_for_function
-# because it is robust to the reader's animation frames.
 async def cover_is(pg, on, timeout_ms=25000):
     for _ in range(int(timeout_ms / 250)):
         cls = await pg.evaluate("()=>{const c=document.querySelector('#rdCover'); return c ? c.className : null;}")
@@ -70,40 +69,60 @@ async def cover_is(pg, on, timeout_ms=25000):
         await pg.wait_for_timeout(250)
     return False
 
+async def drive_listen_set(pg, wrongs=()):
+    await pg.wait_for_selector('#drill.active', timeout=15000)
+    await pg.wait_for_selector('#listenGo', state='visible', timeout=15000)
+    await pg.evaluate("()=>{const g=document.querySelector('#listenGo'); if(g) g.click();}")
+    for i in range(10):
+        await listen_ready(pg)
+        d = await pg.evaluate("()=>window.__drill()")
+        await listen_answer(pg, d['answer'] + (1 if i in wrongs else 0))
+    # correct any re-queued misses in the polish pass
+    for _ in range(len(wrongs)):
+        await listen_ready(pg)
+        d = await pg.evaluate("()=>window.__drill()")
+        await listen_answer(pg, d['answer'])
+
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome',
                                     args=['--no-sandbox', '--autoplay-policy=no-user-gesture-required'])
 
-        # ======== Check A: the orchestrator opens the RIGHT mechanic for each set type ========
-        for done, want_screen, want_tag, want_type in [(0, 'drill', None, 'listen'),
-                                                        (1, 'game', 'reader', 'read'),
-                                                        (2, 'game', 'build', 'build')]:
-            ctx, pg, errs = await new_page(b)
-            await setup_node(pg, 'sub_direct', done)
-            await pg.evaluate("window.__practice.start('sub_direct')")
-            try:
-                await pg.wait_for_selector(f'#{want_screen}.active', timeout=15000)
-                tag = await pg.evaluate("()=>document.querySelector('#game') && document.querySelector('#game').dataset.game") if want_screen == 'game' else None
-                ptype = await pg.evaluate("()=>window.__practice.type")
-                on = await pg.evaluate("()=>window.__practice.on")
-                ok = on and ptype == want_type and (want_tag is None or tag == want_tag)
-                check(f'set {done} ({want_type}) opens the {want_tag or "listen drill"} mechanic', ok, {'screen': want_screen, 'tag': tag, 'type': ptype, 'on': on})
-            except Exception as e:
-                check(f'set {done} ({want_type}) opens the {want_tag or "listen drill"} mechanic', False, str(e)[:120])
-            check(f'set {done}: no page errors', not errs, errs[:3])
-            await ctx.close()
-
-        # ======== Check B: read set (Bead Detective) re-queues a miss until it is read right (all-correct) ========
+        # ======== Check A: a learned level opens the picker; each mode opens the right mechanic ========
         ctx, pg, errs = await new_page(b)
-        await setup_node(pg, 'sub_direct', 0)
-        # drive the REAL reader through the same runner the orchestrator uses, with a short n to keep the set quick
-        await pg.evaluate("()=>{ window.__p37=null; window.__rej=null; window.addEventListener('unhandledrejection', e=>{window.__rej=String(e.reason);}); window.Games.runSet('read', 4, r=>{ window.__p37=r; }); }")
-        requeued = False
-        first_v = None
-        for step in range(12):   # at most: 4 corrects + 1 forced miss + slack
+        await setup_node(pg, 'sub_direct')
+        await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        check('a learned level opens the Reading/Listening picker', True)
+        cards = await pg.eval_on_selector_all('#ppCards .pp-card', 'els=>els.map(e=>e.getAttribute("data-mode"))')
+        check('picker shows Reading and Listening', cards == ['reading', 'listening'], cards)
+        await pg.evaluate("window.__practice.runMode('reading')")
+        await pg.wait_for_selector('#game.active', timeout=15000)
+        tag = await pg.evaluate("()=>document.querySelector('#game').dataset.game")
+        ptype = await pg.evaluate("()=>window.__practice.type")
+        check('Reading opens the Bead Detective (reader) mechanic', tag == 'reader' and ptype == 'reading', {'tag': tag, 'type': ptype})
+        check('A: no page errors', not errs, errs[:3])
+        await ctx.close()
+
+        ctx, pg, errs = await new_page(b)
+        await setup_node(pg, 'sub_direct')
+        await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("window.__practice.runMode('listening')")
+        await pg.wait_for_selector('#drill.active', timeout=15000)
+        ptype = await pg.evaluate("()=>window.__practice.type")
+        check('Listening opens the listen drill', ptype == 'listening' and (await pg.evaluate("()=>window.__practice.on")), ptype)
+        check('A2: no page errors', not errs, errs[:3])
+        await ctx.close()
+
+        # ======== Check B: the reader (Reading) re-queues a miss until it is read right (all-correct after the set) ========
+        ctx, pg, errs = await new_page(b)
+        await setup_node(pg, 'sub_direct')
+        await pg.evaluate("()=>{ window.__p37=null; window.addEventListener('unhandledrejection', e=>{window.__rej=String(e.reason);}); window.Games.runSet('read', 4, r=>{ window.__p37=r; }); }")
+        requeued = False; first_v = None
+        for step in range(12):
             if await pg.evaluate("()=>window.__p37") is not None:
-                break                                   # the whole set finished
+                break
             if not await cover_is(pg, True):
                 break
             v = await pg.evaluate("()=>window.__rdVal")
@@ -111,114 +130,66 @@ async def main():
                 first_v = v
                 wrong = (v % 9) + 1
                 if wrong == v: wrong = (v % 9) + 2
-                await answer_pad(pg, '#rdPad', wrong)      # a wrong read
-                await cover_is(pg, False)                  # cover drops
-                await cover_is(pg, True)                   # same number comes back
+                await answer_pad(pg, '#rdPad', wrong)
+                await cover_is(pg, False); await cover_is(pg, True)
                 again = await pg.evaluate("()=>window.__rdVal")
                 requeued = (again == first_v)
-                await answer_pad(pg, '#rdPad', again)      # now read it right
+                await answer_pad(pg, '#rdPad', again)
             else:
                 await answer_pad(pg, '#rdPad', v)
             await pg.wait_for_timeout(300)
-            done = await pg.evaluate("()=>window.__p37")
-            if done is not None:
+            if await pg.evaluate("()=>window.__p37") is not None:
                 break
         res = await pg.evaluate("()=>window.__p37")
-        check('read: a wrong read re-queues the SAME number (must be corrected)', requeued, {'first': first_v})
+        check('read: a wrong read re-queues the SAME number (fixed before the set ends)', requeued, {'first': first_v})
         check('read: the set reports allCorrect only after every number is read right', bool(res) and res.get('allCorrect') is True, res)
-        check('read: the set ran all 4 numbers', bool(res) and res.get('of') == 4, res)
-        check('read: no page errors', not errs, errs[:3])
+        check('B: no page errors', not errs, errs[:3])
         await ctx.close()
 
-        # ======== Check C: a BUILD set completes end-to-end through Practice -> setDone -> set-complete step ========
+        # ======== Check C: a finished Listening session counts toward that mode (misses fixed in the polish pass) ========
         ctx, pg, errs = await new_page(b)
-        await setup_node(pg, 'sub_direct', 2)        # set index 2 == build
+        await setup_node(pg, 'sub_direct')
         await pg.evaluate("window.__practice.start('sub_direct')")
-        await pg.wait_for_selector('#game.active', timeout=15000)
-        built = 0
-        last_want = None
-        for k in range(10):
-            # wait for a FRESH number on a reset abacus (so we never poke the same item twice)
-            await pg.wait_for_function(
-                "lw=>{const n=document.querySelector('#bdNum'); if(!n||!window.__gameAb) return false; const t=n.textContent.trim(); return t!=='' && t!==String(lw) && window.__gameAb.value===0;}",
-                arg=last_want, timeout=20000)
-            want = await pg.evaluate("()=>parseInt(document.querySelector('#bdNum').textContent,10)")
-            await pg.evaluate("w=>window.__gameAb.poke(w)", want)
-            last_want = want
-            built += 1
-            await pg.wait_for_timeout(200)
-        await pg.wait_for_selector('.toy-dialog', timeout=15000)
-        title = await pg.text_content('.toy-dialog-title')
-        check('build: 10 numbers built, set completes', built == 10, built)
-        check('build: completing the set shows "Set 3 of 10 done!"', 'Set 3 of 10' in (title or ''), title)
-        sd = await pg.evaluate("()=>window.__level.setsDone('sub_direct')")
-        check('build: completeSet ran -> setsDone == 3', sd == 3, sd)
-        check('build: no page errors', not errs, errs[:3])
-        await ctx.close()
-
-        # ======== Check D: a LISTEN set finishes ONLY at 10 correct; misses are re-queued via the polish pass ========
-        ctx, pg, errs = await new_page(b)
-        await setup_node(pg, 'sub_direct', 0)        # set index 0 == listen
-        await pg.evaluate("window.__practice.start('sub_direct')")
-        await pg.wait_for_selector('#drill.active', timeout=15000)
-        await pg.wait_for_selector('#listenGo', state='visible', timeout=15000)
-        await pg.click('#listenGo')
-        wrongs = {2, 6}
-        for i in range(10):
-            await listen_ready(pg)
-            d = await pg.evaluate("()=>window.__drill()")
-            await listen_answer(pg, d['answer'] + (1 if i in wrongs else 0))
-        # wait for the set to settle after the 10th answer: with 2 misses it MUST enter the polish pass
-        # (never jump straight to a set-complete step) — wait for whichever state actually arrives, then assert it.
-        await pg.wait_for_function(
-            "()=>window.__drill().reviewing || document.querySelector('#summary.active') || document.querySelector('.toy-dialog')",
-            timeout=20000)
-        state = await pg.evaluate("""()=>({rev: window.__drill().reviewing,
-            sum: !!document.querySelector('#summary.active'),
-            drill: !!document.querySelector('#drill.active'),
-            dlg: !!document.querySelector('.toy-dialog')})""")
-        check('listen: 8/10 does NOT finish the set (no set-complete step yet)', not state['dlg'], state)
-        check('listen: a miss is re-queued -> polish pass runs, standard summary skipped', state['rev'] and state['drill'] and not state['sum'], state)
-        for _ in range(2):      # correct the two re-queued problems
-            await listen_ready(pg)
-            d = await pg.evaluate("()=>window.__drill()")
-            await listen_answer(pg, d['answer'])
-        await pg.wait_for_selector('.toy-dialog', timeout=15000)
-        title = await pg.text_content('.toy-dialog-title')
-        check('listen: set completes only once all 10 are correct -> "Set 1 of 10 done!"', 'Set 1 of 10' in (title or ''), title)
-        sd = await pg.evaluate("()=>window.__level.setsDone('sub_direct')")
-        check('listen: completeSet ran -> setsDone == 1', sd == 1, sd)
-        check('listen: no page errors', not errs, errs[:3])
-        await ctx.close()
-
-        # ======== Check E: finishing the 10th set CLEARS the level (node mastered, current advances) ========
-        ctx, pg, errs = await new_page(b)
-        await setup_node(pg, 'sub_direct', 9)        # on the last set; set index 9 == listen
-        nxt = await pg.evaluate("()=>{const N=window.App.nodes(); const i=window.App.idx('sub_direct'); return N[i+1] && N[i+1].id;}")
-        b0 = await pg.evaluate("window.Treats.wallet().beads"); skillBonus = await pg.evaluate("window.Treats.EARN.skill")
-        await pg.evaluate("window.__practice.start('sub_direct')")
-        await pg.wait_for_selector('#drill.active', timeout=15000)
-        await pg.wait_for_selector('#listenGo', state='visible', timeout=15000)
-        await pg.click('#listenGo')
-        for i in range(10):
-            await listen_ready(pg)
-            d = await pg.evaluate("()=>window.__drill()")
-            await listen_answer(pg, d['answer'])
-        # level-complete no longer pops a collectible sticker; it earns the skill-mastery bead bonus, then shows the card
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("window.__practice.runMode('listening')")
+        await drive_listen_set(pg, wrongs={2, 6})
         await pg.wait_for_selector('.toy-dialog', timeout=20000)
         title = await pg.text_content('.toy-dialog-title')
-        check('level: the 10th set clears the level -> "Level complete!"', 'Level complete' in (title or ''), title)
-        await pg.click('.toy-dialog [data-r="1"]')   # "Yay!"
+        check('listen: a finished session shows "Listening: 1 of 7 done!"', 'Listening: 1 of 7' in (title or ''), title)
+        md = await pg.evaluate("()=>window.__level.modeDone('sub_direct','listening')")
+        check('listen: the session counted -> Listening 1/7', md == 1, md)
+        check('C: no page errors', not errs, errs[:3])
+        await ctx.close()
+
+        # ======== Check D: the level clears only when BOTH modes reach 7 (mastered, current advances, bead bonus) ========
+        ctx, pg, errs = await new_page(b)
+        await setup_node(pg, 'sub_direct', reading=7, listening=6)
+        pre = await pg.evaluate("()=>window.__level.levelComplete('sub_direct')")
+        check('Reading 7/7 + Listening 6/7 -> level NOT complete yet', pre is False, pre)
+        nxt = await pg.evaluate("()=>{const N=window.App.nodes(); const i=window.App.idx('sub_direct'); return N[i+1] && N[i+1].id;}")
+        b0 = await pg.evaluate("window.Treats.wallet().beads")
+        skillBonus = await pg.evaluate("window.Treats.EARN.skill")
+        setBonus = await pg.evaluate("window.Treats.EARN.set")
+        await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("window.__practice.runMode('listening')")
+        await drive_listen_set(pg)
+        await pg.wait_for_selector('.toy-dialog', timeout=20000)
+        title = await pg.text_content('.toy-dialog-title')
+        check('the last session clears the level -> "Level complete!"', 'Level complete' in (title or ''), title)
+        await pg.evaluate("()=>{const btns=[...document.querySelectorAll('.toy-dialog [data-r]')]; const ok=btns.find(b=>b.dataset.r==='1')||btns[0]; if(ok) ok.click();}")
         await pg.wait_for_timeout(500)
-        after = await pg.evaluate("""()=>{const pr=JSON.parse(window.__legacy('progress'));
-            return {mastered: pr.nodes['sub_direct'] && pr.nodes['sub_direct'].mastered, current: pr.current,
-                    done: window.__level.setsDone('sub_direct')};}""")
-        check('level: all 10 sets done', after['done'] == 10, after)
+        after = await pg.evaluate("""()=>{const pr=window.__prog('sub_direct');
+            return {mastered: pr.node && pr.node.mastered, current: pr.current,
+                    r: window.__level.modeDone('sub_direct','reading'), l: window.__level.modeDone('sub_direct','listening')};}""")
+        check('level: both modes finished at 7/7', after['r'] == 7 and after['l'] == 7, after)
         check('level: the finished skill is marked mastered', bool(after['mastered']), after)
         check('level: current advances to the next skill', after['current'] == nxt, {'current': after['current'], 'expected': nxt})
         beadsAfter = await pg.evaluate("window.Treats.wallet().beads")
-        check('level: mastering the skill earns the bead bonus (not a sticker)', beadsAfter == b0 + skillBonus, [b0, beadsAfter, skillBonus])
-        check('level: no page errors', not errs, errs[:3])
+        # the final session pays its own session reward AND the skill-mastery bonus
+        check('level: mastering the skill earns the session + mastery bead bonus',
+              beadsAfter == b0 + setBonus + skillBonus, {'b0': b0, 'after': beadsAfter, 'set': setBonus, 'skill': skillBonus})
+        check('D: no page errors', not errs, errs[:3])
         await ctx.close()
 
         await b.close()

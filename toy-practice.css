@@ -537,3 +537,25 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 /* Juni's moon at the end-of-set summary (her figure beside her words); Bixi (#bixSum) sits below as the sidekick. */
 #summary .tp-summoon{line-height:0;align-self:flex-start;margin-left:6px}
 #summary .tp-summoon .toy-moon{display:inline-block}
+
+/* ---- Reading / Listening practice picker (v4.42) ---- */
+/* only lay out as a flex column when this screen is the active one — never override the base .screen{display:none} */
+#practicePick.pp.active{ display:flex; flex-direction:column; }
+.pp .pp-jbub{ margin:10px auto 0; max-width:30rem; text-align:center; }
+.pp-cards{ flex:1; display:flex; gap:clamp(16px,4vw,44px); align-items:center; justify-content:center; padding:clamp(16px,4vw,48px); flex-wrap:wrap; }
+.pp-card{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
+  width:min(42%,320px); min-width:200px; aspect-ratio:3/4; max-height:58vh;
+  border:none; border-radius:30px; cursor:pointer; padding:24px; color:#3A2A14;
+  background:#FFF7E6; box-shadow:0 10px 0 rgba(0,0,0,.12), 0 16px 26px rgba(0,0,0,.18);
+  transition:transform .12s ease, box-shadow .12s ease; }
+.pp-card:active{ transform:translateY(5px); box-shadow:0 5px 0 rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.18); }
+.pp-card--reading{ background:#E8F0FF; }
+.pp-card--listening{ background:#FFF0D6; }
+.pp-card.is-done{ filter:saturate(.9); }
+.pp-lab{ font-size:clamp(24px,4.4vw,42px); font-weight:800; }
+.pp-prog{ font-size:clamp(16px,2.6vw,24px); font-weight:700; opacity:.78; }
+.pp-pips{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:92%; }
+.pp-pip{ width:14px; height:14px; border-radius:50%; background:rgba(0,0,0,.14); }
+.pp-pip.on{ background:#F2B632; }
+.pp-card.is-done .pp-pip{ background:#5AB85A; }
+.td-skip{ font-weight:700; }

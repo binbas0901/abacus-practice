@@ -7,8 +7,10 @@ def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+
 SEED_P='{"current":"add_direct","nodes":{"beads":{"lesson":true,"mastered":"parent","hist":[]},"add_direct":{"lesson":true,"mastered":null,"hist":[],"setsDone":0}}}'
 SEED_S='{"name":"Mia","settingsVersion":6,"voice":"ljspeech","sfx":false,"speakFeedback":false}'
 async def ans_pad(pg, sel, v):
-    for ch in str(v): await pg.click(f'{sel} [data-k="{ch}"]')
-    await pg.click(f'{sel} [data-k="go"]')
+    # click via JS so an off-screen pad doesn't fail Playwright's visibility/scroll checks
+    for ch in str(v):
+        await pg.evaluate("a=>{const [sel,c]=a; const b=[...document.querySelectorAll(sel+' [data-k]')].find(x=>x.dataset.k===c); if(b) b.click();}", [sel, ch])
+    await pg.evaluate("sel=>{const g=[...document.querySelectorAll(sel+' [data-k]')].find(x=>x.dataset.k==='go'); if(g) g.click();}", sel)
 async def listen_ready(pg):
     await pg.wait_for_function("()=>{const m=document.querySelector('#listenMsg');return m&&/answer/i.test(m.textContent)&&!window.App.quietNow();}", timeout=25000)
 async def main():
@@ -23,8 +25,8 @@ async def main():
 
         # practice-first home: Bix on the table, one big Practice hero + the level trophy (10 beads), two earned-break doors
         doors = await pg.eval_on_selector_all('.th-doors > button .toy-block-label','els=>els.map(e=>e.textContent.trim())')
-        check('home: Bix, Practice hero + trophy, Play/My room doors',
-              await pg.locator('#bixHome .bix').count()==1 and await pg.locator('#doorPractice').count()==1 and await pg.locator('#homeTrophy .th-pip').count()==10 and doors==['Play','My room'], doors)
+        check('home: Bix, Practice hero + trophy (14 beads), Play/My room doors',
+              await pg.locator('#bixHome .bix').count()==1 and await pg.locator('#doorPractice').count()==1 and await pg.locator('#homeTrophy .th-pip').count()==14 and doors==['Play','My room'], doors)
 
         # My Room: the garden is the ONE progress visual (grows with mastered skills); the sticker album is gone
         await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active')
@@ -37,8 +39,13 @@ async def main():
         # beads start at 0; a finished practice SET earns one bead toward a treat (real practice earns)
         b0 = await pg.evaluate("window.Treats.wallet().beads")
         check('beads start at 0', b0==0, b0)
-        await pg.evaluate("window.__practice.start('add_direct')"); await pg.wait_for_timeout(700)
-        await pg.wait_for_selector('#listenGo', timeout=10000); await pg.click('#listenGo')
+        # v4.42: start opens the Reading/Listening picker; pick Listening to run the listen drill set
+        await pg.evaluate("window.__practice.start('add_direct')")
+        await pg.wait_for_function("()=>!!document.querySelector('#practicePick.active')", timeout=15000)
+        await pg.evaluate("window.__practice.runMode('listening')")
+        await pg.wait_for_function("()=>!!document.querySelector('#drill.active')", timeout=15000)
+        await pg.wait_for_selector('#listenGo', timeout=10000)
+        await pg.evaluate("()=>{const g=document.querySelector('#listenGo'); if(g) g.click();}")
         for i in range(10):
             await listen_ready(pg); d=await pg.evaluate("()=>window.__drill()"); await ans_pad(pg,'#pad',d['answer']); await pg.wait_for_timeout(300)
         await pg.wait_for_selector('.toy-dialog', timeout=15000); await pg.wait_for_timeout(300)

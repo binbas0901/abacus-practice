@@ -59,62 +59,84 @@ function saveProgress(){ save('progress', progress); }
 // A level (one skill) is 10 sets of 10 problems = 100. The 10 sets cycle through three REQUIRED types,
 // ear/eye/hand: Listen, Read, Build. All 10 must be finished to clear the level. A set finishes only when
 // all 10 are answered correctly (a miss comes back to be corrected). node(id).setsDone = 0..10.
-const LEVEL_SETS = 10, SET_LEN = 10, SET_TYPES = ['listen', 'read', 'build'];
-function setType(i){ return SET_TYPES[((i % SET_TYPES.length) + SET_TYPES.length) % SET_TYPES.length]; }   // set 0 listen, 1 read, 2 build, 3 listen…
-function setsDone(id){ return node(id).setsDone || 0; }
-function currentSetIndex(id){ return Math.min(setsDone(id), LEVEL_SETS - 1); }   // the set the child is on next
-function currentSetType(id){ return setType(currentSetIndex(id)); }
-function levelComplete(id){ return setsDone(id) >= LEVEL_SETS; }
-function completeSet(id){ const st = node(id); st.setsDone = Math.min(LEVEL_SETS, (st.setsDone || 0) + 1); saveProgress(); return st.setsDone; }
-function levelSetPlan(){ return Array.from({length: LEVEL_SETS}, (_, i) => setType(i)); }   // e.g. [listen,read,build,listen,…]
-window.__level = { LEVEL_SETS, SET_LEN, setType, setsDone, currentSetIndex, currentSetType, levelComplete, completeSet, levelSetPlan };
+const MODE_SESSIONS = 7, SET_LEN = 10, PRACTICE_MODES = ['reading', 'listening'];
+function _modes(id){ const nd = node(id); nd.modes = nd.modes || {}; return nd.modes; }
+function modeDone(id, mode){ return Math.min(MODE_SESSIONS, _modes(id)[mode] || 0); }
+function modeComplete(id, mode){ return modeDone(id, mode) >= MODE_SESSIONS; }
+function bumpMode(id, mode){ const m = _modes(id); m[mode] = Math.min(MODE_SESSIONS, (m[mode] || 0) + 1); saveProgress(); return m[mode]; }
+function isFlashNode(id){ const n = NODES[NODE_IDX[id]]; return !!(n && n.kind === 'flash'); }
+// A level is finished when BOTH modes reach 7 sessions (flash nodes: a single 7-session flash track).
+function levelComplete(id){ return isFlashNode(id) ? modeComplete(id, 'flash') : (modeComplete(id, 'reading') && modeComplete(id, 'listening')); }
+function levelDoneCount(id){ return isFlashNode(id) ? modeDone(id, 'flash') : (modeDone(id, 'reading') + modeDone(id, 'listening')); }
+function levelTotalCount(id){ return isFlashNode(id) ? MODE_SESSIONS : MODE_SESSIONS * PRACTICE_MODES.length; }
+window.__level = { MODE_SESSIONS, SET_LEN, PRACTICE_MODES, modeDone, modeComplete, bumpMode, isFlashNode, levelComplete, levelDoneCount, levelTotalCount,
+  // back-compat shims for untouched callers (e.g. the home moon): "sets" now means this level's sessions (0..14).
+  get LEVEL_SETS(){ return MODE_SESSIONS * PRACTICE_MODES.length; }, setsDone: id => levelDoneCount(id),
+  // Seeding/compat helper: advance one session, filling Reading and Listening evenly (both reach 7 at 14).
+  completeSet: id => { if (isFlashNode(id)) return bumpMode(id, 'flash'), levelDoneCount(id);
+    const r = modeDone(id, 'reading'), l = modeDone(id, 'listening');
+    const useR = r < MODE_SESSIONS && (r <= l || modeComplete(id, 'listening'));
+    bumpMode(id, useR ? 'reading' : 'listening'); return levelDoneCount(id); } };
 
 // ---- Practice orchestrator (redesign): run a level as 10 sets of 10, cycling listen/read/build, all-correct to finish a set ----
 // Reuses the existing mechanics: listen -> the drill (with its fix pass looping misses until correct); read -> Bead
 // Detective (reader, with a miss re-queued); build -> Bead Builder (inherently all-correct). A guard (Practice.on) keeps
 // every existing drill/game flow unchanged when a practice level is NOT running.
 const Practice = {
-  on: false, node: null, type: null, _savedCount: null,
+  on: false, node: null, mode: null, type: null, _savedCount: null,
   nodeObj(id){ return NODES[NODE_IDX[id]]; },
-  start(nodeId){ this.node = nodeId || NODES[curIdx()].id; this.on = true; Speaker.unlock(); this.runSet(); },
+  start(nodeId){ this.node = nodeId || NODES[curIdx()].id; this.on = true; Speaker.unlock(); this.enter(); },
   stop(){ this.on = false; if (this._savedCount != null){ settings.count = this._savedCount; this._savedCount = null; } },
-  runSet(){
+  // Entry: a not-yet-learned level gets its one-time welcome lesson (with a Skip) first; then the mode picker.
+  enter(){
     if (!this.on) return;
-    const id = this.node;
+    const id = this.node, n = this.nodeObj(id);
     if (levelComplete(id)) return this.levelDone();
-    const n = this.nodeObj(id);
-    // Teach first: a not-yet-learned skill gets its lesson before the first set. leaveLesson (lessonFrom==='practice')
-    // continues into runSet once the lesson is finished (node.lesson is then set, so this gate won't re-fire).
-    if (n && n.kind !== 'flash' && hasLesson(n) && !node(id).lesson){ this.type = 'lesson'; return startLesson(n, 'practice'); }
-    // Mental math (anzan): practised in the head with the Flash drill — never a visible-abacus set. startFlash shows
-    // the one-time intro card (the flash lesson) then the flash drill; its finish() hands back to setDone like any drill.
-    if (n && n.kind === 'flash'){
-      this._savedCount = settings.count; settings.count = SET_LEN; this.type = 'flash';
-      return startFlash(n);
-    }
-    const type = currentSetType(id); this.type = type;
-    if (type === 'listen' && n && n.drill){
-      this._savedCount = settings.count; settings.count = SET_LEN;
-      startDrill('listen', n);                                   // the drill's finish() hands back to Practice.setDone (see finish)
-    } else {
-      Games.runSet(type === 'listen' ? 'build' : type, SET_LEN, () => this.setDone());   // read/build (and listen on a no-sums level) run through the game set-runner
-    }
+    if (n && hasLesson(n) && !node(id).lesson){ this.type = 'lesson'; return startLesson(n, 'practice'); }   // first time at this level
+    this.pick();
   },
-  setDone(){
+  // The simple Reading / Listening picker. (Mental-math "flash" nodes skip it and run the flash track.)
+  pick(){
+    if (!this.on) return;
+    if (levelComplete(this.node)) return this.levelDone();
+    if (isFlashNode(this.node)) return this.runMode('flash');
+    renderPracticePick(this.node); show('practicePick');
+  },
+  runMode(mode){
+    if (!this.on) return;
+    if (levelComplete(this.node)) return this.levelDone();
+    if (mode !== 'flash' && modeComplete(this.node, mode)) return this.pick();
+    this.mode = mode; const n = this.nodeObj(this.node);
+    this._savedCount = settings.count; settings.count = SET_LEN;
+    if (mode === 'flash'){ this.type = 'flash'; return startFlash(n); }
+    if (mode === 'listening'){
+      this.type = 'listening';
+      if (n && n.drill) return startDrill('listen', n);                 // listen drill -> finish() -> Practice.setDone()
+      return Games.runSet('build', SET_LEN, () => this.sessionDone());  // no-sums level: build the heard number
+    }
+    this.type = 'reading';
+    Games.runSet('read', SET_LEN, () => this.sessionDone());            // Bead Detective: read the beads (misses fixed after the set)
+  },
+  setDone(){ this.sessionDone(); },                                     // the listen drill's finish() calls this
+  sessionDone(){
     if (!this.on) return;
     if (this._savedCount != null){ settings.count = this._savedCount; this._savedCount = null; }
-    this.celebrate(completeSet(this.node));
+    const mode = this.mode || 'reading';
+    this.celebrate(mode, bumpMode(this.node, mode));
   },
-  async celebrate(doneN){
+  async celebrate(mode, n){
     stopVoices();
-    if (levelComplete(this.node)) return this.levelDone();
-    const left = LEVEL_SETS - doneN;
-    Fun.confetti(70); Sfx.star();                                 // a small burst + Juni's spoken praise for finishing a set
-    juniNarrate('j_end_good');
     try { Treats.earn(Treats.EARN.set, 'for a good practice set'); } catch (e) {}   // real practice earns a bead toward a treat
-    const go = await TOY.confirm(`Set ${doneN} of ${LEVEL_SETS} done!`, `Great practicing! ${left} more set${left === 1 ? '' : 's'} to finish this level.`, { ok: 'Next set', cancel: 'Done for now' });
+    if (levelComplete(this.node)) return this.levelDone();
+    Fun.confetti(70); Sfx.star(); juniNarrate('j_end_good');
+    const label = mode === 'reading' ? 'Reading' : mode === 'listening' ? 'Listening' : 'Mental math';
+    const left = MODE_SESSIONS - n;
+    const body = left ? `${left} more ${label} session${left === 1 ? '' : 's'} to go.` : `${label} finished!`;
+    const go = await TOY.confirm(`${label}: ${n} of ${MODE_SESSIONS} done!`, body, { ok: 'Keep going', cancel: 'Done for now' });
     if (!this.on) return;
-    if (go) this.runSet(); else { this.stop(); renderHome(); show('home'); }
+    if (!go){ this.stop(); renderHome(); show('home'); return; }
+    if (mode !== 'flash' && modeComplete(this.node, mode)) this.pick();   // this mode finished -> back to the picker for the other
+    else this.runMode(mode);
   },
   async levelDone(){
     const id = this.node, st = node(id);
@@ -125,7 +147,7 @@ const Practice = {
     try { Treats.earn(Treats.EARN.skill, 'you mastered a new skill!'); } catch (e) {}   // mastering a skill earns more beads
     await sleep(1200);                                            // let Juni's unlock line land before the card
     Fun.confetti(120); Sfx.star();
-    await TOY.confirm('Level complete!', `You finished all ${LEVEL_SETS} sets — you unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
+    await TOY.confirm('Level complete!', `You finished Reading and Listening — you unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
     renderHome(); show('home');
   }
 };
@@ -759,6 +781,10 @@ function renderHome(opts){
   }
   Fun.save();
   renderTrophy(done, total, allDone);
+  // Per-mode label so the home reflects the Reading/Listening structure, not just a raw session count.
+  { const lab = $('#homeTrophy .th-trophy-lab');
+    if (lab && !window.__level.isFlashNode(cur.id))
+      lab.textContent = allDone ? 'Level done!' : `Read ${window.__level.modeDone(cur.id,'reading')}/${window.__level.MODE_SESSIONS} · Listen ${window.__level.modeDone(cur.id,'listening')}/${window.__level.MODE_SESSIONS}`; }
   Treats.renderJar();
 }
 // The level trophy sits above the big Practice button: ten little beads fill as sets are cleared, the cup lights
@@ -1099,6 +1125,27 @@ $$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
 }));
 $('#exitDoor').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#doorAll').addEventListener('click', ()=>openGate('skills'));
+
+// ---- Reading / Listening practice picker (redesign v4.42) ----
+function renderPracticePick(id){
+  const cur = NODES[NODE_IDX[id]], T = window.__level.MODE_SESSIONS;
+  const tt = $('#ppTitle'); if (tt) tt.textContent = cur ? cur.title : 'Practice';
+  const card = (mode, lab, done) => {
+    const full = done >= T;
+    return `<button class="pp-card pp-card--${mode}${full?' is-done':''}" data-mode="${mode}" aria-label="${lab}: ${done} of ${T} sessions done">`
+      + `<span class="pp-lab">${lab}</span>`
+      + `<span class="pp-prog">${full?'Done!':done+' / '+T}</span>`
+      + `<span class="pp-pips">${Array.from({length:T},(_,i)=>`<i class="pp-pip${i<done?' on':''}"></i>`).join('')}</span></button>`;
+  };
+  $('#ppCards').innerHTML = card('reading','Reading', modeDone(id,'reading')) + card('listening','Listening', modeDone(id,'listening'));
+  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = 'Pick how you want to practise — Reading or Listening.'; jb.classList.add('on'); }
+  toySky('#ppSky');
+}
+$('#exitPick').innerHTML = TOY.icon('back', 32, 'currentColor');
+$('#exitPick').addEventListener('click', ()=>{ stopVoices(); Practice.stop(); renderHome(); show('home'); });
+$('#ppCards').addEventListener('click', (e)=>{ const b=e.target.closest('.pp-card'); if (!b) return; Sfx.tap(); Practice.runMode(b.dataset.mode); });
+// Skip the one-time welcome lesson and jump straight into practice.
+if ($('#lessonSkip')) $('#lessonSkip').addEventListener('click', ()=>{ if (!L) return; node(L.node.id).lesson=true; saveProgress(); animToken++; stopVoices(); leaveLesson(); });
 
 /* ---- lesson: Bix shows each trick on a wooden soroban, then she tries it ---- */
 // Number friends in lessons: the lesson's friend pairs as small lacquer chips in Bix's bubble, and the pair a step is about
@@ -1448,7 +1495,7 @@ function onLessonBeads(v){
   }
 }
 function leaveLesson(){ animToken++;
-  if (lessonFrom==='practice'){ lessonFrom='home'; const learned = !!(Practice.node && node(Practice.node).lesson); if (learned && Practice.on) return Practice.runSet(); Practice.stop(); renderHome(); show('home'); return; }   // learned -> into the level's sets; exited early or mostly-skipped -> home (no re-loop)
+  if (lessonFrom==='practice'){ lessonFrom='home'; const learned = !!(Practice.node && node(Practice.node).lesson); if (learned && Practice.on) return Practice.pick(); Practice.stop(); renderHome(); show('home'); return; }   // learned -> the Reading/Listening picker; exited early or mostly-skipped -> home (no re-loop)
   if (lessonFrom==='door'){ renderDoor.skipGreet=true; show('door'); } else if (lessonFrom==='parent'){ renderParent(); show('parent'); } else { renderHome(); show('home'); } }
 // Whether there is a previous step to go back to (false only on the very first step of the lesson).
 function lessonCanBack(){
@@ -2721,11 +2768,13 @@ window.__lessonSet = v=>{ if (lessonAb) lessonAb.poke(v); };
 // Test hook: finish the current lesson as a true (learned) completion and run the real end path (advanceLesson -> leaveLesson).
 window.__lessonFinish = ()=>{ if (!L) return null; node(L.node.id).lesson=true; saveProgress(); L.phase='done'; advanceLesson(); return true; };
 window.__prog = (id)=>({ current: progress.current, node: id ? (progress.nodes[id]||null) : undefined });   // test hook: current skill + a node's saved flags
+window.__markLearned = (id)=>{ node(id).lesson=true; saveProgress(); };   // test hook: mark a skill's welcome-lesson as already seen
+window.__unlearn = (id)=>{ node(id).lesson=false; saveProgress(); };        // test hook: reset a skill to first-time (welcome-lesson not yet seen)
 window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.41';
+const APP_VERSION='4.42';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

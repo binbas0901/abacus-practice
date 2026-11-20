@@ -1,7 +1,9 @@
 import asyncio, os
 from playwright.async_api import async_playwright
 # G3: leaving a practice set mid-way must end the Practice flow cleanly -> land on HOME (never the Play hub) and clear
-# Practice.on (a stuck Practice.on would misroute the next normal drill's finish() into the level flow). DRIVES THE REAL APP.
+# Practice.on (a stuck Practice.on would misroute the next normal drill's finish() into the level flow).
+# v4.42: the modes are Reading (reader game -> #exitGame) and Listening (listen drill -> #exitDrill); the picker
+# itself (#practicePick -> #exitPick) must also exit cleanly. DRIVES THE REAL APP.
 fails = []
 def check(label, ok, extra=''):
     print(('PASS ' if ok else 'FAIL ') + label + (('  ' + str(extra)) if (not ok and extra != '') else ''))
@@ -29,10 +31,11 @@ async def new_page(b):
     await pg.wait_for_timeout(600)
     return ctx, pg, errs
 
-async def setup_node(pg, node, done):
-    await pg.evaluate("""a=>{ const [node,done]=a;
+# make node current + learned (past the first-time lesson) so Practice lands on the picker
+async def setup_node(pg, node):
+    await pg.evaluate("""a=>{ const node=a;
         window.App.applySetup({name:'Mia', current:node, how:'parent'});
-        for (let i=0;i<done;i++) window.__level.completeSet(node); }""", [node, done])
+        window.__markLearned(node); }""", node)
     await pg.wait_for_timeout(200)
 
 async def main():
@@ -40,42 +43,63 @@ async def main():
         b = await p.chromium.launch(headless=True, executable_path='/usr/bin/google-chrome',
             args=['--no-sandbox', '--autoplay-policy=no-user-gesture-required'])
 
-        # ---- exit a BUILD set (game-based) mid-way via #exitGame ----
+        # ---- exit a READING set (reader game) mid-way via #exitGame ----
         ctx, pg, errs = await new_page(b)
-        await setup_node(pg, 'sub_direct', 2)          # set index 2 == build
+        await setup_node(pg, 'sub_direct')
         await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("window.__practice.runMode('reading')")
         await pg.wait_for_selector('#game.active', timeout=15000)
         on_before = await pg.evaluate("()=>window.__practice.on")
-        check('build-set: Practice is running after start', on_before is True, on_before)
-        await pg.click('#exitGame'); await pg.wait_for_timeout(500)
+        check('reading-set: Practice is running after entering the mode', on_before is True, on_before)
+        await pg.evaluate("()=>{const b=document.querySelector('#exitGame'); if(b) b.click();}"); await pg.wait_for_timeout(500)
         state = await pg.evaluate("""()=>({on: window.__practice.on,
             home: !!document.querySelector('#home.active'),
             play: !!document.querySelector('#play.active'),
             game: !!document.querySelector('#game.active')})""")
-        check('build-set exit: Practice.on cleared (no stuck flow)', state['on'] is False, state)
-        check('build-set exit: lands on HOME, not the Play hub', state['home'] and not state['play'] and not state['game'], state)
-        sd = await pg.evaluate("()=>window.__level.setsDone('sub_direct')")
-        check('build-set exit: an abandoned set does NOT count (setsDone stays 2)', sd == 2, sd)
-        # the real point of the fix: the NEXT normal drill must not be hijacked by a stuck Practice flow
+        check('reading-set exit: Practice.on cleared (no stuck flow)', state['on'] is False, state)
+        check('reading-set exit: lands on HOME, not the Play hub', state['home'] and not state['play'] and not state['game'], state)
+        sd = await pg.evaluate("()=>window.__level.modeDone('sub_direct','reading')")
+        check('reading-set exit: an abandoned set does NOT count (Reading stays 0)', sd == 0, sd)
         regressed = await pg.evaluate("()=>window.__practice.on")
-        check('build-set exit: no stuck Practice.on to hijack the next drill', regressed is False, regressed)
-        check('build-set exit: no page errors', not errs, errs[:3])
+        check('reading-set exit: no stuck Practice.on to hijack the next drill', regressed is False, regressed)
+        check('reading-set exit: no page errors', not errs, errs[:3])
         await ctx.close()
 
-        # ---- exit a LISTEN set (drill-based) mid-way via #exitDrill ----
+        # ---- exit a LISTENING set (listen drill) mid-way via #exitDrill ----
         ctx, pg, errs = await new_page(b)
-        await setup_node(pg, 'sub_direct', 0)          # set index 0 == listen
+        await setup_node(pg, 'sub_direct')
         await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("window.__practice.runMode('listening')")
         await pg.wait_for_selector('#drill.active', timeout=15000)
-        check('listen-set: Practice running after start', (await pg.evaluate("()=>window.__practice.on")) is True)
-        await pg.click('#exitDrill'); await pg.wait_for_timeout(500)
+        check('listening-set: Practice running after entering the mode', (await pg.evaluate("()=>window.__practice.on")) is True)
+        await pg.evaluate("()=>{const b=document.querySelector('#exitDrill'); if(b) b.click();}"); await pg.wait_for_timeout(500)
         state = await pg.evaluate("""()=>({on: window.__practice.on,
             home: !!document.querySelector('#home.active'),
             play: !!document.querySelector('#play.active'),
             drill: !!document.querySelector('#drill.active')})""")
-        check('listen-set exit: Practice.on cleared', state['on'] is False, state)
-        check('listen-set exit: lands on HOME', state['home'] and not state['play'] and not state['drill'], state)
-        check('listen-set exit: no page errors', not errs, errs[:3])
+        check('listening-set exit: Practice.on cleared', state['on'] is False, state)
+        check('listening-set exit: lands on HOME', state['home'] and not state['play'] and not state['drill'], state)
+        ld = await pg.evaluate("()=>window.__level.modeDone('sub_direct','listening')")
+        check('listening-set exit: an abandoned set does NOT count (Listening stays 0)', ld == 0, ld)
+        check('listening-set exit: no page errors', not errs, errs[:3])
+        await ctx.close()
+
+        # ---- exit from the PICKER itself via #exitPick (new screen) ----
+        ctx, pg, errs = await new_page(b)
+        await setup_node(pg, 'sub_direct')
+        await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        check('picker: Practice running while the picker is up', (await pg.evaluate("()=>window.__practice.on")) is True)
+        await pg.evaluate("()=>{const b=document.querySelector('#exitPick'); if(b) b.click();}"); await pg.wait_for_timeout(500)
+        state = await pg.evaluate("""()=>({on: window.__practice.on,
+            home: !!document.querySelector('#home.active'),
+            play: !!document.querySelector('#play.active'),
+            pick: !!document.querySelector('#practicePick.active')})""")
+        check('picker exit: Practice.on cleared', state['on'] is False, state)
+        check('picker exit: lands on HOME, not the Play hub', state['home'] and not state['play'] and not state['pick'], state)
+        check('picker exit: no page errors', not errs, errs[:3])
         await ctx.close()
 
         await b.close()
