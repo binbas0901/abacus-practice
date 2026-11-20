@@ -7,15 +7,17 @@
   const F = () => root.Fun;
 
   const DEFAULT_TREATS = [
-    { id: 't1', emoji: '🍪', name: 'Small snack', price: 3 },
-    { id: 't2', emoji: '📖', name: 'Extra bedtime story', price: 5 },
-    { id: 't3', emoji: '🎲', name: 'Game with a grown-up', price: 8 },
-    { id: 't4', emoji: '🍽️', name: 'Choose dinner', price: 12 },
-    { id: 't5', emoji: '🛝', name: 'Park trip', price: 20 },
-    { id: 't6', emoji: '🍦', name: 'Ice cream outing', price: 30 },
+    { id: 't1', emoji: '🍬', name: 'Piece of candy', price: 3 },
+    { id: 't2', emoji: '🧀', name: 'Mac & cheese', price: 5 },
+    { id: 't3', emoji: '✏️', name: 'New stencil', price: 12 },
+    { id: 't4', emoji: '🍦', name: 'Ice cream', price: 15 },
+    { id: 't5', emoji: '🍗', name: 'Chick-fil-A', price: 18 },
+    { id: 't6', emoji: '🍽️', name: 'Texas Roadhouse', price: 35 },
+    { id: 't7', emoji: '📚', name: 'New books', price: 40 },
   ];
-  // How beads are earned (shown to grown-ups too)
-  const EARN = { activity: 1, gold: 1, today: 3, skill: 5 };
+  // How beads are earned (shown to grown-ups too). Beads come ONLY from real practice:
+  // finishing a practice set (+set) and mastering a new skill (+skill). Games and just showing up earn nothing.
+  const EARN = { set: 1, skill: 5, activity: 0, gold: 0, today: 0 };
 
   function list() { const s = App().settings; if (!Array.isArray(s.treats) || !s.treats.length) s.treats = DEFAULT_TREATS.map(t => Object.assign({}, t)); return s.treats; }
   function wallet() { const d = F().data; if (!d.wallet) d.wallet = { beads: 0, total: 0, goal: null, tickets: [] }; return d.wallet; }

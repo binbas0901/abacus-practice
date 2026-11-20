@@ -71,11 +71,17 @@
       return;
     }
     state = { name: '', keepName: false, introDone: false };
-    $('#suNameIn').value = ''; step('suName');
-    // Show Juni's first words straight away (silent until the first tap: iPad only allows sound after a touch).
-    juniSay('j_intro_hello');
-    const begin = () => { if (my !== token || state.introDone) return; state.introDone = true; intro(my); };
-    setup().addEventListener('click', () => { App().unlock(); setTimeout(begin, 60); }, { once: true });
+    $('#suNameIn').value = '';
+    // First-run setup (name, "do you have an abacus?", skill pick / level check) is a grown-up task: gate it behind
+    // the grown-up challenge first. The child-facing intro + quick win follow once a grown-up passes the gate.
+    App().openGate(() => {
+      if (my !== token) return;
+      App().unlock();
+      step('suName');
+      juniSay('j_intro_hello');
+      const begin = () => { if (my !== token || state.introDone) return; state.introDone = true; intro(my); };
+      setTimeout(begin, 80);
+    });
   }
   // Juni's spoken welcome, then she asks the name. Audio begins on the first tap (the clips play in order).
   async function intro(my) {
