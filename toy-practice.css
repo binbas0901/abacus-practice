@@ -565,6 +565,8 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 .pp-pip{ width:14px; height:14px; border-radius:50%; background:rgba(0,0,0,.14); }
 .pp-pip.on{ background:#F2B632; }
 .pp-card.is-done .pp-pip{ background:#5AB85A; }
+.pp-best{ font-size:clamp(14px,2.2vw,20px); font-weight:800; opacity:.72; letter-spacing:.2px; }
+.pp-best[hidden]{ display:none; }
 .td-skip{ font-weight:700; }
 
 /* ─────────────────────────────────────────────────────────────────────────
