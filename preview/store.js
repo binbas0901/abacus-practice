@@ -7,7 +7,7 @@
   const P = 'abacus.preview.';
   // Settings that belong to one child; every other setting is family-wide.
   const CHILD_KEYS = ['name', 'count', 'operands', 'voiceRate', 'termGap', 'flashSec', 'flashGap', 'flashOwn', 'flashN', 'treats', 'hasAbacus'];
-  const PER_CHILD = ['progress', 'history', 'days', 'fun', 'certificates'];   // certificates: [{nodeId,title,date,accuracy}] from level tests
+  const PER_CHILD = ['progress', 'history', 'days', 'fun', 'certificates', 'times'];   // certificates: [{nodeId,title,date,accuracy}] from level tests; times: per-set/mode best solving times
   const LEGACY = ['settings', 'progress', 'history', 'days', 'fun'];   // single-child keys from v3.x and earlier
 
   function raw(k) { try { const v = localStorage.getItem(P + k); return v == null ? undefined : JSON.parse(v); } catch (e) { return undefined; } }

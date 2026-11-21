@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const E = window.SorobanEngine, C = window.Curriculum;
+const E = window.SorobanEngine, C = window.Curriculum, TM = window.TimeModel;
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
@@ -80,6 +80,29 @@ window.__level = { MODE_SESSIONS, SET_LEN, PRACTICE_MODES, modeDone, modeComplet
     const useR = r < MODE_SESSIONS && (r <= l || modeComplete(id, 'listening'));
     bumpMode(id, useR ? 'reading' : 'listening'); return levelDoneCount(id); } };
 
+// ---- Set stopwatch (v4.46): a SILENT, background measure of the child's SOLVING time for one set ----
+// Owner's hard requirement: NO clock/timer/elapsed value is shown ANYWHERE while the child is practising. This object
+// never touches the DOM — it only accumulates ms. pause()/resume() stack (a depth counter), so the demo pause and the
+// tab-hidden pause compose cleanly, and the clock only runs when depth===0. The elapsed total is read once, at stop(),
+// on the set-complete screen. Pauses during show-me/demo playback and while the tab is hidden keep idle time (and the
+// gap between sittings) out of the score, so the number is "time spent solving", never wall-clock.
+const SetClock = {
+  running: false, depth: 0, acc: 0, since: 0,
+  start(){ this.running = true; this.depth = 0; this.acc = 0; this.since = Date.now(); },
+  pause(){ if (this.running && this.depth === 0) this.acc += Date.now() - this.since; this.depth++; },      // stackable
+  resume(){ if (this.depth > 0 && --this.depth === 0 && this.running) this.since = Date.now(); },
+  stop(){ if (!this.running) return 0; if (this.depth === 0) this.acc += Date.now() - this.since; const ms = this.acc; this.running = false; this.depth = 0; this.acc = 0; this.since = 0; return ms; },
+};
+// Save one finished set's solving time into the per-child `times` store and return the reveal result (pure model does the maths).
+function recordSetTime(nodeId, mode, elapsed){
+  const times = load('times', {});
+  const r = TM.updateSetTime(times, nodeId, mode, elapsed, MODE_SESSIONS);
+  save('times', times);
+  return r;
+}
+function bestSetMs(nodeId, mode){ return TM.bestSet(load('times', {}), nodeId, mode); }
+window.__times = { SetClock, recordSetTime, bestSetMs };   // for browser tests
+
 // ---- Practice orchestrator (v4.43): run a level as Reading(7)+Listening(7) sessions; both required; correction pass after each set ----
 // Reuses the existing mechanics: listen -> the drill (with its fix pass looping misses until correct); read -> Bead
 // Detective (reader, with a miss re-queued); build -> Bead Builder (inherently all-correct). A guard (Practice.on) keeps
@@ -114,27 +137,40 @@ const Practice = {
     if (mode === 'listening'){
       this.type = 'listening';
       if (n && n.drill) return startDrill('listen', n);                 // listen drill -> finish() -> Practice.setDone()
-      return Games.runSet('build', SET_LEN, () => this.sessionDone());  // no-sums level: build the heard number
+      SetClock.start(); return Games.runSet('build', SET_LEN, () => this.sessionDone());  // no-sums level: build the heard number
     }
     this.type = 'reading';
     if (n && n.drill) return startDrill('visual', n);                   // Reading: the whole sum is shown with +/- signs; child solves it and types the answer (misses fixed after the set)
-    return Games.runSet('read', SET_LEN, () => this.sessionDone());     // no-sums level fallback: read the beads
+    SetClock.start(); return Games.runSet('read', SET_LEN, () => this.sessionDone());     // no-sums level fallback: read the beads
   },
   setDone(){ this.sessionDone(); },                                     // the listen drill's finish() calls this
   sessionDone(){
     if (!this.on) return;
     if (this._savedCount != null){ settings.count = this._savedCount; this._savedCount = null; }
     const mode = this.mode || 'reading';
-    this.celebrate(mode, bumpMode(this.node, mode));
+    // Stop the silent stopwatch and fold this set's solving time into the store BEFORE the reveal. flash stays untimed.
+    const elapsed = SetClock.stop();
+    const t = (mode === 'reading' || mode === 'listening') ? recordSetTime(this.node, mode, elapsed) : null;
+    this.celebrate(mode, bumpMode(this.node, mode), t);
   },
-  async celebrate(mode, n){
+  async celebrate(mode, n, t){
     stopVoices();
     try { Treats.earn(Treats.EARN.set, 'for a good practice set'); } catch (e) {}   // real practice earns a bead toward a treat
     if (levelComplete(this.node)) return this.levelDone();
     Fun.confetti(70); Sfx.star(); juniNarrate('j_end_good');
     const label = mode === 'reading' ? 'Reading' : mode === 'listening' ? 'Listening' : 'Mental math';
     const left = MODE_SESSIONS - n;
-    const body = left ? `${left} more ${label} session${left === 1 ? '' : 's'} to go.` : `${label} finished!`;
+    // The reveal: the set's solving time (and a warm "New best!" only when a real record was beaten), then the
+    // "more to go" / "finished" line, then — when the 7th set lands — the whole-run total. Nothing was shown mid-set.
+    const lines = [];
+    if (t) lines.push(`Set done — ${TM.fmt(t.setMs)}${t.isBestSet ? '   ⭐ New best!' : ''}`);
+    if (t && t.modeComplete){
+      lines.push(`${label} finished!`);
+      lines.push(`You finished all ${MODE_SESSIONS}! Total solving time ${TM.fmt(t.total)}${t.isBestTotal ? '   ⭐ New best time!' : ''}`);
+    } else {
+      lines.push(left ? `${left} more ${label} session${left === 1 ? '' : 's'} to go.` : `${label} finished!`);
+    }
+    const body = lines.join('\n');
     const go = await TOY.confirm(`${label}: ${n} of ${MODE_SESSIONS} done!`, body, { ok: 'Keep going', cancel: 'Done for now' });
     if (!this.on) return;
     if (!go){ this.stop(); renderHome(); show('home'); return; }
@@ -1135,10 +1171,13 @@ function renderPracticePick(id){
   const tt = $('#ppTitle'); if (tt) tt.textContent = cur ? cur.title : 'Practice';
   const card = (mode, lab, done) => {
     const full = done >= T;
-    return `<button class="pp-card pp-card--${mode}${full?' is-done':''}" data-mode="${mode}" aria-label="${lab}: ${done} of ${T} sessions done">`
+    const best = bestSetMs(id, mode);   // a target to beat; absent until the first set is finished
+    const bestLab = best != null ? `Best: ${TM.fmt(best)}` : '';
+    return `<button class="pp-card pp-card--${mode}${full?' is-done':''}" data-mode="${mode}" aria-label="${lab}: ${done} of ${T} sessions done${best!=null?`, best set ${TM.fmt(best)}`:''}">`
       + `<span class="pp-lab">${lab}</span>`
       + `<span class="pp-prog">${full?'Done!':done+' / '+T}</span>`
-      + `<span class="pp-pips">${Array.from({length:T},(_,i)=>`<i class="pp-pip${i<done?' on':''}"></i>`).join('')}</span></button>`;
+      + `<span class="pp-pips">${Array.from({length:T},(_,i)=>`<i class="pp-pip${i<done?' on':''}"></i>`).join('')}</span>`
+      + `<span class="pp-best"${bestLab?'':' hidden'}>${bestLab}</span></button>`;
   };
   $('#ppCards').innerHTML = card('reading','Reading', modeDone(id,'reading')) + card('listening','Listening', modeDone(id,'listening'));
   const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = 'Pick how you want to practise — Reading or Listening.'; jb.classList.add('on'); }
@@ -1824,6 +1863,9 @@ function beginSet(){
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred();
   if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening')) Tool.kind = 'keys';   // Reading & Listening answer on the number pad (owner's design); the abacus is still one tap away via the switch
+  // Start the silent set stopwatch as the first problem of a timed practice set is shown. It runs in the background
+  // through the whole set (including the after-set polish pass) and stops at sessionDone(). Nothing of it shows on screen.
+  if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening')) SetClock.start();
   Tool.apply();
   setStages(); toySky('#drillSky'); show('drill');
   PB.show('');   // Bixi mounts as the quiet, reacting sidekick (figure only; his bubble stays empty — Juni leads)
@@ -2282,7 +2324,8 @@ async function playSolution(ab, p, isLive, onText, onTerm){
   if (isLive()) onText(`The answer is <b>${p.answer}</b>.`);
 }
 async function showMe(p){
-  if (Tool.kind==='beads' && Tool.ab && $('#drill').classList.contains('active')) return showMeHere(p);
+  if (Tool.kind==='beads' && Tool.ab && $('#drill').classList.contains('active')) return showMeHere(p);   // delegate; it pauses the set clock itself
+  SetClock.pause();   // a worked demo is not solving time — hold the silent stopwatch while it plays
   $('#showme').classList.add('active');
   const rods=Tool.rodsForSet();
   if (!showAb || showAb.rods()!==rods){ if (showAb) showAb.destroy(); showAb=AbacusInput.create($('#showmeAbacus'), {rods, showReadout:false, scale:1.75, readOnly:true}); }
@@ -2294,16 +2337,18 @@ async function showMe(p){
   $('#showmeReplay').onclick=run;
   juniSayOn(null, $('#showmeBix'), 'j_showme', 'Watch the beads move.', 0);   // Juni: reuse j_showme
   await new Promise(res=>{ $('#showmeClose').onclick=()=>{ showToken++; $('#showme').classList.remove('active'); res(); }; run(); });
+  SetClock.resume();
 }
 // With the on-screen beads in use, Bix demonstrates right on her abacus, then hands it back cleared.
 async function showMeHere(p){
-  const my=++demoToken; demoing=true; $('#answerTool').classList.add('demo');
+  const my=++demoToken; demoing=true; SetClock.pause(); $('#answerTool').classList.add('demo');   // hold the silent set clock during the demo
   const live=()=>my===demoToken && $('#drill').classList.contains('active');
   const tiles=()=>[...$('#problemArea').querySelectorAll('.term')];
   JB.say('Watch the beads move.', 'j_showme', 0);   // Juni narrates the demo; reuse j_showme
   await sleep(700);
   await playSolution(Tool.ab, p, live, h=>{ if(live()){ const t=document.createElement('div'); t.innerHTML=h; JB.say(t.textContent, null, 0); } }, k=>tiles().forEach((t,i)=>{ t.classList.toggle('now', i===k); t.classList.toggle('done', i<k); }));
   if (live()) await sleep(1400);
+  SetClock.resume();   // pairs this call's pause; resume whatever token state, so the clock never stays stuck
   if (my===demoToken){ demoing=false; $('#answerTool').classList.remove('demo'); }
 }
 
@@ -2791,7 +2836,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.45';
+const APP_VERSION='4.46';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
@@ -2805,7 +2850,11 @@ ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then
 ['pointerdown','pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev, ()=>{ if (!Speaker.ctx || Speaker.ctx.state!=='running' || (!Speaker.ttsReady && (Speaker.tries=(Speaker.tries||0)+1)<=4)){ Speaker.unlock(); Speaker.revive(); } }, true));
 // Coming back from the background (minimise/reopen, tab switch, phone call, Control Center) can leave the audio context
 // suspended or 'interrupted' so faces move but no sound comes out. Revive it the moment the app is shown again.
-document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') Speaker.revive(); });
+document.addEventListener('visibilitychange', ()=>{
+  // A hidden tab is not solving time: hold the silent set clock so a gap between sittings never counts.
+  if (document.hidden) SetClock.pause(); else SetClock.resume();
+  if (document.visibilityState==='visible') Speaker.revive();
+});
 window.addEventListener('pageshow', ()=>Speaker.revive());
 window.addEventListener('focus', ()=>Speaker.revive());
 if (false && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
