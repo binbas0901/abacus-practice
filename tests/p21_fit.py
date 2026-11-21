@@ -29,6 +29,9 @@ MEASURE = """(()=>{ const R=e=>e.getBoundingClientRect(), vis=e=>e && e.getClien
   const bad=[];
   for (const s of sheet) for (const t of tool) if (hit(R(s),R(t))) bad.push(name(s)+' over '+name(t));
   for (const o of other) for (const t of [...tool, sheet[0]]) if (t && hit(R(o),R(t))) bad.push(name(o)+' over '+name(t));
+  const sw=document.querySelector('#toolSwitch'), rodw=document.querySelector('#drill .tp-rodwrap'), moon=document.querySelector('#drillSky .toy-sky-moon');   // v4.45: the "Use the beads" pill sits by the rod, clear of it and of Juni's window
+  if (vis(sw)&&vis(rodw)&&hit(R(sw),R(rodw))) bad.push('toolSwitch over rod');
+  if (vis(sw)&&moon&&vis(moon)&&hit(R(sw),R(moon))) bad.push('toolSwitch over Juni');
   for (const e of [...sheet, ...tool, ...other]) if (!inside(R(e))) bad.push(name(e)+' off screen');
   const sh=document.querySelector('#sheet'), sr=sh&&R(sh), pa=document.querySelector('#problemArea'), scrolls=pa && pa.scrollHeight>pa.clientHeight+1;
   for (const e of document.querySelectorAll('#problemArea .term, #readout')) if (vis(e)){ const r=R(e); if (r.left<sr.left-0.5||r.right>sr.right+0.5||r.bottom>sr.bottom+0.5||(!scrolls&&r.top<sr.top-0.5)) bad.push(name(e)+' outside the sheet'); if (e.scrollWidth>e.clientWidth+1) bad.push(name(e)+' digits cut'); }

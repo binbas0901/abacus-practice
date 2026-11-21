@@ -74,8 +74,9 @@
 /* left: the answer-tool switch (a little soroban / keypad to pick up), Bix and his paper bubble */
 #drill .tp-bixcol{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0}
 #drill .tp-props{display:flex;align-items:flex-start;gap:14px;min-height:0}
-/* The tool switch is a compact pill in the top bar, next to the close/speed controls (v4.44). */
-#drill .tp-switch{flex:none;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;align-self:flex-start;margin-left:12px;min-width:0;min-height:64px;padding:0 16px 0 10px;border:0;cursor:pointer;color:var(--toy-ink);touch-action:manipulation;transition:transform .09s ease-out;background:var(--toy-paper,#FFFDF6);border-radius:999px;box-shadow:0 3px 0 rgba(var(--toy-shade),.22),0 5px 11px rgba(var(--toy-shade),.16)}
+/* The tool switch is a compact pill in the top-RIGHT, just left of the bead rod (v4.45): it lives inside .tp-topright so it
+   stays clear of Juni's window/face on the left and never overlaps the rod (a flex sibling, so the gap keeps them apart). */
+#drill .tp-switch{flex:none;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;align-self:center;min-width:0;min-height:64px;padding:0 16px 0 10px;border:0;cursor:pointer;color:var(--toy-ink);touch-action:manipulation;transition:transform .09s ease-out;background:var(--toy-paper,#FFFDF6);border-radius:999px;box-shadow:0 3px 0 rgba(var(--toy-shade),.22),0 5px 11px rgba(var(--toy-shade),.16)}
 #drill.lt .tp-switch{display:none}   /* no tool-swapping during the timed level test (matches the hidden energy bar) */
 #drill .tp-switch:active{transform:translateY(3px)}
 #drill .tp-switch:focus-visible{outline:4px solid var(--toy-ink);outline-offset:3px;border-radius:999px}
