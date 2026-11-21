@@ -518,8 +518,8 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 }
 /* the gear sits where the window was: on Listen and Flash the window moves right of it */
 @media (orientation:landscape){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:clamp(176px,16vw,230px)}
-  #drill[data-mode=listen]:not(.tb) .tp-rodwrap,#drill[data-mode=flash]:not(.tb) .tp-rodwrap{width:min(560px,calc(100vw - 610px))} }   /* ...and the bead rod stays clear of the window */
-@media (orientation:portrait){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:172px} #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(280px,34vw)} }
+  #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(560px,calc(100vw - 610px))} }   /* ...and the bead rod (keys or beads) stays narrow, so the window moon and the pill left of the rod both stay clear (v4.45) */
+@media (orientation:portrait){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:172px} #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(232px,28vw)} }
 @media (min-width:1300px) and (min-height:960px){
   #drill .sp-card{width:900px;padding:28px 36px 30px;gap:20px}
   #drill .sp-title{font-size:38px} #drill .sp-sub{font-size:22px} #drill .sp-label{font-size:28px} #drill .sp-val{font-size:46px;min-width:160px}
