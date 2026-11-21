@@ -231,6 +231,9 @@ async def main():
               and await pg.locator('#parent #sGap').count()==1 and await pg.locator('#parent #sRate').count()==1 and await pg.locator('#parent #sFlash').count()==1)
         await shot(pg, 'listen_ready')
         check('child targets >= 60px on Listen', not await pg.evaluate(SMALL, '#drill'), await pg.evaluate(SMALL, '#drill'))
+        # the enlarged Listen card must never cross into the number pad: all 12 keys fully clear of it
+        CARDCLEAR = "(()=>{const R=e=>e.getBoundingClientRect(), c=document.querySelector('#drill .tp-board'); if(!c) return ['no card']; const cr=R(c), hit=(a,b)=>!(a.right<=b.left+0.5||a.left>=b.right-0.5||a.bottom<=b.top+0.5||a.top>=b.bottom-0.5); return [...document.querySelectorAll('#padKeys button')].filter(b=>b.getClientRects().length && hit(cr,R(b))).map(b=>b.dataset.k);})()"
+        check('Listen: the card clears all pad keys (none hidden behind it)', (await pg.evaluate(CARDCLEAR)) == [], await pg.evaluate(CARDCLEAR))
         fit = "(()=>{ const els=['#checkBtn','#toolSwitch','#listenStage','#flashStage'].map(q=>document.querySelector(q)).concat([...document.querySelectorAll('#answerTool .abx-svg, #padKeys .toy-keypad')]).filter(e=>e.getClientRects().length); return els.every(e=>{ const r=e.getBoundingClientRect(); return r.bottom<=innerHeight && r.right<=innerWidth && r.left>=0; }); })()"
         for k in range(2):
             ok = await pg.evaluate(fit); await pg.evaluate("document.querySelector('#toolSwitch').click()"); await pg.wait_for_timeout(150)   # (Ready sits on the stage; the panel only opens from the gear)

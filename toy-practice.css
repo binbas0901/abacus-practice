@@ -570,7 +570,7 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 
 /* 3 — a bigger, calmer Listen card. Listen has no number rows for Bix to narrate beside, so its
    left column shrinks and the board grows — the pad keeps its room (Reading keeps the wide column). */
-#drill[data-mode=listen]:not(.tb){--bixcol:clamp(150px,calc(100vw - 1010px),200px);--board:clamp(300px,32vw,400px)}
+#drill[data-mode=listen]:not(.tb){--bixcol:clamp(150px,calc(100vw - 1010px),200px);--board:clamp(300px,30vw,372px)}
 #drill[data-mode=listen] .tp-listen{gap:14px}
 #drill[data-mode=listen] .tp-ear{width:78px;height:78px}
 #drill[data-mode=listen] .tp-ear svg{width:40px;height:40px}
