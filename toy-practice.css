@@ -123,9 +123,11 @@
 #drill .tp-readout b{font:700 60px/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums;min-width:.6em;text-align:center}
 #drill .tp-readout.empty b{color:#A86F08}
 #drill .tp-readout[data-len="4"] b{font-size:50px} #drill .tp-readout[data-len="5"] b{font-size:42px} #drill .tp-readout[data-len="6"] b{font-size:35px}
-#drill .tp-readout.is-right{border-style:solid;border-color:var(--toy-teal-dk);background:radial-gradient(circle at 30% 22%,#8FEBD9 0,#1FA595 46%,#137A70 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
-#drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(10,74,69,.45)}
-#drill .tp-readout.is-wrong{animation:tp-no .46s ease both}   /* "not yet": the slot stays neutral and dashed, it only wobbles (red never means wrong) */
+#drill .tp-readout.is-right{border-style:solid;border-color:#0E6B3B;background:radial-gradient(circle at 30% 22%,#9FEDBC 0,#1FA55B 46%,#10754A 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
+#drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(8,64,40,.45)}
+/* v4.45: red = wrong, green = right, to match the beads the child placed */
+#drill .tp-readout.is-wrong{border-style:solid;border-color:#9A1118;background:radial-gradient(circle at 30% 22%,#FF9A90 0,#E22630 46%,#A5121A 100%);animation:tp-no .46s ease both}
+#drill .tp-readout.is-wrong b,#drill .tp-readout.is-wrong .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(90,8,12,.45)}
 @keyframes tp-yes{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
 @keyframes tp-no{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
 #drill:has(#answerTool.waiting) .tp-readout{opacity:.45}

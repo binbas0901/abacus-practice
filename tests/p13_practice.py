@@ -292,18 +292,19 @@ async def main():
             await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(200)
             await keypad(pg, 10); await pg.wait_for_timeout(220)
             st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .tp-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
-            check(f'{tag}: right answer -> answer box teal (is-right) + its rod bead teal with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'tp-pop' in st[1] and 'is-wrong' not in st[0], st)
+            check(f'{tag}: right answer -> answer box green (is-right) + its rod bead teal with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'tp-pop' in st[1] and 'is-wrong' not in st[0], st)
             await shot(pg, f'right_{tag}')
             await pg.wait_for_timeout(900); d = await drill(pg)
             check(f'{tag}: next problem -> answer box back to plain', not await pg.evaluate("document.querySelector('#readout').classList.contains('is-right')"))
             await keypad(pg, d['answer'] + 1); await pg.wait_for_timeout(220)
             st = await pg.evaluate("(()=>{ const r=document.querySelector('#readout'), c=document.querySelector('#strip .tp-b.cur'), cs=getComputedStyle(r), plain=document.querySelector('#strip .tp-b:not(.cur):not(.ok):not(.bad)'); return [r.className, c.className, cs.backgroundColor, cs.borderTopStyle, cs.borderTopColor, c.innerHTML.includes('toy-lac-walnut'), document.querySelector('#strip').innerHTML.includes('toy-lac-red'), !plain || plain.innerHTML.includes('toy-lac-wood')]; })()")
-            check(f'{tag}: wrong answer -> "not yet": answer box stays neutral and dashed (is-wrong wobble, no red) + its rod bead raw walnut with a gentle wobble, instantly; no red bead on the rod',
-                  'is-wrong' in st[0] and 'bad' in st[1] and 'tp-wob' in st[1] and st[2] != 'rgb(255, 231, 222)' and st[3] == 'dashed' and st[4] != 'rgb(229, 64, 47)' and st[5] and not st[6] and st[7], st)
+            check(f'{tag}: wrong answer -> red (v4.45): the answer box turns a true red (is-wrong, solid red border) + its rod bead stays raw walnut with a gentle wobble; the 7-set progress rod is NOT recoloured red',
+                  'is-wrong' in st[0] and 'bad' in st[1] and 'tp-wob' in st[1] and st[3] == 'solid' and st[4] == 'rgb(154, 17, 24)' and st[5] and not st[6] and st[7], st)
             await pg.wait_for_timeout(1000)
             await pg.evaluate("__drillSet([1,1],null,'beads')"); await pg.wait_for_timeout(200)
             await tap(pg, 0, 'e', 1); await pg.click('#checkBtn'); await pg.wait_for_timeout(120)
-            check(f'{tag}: beads, right -> the "beads show" box turns jade too', 'is-right' in await pg.evaluate("document.querySelector('#readout').className"))
+            bst = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#abHost .abx').className]")
+            check(f'{tag}: beads, right -> the "beads show" box turns green and the placed beads turn green (v4.45)', 'is-right' in bst[0] and 'abx-fb-right' in bst[1], bst)
             await pg.wait_for_timeout(900)
             if vw == 1366:
                 await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(250)

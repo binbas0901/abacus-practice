@@ -2040,7 +2040,9 @@ document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('ac
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('tp-nudge'); void t.offsetWidth; t.classList.add('tp-nudge'); setTimeout(()=>t.classList.remove('tp-nudge'),460); }
 // Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or keeps its dashed rim and wobbles gently ("not yet", never red),
 // and her bead on the rod turns teal or stays raw walnut (one to polish). Cleared when the next problem comes. Never used in the level test.
-function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong'); if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
+function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong');
+  if (Tool.kind==='beads' && Tool.ab) Tool.ab.feedback(v==='right'?'right':v==='wrong'?'wrong':null);   // tint the placed beads green (right) / red (wrong)
+  if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
 // Bixi's spoken reactions in Practice (her own voice, no-repeat until the pool is used up).
 const _bixiReact={yes:[],notyet:[]};
 function bixiReactKey(kind){ const n=kind==='yes'?6:3; let pool=_bixiReact[kind];

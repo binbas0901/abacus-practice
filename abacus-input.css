@@ -23,6 +23,9 @@
 .abx-lac { fill: #E5402F; opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }
 .abx-bead[data-kind="h"] .abx-lac { fill: #F2B632; }
 .abx-bead.on .abx-lac { opacity: 1; }
+/* answer feedback: the beads the child placed (the ones that count) turn a true red when wrong, green when right */
+.abx.abx-fb-wrong .abx-bead.on .abx-lac { fill: url(#abx-lac-fbred) #E82A2C !important; }
+.abx.abx-fb-right .abx-bead.on .abx-lac { fill: url(#abx-lac-fbgreen) #1FAE60 !important; }
 .abx-shade { fill: #2A1204; opacity: .24; pointer-events: none; }
 .abx-bead.on .abx-shade { opacity: .28; }
 .abx-shine { fill: none; stroke: #fff; stroke-width: 1.1; stroke-linecap: round; opacity: .55; pointer-events: none; }
