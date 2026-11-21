@@ -328,6 +328,13 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
 #drill.tb .tp-bowl{display:none}
 #drill.tb .tp-tool.demo .tp-check{opacity:.45;pointer-events:none}
 #drill.tb .tp-tool.demo .tp-abacus{pointer-events:none}
+/* Smaller landscape iPads (<=800px tall, e.g. 1024x768): the wall + a tall Check/Bix row left the soroban only ~52px
+   bead pitch. The bottom row's height is set by Bixi (--bix) and the Check dome (--foot), so trim both and let the soroban
+   fill the rest of the height — its tap pitch then stays >=56px at 1024x768 (v4.45 item 2). The big 1180x820 case is
+   untouched (it already meets >=56px): it is taller than 800px, so this block does not apply. */
+@media (max-height:800px) and (orientation:landscape){
+  #drill.tp.tb{--foot:96px;--bix:96px;--abh:calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 30px)}
+}
 
 /* a narrow landscape table: Bix's column is slim, so his bubble may take three or four short lines and "Show me" drops under the tool switch */
 @media (orientation:landscape) and (max-width:1140px){
