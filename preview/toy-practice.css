@@ -74,8 +74,9 @@
 /* left: the answer-tool switch (a little soroban / keypad to pick up), Bix and his paper bubble */
 #drill .tp-bixcol{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:0}
 #drill .tp-props{display:flex;align-items:flex-start;gap:14px;min-height:0}
-/* The tool switch is a compact pill in the top bar, next to the close/speed controls (v4.44). */
-#drill .tp-switch{flex:none;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;align-self:flex-start;margin-left:12px;min-width:0;min-height:64px;padding:0 16px 0 10px;border:0;cursor:pointer;color:var(--toy-ink);touch-action:manipulation;transition:transform .09s ease-out;background:var(--toy-paper,#FFFDF6);border-radius:999px;box-shadow:0 3px 0 rgba(var(--toy-shade),.22),0 5px 11px rgba(var(--toy-shade),.16)}
+/* The tool switch is a compact pill in the top-RIGHT, just left of the bead rod (v4.45): it lives inside .tp-topright so it
+   stays clear of Juni's window/face on the left and never overlaps the rod (a flex sibling, so the gap keeps them apart). */
+#drill .tp-switch{flex:none;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;align-self:center;min-width:0;min-height:64px;padding:0 16px 0 10px;border:0;cursor:pointer;color:var(--toy-ink);touch-action:manipulation;transition:transform .09s ease-out;background:var(--toy-paper,#FFFDF6);border-radius:999px;box-shadow:0 3px 0 rgba(var(--toy-shade),.22),0 5px 11px rgba(var(--toy-shade),.16)}
 #drill.lt .tp-switch{display:none}   /* no tool-swapping during the timed level test (matches the hidden energy bar) */
 #drill .tp-switch:active{transform:translateY(3px)}
 #drill .tp-switch:focus-visible{outline:4px solid var(--toy-ink);outline-offset:3px;border-radius:999px}
@@ -122,9 +123,11 @@
 #drill .tp-readout b{font:700 60px/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums;min-width:.6em;text-align:center}
 #drill .tp-readout.empty b{color:#A86F08}
 #drill .tp-readout[data-len="4"] b{font-size:50px} #drill .tp-readout[data-len="5"] b{font-size:42px} #drill .tp-readout[data-len="6"] b{font-size:35px}
-#drill .tp-readout.is-right{border-style:solid;border-color:var(--toy-teal-dk);background:radial-gradient(circle at 30% 22%,#8FEBD9 0,#1FA595 46%,#137A70 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
-#drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(10,74,69,.45)}
-#drill .tp-readout.is-wrong{animation:tp-no .46s ease both}   /* "not yet": the slot stays neutral and dashed, it only wobbles (red never means wrong) */
+#drill .tp-readout.is-right{border-style:solid;border-color:#0E6B3B;background:radial-gradient(circle at 30% 22%,#9FEDBC 0,#1FA55B 46%,#10754A 100%);animation:tp-yes .34s cubic-bezier(.3,1.5,.5,1) both}
+#drill .tp-readout.is-right b,#drill .tp-readout.is-right .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(8,64,40,.45)}
+/* v4.45: red = wrong, green = right, to match the beads the child placed */
+#drill .tp-readout.is-wrong{border-style:solid;border-color:#9A1118;background:radial-gradient(circle at 30% 22%,#FF9A90 0,#E22630 46%,#A5121A 100%);animation:tp-no .46s ease both}
+#drill .tp-readout.is-wrong b,#drill .tp-readout.is-wrong .tp-rolabel{color:#fff;text-shadow:1px 2px 0 rgba(90,8,12,.45)}
 @keyframes tp-yes{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}
 @keyframes tp-no{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}45%{transform:translateX(5px)}70%{transform:translateX(-3px)}}
 #drill:has(#answerTool.waiting) .tp-readout{opacity:.45}
@@ -327,6 +330,13 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
 #drill.tb .tp-bowl{display:none}
 #drill.tb .tp-tool.demo .tp-check{opacity:.45;pointer-events:none}
 #drill.tb .tp-tool.demo .tp-abacus{pointer-events:none}
+/* Smaller landscape iPads (<=800px tall, e.g. 1024x768): the wall + a tall Check/Bix row left the soroban only ~52px
+   bead pitch. The bottom row's height is set by Bixi (--bix) and the Check dome (--foot), so trim both and let the soroban
+   fill the rest of the height — its tap pitch then stays >=56px at 1024x768 (v4.45 item 2). The big 1180x820 case is
+   untouched (it already meets >=56px): it is taller than 800px, so this block does not apply. */
+@media (max-height:800px) and (orientation:landscape){
+  #drill.tp.tb{--foot:96px;--bix:96px;--abh:calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 30px)}
+}
 
 /* a narrow landscape table: Bix's column is slim, so his bubble may take three or four short lines and "Show me" drops under the tool switch */
 @media (orientation:landscape) and (max-width:1140px){
@@ -508,8 +518,8 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 }
 /* the gear sits where the window was: on Listen and Flash the window moves right of it */
 @media (orientation:landscape){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:clamp(176px,16vw,230px)}
-  #drill[data-mode=listen]:not(.tb) .tp-rodwrap,#drill[data-mode=flash]:not(.tb) .tp-rodwrap{width:min(560px,calc(100vw - 610px))} }   /* ...and the bead rod stays clear of the window */
-@media (orientation:portrait){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:172px} #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(280px,34vw)} }
+  #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(560px,calc(100vw - 610px))} }   /* ...and the bead rod (keys or beads) stays narrow, so the window moon and the pill left of the rod both stay clear (v4.45) */
+@media (orientation:portrait){ #drill[data-mode=listen],#drill[data-mode=flash]{--toy-window-x:172px} #drill[data-mode=listen] .tp-rodwrap,#drill[data-mode=flash] .tp-rodwrap{width:min(232px,28vw)} }
 @media (min-width:1300px) and (min-height:960px){
   #drill .sp-card{width:900px;padding:28px 36px 30px;gap:20px}
   #drill .sp-title{font-size:38px} #drill .sp-sub{font-size:22px} #drill .sp-label{font-size:28px} #drill .sp-val{font-size:46px;min-width:160px}

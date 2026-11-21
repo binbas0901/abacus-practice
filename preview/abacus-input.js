@@ -234,6 +234,8 @@
     const holder = document.createElement('div');
     holder.innerHTML = '<svg id="abx-defs" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs>'
       + lac('abx-lac-red', '#FF8F70', '#E5402F', '#B52323', '#8A181D') + lac('abx-lac-gold', '#FFE9A6', '#F2B632', '#C98A16', '#9E690D') + lac('abx-lac-wood', '#FFF1D6', '#EDCB98', '#CB9A60', '#9C6C38')
+      // answer feedback: a true red when the answer is wrong, a clear green when it is right (toggled by .abx-fb-wrong / .abx-fb-right on the wrap)
+      + lac('abx-lac-fbred', '#FF8A82', '#E82A2C', '#C2121C', '#8F0D15') + lac('abx-lac-fbgreen', '#A6EFC2', '#1FAE60', '#138A49', '#0B6836')
       + lin('abx-g-frame', 0, 1, [[0, '#93603A'], [.5, '#7A4A24'], [1, '#643A1A']]) + lin('abx-g-tray', 0, 1, [[0, '#DDBE8C'], [1, '#C59E68']])
       + '<radialGradient id="abx-g-soft"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".6" stop-color="#fff" stop-opacity=".24"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'
       + lin('abx-g-rod', 1, 0, [[0, '#F8E2B4'], [.5, '#DDB678'], [1, '#A47840']]) + lin('abx-g-beam', 0, 1, [[0, '#8A5730'], [1, '#5C3618']])
@@ -423,6 +425,13 @@
       },
       moves: since => model.moves(since),
       rods: () => model.rods,
+      // Answer feedback: tint the placed (counting) beads red for a wrong answer, green for a right one; null clears it.
+      feedback(state) {
+        wrap.classList.remove('abx-fb-right', 'abx-fb-wrong');
+        if (state === 'right') wrap.classList.add('abx-fb-right');
+        else if (state === 'wrong') wrap.classList.add('abx-fb-wrong');
+        return api;
+      },
       readOnly,
       setReadout(on) { showReadout = !!on; paint(); return api; },
       destroy() {

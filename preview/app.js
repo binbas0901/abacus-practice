@@ -2040,7 +2040,9 @@ document.addEventListener('keydown', e=>{ if(!$('#drill').classList.contains('ac
 function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.classList.remove('tp-nudge'); void t.offsetWidth; t.classList.add('tp-nudge'); setTimeout(()=>t.classList.remove('tp-nudge'),460); }
 // Right / wrong shows instantly where she is looking: the answer box turns teal (a small pop) or keeps its dashed rim and wobbles gently ("not yet", never red),
 // and her bead on the rod turns teal or stays raw walnut (one to polish). Cleared when the next problem comes. Never used in the level test.
-function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong'); if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
+function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong');
+  if (Tool.kind==='beads' && Tool.ab) Tool.ab.feedback(v==='right'?'right':v==='wrong'?'wrong':null);   // tint the placed beads green (right) / red (wrong)
+  if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
 // Bixi's spoken reactions in Practice (her own voice, no-repeat until the pool is used up).
 const _bixiReact={yes:[],notyet:[]};
 function bixiReactKey(kind){ const n=kind==='yes'?6:3; let pool=_bixiReact[kind];
@@ -2789,7 +2791,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.44';
+const APP_VERSION='4.45';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
