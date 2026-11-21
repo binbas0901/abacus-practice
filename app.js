@@ -57,7 +57,7 @@ function saveProgress(){ save('progress', progress); }
 
 // ---- Practice-first level model (redesign) ----
 // A level (one skill) is 10 sets of 10 problems = 100. The 10 sets cycle through three REQUIRED types,
-// v4.42 model: two modes — Reading + Listening — 7 sessions each; BOTH must be finished to clear a level.
+// v4.43 model: two modes — Reading + Listening — 7 sessions each; BOTH must be finished to clear a level.
 // A session is a set of SET_LEN problems; a miss does NOT interrupt — misses are corrected in a pass AFTER the
 // set (the existing drill/game fix pass). Per-mode counts live in node(id).modes = {reading, listening}. A third
 // mode (flash/anzan) is added in a later slice; PRACTICE_MODES is kept extensible for it.
@@ -80,7 +80,7 @@ window.__level = { MODE_SESSIONS, SET_LEN, PRACTICE_MODES, modeDone, modeComplet
     const useR = r < MODE_SESSIONS && (r <= l || modeComplete(id, 'listening'));
     bumpMode(id, useR ? 'reading' : 'listening'); return levelDoneCount(id); } };
 
-// ---- Practice orchestrator (v4.42): run a level as Reading(7)+Listening(7) sessions; both required; correction pass after each set ----
+// ---- Practice orchestrator (v4.43): run a level as Reading(7)+Listening(7) sessions; both required; correction pass after each set ----
 // Reuses the existing mechanics: listen -> the drill (with its fix pass looping misses until correct); read -> Bead
 // Detective (reader, with a miss re-queued); build -> Bead Builder (inherently all-correct). A guard (Practice.on) keeps
 // every existing drill/game flow unchanged when a practice level is NOT running.
@@ -117,7 +117,8 @@ const Practice = {
       return Games.runSet('build', SET_LEN, () => this.sessionDone());  // no-sums level: build the heard number
     }
     this.type = 'reading';
-    Games.runSet('read', SET_LEN, () => this.sessionDone());            // Bead Detective: read the beads (misses fixed after the set)
+    if (n && n.drill) return startDrill('visual', n);                   // Reading: the whole sum is shown with +/- signs; child solves it and types the answer (misses fixed after the set)
+    return Games.runSet('read', SET_LEN, () => this.sessionDone());     // no-sums level fallback: read the beads
   },
   setDone(){ this.sessionDone(); },                                     // the listen drill's finish() calls this
   sessionDone(){
@@ -892,7 +893,7 @@ function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
-$('#exitGame').addEventListener('click', ()=>{ stopVoices(); if (Practice.on){ Games.stop(); Practice.stop(); renderHome(); show('home'); return; } Games.stop(); Games.leave(); });   // G3: during a practice set, leave cleanly to home and clear Practice.on (never the Play hub)
+$('#exitGame').addEventListener('click', ()=>{ stopVoices(); if (Practice.on){ Games.stop(); if (!isFlashNode(Practice.node)) return Practice.pick(); Practice.stop(); renderHome(); show('home'); return; } Games.stop(); Games.leave(); });   // G3: Back during a practice set returns to the Reading/Listening picker (never home mid-session, never the Play hub)
 // The three doors. Practice opens the Practice door screen (#door).
 function openPractice(){ stopVoices();
   Speaker.unlock();
@@ -1128,7 +1129,7 @@ $$('#door .door-block').forEach(b=>b.addEventListener('click', ()=>{
 $('#exitDoor').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#doorAll').addEventListener('click', ()=>openGate('skills'));
 
-// ---- Reading / Listening practice picker (redesign v4.42) ----
+// ---- Reading / Listening practice picker (redesign v4.43) ----
 function renderPracticePick(id){
   const cur = NODES[NODE_IDX[id]], T = window.__level.MODE_SESSIONS;
   const tt = $('#ppTitle'); if (tt) tt.textContent = cur ? cur.title : 'Practice';
@@ -1821,7 +1822,9 @@ function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.fl
 function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now(); feedStreak=0;
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
-  Tool.kind = Tool.preferred(); Tool.apply();
+  Tool.kind = Tool.preferred();
+  if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening')) Tool.kind = 'keys';   // Reading & Listening answer on the number pad (owner's design); the abacus is still one tap away via the switch
+  Tool.apply();
   setStages(); toySky('#drillSky'); show('drill');
   PB.show('');   // Bixi mounts as the quiet, reacting sidekick (figure only; his bubble stays empty — Juni leads)
   JB.clear();    // start Juni's bubble empty until the first line
@@ -1847,6 +1850,7 @@ function setStages(){
   $('#listenStage').style.display = mode==='listen'?'':'none';
   $('#flashStage').style.display = mode==='flash'?'':'none';
   $('#drill').dataset.mode = mode; $('#drill').classList.toggle('lt', !!LT);
+  const energy=$('#drillEnergy'); if (energy) energy.style.display = mode==='listen' ? 'none' : '';   // Listening is stripped to one big number + the pad: no snack bar
   SpeedPanel.close(); $('#speedGear').hidden = !(mode==='listen' || mode==='flash') || !!LT;   // the speed gear: Listen and Flash sets only
 }
 function endDrill(){ SpeedPanel.close(); dictateToken++; demoToken++; demoing=false; Speaker.stop(); stopTest(); if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
@@ -1881,6 +1885,7 @@ function presentProblem(){
 let dictateToken=0, listenArmed=false, submitting=false;   // submitting: an answer is being marked (the speed gear waits)
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
   locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
+  const ln=$('#listenNum'); if (ln){ ln.textContent=''; ln.className='flash-num'; }
   const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ SpeedPanel.close(); b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
   // Speed is saved per child and used right away — no speed panel each time; the gear (shown during the drill) opens it to adjust.
 }
@@ -1903,22 +1908,22 @@ async function speakTerms(p, alive, pulse){
       const when = i===0 ? prevEnd : prevEnd+gap;
       const end = Speaker.scheduleTerm(d, i===0, when);
       sched.push([when,end]); prevEnd=end; lastEnd=end;
-      setTimeout(()=>{ if(alive()) pulse((end-when)*1000); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
+      setTimeout(()=>{ if(alive()) pulse((end-when)*1000, d, i); }, Math.max(0,(when-Speaker.ctx.currentTime)*1000));
     });
     // "equals" follows the last number after the same silence.
     const eqWhen=prevEnd+gap, eq=Speaker.scheduleEquals(eqWhen);
-    if (eq){ sched.push([eqWhen, eq[0]]); lastEnd=eq[0]; setTimeout(()=>{ if(alive()) pulse((eq[0]-eqWhen)*1000); }, Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); }
+    if (eq){ sched.push([eqWhen, eq[0]]); lastEnd=eq[0]; setTimeout(()=>{ if(alive()) pulse((eq[0]-eqWhen)*1000, null, -1); }, Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); }
     window.__lastSchedule=sched.map(([w,e])=>[+(w-sched[0][0]).toFixed(3), +(e-sched[0][0]).toFixed(3)]);
     Diag.add('schedule: '+sched.map(([w,e])=>`${(w-sched[0][0]).toFixed(2)}–${(e-sched[0][0]).toFixed(2)}`).join(', '));
     Diag.add('equals: '+(eq ? eq[1] : 'device voice'));
     if (eq) await sleep(Math.max(0,(lastEnd-Speaker.ctx.currentTime)*1000));
-    else { await sleep(Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); if (!alive()) return false; pulse(800); const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
+    else { await sleep(Math.max(0,(eqWhen-Speaker.ctx.currentTime)*1000)); if (!alive()) return false; pulse(800, null, -1); const r=await Speaker.sayDevice('equals'); Diag.add(`said "equals" ${r}`); }
   } else {
     const words=i=>p.op==='mul' ? (i===0 ? termText(p.terms[0],true) : 'times '+termText(p.terms[i],true)) : termText(p.terms[i],i===0);
     const t0=performance.now(), sched=[]; window.__lastSchedule=sched;
-    const one=async text=>{ pulse(800); const a=(performance.now()-t0)/1000; const r=await Speaker.sayDevice(text); sched.push([+a.toFixed(3), +((performance.now()-t0)/1000).toFixed(3)]); Diag.add(`said "${text}" ${r}`); };
-    for (let i=0;i<p.terms.length;i++){ if(!alive()) return false; await one(words(i)); await sleep(gap*1000); }   // the silence starts when the voice has finished
-    if (!alive()) return false; await one('equals');
+    const one=async (text, term, i)=>{ pulse(800, term, i); const a=(performance.now()-t0)/1000; const r=await Speaker.sayDevice(text); sched.push([+a.toFixed(3), +((performance.now()-t0)/1000).toFixed(3)]); Diag.add(`said "${text}" ${r}`); };
+    for (let i=0;i<p.terms.length;i++){ if(!alive()) return false; await one(words(i), p.terms[i], i); await sleep(gap*1000); }   // the silence starts when the voice has finished
+    if (!alive()) return false; await one('equals', null, -1);
   }
   return alive();
 }
@@ -1929,8 +1934,10 @@ async function dictate(p){
   if (my!==dictateToken) return;
   $('#listenMsg').textContent = p._reader ? `${profileName(p._reader)} is reading…` : 'Listen…';
   $('#listenStage').classList.add('reading');
-  const pulse=(ms)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); };
-  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
+  const bigNum=$('#listenNum');
+  const showBig=(term, i)=>{ if (!bigNum) return; if (term==null){ bigNum.className='flash-num eq'; bigNum.textContent='='; } else { bigNum.className='flash-num pop'+(term<0?' neg':''); flashLen(bigNum, term); bigNum.innerHTML=flashSign(term, i, p); } };
+  const pulse=(ms, term, i)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); showBig(term, i); };
+  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); if (bigNum){ bigNum.textContent=''; bigNum.className='flash-num'; } locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
   const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, ((p.terms.length+1)*(settings.termGap+4)+12)*1000);
   try{
     Speaker.stop();
@@ -2250,7 +2257,13 @@ $('#showMeBtn').addEventListener('click', async()=>{ if(locked||demoing) return;
 $('#againBtn').addEventListener('click', ()=>startDrill(mode, drillNode));
 $('#homeBtn').addEventListener('click', ()=>{ stopVoices(); pendingTest=null; Practice.stop(); renderHome(); show('home'); });
 $('#testBtn').addEventListener('click', ()=>{ const id=pendingTest; pendingTest=null; startLevelTest(id); });
-$('#exitDrill').addEventListener('click', ()=>{ stopVoices(); endDrill(); LT=null; Practice.stop(); renderHome(); show('home'); });
+$('#exitDrill').addEventListener('click', ()=>{ stopVoices(); endDrill(); LT=null;
+  if (Practice.on && !isFlashNode(Practice.node)){                                   // Back from a Reading/Listening session returns to the picker, not home
+    if (Practice._savedCount != null){ settings.count = Practice._savedCount; Practice._savedCount = null; }
+    return Practice.pick();
+  }
+  Practice.stop(); renderHome(); show('home');
+});
 
 /* ---- show me: the bead moves for each number, on the Workshop soroban ---- */
 let showAb=null, showToken=0, demoToken=0, demoing=false;
@@ -2776,7 +2789,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.42';
+const APP_VERSION='4.43';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

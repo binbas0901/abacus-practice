@@ -1,8 +1,9 @@
 import asyncio, os
 from playwright.async_api import async_playwright
-# Practice orchestrator (v4.42): a learned level opens the Reading/Listening picker; Reading -> Bead Detective,
-# Listening -> the listen drill; a session finishes only when all answers are correct (misses fixed after the set);
-# finishing a session counts toward that mode's 7; the level clears only when BOTH modes reach 7 (mastered, advance).
+# Practice orchestrator (v4.43): a learned level opens the Reading/Listening picker; Reading -> the shown-problem
+# drill (whole sum with +/- on screen, answer typed on the number pad), Listening -> the listen drill (one big
+# number at a time + number pad). A miss never interrupts: the set finishes, then a correction pass fixes the misses.
+# Finishing a session counts toward that mode's 7; the level clears only when BOTH modes reach 7 (mastered, advance).
 # Everything here DRIVES THE REAL APP.
 fails = []
 def check(label, ok, extra=''):
@@ -83,6 +84,32 @@ async def drive_listen_set(pg, wrongs=()):
         d = await pg.evaluate("()=>window.__drill()")
         await listen_answer(pg, d['answer'])
 
+async def drive_reading_set(pg, wrongs=()):
+    # Reading = the visual drill: the whole sum is shown, the child types the answer on the pad.
+    # A miss is NOT fixed inline — the set runs to the end, then a correction pass (reviewing) fixes the misses.
+    await pg.wait_for_selector('#drill.active', timeout=15000)
+    for i in range(10):   # main pass: idx 0..9, in order
+        await pg.wait_for_function(
+            "i=>{const d=window.__drill(); return d && d.mode==='visual' && d.idx===i && !d.reviewing && d.answer!=null;}",
+            arg=i, timeout=15000)
+        d = await pg.evaluate("()=>window.__drill()")
+        await answer_pad(pg, '#pad', d['answer'] + (1 if i in wrongs else 0))
+        await pg.wait_for_function(
+            "i=>{const d=window.__drill(); return d.idx>i || d.reviewing || document.querySelector('.toy-dialog');}",
+            arg=i, timeout=15000)
+    for _ in range(len(wrongs)):   # correction pass: fix each miss (answered right this time)
+        await pg.wait_for_function(
+            "()=>{const d=window.__drill(); return (d.reviewing && d.mode==='visual' && d.answer!=null) || document.querySelector('.toy-dialog');}",
+            timeout=15000)
+        if await pg.evaluate("()=>!!document.querySelector('.toy-dialog')"):
+            break
+        d = await pg.evaluate("()=>window.__drill()")
+        cur = d['idx']
+        await answer_pad(pg, '#pad', d['answer'])
+        await pg.wait_for_function(
+            "c=>{const d=window.__drill(); return d.idx!==c || document.querySelector('.toy-dialog');}",
+            arg=cur, timeout=15000)
+
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome',
@@ -97,10 +124,17 @@ async def main():
         cards = await pg.eval_on_selector_all('#ppCards .pp-card', 'els=>els.map(e=>e.getAttribute("data-mode"))')
         check('picker shows Reading and Listening', cards == ['reading', 'listening'], cards)
         await pg.evaluate("window.__practice.runMode('reading')")
-        await pg.wait_for_selector('#game.active', timeout=15000)
-        tag = await pg.evaluate("()=>document.querySelector('#game').dataset.game")
+        await pg.wait_for_selector('#drill.active', timeout=15000)
+        await pg.wait_for_function("()=>window.__drill() && window.__drill().mode==='visual'", timeout=15000)
+        d = await pg.evaluate("()=>window.__drill()")
         ptype = await pg.evaluate("()=>window.__practice.type")
-        check('Reading opens the Bead Detective (reader) mechanic', tag == 'reader' and ptype == 'reading', {'tag': tag, 'type': ptype})
+        keypad = await pg.evaluate("()=>{const a=document.querySelector('#answerTool'); return a.classList.contains('keys') && !a.classList.contains('beads');}")
+        probShown = await pg.evaluate("()=>{const pa=document.querySelector('#problemArea'); return pa && pa.style.display!=='none' && pa.innerHTML.trim().length>0;}")
+        opShown = await pg.evaluate("()=>{const pa=document.querySelector('#problemArea'); return /[+\\u2212+-]|minus|plus/.test(pa.textContent||'') || pa.querySelector('.plus,.minus,b')!==null;}")
+        check('Reading opens the shown-problem drill (visual), answered on the number pad',
+              d['mode'] == 'visual' and ptype == 'reading' and d['tool'] == 'keys' and keypad, {'drill': d, 'type': ptype, 'keypad': keypad})
+        check('Reading shows the whole problem on screen', probShown, probShown)
+        check('Reading shows the operators (+/-) in the problem', opShown, opShown)
         check('A: no page errors', not errs, errs[:3])
         await ctx.close()
 
@@ -115,34 +149,45 @@ async def main():
         check('A2: no page errors', not errs, errs[:3])
         await ctx.close()
 
-        # ======== Check B: the reader (Reading) re-queues a miss until it is read right (all-correct after the set) ========
+        # ======== Check B: Reading — a miss does NOT interrupt; the set finishes, then a correction pass fixes it; the session counts ========
         ctx, pg, errs = await new_page(b)
         await setup_node(pg, 'sub_direct')
-        await pg.evaluate("()=>{ window.__p37=null; window.addEventListener('unhandledrejection', e=>{window.__rej=String(e.reason);}); window.Games.runSet('read', 4, r=>{ window.__p37=r; }); }")
-        requeued = False; first_v = None
-        for step in range(12):
-            if await pg.evaluate("()=>window.__p37") is not None:
+        await pg.evaluate("window.__practice.start('sub_direct')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("window.__practice.runMode('reading')")
+        await pg.wait_for_function("()=>window.__drill() && window.__drill().mode==='visual'", timeout=15000)
+        # answer problem 0 wrong, then confirm the engine advances to problem 1 (no inline re-queue of the same one)
+        d0 = await pg.evaluate("()=>window.__drill()")
+        await answer_pad(pg, '#pad', d0['answer'] + 1)
+        advanced = await pg.evaluate("()=>new Promise(res=>{const t=setInterval(()=>{const d=window.__drill(); if(d.idx>0 || d.reviewing){clearInterval(t);res(true);}},120); setTimeout(()=>{clearInterval(t);res(false);},8000);})")
+        check('reading: a miss does NOT interrupt — the drill moves straight to the next problem', advanced, advanced)
+        # finish the remaining problems (one more miss), then the correction pass fixes both after the set
+        for i in range(1, 10):
+            await pg.wait_for_function(
+                "i=>{const d=window.__drill(); return d && d.mode==='visual' && d.idx===i && !d.reviewing && d.answer!=null;}",
+                arg=i, timeout=15000)
+            d = await pg.evaluate("()=>window.__drill()")
+            await answer_pad(pg, '#pad', d['answer'] + (1 if i == 5 else 0))
+            await pg.wait_for_function(
+                "i=>{const d=window.__drill(); return d.idx>i || d.reviewing || document.querySelector('.toy-dialog');}",
+                arg=i, timeout=15000)
+        reviewingSeen = await pg.evaluate("()=>window.__drill().reviewing===true || !!document.querySelector('.toy-dialog')")
+        check('reading: after the set, a correction pass runs for the misses', reviewingSeen, reviewingSeen)
+        for _ in range(2):   # fix the two misses (problems 0 and 5)
+            await pg.wait_for_function(
+                "()=>{const d=window.__drill(); return (d.reviewing && d.mode==='visual' && d.answer!=null) || document.querySelector('.toy-dialog');}",
+                timeout=15000)
+            if await pg.evaluate("()=>!!document.querySelector('.toy-dialog')"):
                 break
-            if not await cover_is(pg, True):
-                break
-            v = await pg.evaluate("()=>window.__rdVal")
-            if step == 0:
-                first_v = v
-                wrong = (v % 9) + 1
-                if wrong == v: wrong = (v % 9) + 2
-                await answer_pad(pg, '#rdPad', wrong)
-                await cover_is(pg, False); await cover_is(pg, True)
-                again = await pg.evaluate("()=>window.__rdVal")
-                requeued = (again == first_v)
-                await answer_pad(pg, '#rdPad', again)
-            else:
-                await answer_pad(pg, '#rdPad', v)
-            await pg.wait_for_timeout(300)
-            if await pg.evaluate("()=>window.__p37") is not None:
-                break
-        res = await pg.evaluate("()=>window.__p37")
-        check('read: a wrong read re-queues the SAME number (fixed before the set ends)', requeued, {'first': first_v})
-        check('read: the set reports allCorrect only after every number is read right', bool(res) and res.get('allCorrect') is True, res)
+            d = await pg.evaluate("()=>window.__drill()")
+            cur = d['idx']
+            await answer_pad(pg, '#pad', d['answer'])
+            await pg.wait_for_function("c=>{const d=window.__drill(); return d.idx!==c || document.querySelector('.toy-dialog');}", arg=cur, timeout=15000)
+        await pg.wait_for_selector('.toy-dialog', timeout=20000)
+        title = await pg.text_content('.toy-dialog-title')
+        check('reading: a finished session shows "Reading: 1 of 7 done!"', 'Reading: 1 of 7' in (title or ''), title)
+        md = await pg.evaluate("()=>window.__level.modeDone('sub_direct','reading')")
+        check('reading: the session counted -> Reading 1/7', md == 1, md)
         check('B: no page errors', not errs, errs[:3])
         await ctx.close()
 
