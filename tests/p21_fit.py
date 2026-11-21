@@ -32,6 +32,7 @@ MEASURE = """(()=>{ const R=e=>e.getBoundingClientRect(), vis=e=>e && e.getClien
   const sw=document.querySelector('#toolSwitch'), rodw=document.querySelector('#drill .tp-rodwrap'), moon=document.querySelector('#drillSky .toy-sky-moon');   // v4.45: the "Use the beads" pill sits by the rod, clear of it and of Juni's window
   if (vis(sw)&&vis(rodw)&&hit(R(sw),R(rodw))) bad.push('toolSwitch over rod');
   if (vis(sw)&&moon&&vis(moon)&&hit(R(sw),R(moon))) bad.push('toolSwitch over Juni');
+  const swAbove = (vis(sw)&&vis(rodw)) ? (R(sw).bottom <= R(rodw).top + 1) : null;   // v4.47: the pill is STACKED ABOVE the rod
   for (const e of [...sheet, ...tool, ...other]) if (!inside(R(e))) bad.push(name(e)+' off screen');
   const sh=document.querySelector('#sheet'), sr=sh&&R(sh), pa=document.querySelector('#problemArea'), scrolls=pa && pa.scrollHeight>pa.clientHeight+1;
   for (const e of document.querySelectorAll('#problemArea .term, #readout')) if (vis(e)){ const r=R(e); if (r.left<sr.left-0.5||r.right>sr.right+0.5||r.bottom>sr.bottom+0.5||(!scrolls&&r.top<sr.top-0.5)) bad.push(name(e)+' outside the sheet'); if (e.scrollWidth>e.clientWidth+1) bad.push(name(e)+' digits cut'); }
@@ -39,7 +40,10 @@ MEASURE = """(()=>{ const R=e=>e.getBoundingClientRect(), vis=e=>e && e.getClien
   for (const k of [...keys, document.querySelector('#checkBtn')].filter(vis)){ const r=R(k), t=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2); if (!t || !(t===k||k.contains(t))) bad.push(name(k)+' covered by '+(t?name(t):'nothing')); }
   { const tx=document.querySelector('#bixDrill .tp-btxt'); if (vis(tx) && tx.scrollHeight>tx.clientHeight+3) bad.push('Bix bubble words cut'); }
   const ks=keys.map(k=>Math.min(R(k).width,R(k).height)), ab=document.querySelector('#abHost .abx-svg');
-  return {bad:[...new Set(bad)], minKey: ks.length?Math.round(Math.min(...ks)):null, terms:document.querySelectorAll('#problemArea .term').length, scrolls, abw: vis(ab)?Math.round(R(ab).width):null}; })()"""
+  return {bad:[...new Set(bad)], minKey: ks.length?Math.round(Math.min(...ks)):null, terms:document.querySelectorAll('#problemArea .term').length, scrolls, swAbove, abw: vis(ab)?Math.round(R(ab).width):null}; })()"""
+# v4.47: the "Use the beads" pill must sit ABOVE the rod (not beside it) at the common full-height iPad LANDSCAPE sizes,
+# in keys mode (Reading / Listening). Short bars, portrait and the beads layout fall back to beside — not asserted here.
+TARGET_ABOVE = {(1180, 820), (1024, 768), (1366, 980), (1133, 744), (1080, 810), (1112, 834)}
 PAGE = """(sels)=>{ const R=e=>e.getBoundingClientRect(), bad=[]; for (const s of sels) for (const e of document.querySelectorAll(s)){ if (!e.getClientRects().length) continue; const r=R(e); if (r.left<-0.5||r.top<-0.5||r.right>innerWidth+0.5||r.bottom>innerHeight+0.5) bad.push(s+' off screen'); }
   return [...new Set(bad)]; }"""
 OVER = """(pairs)=>{ const R=e=>e.getBoundingClientRect(), bad=[], hit=(a,b)=>!(a.right<=b.left+6||a.left>=b.right-6||a.bottom<=b.top+6||a.top>=b.bottom-6);   // boxes of round things may touch at a corner
@@ -70,6 +74,8 @@ async def main():
                     await tool(pg, t); await pg.wait_for_timeout(300); m = await pg.evaluate(MEASURE); n += 1; tag = f'{w}x{h} Look {node}{"/"+str(ops) if ops else ""} ({m["terms"]} rows) {t}'
                     check(tag + ': sheet, answer tool and Check apart, all on screen, nothing covered', not m['bad'], str(m['bad']))
                     if t == 'keys' and (w, h) not in BELOW: check(tag + ': keys are 64px or more', m['minKey'] and m['minKey'] >= 64, str(m['minKey']))
+                    if t == 'keys' and w > h and m['terms'] <= 4 and (w, h) in TARGET_ABOVE:
+                        check(tag + ': the "Use the beads" pill sits ABOVE the rod', m['swAbove'] is True, str(m['swAbove']))
                     if m['bad'] or (node in ('long_rows', 'four_digit') and (w, h) in SMALLEST + [(1180, 650), (908, 631)]): await shot(pg, f'look_{w}x{h}_{node}{ops or ""}_{t}')
                     # the polish pass (Show me in Bix's column) and the level-test look use the same table
                     await pg.evaluate("document.querySelector('#drill').classList.add('fixing'); document.querySelector('#showMeBtn').style.display=''; window.dispatchEvent(new Event('resize'))"); await pg.wait_for_timeout(120); m = await pg.evaluate(MEASURE); n += 1
@@ -93,6 +99,8 @@ async def main():
                 for t in ['keys', 'beads']:
                     await tool(pg, t); m = await pg.evaluate(MEASURE); n += 1
                     check(f'{w}x{h} {mode} answer state {t}: apart, on screen, nothing covered', not m['bad'], str(m['bad']))
+                    if t == 'keys' and w > h and (w, h) in TARGET_ABOVE:
+                        check(f'{w}x{h} {mode} keys: the "Use the beads" pill sits ABOVE the rod', m['swAbove'] is True, str(m['swAbove']))
                     if m['bad'] or (w, h) in SMALLEST: await shot(pg, f'{mode}_{w}x{h}_{t}')
                 await tool(pg, 'keys'); await pg.click('#exitDrill'); await pg.wait_for_selector('#home.active')
             check(f'{w}x{h}: no page errors', not errs, str(errs)); await ctx.close()
