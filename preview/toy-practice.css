@@ -23,7 +23,7 @@
    keypad with the Check dome needs up to 510px, so Bix's column is what gives way on a narrower iPad: 320px at 1180 and
    wider, down to 196px at 1024 (the smallest supported landscape width). The old fixed 320px left the keypad only 362px
    at 1024 and it slid under the clipboard. Below 1024 (Safari text zoom) the keys and the dome shrink too, never under 64px. */
-#drill.tp{--vh:100vh;--pad:24px;--gap:16px;--bixcol:clamp(196px,calc(100vw - 860px),320px);--board:262px;--bix:184px;--foot:clamp(112px,11.7vw,138px);--th-max:98px;--tf-max:84px;--ans-h:92px;
+#drill.tp{--vh:100vh;--pad:24px;--gap:16px;--bixcol:clamp(196px,calc(100vw - 860px),320px);--board:262px;--bix:184px;--foot:clamp(112px,11.7vw,138px);--th-max:112px;--tf-max:98px;--ans-h:92px;
   --toy-window-x:clamp(96px,11vw,170px);
   --toy-key-w:clamp(84px,7.8vw,108px);
   --toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - 172px)/4),126px);
@@ -33,7 +33,11 @@
 /* --- on the wall: the wooden quit disc, the set as beads on a brass rod --- */
 #drill .tp-top{position:relative;flex:none;height:var(--toy-wall-h);box-sizing:border-box;display:flex;align-items:flex-start;padding:26px var(--pad) 0 30px}
 #drill #exitDrill{flex:none}
-#drill .tp-topright{margin-left:auto;align-self:center;display:flex;align-items:center;gap:14px;min-width:0;margin-top:-22px}
+/* v4.47: the "Use the beads" pill is STACKED ABOVE the bead rod (owner's walkthrough). The top-right becomes a vertical
+   column — pill on top, rod beneath — anchored to the right. The pill aligns over the rod's left (bead) end so it stays a
+   comfortable distance from the screen edge and clear of Juni's window on the far left. Short/portrait bars fall back to the
+   old beside-the-rod row (see .long, .tb and the portrait block). */
+#drill .tp-topright{margin-left:auto;align-self:center;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;margin-top:0}
 /* Bixi's snack bar: she feeds him by solving problems. Lives in the stable header so it never collides with the body grid. */
 /* Bixi's snack bar: a slim strip in the body's reserved bottom margin. Absolutely placed, so it steals no layout
    height (the dense practice grid stays intact) and sits below all content — clear of Juni's top bubble, the rod,
@@ -103,11 +107,15 @@
 #drill .tp-board{display:flex;flex-direction:column;box-sizing:border-box;min-height:0;padding:44px 16px 16px}
 #drill .tp-board::after{content:"";position:absolute;left:14px;right:13px;top:42px;bottom:12px;border-radius:8px;background:#F1E7D2;transform:rotate(-1.3deg);box-shadow:3px 6px 8px rgba(var(--toy-shade),.26)}
 #drill .tp-sheet{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:10px;box-sizing:border-box;padding:18px 20px 16px}
-#drill .tp-problem{display:flex;flex-direction:column;align-items:stretch;flex:0 1 auto;min-height:0}
-#drill .tp-term{flex:none;display:flex;align-items:center;justify-content:space-between;height:var(--th,var(--th-max));
-  font:700 var(--tf,var(--tf-max))/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;border-radius:10px;
+/* v4.47: the written sum is CENTRED in the clipboard (it used to jam the digits against the right edge, leaving a big empty
+   left column). Each line is an operator + a right-aligned number of a shared min-width, so the operators line up in one
+   column and the digits' right edges line up under each other — now as a tidy block in the middle of the card. */
+#drill .tp-problem{display:flex;flex-direction:column;align-items:center;flex:0 1 auto;min-height:0;padding-top:var(--prob-top,0px)}
+#drill .tp-term{flex:none;display:flex;align-items:center;justify-content:center;gap:.14em;width:max-content;max-width:100%;margin:0 auto;height:var(--th,var(--th-max));
+  font:700 var(--tf,var(--tf-max))/1 var(--toy-display);color:var(--toy-ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;border-radius:10px;padding:0 .18em;
   transition:opacity .2s ease,background-color .2s ease}
 #drill .tp-term .op{flex:none;width:.72em;text-align:center;font-size:.82em;line-height:1}
+#drill .tp-term .num{min-width:1.15em;text-align:right}
 #drill .tp-term .op.plus{color:#A86F08} #drill .tp-term .op.minus{color:var(--toy-red)} #drill .tp-term .op.times{color:var(--toy-indigo)}
 #drill .tp-term .num{padding-right:.06em}
 #drill .tp-term.now{background:#FFF1C4;box-shadow:inset 0 0 0 3px var(--toy-mustard)}
@@ -180,8 +188,13 @@
 
 /* long rows (5-10 numbers): a low wall, so the sheet gets the whole table */
 #drill.tp.long{--toy-wall-h:106px;--ans-h:66px;--th-max:70px;--tf-max:60px}
+/* long rows keep the classic single, left-anchored place-value column (op on the left, digits right-aligned under each
+   other) — the v4.47 centring is for the short Reading/Look sums only. */
+#drill.long .tp-problem{align-items:stretch}
+#drill.long .tp-term{justify-content:space-between;width:auto;max-width:none;margin:0;padding:0}
+#drill.long .tp-term .num{min-width:0}
 #drill.long .tp-top{padding-top:16px}
-#drill.long .tp-topright{margin-top:-6px}
+#drill.long .tp-topright{flex-direction:row;align-items:center;gap:14px;margin-top:-6px}   /* long rows: the wall is only 106px — not enough to stack, so the pill goes back beside the rod */
 #drill.long .tp-rodwrap,#drill.long .tp-rod{height:76px}
 #drill.long .tp-post{height:66px}
 #drill.long .tp-sheet{gap:6px;padding:12px 20px 12px}
@@ -306,7 +319,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
    Bix, his bubble and the check dome sit in a row under it. */
 #drill.tp.tb{--toy-wall-h:106px;--board:clamp(232px,27vw,372px);--foot:124px;--bix:118px;--prop:104px;--ans-h:84px;--th-max:clamp(84px,11.8vh,124px);--tf-max:clamp(70px,10vh,106px);--abh:calc(var(--vh) - var(--toy-wall-h) - var(--foot) - 40px)}
 #drill.tb .tp-top{padding-top:16px}
-#drill.tb .tp-topright{margin-top:-6px}
+#drill.tb .tp-topright{flex-direction:row;align-items:center;gap:14px;margin-top:-6px}   /* beads: the wall is only 106px — pill stays beside the rod */
 #drill.tb .tp-rodwrap,#drill.tb .tp-rod{height:76px}
 #drill.tb .tp-post{height:66px}
 #drill.tb .tp-body{grid-template-columns:var(--board) auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;gap:8px var(--gap);margin-top:12px;margin-bottom:10px;
@@ -368,6 +381,7 @@ body:has(#certificate.active) .beadfloat{left:auto;right:36px;top:22px;transform
   #drill.tp{--toy-wall-h:150px;--row1:clamp(340px,42vh,500px);--bixcol:minmax(0,1fr);--board:310px;--bix:150px;--prop:128px;--foot:150px;--th-max:86px;--tf-max:74px;--ans-h:84px;
     --toy-window-x:84px;--toy-key-w:clamp(96px,17vw,150px);--toy-key-h:clamp(68px,calc((var(--vh) - var(--toy-wall-h) - var(--row1) - 186px)/4),112px)}
   #drill .tp-top{padding-top:22px}
+  #drill .tp-topright{flex-direction:row;align-items:center;gap:14px;margin-top:-10px}   /* portrait: short wall — pill beside the rod, not above */
   #drill .tp-rodwrap{width:min(300px,37vw)}
   #drill[data-mode=listen],#drill[data-mode=flash]{--ans-h:70px}
   #drill .tp-msg{font-size:19px;min-height:23px}
@@ -580,6 +594,11 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 /* 1 — Juni's banner gone from the drill screen (voice still plays) */
 #drill .tp-jbub{display:none}
 
+/* v4.47 item 3: nudge the written sum DOWN a little inside the clipboard so the top number doesn't crowd Juni's window.
+   A small top padding on the problem (visual/Reading only); the whole sum + rule + answer box stays one centred group. */
+#drill[data-mode=visual] .tp-problem{--prob-top:clamp(10px,2.2vh,22px)}
+#drill.long .tp-problem{--prob-top:6px}   /* long rows already use the full height — keep the nudge tiny */
+
 /* 3 — a bigger, calmer Listen card. Listen has no number rows for Bix to narrate beside, so its
    left column shrinks and the board grows — the pad keeps its room (Reading keeps the wide column). */
 #drill[data-mode=listen]:not(.tb){--bixcol:clamp(150px,calc(100vw - 1010px),200px);--board:clamp(300px,30vw,372px)}
@@ -589,3 +608,29 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 #drill[data-mode=listen] .flash-num{min-height:128px;font-size:calc(min(132px, var(--board) * 1.15 / var(--len, 2)))}
 #drill[data-mode=listen] .tp-msg{font-size:24px}
 #drill[data-mode=listen] .tp-readout b{font-size:74px}
+
+/* =====================================================================
+   v4.47 item 5 — a calm, uncluttered Listen card (owner's walkthrough, f_026).
+   The old card crammed the ear, the "Ready" / "Tap when you are ready" line, "Say it again", the divider line and the "?"
+   answer box all together. Now the card shows ONE hero per state and the group is centred on the sheet:
+     ready    → ear (still) + "Tap when you are ready" + the Ready button
+     reading  → ear (pulsing) + the big dictated number + "Listen…"
+     answer   → "Your answer?" + the big "?" answer box, with a small, quiet "Say it again" beneath
+   The divider line is gone from Listen, and the answer box is centred (not jammed to a corner).
+   ===================================================================== */
+#drill[data-mode=listen] .tp-rule{display:none}                                   /* no stray divider line on the Listen card */
+#drill[data-mode=listen] .tp-listen{flex:0 1 auto;gap:16px;justify-content:center}  /* size to content so the sheet centres the ear/number + answer box as one group */
+#drill[data-mode=listen] .tp-sheet{gap:18px}
+#drill[data-mode=listen] .tp-readout{align-self:center}                           /* the "?" answer box sits centred under the card, not in a corner */
+/* the big dictated number only takes its space while a number is actually being read */
+#drill[data-mode=listen] #listenStage:not([data-lstate="reading"]) #listenNum{display:none}
+/* "Say it again": a small, quiet secondary control — only once the number has been read (the answer state) */
+#drill[data-mode=listen] #replayBtn{align-self:center;min-height:0;padding:7px 18px;font-size:17px;opacity:.82;
+  background:transparent;box-shadow:none;border:2px solid rgba(122,74,36,.28)}
+#drill[data-mode=listen] #replayBtn .pr-ic svg{width:20px;height:20px}
+#drill[data-mode=listen] #listenStage:not([data-lstate="answer"]) #replayBtn{display:none}
+/* the ready and reading states: the answer box is not needed yet, so drop it and let the ear + hero breathe */
+#drill[data-mode=listen] #listenStage[data-lstate="ready"] ~ .tp-readout,
+#drill[data-mode=listen] #listenStage[data-lstate="reading"] ~ .tp-readout{display:none}
+/* the answer box grows into the hero once the child is answering */
+#drill[data-mode=listen] #listenStage[data-lstate="answer"] ~ .tp-readout{min-width:150px;padding:4px 24px}

@@ -1820,7 +1820,9 @@ function fitTiles(){
   const max=parseFloat(getComputedStyle(tiles[0]).height)||98, maxF=parseFloat(getComputedStyle(tiles[0]).fontSize)||84;
   const h=Math.max(36, Math.min(max, Math.floor(avail/n)));
   let f=maxF;
-  if (h<max){ area.style.setProperty('--th', h+'px'); f=Math.min(maxF, Math.round(h*0.84)); area.style.setProperty('--tf', f+'px'); }
+  // The digits fill more of each line for the short Reading/Look sums (v4.47: bigger numbers); long rows keep the airier ratio.
+  const ratio = $('#drill').classList.contains('long') ? 0.84 : 0.9;
+  if (h<max){ area.style.setProperty('--th', h+'px'); f=Math.min(maxF, Math.round(h*ratio)); area.style.setProperty('--tf', f+'px'); }
   // the digits stay as big as the line allows, smaller only if a long number would not fit the sheet's width
   while (f>20 && tiles.some(t=>t.scrollWidth>t.clientWidth+1)){ f-=2; area.style.setProperty('--tf', f+'px'); }
 }
@@ -1927,6 +1929,7 @@ function presentProblem(){
 let dictateToken=0, listenArmed=false, submitting=false;   // submitting: an answer is being marked (the speed gear waits)
 function armListen(p){ // show a "Ready" button; the tap that presses it starts the audio inside a user gesture (iOS needs this)
   locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenMsg').textContent='Tap when you are ready';
+  $('#listenStage').dataset.lstate='ready';   // v4.47: the card shows only the ear + Ready; secondary controls hide
   const ln=$('#listenNum'); if (ln){ ln.textContent=''; ln.className='flash-num'; }
   const b=$('#listenGo'); b.style.display=''; b.onclick=()=>{ SpeedPanel.close(); b.style.display='none'; listenArmed=true; Speaker.unlock(); dictate(p); };
   // Speed is saved per child and used right away — no speed panel each time; the gear (shown during the drill) opens it to adjust.
@@ -1975,12 +1978,12 @@ async function dictate(p){
   if (!p._reader){ await Speaker.prepare(); p._reader = Speaker.pickReader(); } else Speaker.activePid = p._reader;   // replay keeps the same reader
   if (my!==dictateToken) return;
   $('#listenMsg').textContent = p._reader ? `${profileName(p._reader)} is reading…` : 'Listen…';
-  $('#listenStage').classList.add('reading');
+  $('#listenStage').classList.add('reading'); $('#listenStage').dataset.lstate='reading';   // v4.47: hero = the big number; the ear pulses
   const bigNum=$('#listenNum');
   const showBig=(term, i)=>{ if (!bigNum) return; if (term==null){ bigNum.className='flash-num eq'; bigNum.textContent='='; } else { bigNum.className='flash-num pop'+(term<0?' neg':''); flashLen(bigNum, term); bigNum.innerHTML=flashSign(term, i, p); } };
   const pulse=(ms, term, i)=>{ $('#ear').classList.add('pulse'); setTimeout(()=>$('#ear').classList.remove('pulse'),ms); showBig(term, i); };
-  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); if (bigNum){ bigNum.textContent=''; bigNum.className='flash-num'; } locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
-  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, ((p.terms.length+1)*(settings.termGap+4)+12)*1000);
+  const finishUI=()=>{ if (my!==dictateToken) return; $('#listenMsg').textContent='Your answer?'; $('#listenStage').classList.remove('reading'); $('#listenStage').dataset.lstate='answer'; if (bigNum){ bigNum.textContent=''; bigNum.className='flash-num'; } locked=false; Tool.setReady(true); $('#replayBtn').disabled=p._replayed===true; };
+  const watchdog=setTimeout(()=>{ if (my===dictateToken && locked){ Diag.add('watchdog: dictation did not finish; unlocking'); $('#listenMsg').textContent='Sound problem — tap "say it again"'; $('#listenStage').classList.remove('reading'); $('#listenStage').dataset.lstate='answer'; locked=false; Tool.setReady(true); $('#replayBtn').disabled=false; } }, ((p.terms.length+1)*(settings.termGap+4)+12)*1000);
   try{
     Speaker.stop();
     Diag.add(`dictate start voice=${settings.voice} kind=${Speaker.kind()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} tts=${('speechSynthesis' in window)?('voices '+speechSynthesis.getVoices().length+(speechSynthesis.speaking?' speaking':'')+(speechSynthesis.paused?' paused':'')):'n/a'}`);
@@ -1990,7 +1993,9 @@ async function dictate(p){
   }catch(e){ Diag.add('dictate error '+(e&&e.message||e)); finishUI(); }
   finally{ clearTimeout(watchdog); }
 }
-$('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; dictate(p); });
+// "Say it again" is a user gesture — iOS needs the AudioContext/speechSynthesis UNLOCK to run inside it, or a replay after a
+// pause/interruption plays nothing. (v4.47 item 6: the Ready tap unlocked, but this replay path did not.)
+$('#replayBtn').addEventListener('click', ()=>{ const p=problems[idx]; if(p._replayed) return; p._replayed=true; Speaker.unlock(); dictate(p); });
 // Flash: she taps Ready (after clearing her abacus), numbers pop up one at a time with their + / − sign, then she answers.
 function flashDots(n, on){ const w=n>8?22:30; $('#flashDots').innerHTML = Array.from({length:n},(_,i)=>TOY.bead('teal', w, {dim:i>=on, shadow:false})).join(''); }
 function flashLen(el, t){ el.style.setProperty('--len', Math.max(2, String(Math.abs(t)).length+1)); }
@@ -2050,7 +2055,7 @@ const SpeedPanel = {
     const waiting = $(mode==='listen' ? '#listenGo' : '#flashGo').style.display!=='none';   // still at "Ready": nothing to stop
     if (!waiting){
       dictateToken++; Speaker.stop(); Fun.BixVoice.stop(); locked=true; Tool.setReady(false);
-      if (mode==='listen'){ $('#listenStage').classList.remove('reading'); $('#listenMsg').textContent='Paused'; $('#replayBtn').disabled=true; }
+      if (mode==='listen'){ $('#listenStage').classList.remove('reading'); $('#listenStage').dataset.lstate='ready'; $('#listenMsg').textContent='Paused'; $('#replayBtn').disabled=true; }
       else { const el=$('#flashNum'); el.textContent=''; el.className='flash-num'; $('#flashMsg').textContent='Paused'; $('#flashAgain').style.display='none'; }
     }
     Sfx.tap(); this.open(mode, null); this.resume = waiting ? null : ()=>{ if (mode==='listen') dictate(p); else flash(p); };
@@ -2836,7 +2841,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.46';
+const APP_VERSION='4.47';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
