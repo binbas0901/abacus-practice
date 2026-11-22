@@ -607,6 +607,36 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 #drill[data-mode=listen] .tp-ear svg{width:40px;height:40px}
 #drill[data-mode=listen] .flash-num{min-height:128px;font-size:calc(min(132px, var(--board) * 1.15 / var(--len, 2)))}
 #drill[data-mode=listen] .tp-msg{font-size:24px}
+
+/* v4.48 — Reading (keys): grow the clipboard LEFT into the empty wood beside Bixi, and the digits with it.
+   The pad column is 1fr (the remainder), so shrinking --bixcol and growing --board by about the same keeps the keypad,
+   the Check dome and the window where they were. --bixcol stays wide enough that the board's left edge clears Bixi
+   (the figure is --bix wide at the column's left). Reading keys, short sums only: beads (.tb) and long rows (.long) keep
+   their own left-anchored layouts, and Listening / Flash are untouched. Row height and digit size track viewport height
+   (min(px, vh)) so the taller iPads get the big digits while short Safari bars shrink them to fit, never scrolling. */
+/* Bixi's narration bubble kept its full, readable width (it used to fill the wide left column). The column is now narrow,
+   so the bubble keeps a fixed width and floats in FRONT of the clipboard's empty left margin when Bixi reacts — an opaque
+   paper bubble, like the summary screen's. The width matches the long-row card's bubble at each size so the two stay in
+   step. Bixi's figure sits in front too; it already keeps real clearance from the board, so the box never covers him. */
+#drill[data-mode=visual]:not(.tb):not(.long) .tp-bixcol{position:relative;z-index:5}
+@media (orientation:landscape) and (min-width:1024px) and (max-width:1140px){
+  #drill[data-mode=visual]:not(.tb):not(.long){--bixcol:200px;--board:300px;--th-max:min(118px,15.8vh);--tf-max:min(106px,14.2vh);--ans-h:74px}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.wide{--tf-max:min(74px,10vh)}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.xwide{--tf-max:min(58px,7.8vh)}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-bubble{width:300px;max-width:none}
+}
+@media (orientation:landscape) and (min-width:1141px){
+  #drill[data-mode=visual]:not(.tb):not(.long){--bixcol:208px;--board:376px;--th-max:min(124px,17vh);--tf-max:min(116px,15.4vh);--ans-h:78px}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.wide{--tf-max:min(84px,11.4vh)}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.xwide{--tf-max:min(66px,9vh)}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-bubble{width:320px;max-width:none}
+}
+@media (min-width:1300px) and (min-height:960px){
+  #drill[data-mode=visual]:not(.tb):not(.long){--bixcol:252px;--board:430px;--th-max:min(138px,15vh);--tf-max:min(128px,13.6vh);--ans-h:98px}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.wide{--tf-max:min(96px,10vh)}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.xwide{--tf-max:min(76px,8vh)}
+  #drill[data-mode=visual]:not(.tb):not(.long) .tp-bubble{width:348px;max-width:none}
+}
 #drill[data-mode=listen] .tp-readout b{font-size:74px}
 
 /* =====================================================================
@@ -629,8 +659,9 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
   background:transparent;box-shadow:none;border:2px solid rgba(122,74,36,.28)}
 #drill[data-mode=listen] #replayBtn .pr-ic svg{width:20px;height:20px}
 #drill[data-mode=listen] #listenStage:not([data-lstate="answer"]) #replayBtn{display:none}
-/* the ready and reading states: the answer box is not needed yet, so drop it and let the ear + hero breathe */
-#drill[data-mode=listen] #listenStage[data-lstate="ready"] ~ .tp-readout,
-#drill[data-mode=listen] #listenStage[data-lstate="reading"] ~ .tp-readout{display:none}
+/* before Ready the answer box is not needed, so drop it and let the ear breathe */
+#drill[data-mode=listen] #listenStage[data-lstate="ready"] ~ .tp-readout{display:none}
+/* v4.48: while the number is being read the pad / beads are already live, so the answer box stays visible under the hero
+   number for the child to key / bead along (it used to hide until the number had finished). */
 /* the answer box grows into the hero once the child is answering */
 #drill[data-mode=listen] #listenStage[data-lstate="answer"] ~ .tp-readout{min-width:150px;padding:4px 24px}

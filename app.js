@@ -1820,8 +1820,9 @@ function fitTiles(){
   const max=parseFloat(getComputedStyle(tiles[0]).height)||98, maxF=parseFloat(getComputedStyle(tiles[0]).fontSize)||84;
   const h=Math.max(36, Math.min(max, Math.floor(avail/n)));
   let f=maxF;
-  // The digits fill more of each line for the short Reading/Look sums (v4.47: bigger numbers); long rows keep the airier ratio.
-  const ratio = $('#drill').classList.contains('long') ? 0.84 : 0.9;
+  // The digits fill more of each line for the short Reading/Look sums (v4.47: bigger numbers; v4.48: bigger still, the wider
+   // clipboard gives the width headroom so the taller digits don't get clipped); long rows keep the airier ratio.
+  const ratio = $('#drill').classList.contains('long') ? 0.84 : 0.98;
   if (h<max){ area.style.setProperty('--th', h+'px'); f=Math.min(maxF, Math.round(h*ratio)); area.style.setProperty('--tf', f+'px'); }
   // the digits stay as big as the line allows, smaller only if a long number would not fit the sheet's width
   while (f>20 && tiles.some(t=>t.scrollWidth>t.clientWidth+1)){ f-=2; area.style.setProperty('--tf', f+'px'); }
@@ -1974,7 +1975,9 @@ async function speakTerms(p, alive, pulse){
 }
 async function dictate(p){
   Fun.BixVoice.stop();
-  const my=++dictateToken; locked=true; Tool.setReady(false); $('#replayBtn').disabled=true; $('#listenGo').style.display='none';
+  // v4.48: the pad / beads go LIVE the instant dictation starts — the child keys or beads along while listening (they
+  // used to stay dimmed until the whole number had been read). "Say it again" and marking the answer are unchanged.
+  const my=++dictateToken; locked=false; Tool.setReady(true); $('#replayBtn').disabled=true; $('#listenGo').style.display='none';
   if (!p._reader){ await Speaker.prepare(); p._reader = Speaker.pickReader(); } else Speaker.activePid = p._reader;   // replay keeps the same reader
   if (my!==dictateToken) return;
   $('#listenMsg').textContent = p._reader ? `${profileName(p._reader)} is reading…` : 'Listen…';
@@ -2841,7 +2844,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.47';
+const APP_VERSION='4.48';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

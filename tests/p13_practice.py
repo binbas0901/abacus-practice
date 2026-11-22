@@ -239,9 +239,12 @@ async def main():
             ok = await pg.evaluate(fit); await pg.evaluate("document.querySelector('#toolSwitch').click()"); await pg.wait_for_timeout(150)   # (Ready sits on the stage; the panel only opens from the gear)
             check(f'Listen ({(await drill(pg))["tool"]=="keys" and "beads" or "keys"}): card, answer tool and Check all fit on screen', ok)
         off = "document.querySelector('#checkBtn').disabled && [...document.querySelectorAll('#pad [data-k]')].filter(b=>b.dataset.k!=='go').every(b=>b.disabled) && document.querySelector('#answerTool').classList.contains('waiting')"
-        check('Listen: keypad + Check disabled (dimmed) before the numbers are read', await pg.evaluate(off))
+        live = "!document.querySelector('#checkBtn').disabled && [...document.querySelectorAll('#pad [data-k]')].filter(b=>b.dataset.k!=='go').every(b=>!b.disabled) && !document.querySelector('#answerTool').classList.contains('waiting')"
+        check('Listen: keypad + Check disabled (dimmed) before the numbers are read (at Ready)', await pg.evaluate(off))
         await pg.click('#listenGo'); await pg.wait_for_timeout(150)
-        check('Listen: ...and still disabled while Bix reads', await pg.evaluate(off) or await pg.text_content('#listenMsg') == 'Your answer?')
+        # v4.48: the pad / beads go LIVE the instant dictation starts — the child can key / bead along while the number is read.
+        reading = await pg.text_content('#listenMsg') != 'Your answer?'
+        check('Listen: keypad + Check LIVE as soon as the number starts (not disabled while Bixi reads)', await pg.evaluate(live) and reading)
         await pg.wait_for_function("document.querySelector('#listenMsg').textContent==='Your answer?'", timeout=30000); await shot(pg, 'listen_answer')
         check('Listen: "Your answer?" -> keypad + Check live', await pg.evaluate("!document.querySelector('#checkBtn').disabled && !document.querySelector('#pad [data-k=\"5\"]').disabled && !document.querySelector('#answerTool').classList.contains('waiting')"))
         await pg.click('#exitDrill'); await pg.evaluate("App.startMode('flash')"); await pg.wait_for_selector('#flashGo', state='visible'); await shot(pg, 'flash_ready')
