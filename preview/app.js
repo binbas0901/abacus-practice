@@ -1831,8 +1831,8 @@ window.addEventListener('resize', ()=>{ if ($('#drill').classList.contains('acti
 // Refit whenever the room changes (bubble mounted, "Show me" appears, fonts arrive, rotation).
 if (window.ResizeObserver){ let q=0; const ro=new ResizeObserver(()=>{ if (q) return; q=requestAnimationFrame(()=>{ q=0; if ($('#drill').classList.contains('active') && mode==='visual') fitTiles(); }); }); ro.observe($('#sheet')); ro.observe($('#drill .tp-body')); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if ($('#drill').classList.contains('active')) fitTiles(); });
-// The set as beads on a brass rod: finished ones have slid to the left (teal = right, walnut = one to polish),
-// the one she is on glows in the middle, the rest wait on the right.
+// The set as beads on a brass rod: finished ones have slid to the left (green = right, red = one to polish — a
+// traffic-light verdict), the one she is on glows in the middle, the rest wait on the right.
 function renderStrip(popIdx){
   const st=$('#strip'); const fixing=reviewing && !LT; $('#fixLabel').hidden=!fixing; st.classList.toggle('fixing', fixing);
   const list = fixing ? reviewQueue : problems.map((_,i)=>i);
@@ -1840,11 +1840,11 @@ function renderStrip(popIdx){
   st.innerHTML = list.map((i,k)=>{
     const p=problems[i], cur=i===idx, ok=results[i]===true||p._fixed, bad=results[i]===false&&!p._fixed;
     let svg, label=`Problem ${k+1}`;
-    if (cur && !LT && (ok||bad)){ svg=rodBead(ok?'teal':'walnut', Math.round(h*1.16)); label+= ok?', right':', to polish'; }   // the verdict shows at once, on the bead she is on
+    if (cur && !LT && (ok||bad)){ svg=rodBead(ok?'green':'red', Math.round(h*1.16)); label+= ok?', right':', to polish'; }   // the verdict shows at once, on the bead she is on (green = right, red = wrong)
     else if (cur){ svg=rodBead('mustard', Math.round(h*1.16)); label+=', now'; }
     else if (LT) svg=rodBead('indigo', h, results[i]===null||results[i]===undefined), label+= results[i]!=null?', done':'';
-    else if (ok){ svg=rodBead('teal', h); label+=', right'; }
-    else if (bad){ svg=rodBead('walnut', h); label+=', to polish'; }
+    else if (ok){ svg=rodBead('green', h); label+=', right'; }
+    else if (bad){ svg=rodBead('red', h); label+=', to polish'; }
     else svg=rodBead('wood', h, true);
     const fx = i===popIdx ? (bad && !LT ? ' tp-wob' : ' tp-pop') : '';
     return `<span role="listitem" aria-label="${label}" class="tp-b${cur?' cur':''}${ok?' ok':''}${bad?' bad':''}${fx}">${svg}</span>`;
@@ -2169,7 +2169,7 @@ async function submit(){
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
-      const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('walnut', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
+      const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('red', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
       JB.say('Let\'s watch the beads together.', 'j_showme', 0);
       await sleep(900); await showMe(p);
       if (!$('#drill').classList.contains('active')) return;
@@ -2203,16 +2203,16 @@ function bowlSlot(i, total){
   const m=per[row], x=50+(k%m-(m-1)/2)*bs*84+((i*37)%7-3)*.5, y=44-row*bs*47-Math.floor(k/m)*bs*40;
   return `left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;--r:${(i*53)%41-20}deg;--r0:${(i*71)%121-60}deg;--dx:${(i*29)%61-30}px;animation-delay:${(0.25+i*0.11).toFixed(2)}s`;
 }
-// Beads earned drop into the bowl (teal = right, then the golden ones); the ones to polish (raw walnut) wait on the felt mat beside it.
+// Beads earned drop into the bowl (green = right, then the golden ones); the ones to polish (red) wait on the felt mat beside it.
 // list: 'jade' (right) | 'fix' (to polish) | 'pale' (not yet)
 function sumBeads(list, gold){
   gold=gold||0; const inBowl=list.filter(c=>c==='jade').length, total=inBowl+gold, bs = total<=14 ? .19 : total<=25 ? .145 : .112;
   const box=$('#sumStars'); box.style.setProperty('--bs', bs); let k=0, html=BOWL_BACK;
-  list.forEach((c,i)=>{ if (c==='jade') html+=`<span role="listitem" aria-label="${i+1}: shiny" class="tp-b in" style="${bowlSlot(k++, total)}">${TOY.bead('teal', 80, {shadow:false})}</span>`; });
+  list.forEach((c,i)=>{ if (c==='jade') html+=`<span role="listitem" aria-label="${i+1}: shiny" class="tp-b in" style="${bowlSlot(k++, total)}">${TOY.bead('green', 80, {shadow:false})}</span>`; });
   for (let g=0; g<gold; g++) html+=`<span aria-hidden="true" class="tp-b tp-gold in" style="${bowlSlot(k++, total)}">${TOY.bead('mustard', 80, {shadow:false})}</span>`;
   box.innerHTML=html+BOWL_FRONT;
   const out=list.map((c,i)=>[c,i]).filter(x=>x[0]!=='jade'), w=out.length>8 ? 44 : 60;
-  $('#sumFix').innerHTML=out.map(([c,i])=>`<span role="listitem" aria-label="${i+1}: ${c==='fix'?'to polish':'not yet'}" class="tp-b out">${TOY.bead('walnut', w, {dim:c!=='fix'})}</span>`).join('');
+  $('#sumFix').innerHTML=out.map(([c,i])=>`<span role="listitem" aria-label="${i+1}: ${c==='fix'?'to polish':'not yet'}" class="tp-b out">${TOY.bead('red', w, {dim:c!=='fix'})}</span>`).join('');
 }
 function sumBix(mood){ const el=$('#bixSum'); el.innerHTML=bixArt(mood, 210); return el; }
 // Today's steps as the moon sees them: how many were done before this activity, and after it.
@@ -2844,7 +2844,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.48';
+const APP_VERSION='4.49';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
