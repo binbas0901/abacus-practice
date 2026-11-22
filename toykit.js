@@ -12,7 +12,7 @@
 //   TOY.buddy(n, size, mood, opts)     number friends 1-9; mood happy | wave | cheer | wow | oops | sleepy | think
 //                                      opts.prop: 'glasses' | 'magnifier' | 'book'
 //   TOY.pair(a, b, size)               two friends holding hands, with the number they make together
-//   TOY.bead(color, size, {dim,tall})  red | mustard | indigo | teal | plum | wood | walnut
+//   TOY.bead(color, size, {dim,tall})  red | mustard | indigo | teal | plum | wood | walnut | green
 //   TOY.rodProgress(done, total, cur)  progress beads on a brass rod
 //   TOY.icon(name, size, color, opts)  see TOY.ICONS
 //   TOY.bubble(html, {title, tail})    tail: 'left' | 'right' | 'side' | 'none'
@@ -36,6 +36,7 @@
     plum:    { hi: '#DDB4F5', mid: '#9255C4', lo: '#6A3596', deep: '#4A2270', arm: '#8549B6', ink: '#FFFFFF', line: '#35164F', mouth: '#2A1040', blush: '#FF9FA8' },
     moon:    { hi: '#FFFFF6', mid: '#FBEFC2', lo: '#EDD288', deep: '#CFA650', arm: '#F3DFA0', ink: '#4A2C10', line: '#7A5A22', mouth: '#4A3212', blush: '#FFB09A' },
     walnut:  { hi: '#D9AE80', mid: '#A26C3C', lo: '#7A4A24', deep: '#5A3416', arm: '#8E5C30', ink: '#FFFFFF', line: '#4A2A10', mouth: '#3A1E06', blush: '#F0B090' },   // raw walnut: a bead to polish ("not yet"), never red
+    green:   { hi: '#A6EFC2', mid: '#1FAE60', lo: '#138A49', deep: '#0B6836', arm: '#199A54', ink: '#FFFFFF', line: '#0A5C30', mouth: '#084826', blush: '#FF9FA8' },   // friendly leaf-green: a RIGHT result bead (traffic-light "correct"), matches abacus-input's abx-lac-fbgreen
     wood:    { hi: '#FFF3DC', mid: '#EFD2A4', lo: '#D2A670', deep: '#B08448', arm: '#DDB580', ink: '#4A2C10', line: '#7A4A24', mouth: '#4A2C10', blush: '#F0B090' },
   };
   const INK = '#2B3674', FACE = '#2A1614';
