@@ -95,7 +95,7 @@ async def main():
         e = digit(cur, 0) % 5
         await tap(pg, 0, 'e', e if e < 4 else 0)
         await pg.click('#checkBtn'); await pg.wait_for_timeout(300); st = (await drill(pg))['strip']
-        check('beads, wrong answer -> walnut bead to polish later', 'bad' in st[2], st)
+        check('beads, wrong answer -> red bead to polish later (v4.49)', 'bad' in st[2], st)
         await pg.wait_for_timeout(900)
         # the rest with the keypad
         await pg.click('#toolSwitch'); await pg.wait_for_timeout(200)
@@ -104,13 +104,13 @@ async def main():
             d = await drill(pg); await keypad(pg, d['answer'] + (1 if i == 5 else 0)); await pg.wait_for_timeout(1050)
         await pg.wait_for_selector('#summary.active'); await pg.wait_for_timeout(500)
         head = await pg.text_content('#sumScore'); text = await pg.text_content('#summary')
-        check('end of set: "8 shiny beads!" headline (the beads are teal, so no colour word), no N/10 score', head.strip() == '8 shiny beads!' and not re.search(r'\d+\s*/\s*\d+', text), head)
+        check('end of set: "8 shiny beads!" headline (the beads are green, so no colour word), no N/10 score', head.strip() == '8 shiny beads!' and not re.search(r'\d+\s*/\s*\d+', text), head)
         check('end of set: 10 beads (8 green dropped in the bowl, 2 to polish on the mat)', await pg.evaluate("document.querySelectorAll('#sumStars .tp-b:not(.tp-gold), #sumFix .tp-b').length") == 10 and await pg.evaluate("document.querySelectorAll('#sumStars .tp-b.in:not(.tp-gold)').length") == 8 and await pg.evaluate("document.querySelectorAll('#sumFix .tp-b').length") == 2)
         check('end of set: the Fix button + "I\'m done" (the summary no longer shows a golden-bead chip)', not await pg.locator('#sumGold').is_visible()
               and await pg.locator('#fixBtn').is_visible() and await pg.locator('#homeBtn').is_visible())
         check('end of set: one phrase family - "Beads to polish" on the mat, "Polish these with Bix" on the button, no "green"', (await pg.text_content('#fixBtn')).strip() == 'Polish these with Bix' and (await pg.text_content('#summary .tp-fixcap')).strip() == 'Beads to polish' and not re.search(r'green', text, re.I), await pg.text_content('#fixBtn'))
-        nored = await pg.evaluate("[/\\bred\\b/i.test(document.querySelector('#summary').innerText), document.querySelector('#fixBtn').classList.contains('toy-block--red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-walnut'), !!document.querySelector('#summary .tp-fixcap') && document.querySelector('#summary .tp-fixcap').getClientRects().length>0]")
-        check('end of set: red never means wrong (no "red" in the words, Fix button not red, beads to polish are raw walnut on a labelled mat)', nored == [False, False, False, True, True], nored)
+        redfix = await pg.evaluate("[/\\bred\\b/i.test(document.querySelector('#summary').innerText), document.querySelector('#fixBtn').classList.contains('toy-block--red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-red'), document.querySelector('#sumFix').innerHTML.includes('toy-lac-walnut'), !!document.querySelector('#summary .tp-fixcap') && document.querySelector('#summary .tp-fixcap').getClientRects().length>0]")
+        check('end of set: to-polish beads are RED (v4.49 traffic-light) on a labelled mat, but "red"/"green" are never shown as words and the Fix button is not styled red', redfix == [False, False, True, False, True], redfix)
         await shot(pg, 'end_of_set')
         check('child targets >= 60px on the end of set', not await pg.evaluate(SMALL, '#summary'), await pg.evaluate(SMALL, '#summary'))
         await pg.wait_for_timeout(2600)
@@ -295,13 +295,13 @@ async def main():
             await pg.evaluate("__drillSet([3,4,-2,5],null,'keys')"); await pg.wait_for_timeout(200)
             await keypad(pg, 10); await pg.wait_for_timeout(220)
             st = await pg.evaluate("[document.querySelector('#readout').className, document.querySelector('#strip .tp-b.cur').className, getComputedStyle(document.querySelector('#readout')).backgroundColor]")
-            check(f'{tag}: right answer -> answer box green (is-right) + its rod bead teal with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'tp-pop' in st[1] and 'is-wrong' not in st[0], st)
+            check(f'{tag}: right answer -> answer box green (is-right) + its rod bead green with a pop, instantly', 'is-right' in st[0] and 'ok' in st[1] and 'tp-pop' in st[1] and 'is-wrong' not in st[0], st)
             await shot(pg, f'right_{tag}')
             await pg.wait_for_timeout(900); d = await drill(pg)
             check(f'{tag}: next problem -> answer box back to plain', not await pg.evaluate("document.querySelector('#readout').classList.contains('is-right')"))
             await keypad(pg, d['answer'] + 1); await pg.wait_for_timeout(220)
-            st = await pg.evaluate("(()=>{ const r=document.querySelector('#readout'), c=document.querySelector('#strip .tp-b.cur'), cs=getComputedStyle(r), plain=document.querySelector('#strip .tp-b:not(.cur):not(.ok):not(.bad)'); return [r.className, c.className, cs.backgroundColor, cs.borderTopStyle, cs.borderTopColor, c.innerHTML.includes('toy-lac-walnut'), document.querySelector('#strip').innerHTML.includes('toy-lac-red'), !plain || plain.innerHTML.includes('toy-lac-wood')]; })()")
-            check(f'{tag}: wrong answer -> red (v4.45): the answer box turns a true red (is-wrong, solid red border) + its rod bead stays raw walnut with a gentle wobble; the 7-set progress rod is NOT recoloured red',
+            st = await pg.evaluate("(()=>{ const r=document.querySelector('#readout'), c=document.querySelector('#strip .tp-b.cur'), cs=getComputedStyle(r), plain=document.querySelector('#strip .tp-b:not(.cur):not(.ok):not(.bad)'); return [r.className, c.className, cs.backgroundColor, cs.borderTopStyle, cs.borderTopColor, c.innerHTML.includes('toy-lac-red'), c.innerHTML.includes('toy-lac-walnut'), !plain || plain.innerHTML.includes('toy-lac-wood')]; })()")
+            check(f'{tag}: wrong answer -> red (v4.49 traffic-light): the answer box turns a true red (is-wrong, solid red border) + its rod result bead turns RED with a gentle wobble; the unanswered beads stay raw wood (not recoloured)',
                   'is-wrong' in st[0] and 'bad' in st[1] and 'tp-wob' in st[1] and st[3] == 'solid' and st[4] == 'rgb(154, 17, 24)' and st[5] and not st[6] and st[7], st)
             await pg.wait_for_timeout(1000)
             await pg.evaluate("__drillSet([1,1],null,'beads')"); await pg.wait_for_timeout(200)
