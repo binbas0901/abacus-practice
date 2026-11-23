@@ -66,6 +66,10 @@ function advancePastMastered(){ if (!C.advanceCurrent) return; const nx=C.advanc
 // set (the existing drill/game fix pass). Per-mode counts live in node(id).modes = {reading, listening}. A third
 // mode (flash/anzan) is added in a later slice; PRACTICE_MODES is kept extensible for it.
 const MODE_SESSIONS = 7, SET_LEN = 10, PRACTICE_MODES = ['reading', 'listening'];
+// At the first (no-sums) level there is no arithmetic to "read" or "listen" to yet, so the picker uses plain action
+// names that match the activity each card launches: Reading -> read a number off the beads, Listening -> hear a number
+// and make it. Used BOTH as the picker card label and as the activity's own on-screen title, so the two always agree.
+const L1_LABELS = { reading: 'Read the beads', listening: 'Make the number' };
 function _modes(id){ const nd = node(id); nd.modes = nd.modes || {}; return nd.modes; }
 function modeDone(id, mode){ return Math.min(MODE_SESSIONS, _modes(id)[mode] || 0); }
 function modeComplete(id, mode){ return modeDone(id, mode) >= MODE_SESSIONS; }
@@ -152,11 +156,11 @@ const Practice = {
     if (mode === 'listening'){
       this.type = 'listening';
       if (n && n.drill) return startDrill('listen', n);                 // listen drill -> finish() -> Practice.setDone()
-      SetClock.start(); return Games.runSet('build', SET_LEN, () => this.sessionDone());  // no-sums level: build the heard number
+      SetClock.start(); return Games.runSet('build', SET_LEN, () => this.sessionDone(), L1_LABELS.listening);  // no-sums level: make the heard number (title matches the "Make the number" card)
     }
     this.type = 'reading';
     if (n && n.drill) return startDrill('visual', n);                   // Reading: the whole sum is shown with +/- signs; child solves it and types the answer (misses fixed after the set)
-    SetClock.start(); return Games.runSet('read', SET_LEN, () => this.sessionDone());     // no-sums level fallback: read the beads
+    SetClock.start(); return Games.runSet('read', SET_LEN, () => this.sessionDone(), L1_LABELS.reading);     // no-sums level fallback: read the beads (title matches the "Read the beads" card)
   },
   setDone(){ this.sessionDone(); },                                     // the listen drill's finish() calls this
   sessionDone(){
@@ -1222,11 +1226,24 @@ function renderPracticePick(id){
       + `<span class="pp-pips">${Array.from({length:T},(_,i)=>`<i class="pp-pip${i<done?' on':''}"></i>`).join('')}</span>`
       + `<span class="pp-best"${bestLab?'':' hidden'}>${bestLab}</span></button>`;
   };
-  let html = card('reading','Reading', modeDone(id,'reading')) + card('listening','Listening', modeDone(id,'listening'));
+  // At the first (no-sums) level the cards use plain action names so the card and the activity it opens share a name.
+  const noSums = cur && !cur.drill;
+  const readLab = noSums ? L1_LABELS.reading : 'Reading', listenLab = noSums ? L1_LABELS.listening : 'Listening';
+  let html = card('reading', readLab, modeDone(id,'reading')) + card('listening', listenLab, modeDone(id,'listening'));
   // Mental Math: a third card, shown ONLY once the child is eligible (combined mastered). Hidden otherwise — never a locked/greyed card.
   if (anzanEligible()) html += card('mental','Mental math', modeDone(id,'mental'));
   $('#ppCards').innerHTML = html;
-  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.' : 'Pick how to practise — Reading or Listening.'; jb.classList.add('on'); }
+  // "Watch the lesson again": a returning child can replay the current skill's tutorial. Shown only when the skill has
+  // a lesson; replays via the same path as the door's Learn door, then returns here (from:'practice').
+  const ex = $('#ppExtra');
+  if (ex){
+    const n = NODES[curIdx()];
+    if (n && hasLesson(n)){
+      ex.innerHTML = `<button class="pp-watch" id="ppWatch" aria-label="Watch the lesson again">${TOY.icon('play', 30, 'currentColor', {stroke:2.6})}<span>Watch the lesson again</span></button>`;
+      $('#ppWatch').onclick = ()=>{ Sfx.tap(); Speaker.unlock(); startLesson(lessonTarget(NODES[curIdx()]), 'practice'); };
+    } else ex.innerHTML = '';
+  }
+  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.' : noSums ? 'Pick how to practise — read the beads, or make a number.' : 'Pick how to practise — Reading or Listening.'; jb.classList.add('on'); }
   toySky('#ppSky');
 }
 $('#exitPick').innerHTML = TOY.icon('back', 32, 'currentColor');
@@ -2936,7 +2953,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.56';
+const APP_VERSION='4.57';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
