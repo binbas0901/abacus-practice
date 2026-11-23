@@ -123,7 +123,9 @@
     const who = opts.who || info.who || 'bixi';
     const text = opts.text != null ? opts.text : (info.text || Voice.text[key] || '');
     if (opts.bubble) { showBubble(opts.bubble, text, who, opts.ms || 0); if (opts.bubble.__replay) opts.bubble.__replay(key, who, opts.figure); }
-    return Voice.play(who, key, opts.figure);
+    // A failed/rejected clip must never surface as an uncaught rejection to a fire-and-forget caller (the bubble is
+    // already shown; the voice just stays silent). Hang protection for awaited beats lives in the callers (e.g. onboarding beat()).
+    return Promise.resolve(Voice.play(who, key, opts.figure)).catch(() => {});
   }
   // Say a short sequence (e.g. a joke: question, pause, punchline), each on the same bubble.
   async function sequence(items, opts = {}) {
