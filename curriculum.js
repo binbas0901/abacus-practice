@@ -104,7 +104,10 @@
       intro: 'Work left to right: tens rod first, then units. Every rod uses the same friends.',
       demos: [[23, 45], [38, 27], [64, -29]], guided: [[12, 34], [25, 48], [57, 36], [72, -45], [60, -27], [81, -56]],
       drill: { operands: 4, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ['direct', 'five', 'ten', 'combined'] } },
-    { id: 'anzan', title: 'Mental abacus', short: 'Mental', icon: 'owl', kind: 'flash',
+    { id: 'anzan', title: 'Mental abacus', short: 'Mental', icon: 'owl', kind: 'flash', optional: true, track: 'anzan',
+      // optional/track: a flash node is OFF the mandatory skill-path (advanceCurrent skips it, so a child is never
+      // parked on it to reach the next physical skill). It survives only as the CONTENT SOURCE for the Mental Math
+      // practice mode (anzanForLevel). The Mental Math MODE is still a required track at eligible levels (app.js).
       intro: 'Picture the beads in your head. Numbers flash by; move the beads in your mind; say the answer.',
       review: ['add_direct', 'sf_add', 'bf_add_a', 'bf_add_b'],      // flash test reviews add-only skills
       drill: { operands: 3, digits: 1, maxTotal: 99, allowSubtraction: false, allowedRules: ['direct', 'five', 'ten', 'combined'], flash: true } },
@@ -130,7 +133,7 @@
       demos: [[46, 38], [84, 57], [141, -65]],
       guided: [[35, 47], [82, 29], [111, -46], [65, 58], [123, -79]],                    // one row: = 44
       drill: { operands: 5, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ALL, require: ['ten:*:*:1-2', 'combined:*:*:1-2'] } },
-    { id: 'anzan_more', level: 4, title: 'Mental abacus: 5 numbers', short: 'Mental ×5', icon: 'owl', iconKey: 'bolt', kind: 'flash',
+    { id: 'anzan_more', level: 4, title: 'Mental abacus: 5 numbers', short: 'Mental ×5', icon: 'owl', iconKey: 'bolt', kind: 'flash', optional: true, track: 'anzan',
       intro: 'Same mental beads, more numbers. Picture the abacus, add each number as it flashes, and keep the picture still between numbers.',
       demos: [[7, 8], [15, 6]],
       guided: [[6, 9], [15, 7], [22, 5]],
@@ -155,7 +158,7 @@
       guided: [[2, 6], [4, 7], [6, 6], [8, 8], [9, 7], [7, 9]],
       review: ['times_a', 'three_digit'],
       drill: { op: 'mul', a: [2, 9], bSet: [6, 7, 8, 9] } },
-    { id: 'anzan_2d', level: 5, title: 'Mental abacus: two-digit', short: 'Mental 2-digit', icon: 'owl', iconKey: 'bolt', kind: 'flash',
+    { id: 'anzan_2d', level: 5, title: 'Mental abacus: two-digit', short: 'Mental 2-digit', icon: 'owl', iconKey: 'bolt', kind: 'flash', optional: true, track: 'anzan',
       intro: 'Picture two rods now: tens and units. Add the tens first, then the units, just like on the real abacus.',
       demos: [[24, 35], [59, 47]],
       guided: [[31, 26], [57, 48], [105, 23]],
@@ -301,8 +304,19 @@
   function advanceCurrent(currentId, isMastered) {
     let i = NODES.findIndex(n => n.id === currentId);
     if (i < 0) return NODES[0].id;
-    while (i < NODES.length - 1 && isMastered(NODES[i].id)) i++;
+    // Move past mastered nodes AND the off-path flash/anzan nodes (optional:true): a flash node is never a mandatory
+    // rung, so a child who finishes e.g. two_digit advances straight to long_rows and is never parked on anzan.
+    while (i < NODES.length - 1 && (isMastered(NODES[i].id) || NODES[i].optional || NODES[i].kind === 'flash')) i++;
     return NODES[i].id;
+  }
+  // anzanForLevel(lv) -> the flash (mental-math) content node id for a level band: 3 -> anzan, 4 -> anzan_more,
+  // 5 and up -> anzan_2d (the highest available flash content; Level 6 reuses anzan_2d). Pure; used by the app to
+  // SOURCE the Mental Math practice mode from the current band's flash node without putting that node on the path.
+  function anzanForLevel(lv) {
+    lv = Number(lv) || 0;
+    if (lv >= 5) return 'anzan_2d';
+    if (lv === 4) return 'anzan_more';
+    return 'anzan';
   }
 
   // --- Level tests ------------------------------------------------------------
@@ -407,6 +421,6 @@
       certificate: passed ? { nodeId: test.nodeId, title: test.title, icon: test.icon, accuracyPct: Math.round(accuracy * 100), correct, total, timeSec: elapsedSec, timeLimitSec: test.timeLimitSec } : null };
   }
 
-  const api = { NODES, BY_ID, explain, explainMul, lessonStep, advanceCurrent, MASTERY, FRIEND5, FRIEND10, NODE_SPECS, TEMPLATES, compileNode, compileDrill, moveMatcher, levelTest, scoreLevelTest, PASS_ACCURACY };
+  const api = { NODES, BY_ID, explain, explainMul, lessonStep, advanceCurrent, anzanForLevel, MASTERY, FRIEND5, FRIEND10, NODE_SPECS, TEMPLATES, compileNode, compileDrill, moveMatcher, levelTest, scoreLevelTest, PASS_ACCURACY };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Curriculum = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

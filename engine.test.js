@@ -380,10 +380,17 @@ function checkExplain(total, delta) {
   eq(C.NODES.indexOf(C.BY_ID.long_rows), 12, 'mastering node 12 (anzan) unlocks long_rows (13th node)');
   eq(NEW.map(id => C.BY_ID[id].level), [4, 4, 4, 5, 5, 5, 5, 6, 6, 6], 'level numbers');
   eq(C.advanceCurrent('anzan', id => id === 'anzan'), 'long_rows', 'child who mastered anzan moves on to long_rows');
-  eq(C.advanceCurrent('anzan', () => false), 'anzan', 'unmastered current stays');
-  eq(C.advanceCurrent('two_digit', id => ['two_digit', 'anzan', 'long_rows'].includes(id)), 'rows_2d', 'skips every mastered node');
+  // Flash/anzan nodes are off-path (optional:true): advanceCurrent skips them whether or not they are "mastered",
+  // so a child is never parked on a flash node. A child sitting on anzan (e.g. from old saved progress) moves on.
+  eq(C.advanceCurrent('anzan', () => false), 'long_rows', 'off-path flash node (anzan) is skipped, not a resting rung');
+  eq(C.advanceCurrent('two_digit', id => id === 'two_digit'), 'long_rows', 'finishing two_digit advances past anzan to long_rows');
+  eq(C.advanceCurrent('two_digit', id => ['two_digit', 'anzan', 'long_rows'].includes(id)), 'rows_2d', 'skips every mastered node (and anzan)');
+  eq(C.advanceCurrent('combined', () => false), 'combined', 'unmastered non-flash current stays');
   eq(C.advanceCurrent('mul_3x1', () => true), 'mul_3x1', 'last node stays');
   eq(C.advanceCurrent('gone', () => true), 'beads', 'unknown id falls back to the first node');
+  // anzanForLevel: the Mental Math content node per band (3 -> anzan, 4 -> anzan_more, 5+ -> anzan_2d).
+  eq([3, 4, 5, 6, 2].map(lv => C.anzanForLevel(lv)), ['anzan', 'anzan_more', 'anzan_2d', 'anzan_2d', 'anzan'], 'anzanForLevel maps each band to its flash content node');
+  eq([C.BY_ID.anzan.optional, C.BY_ID.anzan_more.optional, C.BY_ID.anzan_2d.optional], [true, true, true], 'flash nodes are flagged optional (off the mandatory path)');
   for (const id of NEW) {
     const n = C.BY_ID[id], i = C.NODES.indexOf(n);
     eq([typeof n.title, typeof n.short, typeof n.icon, ICONS.includes(n.iconKey), n.intro.length > 20, n.mastery], ['string', 'string', 'string', true, true, { lastN: 20, minAccuracy: 0.8, minDays: 2 }], `${id} fields`);
