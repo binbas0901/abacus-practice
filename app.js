@@ -1419,7 +1419,7 @@ async function renderLesson(){
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (a number-agnostic one — never a hard-coded number)
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); $('#lessonHint').style.display=''; if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (number-agnostic); "Show me" lets a stuck child be shown how to form this number
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
@@ -1619,7 +1619,34 @@ function guidedText(ls, pair, lead){
   if (ls.op==='mul') return `${lead}Start at <b>0</b>. Work out <b>${x} × ${y}</b> on the abacus.`;
   return `${lead}${lead?'the abacus':'The abacus'} shows <b>${x}</b>. ${lead?(y<0?'Take away':'Add'):'Now '+(y<0?'take away':'add')} <b>${Math.abs(y)}</b>.`;
 }
-$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
+// The move-steps that FORM a single-digit number v on the units rod, as a "Show me" demo (numbers phase, first lesson).
+// Same {k, say, do} shape playSteps consumes: heaven bead first (five), then earth beads. Narration is in words a
+// six-year-old follows. Keys are stable (not the sentence) so Juni's clips can be recorded against them later;
+// until recorded, playSteps shows the caption silently (same as the quick-win fallback).
+function makeNumberSteps(v){
+  const steps=[];
+  if (v>=5){
+    steps.push({ k:'show.heaven', say:'Slide the heaven bead down — that’s five.', do:[{rod:0, delta:5}] });
+    const more=v-5;
+    if (more>0) steps.push({ k:`show.more.${more}`, say:`Slide up ${more} more earth bead${more>1?'s':''} — now it’s ${v}.`, do:[{rod:0, delta:more}] });
+  } else {
+    steps.push({ k:`show.earth.${v}`, say:`Slide up ${v} earth bead${v>1?'s':''} — that’s ${v}.`, do:[{rod:0, delta:v}] });
+  }
+  return steps;
+}
+$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return;
+  if (L.phase==='numbers'){   // "Your turn — Show N": Juni demonstrates forming N on the abacus, then the child tries again (not auto-completed)
+    const di=L.demoIdx, v=L.node.lesson.numbers[di]; L.target=v;
+    const steps=makeNumberSteps(v);
+    L.busy=true; lessonAb.reset(); lessonAb.setReadOnly(true);   // busy before reset so the reset-to-0 doesn't register as a try
+    const tok=animToken+1;
+    await playSteps(lessonAb, steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>')));
+    if (tok!==animToken || L.phase!=='numbers' || L.demoIdx!==di) return;   // phase/number changed (Next, Back, exit): bail, leave beads to whoever took over
+    lessonAb.reset(); lessonAb.setReadOnly(false);
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip();   // back to "Your turn", abacus reset, re-pressable
+    return;
+  }
+  const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
 $('#exitLesson').addEventListener('click', ()=>{ stopVoices(); leaveLesson(); });
 
 /* ---------------- Juni the teacher: a speaker in her own right (Part 2) ---------------- */
@@ -2888,7 +2915,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.54';
+const APP_VERSION='4.55';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
