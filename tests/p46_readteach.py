@@ -20,6 +20,16 @@ def check(label, ok, extra=''):
 async def active(pg, sid):
     return await pg.evaluate("(id)=>{const e=document.getElementById(id); return !!e && e.classList.contains('active');}", sid)
 
+async def onscreen(pg, sel):
+    # True only if the element is visible AND its box is fully inside the viewport (not clipped off any edge).
+    # Guards the landscape bug where the advance control was pushed below the bottom edge (v4.58).
+    box = await pg.evaluate("""(s)=>{ const el=document.querySelector(s); if(!el) return null;
+        const r=el.getBoundingClientRect(); const cs=getComputedStyle(el);
+        if(cs.visibility==='hidden'||cs.display==='none'||r.width<1||r.height<1) return null;
+        return {top:r.top, bottom:r.bottom, left:r.left, right:r.right, vw:window.innerWidth, vh:window.innerHeight}; }""", sel)
+    if not box: return False
+    return box['top'] >= -0.5 and box['bottom'] <= box['vh'] + 0.5 and box['left'] >= -0.5 and box['right'] <= box['vw'] + 0.5
+
 async def reading_prog(pg):
     # progress is stored per-child (abacus.c.<id>.progress) and/or legacy (abacus.progress); take the max reading count
     return await pg.evaluate("""()=>{ try{ let best=0; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
@@ -53,9 +63,14 @@ async def main():
         check('it is NOT the Bead Detective quiz (#game not active)', not await active(pg, 'game'))
         check('reading progress starts at 0', (await reading_prog(pg)) == 0)
         await pg.wait_for_timeout(300); await pg.screenshot(path=f'{SHOTS}/readteach_intro.png')
+        # landscape guard (1180x820): the advance control must be fully on-screen at the intro.
+        # In v4.58 it was pushed below the bottom edge, so the child could never advance.
+        await pg.wait_for_function("()=>window.ReadTeach._waiting()==='next'", timeout=8000)
+        check('landscape: Next/advance control is fully on-screen at the intro (not clipped off the edge)',
+              await onscreen(pg, '#rtNext'))
 
         # --- drive the flow; prove no-fail on the first read beat ---
-        did_bead = False; did_read = False; no_fail_ok = None; shot_read = False
+        did_bead = False; did_read = False; no_fail_ok = None; shot_read = False; read_onscreen = None
         for i in range(160):
             if (await reading_prog(pg)) >= 1: break
             if not await active(pg, 'readTeach'): break
@@ -69,6 +84,9 @@ async def main():
             elif w and w.startswith('read:'):
                 ans = int(w.split(':')[1])
                 if not shot_read:
+                    # landscape guard: on a read beat the board and the number choices must both be fully on-screen.
+                    # (#rtCount is intentionally empty here — showing a count would give away the answer.)
+                    read_onscreen = (await onscreen(pg, '#rtAbacus') and await onscreen(pg, '.rt-choice'))
                     await pg.screenshot(path=f'{SHOTS}/readteach_read.png'); shot_read = True
                 if no_fail_ok is None:
                     # deliberately tap a WRONG choice first -> must not fail or advance
@@ -92,6 +110,7 @@ async def main():
         check('child pushed beads to a target (a "do" beat completed)', did_bead)
         check('child read beads by tapping a number (a "read" beat completed)', did_read)
         check('a WRONG read tap did not fail or advance (no-fail: stayed on the read beat, progress still 0)', no_fail_ok is True)
+        check('landscape: board and number choices are fully on-screen on a read beat', read_onscreen is True)
         check('completing the flow advanced reading progress by one session',
               (await reading_prog(pg)) == 1)
         await pg.wait_for_timeout(200); await pg.screenshot(path=f'{SHOTS}/readteach_done.png')
