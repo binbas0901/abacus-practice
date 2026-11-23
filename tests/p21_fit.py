@@ -96,11 +96,16 @@ async def main():
                 if bad or (w, h) in SMALLEST: await shot(pg, f'speed_{w}x{h}_{mode}')
                 await pg.click('#spDone'); await pg.wait_for_selector('#speedPop', state='hidden')   # close the panel; Ready stays on the stage
                 await pg.click(go); await pg.wait_for_function(msg, timeout=40000); await pg.wait_for_timeout(200)
-                for t in ['keys', 'beads']:
+                # v4.51: Mental Math / Flash hides the "Use the beads" switch (the abacus must stay hidden), so there is no beads tool there.
+                for t in (['keys'] if mode == 'flash' else ['keys', 'beads']):
                     await tool(pg, t); m = await pg.evaluate(MEASURE); n += 1
                     check(f'{w}x{h} {mode} answer state {t}: apart, on screen, nothing covered', not m['bad'], str(m['bad']))
                     if t == 'keys' and w > h and (w, h) in TARGET_ABOVE:
-                        check(f'{w}x{h} {mode} keys: the "Use the beads" pill sits ABOVE the rod', m['swAbove'] is True, str(m['swAbove']))
+                        if mode == 'flash':
+                            sw_vis = await pg.evaluate("()=>{const s=document.querySelector('#toolSwitch'); return !!(s && s.offsetParent!==null && s.getBoundingClientRect().height>0);}")
+                            check(f'{w}x{h} flash keys: the "Use the beads" pill is HIDDEN (Mental Math — no abacus)', sw_vis is False, sw_vis)
+                        else:
+                            check(f'{w}x{h} {mode} keys: the "Use the beads" pill sits ABOVE the rod', m['swAbove'] is True, str(m['swAbove']))
                     if m['bad'] or (w, h) in SMALLEST: await shot(pg, f'{mode}_{w}x{h}_{t}')
                 await tool(pg, 'keys'); await pg.click('#exitDrill'); await pg.wait_for_selector('#home.active')
             check(f'{w}x{h}: no page errors', not errs, str(errs)); await ctx.close()
