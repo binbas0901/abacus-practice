@@ -14,16 +14,16 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=4.53">
-<link rel="stylesheet" href="abacus-input.css?v=4.53">
-<link rel="stylesheet" href="toy.css?v=4.53">
-<link rel="stylesheet" href="toy-home.css?v=4.53">
-<link rel="stylesheet" href="toy-practice.css?v=4.53">
-<link rel="stylesheet" href="toy-door.css?v=4.53">
-<link rel="stylesheet" href="toy-room.css?v=4.53">
-<link rel="stylesheet" href="toy-grown.css?v=4.53">
-<link rel="stylesheet" href="classroom.css?v=4.53">
-<link rel="stylesheet" href="onboarding.css?v=4.53">
+<link rel="stylesheet" href="styles.css?v=4.54">
+<link rel="stylesheet" href="abacus-input.css?v=4.54">
+<link rel="stylesheet" href="toy.css?v=4.54">
+<link rel="stylesheet" href="toy-home.css?v=4.54">
+<link rel="stylesheet" href="toy-practice.css?v=4.54">
+<link rel="stylesheet" href="toy-door.css?v=4.54">
+<link rel="stylesheet" href="toy-room.css?v=4.54">
+<link rel="stylesheet" href="toy-grown.css?v=4.54">
+<link rel="stylesheet" href="classroom.css?v=4.54">
+<link rel="stylesheet" href="onboarding.css?v=4.54">
 </head>
 <body>
 <div id="app">
@@ -52,7 +52,7 @@
     <div class="th-bowl"><span class="th-bowl-art" id="homeBowl" aria-hidden="true"></span><span class="toy-chip th-beadchip" id="roomBeads" aria-label="golden beads"></span></div>
   </div>
   <div id="bixHomeCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
-  <div id="ver" class="th-ver">v4.53</div>
+  <div id="ver" class="th-ver">v4.54</div>
 </section>
 
 <section id="who" class="screen toy-scene tw">
@@ -93,6 +93,12 @@
     <div id="bixSetup" class="cl-bixi"></div>
     <div id="bixiSetupBubble" class="toy-bubble toy-bubble--right cl-su-bubble" aria-live="polite"><div class="ctext"></div></div>
     <div class="su-step to-step" id="suMeet" aria-hidden="true"></div>
+    <!-- Quick win (v4.54): the child's first real DO, right after meeting Bixi and before the grown-up abacus question.
+         Juni frames it "teach Bixi" (her bubble carries the words); the on-screen soroban (AbacusInput) mounts in the host
+         with a gentle nudge on the one earth bead that makes 1. Sliding it to 1 = a guaranteed success, then on to setup. -->
+    <div class="su-step to-step" id="suWin">
+      <div class="to-winmat"><div class="to-beadhost" id="suWinHost"></div></div>
+    </div>
     <div class="su-step to-step" id="suName">
       <h2 class="to-sr">What’s your name?</h2>
       <div class="toy-felt to-namemat">
@@ -497,23 +503,23 @@
 </section>
 
 </div>
-<script src="store.js?v=4.53"></script>
-<script src="toykit.js?v=4.53"></script>
-<script src="toystickers.js?v=4.53"></script>
-<script src="engine.js?v=4.53"></script>
-<script src="timemodel.js?v=4.53"></script>
-<script src="curriculum.js?v=4.53"></script>
-<script src="audio/bix-lines.js?v=4.53"></script>
-<script src="abacus-input.js?v=4.53"></script>
-<script src="parent-brain.js?v=4.53"></script>
-<script src="fun.js?v=4.53"></script>
-<script src="audio/lines-manifest.js?v=4.53"></script>
-<script src="audio/lessons.js?v=4.53"></script>
+<script src="store.js?v=4.54"></script>
+<script src="toykit.js?v=4.54"></script>
+<script src="toystickers.js?v=4.54"></script>
+<script src="engine.js?v=4.54"></script>
+<script src="timemodel.js?v=4.54"></script>
+<script src="curriculum.js?v=4.54"></script>
+<script src="audio/bix-lines.js?v=4.54"></script>
+<script src="abacus-input.js?v=4.54"></script>
+<script src="parent-brain.js?v=4.54"></script>
+<script src="fun.js?v=4.54"></script>
+<script src="audio/lines-manifest.js?v=4.54"></script>
+<script src="audio/lessons.js?v=4.54"></script>
 <script>window.LINE_PACKS=["juni","bixi","juni-lesson","juni-intro","juni-anat","juni-praise"];</script>
-<script src="classroom.js?v=4.53"></script>
-<script src="games.js?v=4.53"></script>
-<script src="treats.js?v=4.53"></script>
-<script src="onboarding.js?v=4.53"></script>
-<script src="app.js?v=4.53"></script>
+<script src="classroom.js?v=4.54"></script>
+<script src="games.js?v=4.54"></script>
+<script src="treats.js?v=4.54"></script>
+<script src="onboarding.js?v=4.54"></script>
+<script src="app.js?v=4.54"></script>
 </body>
 </html>

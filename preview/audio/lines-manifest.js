@@ -1068,6 +1068,30 @@ window.LINES_MANIFEST = {
   "tuning": "lively",
   "when": "first run: Bixi after the help idea"
  },
+ "j_qw_make1": {
+  "text": "Can you show Bixi how to make 1? Slide one bead up.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: quick-win prompt, teach-Bixi framing (slide one earth bead up to make 1)"
+ },
+ "j_qw_nudge": {
+  "text": "Give it a try. Slide one bead up to make 1.",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: quick-win gentle re-nudge if the child pauses"
+ },
+ "j_qw_win": {
+  "text": "You did it. You made 1!",
+  "who": "juni",
+  "tuning": "default",
+  "when": "first run: quick-win success, Juni's process-praise line"
+ },
+ "b_qw_cheer": {
+  "text": "Yay! You made one bead!",
+  "who": "bixi",
+  "tuning": "lively",
+  "when": "first run: quick-win success, Bixi cheers alongside (moderate)"
+ },
  "j_fix_one": {
   "text": "Let's polish this one together.",
   "who": "juni",
