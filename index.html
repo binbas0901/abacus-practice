@@ -14,16 +14,16 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="styles.css?v=4.57">
-<link rel="stylesheet" href="abacus-input.css?v=4.57">
-<link rel="stylesheet" href="toy.css?v=4.57">
-<link rel="stylesheet" href="toy-home.css?v=4.57">
-<link rel="stylesheet" href="toy-practice.css?v=4.57">
-<link rel="stylesheet" href="toy-door.css?v=4.57">
-<link rel="stylesheet" href="toy-room.css?v=4.57">
-<link rel="stylesheet" href="toy-grown.css?v=4.57">
-<link rel="stylesheet" href="classroom.css?v=4.57">
-<link rel="stylesheet" href="onboarding.css?v=4.57">
+<link rel="stylesheet" href="styles.css?v=4.58">
+<link rel="stylesheet" href="abacus-input.css?v=4.58">
+<link rel="stylesheet" href="toy.css?v=4.58">
+<link rel="stylesheet" href="toy-home.css?v=4.58">
+<link rel="stylesheet" href="toy-practice.css?v=4.58">
+<link rel="stylesheet" href="toy-door.css?v=4.58">
+<link rel="stylesheet" href="toy-room.css?v=4.58">
+<link rel="stylesheet" href="toy-grown.css?v=4.58">
+<link rel="stylesheet" href="classroom.css?v=4.58">
+<link rel="stylesheet" href="onboarding.css?v=4.58">
 </head>
 <body>
 <div id="app">
@@ -52,7 +52,7 @@
     <div class="th-bowl"><span class="th-bowl-art" id="homeBowl" aria-hidden="true"></span><span class="toy-chip th-beadchip" id="roomBeads" aria-label="golden beads"></span></div>
   </div>
   <div id="bixHomeCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
-  <div id="ver" class="th-ver">v4.57</div>
+  <div id="ver" class="th-ver">v4.58</div>
 </section>
 
 <section id="who" class="screen toy-scene tw">
@@ -185,6 +185,19 @@
   <header class="tr-top"><button class="toy-iconbtn" id="exitGame" aria-label="Back to the games"></button><div class="toy-plaque tr-title tr-gtitle" id="gameTitle"></div><div class="tr-gscore" id="gameScore" aria-live="polite"></div></header>
   <div class="tr-stage" id="gameStage"></div>
   <div class="tr-gbix" id="bixGame"></div>
+</section>
+
+<!-- Level-1 "Read the beads": Juni-led interactive teaching (not the Bead Detective quiz). -->
+<section id="readTeach" class="screen toy-scene toy-scene--calm rt">
+  <div id="rtSky" aria-hidden="true"></div>
+  <div id="rtJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
+  <header class="rt-top"><button class="toy-iconbtn exit" id="exitReadTeach" aria-label="Back"></button><div class="toy-plaque rt-title" id="rtTitle">Read the beads</div></header>
+  <div class="rt-stage">
+    <div class="rt-abwrap"><div id="rtAbacus" class="rt-ab"></div><div class="rt-count" id="rtCount" aria-live="polite"></div></div>
+    <div class="rt-pad" id="rtPad" role="group" aria-label="Pick the number"></div>
+  </div>
+  <div class="rt-bix" id="rtBix"></div>
+  <button class="toy-block toy-block--teal rt-next" id="rtNext"><span class="toy-block-label">Next</span></button>
 </section>
 
 <section id="shop" class="screen toy-scene toy-scene--table tr-shop">
@@ -504,23 +517,23 @@
 </section>
 
 </div>
-<script src="store.js?v=4.57"></script>
-<script src="toykit.js?v=4.57"></script>
-<script src="toystickers.js?v=4.57"></script>
-<script src="engine.js?v=4.57"></script>
-<script src="timemodel.js?v=4.57"></script>
-<script src="curriculum.js?v=4.57"></script>
-<script src="audio/bix-lines.js?v=4.57"></script>
-<script src="abacus-input.js?v=4.57"></script>
-<script src="parent-brain.js?v=4.57"></script>
-<script src="fun.js?v=4.57"></script>
-<script src="audio/lines-manifest.js?v=4.57"></script>
-<script src="audio/lessons.js?v=4.57"></script>
+<script src="store.js?v=4.58"></script>
+<script src="toykit.js?v=4.58"></script>
+<script src="toystickers.js?v=4.58"></script>
+<script src="engine.js?v=4.58"></script>
+<script src="timemodel.js?v=4.58"></script>
+<script src="curriculum.js?v=4.58"></script>
+<script src="audio/bix-lines.js?v=4.58"></script>
+<script src="abacus-input.js?v=4.58"></script>
+<script src="parent-brain.js?v=4.58"></script>
+<script src="fun.js?v=4.58"></script>
+<script src="audio/lines-manifest.js?v=4.58"></script>
+<script src="audio/lessons.js?v=4.58"></script>
 <script>window.LINE_PACKS=["juni","bixi","juni-lesson","juni-intro","juni-anat","juni-praise"];</script>
-<script src="classroom.js?v=4.57"></script>
-<script src="games.js?v=4.57"></script>
-<script src="treats.js?v=4.57"></script>
-<script src="onboarding.js?v=4.57"></script>
-<script src="app.js?v=4.57"></script>
+<script src="classroom.js?v=4.58"></script>
+<script src="games.js?v=4.58"></script>
+<script src="treats.js?v=4.58"></script>
+<script src="onboarding.js?v=4.58"></script>
+<script src="app.js?v=4.58"></script>
 </body>
 </html>

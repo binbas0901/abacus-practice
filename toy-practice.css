@@ -676,3 +676,27 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
    number for the child to key / bead along (it used to hide until the number had finished). */
 /* the answer box grows into the hero once the child is answering */
 #drill[data-mode=listen] #listenStage[data-lstate="answer"] ~ .tp-readout{min-width:150px;padding:4px 24px}
+
+/* ---------------- Level-1 "Read the beads": Juni-led interactive teaching (v4.58) ---------------- */
+/* NB: never set display here — the base .screen{display:none}/.screen.active{display:flex} must win so the screen
+   stays hidden when inactive. It lays out as a flex column (base .screen) when active; we only anchor abs children. */
+#readTeach.rt{ position:relative; }
+#readTeach .rt-top{ display:flex; align-items:center; gap:12px; padding:12px 16px 4px; position:relative; z-index:3; }
+#readTeach .rt-title{ margin-inline:auto; }
+#readTeach .rt-stage{ flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:6px 14px 10px; }
+#readTeach .rt-abwrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+#readTeach .rt-ab{ touch-action:manipulation; }
+#readTeach .rt-count{ font:800 42px/1.1 inherit; color:#5a3d1c; min-height:48px; display:flex; align-items:center; }
+#readTeach .rt-count.pulse{ animation:rtCountPulse .5s ease; }
+@keyframes rtCountPulse{ 0%{ transform:scale(.6); opacity:.3; } 60%{ transform:scale(1.18); } 100%{ transform:scale(1); opacity:1; } }
+#readTeach .rt-pad{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; min-height:96px; align-items:center; }
+#readTeach .rt-choice{ font:800 40px/1 inherit; width:92px; height:92px; border-radius:22px; border:none; cursor:pointer;
+  background:#fbf3e2; color:#5a3d1c; box-shadow:0 4px 0 #d8c09a, 0 6px 10px rgba(90,61,28,.12); transition:transform .08s ease; }
+#readTeach .rt-choice:active{ transform:translateY(3px); box-shadow:0 1px 0 #d8c09a; }
+#readTeach .rt-choice.ok{ background:#d8f0c8; box-shadow:0 4px 0 #a9d38c; color:#2f6b1f; }
+#readTeach .rt-choice.miss{ background:#f6dcd6; box-shadow:0 4px 0 #dcae9f; color:#9a4a3a; opacity:.75; }
+#readTeach .rt-choice.hint{ animation:rtHintPulse .9s ease-in-out infinite; }
+@keyframes rtHintPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.09); } }
+#readTeach .rt-next{ margin:0 auto 20px; min-width:168px; visibility:hidden; }
+#readTeach .rt-next.on{ visibility:visible; }
+#readTeach .rt-bix{ position:absolute; right:14px; bottom:10px; pointer-events:none; z-index:2; }
