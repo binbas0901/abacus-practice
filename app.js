@@ -1142,11 +1142,16 @@ function renderDoorPath(){
     if (lv!==lvl){ lvl=lv; out.push(doorFlag(lv, x+R(10), Y0-R(92), k)); x+=FLAG; }
     const w=i===ci ? CUR : SLOT, cx=x+w/2, cy=Math.round(Y0+AMP*Math.sin(i*1.3+.5)); pts.push([cx, cy]); x+=w;
     const at=(h)=>`style="left:${cx}px;top:${cy-Math.round(h*.47)}px;width:${w}px"`;
-    if (i<ci) out.push(`<div class="dp-node done" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: learned">${TOY.bead('teal', HB, {tall:true})}<span class="dp-mark">${TOY.icon('check', R(34), '#fff', {stroke:3.6})}</span></button><span class="dp-name">${name}</span></div>`);
+    // Off-path flash/anzan nodes (optional:true) are NOT mandatory rungs — the Mental Math mode sources its content
+    // from them, but the child is never parked on them. Draw them as a ghosted, owl/flash-marked side bead (the
+    // `optional` class is appended AFTER done/locked so the mandatory-state class stays second — the path and the
+    // picker then agree: these are extra, not a step to clear). advanceCurrent skips them, so one is never `cur`.
+    const opt = n.optional ? ' optional' : '', optFlag = !!n.optional;
+    if (i<ci) out.push(`<div class="dp-node done${opt}" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: ${optFlag?'extra mental-math practice':'learned'}">${TOY.bead(optFlag?'mustard':'teal', HB, {tall:true})}<span class="dp-mark">${optFlag?TOY.icon('flash', R(30), '#fff'):TOY.icon('check', R(34), '#fff', {stroke:3.6})}</span></button><span class="dp-name">${name}</span></div>`);
     else if (i===ci){ curX=cx;
       out.push(`<div class="dp-node cur" ${at(HC)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: you are here"><span class="dp-glow"></span>${TOY.bead('mustard', HC, {tall:true})}<span class="dp-mark">${TOY.icon('star', R(42), '#FFFDF6')}</span></button><span class="dp-name">${name}</span>`
         +`<button class="toy-block toy-block--teal toy-block--sm dp-learn" id="doorLearn">${TOY.icon('play', 26, '#fff')}<span class="toy-block-label">Learn it</span></button></div>`); }
-    else out.push(`<div class="dp-node locked" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: not yet">${TOY.bead('wood', HB, {tall:true})}<span class="dp-mark">${TOY.icon('lock', R(28), 'currentColor', {accent:'#F6D9AA'})}</span></button><span class="dp-name">${name}</span></div>`);
+    else out.push(`<div class="dp-node locked${opt}" ${at(HB)}><button class="dp-bead" data-node="${n.id}" aria-label="${label}: ${optFlag?'extra mental-math practice':'not yet'}">${TOY.bead(optFlag?'mustard':'wood', HB, {tall:true})}<span class="dp-mark">${optFlag?TOY.icon('flash', R(26), '#fff'):TOY.icon('lock', R(28), 'currentColor', {accent:'#F6D9AA'})}</span></button><span class="dp-name">${name}</span></div>`);
   });
   const W=x+R(26), ends=[[-30, pts[0][1]]].concat(pts, [[W+30, pts[pts.length-1][1]]]);
   const d=ends.map((q,i)=>{ if (!i) return `M${q[0]},${q[1]}`; const a=ends[i-1], mx=Math.round((a[0]+q[0])/2); return `C${mx},${a[1]} ${mx},${q[1]} ${q[0]},${q[1]}`; }).join(' ');
@@ -2877,7 +2882,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.50';
+const APP_VERSION='4.51';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

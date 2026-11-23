@@ -126,6 +126,10 @@
 #door .dp-name{display:block;max-width:140px;text-wrap:balance;font:600 19px/1.14 var(--toy-display);color:var(--toy-ink);text-align:center;white-space:normal;text-shadow:0 1px 0 rgba(255,240,208,.75)}
 #door .dp-node.done .dp-name{color:var(--toy-ink)}
 #door .dp-node.locked .dp-name{color:#5E3A18;font-weight:500}
+/* Off-path flash/anzan nodes: an optional "extra" side bead (Mental Math content source), not a mandatory rung. */
+#door .dp-node.optional .dp-bead{opacity:.82}
+#door .dp-node.optional .dp-bead .toy-bead{transform:scale(.8)}
+#door .dp-node.optional .dp-name{font-style:italic;font-weight:600;color:#6B4A1E;opacity:.85}
 #door .dp-node.cur{gap:6px}
 #door .dp-node.cur .dp-name{max-width:none;white-space:nowrap;padding:5px 16px 6px;border-radius:999px;background:var(--toy-paper);color:var(--toy-ink);font-weight:700;font-size:23px;line-height:1.1;
   text-shadow:none;box-shadow:0 2px 0 rgba(138,90,38,.5),3px 6px 7px rgba(var(--toy-shade),.26)}
