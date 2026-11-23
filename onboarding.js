@@ -99,6 +99,7 @@
   /* ---------------- open ---------------- */
   function open(from) {
     const my = ++token; App().show('setup');
+    qwTeardown();   // never carry a quick-win soroban across a re-open (new child / re-run setup)
     stage();
     juniBub().classList.remove('on'); bixiBub().classList.remove('on');
     setup().classList.remove('cl-bixi-here', 'cl-bixi-side');
@@ -156,7 +157,70 @@
     // Bixi settles to the side as the smaller sidekick; Juni stays the lead.
     setup().classList.add('cl-bixi-side');
     await sleep(200); if (my !== token) return;
-    toAbacus();
+    quickWin(my);
+  }
+
+  /* ---------- quick win: the child's first guaranteed soroban success (v4.54) ----------
+     Right after meeting Bixi, BEFORE the grown-up "do you have an abacus?" question, the child does one guaranteed
+     thing: slide the single earth bead up to make 1 on the on-screen soroban (the same AbacusInput practice/placement
+     use — the only input the app can verify, so it runs for EVERYONE regardless of the later abacus answer). Teach-Bixi
+     framing, big snapping targets, no timer, no score, never fails. Audio-robust: the opening hint and the gentle
+     re-nudge both go through the v4.53 beat() pattern, so they work with voice on, off, slow, or a hung/failed clip. */
+  const QW_IDLE = 6000;            // if the child pauses this long, gently re-nudge + re-voice the hint
+  let qwAb = null, qwIdle = null, qwDone = false;
+  function qwClearIdle() { if (qwIdle) { clearTimeout(qwIdle); qwIdle = null; } }
+  function qwTeardown() { qwClearIdle(); if (qwAb) { try { qwAb.destroy(); } catch (e) {} qwAb = null; } }
+  function qwTarget() { return qwAb && qwAb.el.querySelector('.abx-bead[data-kind="e"][data-k="0"]'); }
+  // Inject the highlight (a ring + an up-arrow) INTO the target bead's SVG group once, so it rides with the bead's
+  // own translate(x,y) (we never animate the bead group's transform — that would clobber its position).
+  function qwEnsureHl(b) {
+    if (!b || b.querySelector('.qw-hl')) return;
+    const NS = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'qw-hl'); g.setAttribute('aria-hidden', 'true');
+    const ring = document.createElementNS(NS, 'ellipse');
+    ring.setAttribute('class', 'qw-ring'); ring.setAttribute('cx', '0'); ring.setAttribute('cy', '0'); ring.setAttribute('rx', '33'); ring.setAttribute('ry', '20');
+    const arr = document.createElementNS(NS, 'path'); arr.setAttribute('class', 'qw-arrow'); arr.setAttribute('d', 'M-11,-30 L0,-45 L11,-30');
+    g.appendChild(ring); g.appendChild(arr); b.appendChild(g);
+  }
+  // (Re)start the pulsing highlight on the exact bead to move: the one earth bead that makes 1 (rod 0, k=0, slide up).
+  function qwNudge() { const b = qwTarget(); if (!b) return; qwEnsureHl(b); b.classList.remove('qw-nudge'); void b.getBoundingClientRect(); b.classList.add('qw-nudge'); }
+  function qwArmIdle(my) {
+    qwClearIdle();
+    qwIdle = setTimeout(async () => {
+      if (my !== token || qwDone || !onStep('suWin')) return;
+      qwNudge();
+      await jBeat('j_qw_nudge', { text: 'Give it a try — slide one bead up to make 1.' });
+      if (my !== token || qwDone || !onStep('suWin')) return;
+      qwArmIdle(my);   // keep gently reminding until they make 1
+    }, QW_IDLE);
+  }
+  async function quickWin(my) {
+    qwDone = false; qwTeardown();
+    step('suWin');
+    const host = $('#suWinHost'); if (host) host.innerHTML = '';
+    // A single big rod, readout on so the child sees the "1" appear. Large tap slots + snapping beads come from AbacusInput.
+    qwAb = root.AbacusInput.create(host, { rods: 1, showReadout: true, scale: 2,
+      onBead() { App().Sfx.tap(); qwClearIdle(); },
+      onChange(v) { if (qwDone) return; if (v === 1) qwWin(my); else qwArmIdle(my); } });  // v!==1 (0 or overshoot): never fail, just re-arm the gentle reminder
+    qwNudge();   // highlight the target from the start
+    // Juni frames it (voiced + the words on her bubble), audio-robust.
+    await jBeat('j_qw_make1', { text: `Can you show Bixi how to make 1? Slide one bead up.` });
+    if (my !== token || !onStep('suWin') || qwDone) return;
+    qwNudge(); qwArmIdle(my);
+  }
+  async function qwWin(my) {
+    if (qwDone || my !== token) return;
+    qwDone = true; qwClearIdle();
+    const b = qwTarget(); if (b) b.classList.remove('qw-nudge');
+    if (qwAb && qwAb.feedback) qwAb.feedback('right');
+    // Warm, MODERATE celebration: Juni's specific process line, Bixi cheers alongside (one hop), a small confetti burst.
+    App().Sfx.star(); if (root.Fun && root.Fun.confetti) root.Fun.confetti(44);
+    await jBeat('j_qw_win', { text: `You did it — you made 1!` }); if (my !== token) return;
+    if (root.Fun && root.Fun.Mascot) root.Fun.Mascot.react(bixiFig(), 'cheer', 2000);
+    await bBeat('b_qw_cheer', { text: `Yay! You made one bead!` }); if (my !== token) return;
+    await sleep(250); if (my !== token) return;
+    qwTeardown();
+    toAbacus();   // on to the existing grown-up setup (abacus question, then placement) — unchanged
   }
 
   /* ---------- is there a real abacus at home? (decides the default answer tool in practice) ---------- */
