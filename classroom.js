@@ -79,12 +79,14 @@
       if (!id || !this.enabled()) return;
       const a = App(); if (!a || (a.quietNow && a.quietNow())) return;        // never over a sum being read
       if (!a.Speaker.gestured) return;                                        // no sound before the first tap (iPad rule)
-      const ctx = a.Speaker.ensureCtx(); this.queued++; const my = ++this.seq;
+      let ctx = a.Speaker.ensureCtx(); this.queued++; const my = ++this.seq;
+      // After a background trip iOS can leave the context 'suspended' or (post call/app-switch) 'interrupted'; revive()
+      // resumes it or, when it's dead, rebuilds it. Re-fetch the live context after, since a rebuild swaps Speaker.ctx.
       try {
-        if (ctx.state !== 'running') { try { await Promise.race([ctx.resume(), sleep(800)]); } catch (e) {} }
+        if (ctx.state !== 'running') { try { await a.Speaker.revive(); } catch (e) {} ctx = a.Speaker.ensureCtx(); }
         await this.load(char);
       } finally { this.queued--; }
-      if (my !== this.seq || ctx.state !== 'running') return;
+      if (my !== this.seq || ctx.state !== 'running') return;                 // still off: show nothing, never mouth silently to a dead context
       const [buf, sp] = this.find(char, id); if (!buf || !sp) return;         // clip not recorded yet: silent
       this.stop(); try { if (root.Fun && root.Fun.BixVoice) root.Fun.BixVoice.stop(); } catch (e) {}   // one voice at a time: silence any legacy Bixi clip
       const mine = ++this.seq;

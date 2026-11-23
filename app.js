@@ -445,6 +445,25 @@ const Speaker = {
     try{ const b=this.ctx.createBuffer(1,1,22050), s=this.ctx.createBufferSource(); s.buffer=b; s.connect(this.ctx.destination); s.start(0); }catch(e){}
     try{ Diag.add('ctx rebuilt -> '+this.ctx.state); }catch(e){}
   },
+  // Self-heal after the app returns from the background. iOS frequently refuses to resume/rebuild audio OUTSIDE a real
+  // finger gesture, so a revive() fired by visibilitychange/pageshow/focus can quietly fail and leave faces moving with
+  // no sound. Arm a one-shot, capture-phase listener on the first touch/click after return: it unlocks INSIDE that
+  // gesture (the reliable iOS path), re-primes speechSynthesis (which a plain revive() leaves alone once unlocked) by
+  // clearing ttsReady first, rebuilds the context via revive(), then removes itself. Idempotent; re-armed on each
+  // hide->show, so audio comes back the instant the child taps the screen. Best-effort: never throws, never blocks UI.
+  armResume(){
+    if (this._resumeArmed) return; this._resumeArmed=true;
+    const evs=['pointerdown','touchend','click'];
+    const fire=()=>{
+      evs.forEach(ev=>document.removeEventListener(ev, fire, true));
+      this._resumeArmed=false;
+      this.ttsReady=false;                              // force unlock() to re-prime the device voice inside this gesture
+      try{ this.unlock(); }catch(e){}                   // resume/rebuild + speech unlock, all inside the real gesture
+      try{ this.revive(); }catch(e){}                   // rebuild the context if iOS left it interrupted/dead
+      try{ Diag.add('return-gesture resume fired'); }catch(e){}
+    };
+    evs.forEach(ev=>document.addEventListener(ev, fire, true));
+  },
   unlock(){ // must run inside a user gesture on iOS (a finger LIFT or click, not a touch-down)
     this.gestured=true;
     try{ const c=this.ensureCtx(); if (c.state!=='running') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
@@ -1056,9 +1075,11 @@ const BixExtra = {
   },
   async play(id, el){
     const BV=Fun.BixVoice; if (!id || !BV.enabled() || App.quietNow() || !Speaker.gestured) return;
-    const ctx=Speaker.ensureCtx(), tag=BV.tag(); const my=++BV.seq; BV.queued++;
-    try{ if (ctx.state!=='running'){ try{ await Promise.race([ctx.resume(), sleep(800)]); }catch(e){} } await this.load(tag); } finally { BV.queued--; }
-    if (my!==BV.seq || ctx.state!=='running') return;
+    let ctx=Speaker.ensureCtx(); const tag=BV.tag(); const my=++BV.seq; BV.queued++;
+    // iOS may have left the context suspended/interrupted after a background trip; revive() resumes or rebuilds it.
+    // Re-fetch the live context after, since a rebuild swaps Speaker.ctx (the old one is closed and would throw).
+    try{ if (ctx.state!=='running'){ try{ await Speaker.revive(); }catch(e){} ctx=Speaker.ensureCtx(); } await this.load(tag); } finally { BV.queued--; }
+    if (my!==BV.seq || ctx.state!=='running') return;                 // still not running: stay silent, never mouth to a dead context
     const buf=this.buf[tag], sp=this.map[tag] && this.map[tag][id]; if (!buf || !sp) return;
     BV.stop();
     const s=ctx.createBufferSource(); s.buffer=buf; s.connect(ctx.destination); s.start(ctx.currentTime+0.02, sp[0], sp[1]); BV.src=s;
@@ -2915,7 +2936,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.55';
+const APP_VERSION='4.56';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
@@ -2931,11 +2952,18 @@ ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then
 // suspended or 'interrupted' so faces move but no sound comes out. Revive it the moment the app is shown again.
 document.addEventListener('visibilitychange', ()=>{
   // A hidden tab is not solving time: hold the silent set clock so a gap between sittings never counts.
-  if (document.hidden) SetClock.pause(); else SetClock.resume();
-  if (document.visibilityState==='visible') Speaker.revive();
+  if (document.hidden){
+    SetClock.pause();
+    Speaker.armResume();                 // arm the next-tap self-heal while we're away (iOS kills audio in the background)
+  } else {
+    SetClock.resume();
+    Speaker.revive();                    // try to bring audio back right away (works when iOS allows a non-gesture resume)
+    Speaker.armResume();                 // and guarantee it comes back on the child's first tap if the non-gesture revive failed
+  }
 });
-window.addEventListener('pageshow', ()=>Speaker.revive());
-window.addEventListener('focus', ()=>Speaker.revive());
+// focus / pageshow fire on some returns where visibilitychange does not; revive now and arm the gesture fallback too.
+window.addEventListener('pageshow', ()=>{ Speaker.revive(); Speaker.armResume(); });
+window.addEventListener('focus', ()=>{ Speaker.revive(); Speaker.armResume(); });
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   // Auto-update: when a NEW service worker takes control (sw.js does skipWaiting + clients.claim on deploy),
   // reload once so the device runs the new build instead of stale cached files. Only wire this when a worker

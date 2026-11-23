@@ -72,13 +72,15 @@
       if (!id || !this.enabled()) return;
       const a = App(); if (!a || (a.quietNow && a.quietNow())) return;
       if (!a.Speaker.gestured) return;                                            // no sound before the first tap (iPad rule)
-      const ctx = a.Speaker.ensureCtx();
+      let ctx = a.Speaker.ensureCtx();
       this.queued++; const my = ++this.seq;
+      // Returning from the background can leave the context suspended/interrupted: revive() resumes or rebuilds it.
+      // Re-fetch the live context after, since a rebuild swaps Speaker.ctx (the old one is closed and would throw).
       try {
-        if (ctx.state !== 'running') { try { await Promise.race([ctx.resume(), new Promise(r => setTimeout(r, 800))]); } catch (e) {} }
+        if (ctx.state !== 'running') { try { await a.Speaker.revive(); } catch (e) {} ctx = a.Speaker.ensureCtx(); }
         await this.load(this.tag());
       } finally { this.queued--; }
-      if (my !== this.seq || ctx.state !== 'running') return;                    // a newer line was asked for, or sound is still off
+      if (my !== this.seq || ctx.state !== 'running') return;                    // still off: never mouth silently to a dead context
       const [buf, sp] = this.find(id); if (!buf || !sp) return;
       this.stop(); try { if (window.Classroom && window.Classroom.stop) window.Classroom.stop(); } catch (e) {}   // one voice at a time: silence any Juni/Classroom clip
       const mine = this.seq;
