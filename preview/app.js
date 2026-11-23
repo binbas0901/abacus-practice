@@ -2093,15 +2093,29 @@ function shake(){ const t=Tool.kind==='beads' ? $('#abHost') : $('#readout'); t.
 function verdict(v){ const r=$('#readout'); r.classList.remove('is-right','is-wrong');
   if (Tool.kind==='beads' && Tool.ab) Tool.ab.feedback(v==='right'?'right':v==='wrong'?'wrong':null);   // tint the placed beads green (right) / red (wrong)
   if (!v) return; void r.offsetWidth; r.classList.add(v==='right'?'is-right':'is-wrong'); }
-// Bixi's spoken reactions in Practice (her own voice, no-repeat until the pool is used up).
+// Bixi's spoken reactions in Practice (his own voice, no-repeat until the pool is used up).
+// His cheer pool deliberately SKIPS b_react_yes1 ("Yes!") so his PEER reaction is never the verdict word itself —
+// Juni owns "Yes!". It draws from yes2..yes6 ("Nice!", "You got it!", "Fantastic!", "Super!", "Wow!"); the miss pool
+// (notyet1..3: "Oops! We'll polish it later." / "Almost! Keep going." / "That's okay. Next one!") is a gentle commiserate,
+// never the word "not quite".
 const _bixiReact={yes:[],notyet:[]};
-function bixiReactKey(kind){ const n=kind==='yes'?6:3; let pool=_bixiReact[kind];
-  if(!pool.length){ pool=_bixiReact[kind]=Array.from({length:n},(_,i)=>i+1);
+function bixiReactKey(kind){ let pool=_bixiReact[kind];
+  if(!pool.length){ const nums = kind==='yes' ? [2,3,4,5,6] : [1,2,3]; pool=_bixiReact[kind]=nums.slice();
     for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; } }
   return 'b_react_'+kind+pool.pop(); }
+// Juni (the TEACHER) delivers the VERDICT — "Yes!" on a right answer, "Not quite" on a miss — the SAME in every mode
+// (Reading, Listening, Flash). Juni has no recorded verdict clip of her own, so the word is spoken by the lesson/narrator
+// voice (settings.voice) — the teacher voice the child hears read the problems. Returns a promise that resolves when the
+// word has finished, so Bixi's peer reaction can follow cleanly instead of talking over it.
+function juniVerdict(kind){ // kind: 'yes' | 'notyet'
+  if(!settings.speakFeedback) return Promise.resolve();
+  return Speaker.say(null, kind==='yes'?'yes':'not quite');
+}
+// Bixi (the CLASSMATE) REACTS alongside her — a warm cheer on a right answer, a commiserating line on a miss. It is his
+// own recorded reaction (never the verdict word), and it plays the SAME in every mode; it stays silent (a graceful no-op)
+// if his voice isn't loaded, and it never falls back to the narrator saying the verdict.
 function reactVoice(kind){ // kind: 'yes' | 'notyet'
   if(!settings.speakFeedback) return;
-  if(mode==='listen'){ Speaker.say(null, kind==='yes'?'yes':'not quite'); return; }  // listen mode keeps the plain number-voice cue
   if(CL()) CL().say(bixiReactKey(kind), {who:'bixi'});
 }
 
@@ -2157,15 +2171,17 @@ async function submit(){
     else JB.say('Yes! Well done.', null, 1400);
     verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
-    reactVoice('yes');   // Bixi's recorded cheer stays as the sidekick reaction
-    feedBixi();          // ...and a correct answer feeds his snack bar
+    await juniVerdict('yes');   // Juni (teacher) delivers the spoken verdict — same in Reading and Listening
+    reactVoice('yes');          // then Bixi (classmate) cheers WITH her (his own reaction, never the verdict word)
+    feedBixi();                 // ...and a correct answer feeds his snack bar
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
     feedStreak=0;        // a miss only cools the streak — the bar never drains
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
-    if (!reviewing) JB.say("That's okay. We'll polish it together.", null, 1800);   // Juni reassures (silent text)
-    reactVoice('notyet');   // Bixi's recorded groan stays as the sidekick reaction
+    if (!reviewing) JB.say("That's okay. We'll polish it together.", null, 1800);   // Juni reassures (the explain, on screen)
+    await juniVerdict('notyet');   // Juni (teacher) delivers the spoken verdict — same in Reading and Listening
+    reactVoice('notyet');          // then Bixi (classmate) commiserates WITH her (his own reaction, never the verdict word)
     if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
     else {
       // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
@@ -2844,7 +2860,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.49';
+const APP_VERSION='4.50';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
