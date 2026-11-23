@@ -680,31 +680,35 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 /* ---------------- Level-1 "Read the beads": Juni-led interactive teaching (v4.58) ---------------- */
 /* NB: never set display here — the base .screen{display:none}/.screen.active{display:flex} must win so the screen
    stays hidden when inactive. It lays out as a flex column (base .screen) when active; we only anchor abs children. */
-#readTeach.rt{ position:relative; }
-#readTeach .rt-top{ display:flex; align-items:center; justify-content:center; gap:12px; padding:12px 16px 4px; position:relative; z-index:3; }
-#readTeach .rt-top .exit{ position:absolute; left:16px; top:12px; }   /* v4.61: anchor Back at the edge so the title centres over the screen, not pushed right by the button */
+/* v4.62 — rebuilt to mirror the polished "Make the number" screen: a short wall with the window centred,
+   a BIG board on one side clear of the window+bubble, and the controls grouped on the other side. */
+#readTeach.rt{ position:relative; --toy-wall-h:clamp(108px,15vh,150px); --toy-window-x:clamp(330px,37vw,520px); }
+/* Title plaque sits top-left beside Back (like Make-the-number / the drills), clear of the centred window. */
+#readTeach .rt-top{ display:flex; align-items:center; justify-content:flex-start; gap:12px; padding:12px 18px 4px; position:relative; z-index:3; }
+#readTeach .rt-top .exit{ position:static; }
 #readTeach .rt-title{ margin:0; }
-/* Landscape (default): two panes side by side — board left, side (count/pad/Next) right — like the lesson/drill
-   screens, so the advance control always stays on screen. Portrait flips to a column (see @media below). */
-#readTeach .rt-stage{ flex:1 1 auto; min-height:0; display:flex; flex-direction:row; align-items:center; justify-content:center;
-  gap:clamp(32px,4.5vw,72px); padding:6px clamp(16px,3vw,40px) clamp(14px,2.5vh,26px); box-sizing:border-box; }
-/* Landscape: drop the board to the bottom of the stage — close to the child's hands and well clear of
-   Juni's bubble hanging from the wall at the top (the heaven bead is the board's top-most bead, so it
-   must not sit under the bubble). Portrait restores align-self:center in the @media block below. */
-#readTeach .rt-abwrap{ display:flex; flex-direction:column; align-items:center; align-self:flex-end; gap:6px; min-width:0; min-height:0; }
+/* Landscape (default): board BIG on the right (clear of the centre window+bubble), number choices / Next
+   grouped on the left — a balanced, full canvas. Portrait flips to a stacked column (see @media below). */
+#readTeach .rt-stage{ flex:1 1 auto; min-height:0; display:flex; flex-direction:row-reverse; align-items:center; justify-content:center;
+  gap:clamp(48px,8vw,150px); padding:4px clamp(24px,4vw,60px) clamp(16px,3vh,30px); box-sizing:border-box; }
+#readTeach .rt-abwrap{ display:flex; flex-direction:column; align-items:center; align-self:center; gap:8px; min-width:0; min-height:0; }
 #readTeach .rt-ab{ touch-action:manipulation; line-height:0; display:flex; min-height:0; }
 #readTeach .rt-ab .abx{ display:flex; }
-/* v4.61: bigger board (taller single rod -> wider too, and bigger beads for little fingers). Cap still keeps the
-   top-most heaven bead clear of Juni's bubble hanging from the wall (board is anchored flex-end; see note above). */
-#readTeach .rt-ab .abx-svg{ width:auto; height:auto; max-width:100%; max-height:calc(100vh - var(--toy-wall-h) - 165px); }
-#readTeach .rt-count{ font:800 44px/1.1 inherit; color:#5a3d1c; min-height:40px; display:flex; align-items:center; }
+/* Big board: height drives the scale (the SVG renders at its small intrinsic size unless height is set). The
+   board is on the right, clear of the centre window/bubble, so it can be tall and vertically centred safely. */
+#readTeach .rt-ab .abx-svg{ width:auto; height:calc(100vh - var(--toy-wall-h) - 120px); max-height:none; max-width:36vw; }
+/* The count readout lives in the left panel now, as a big number card (like the "Make N" card on the sibling
+   screen) — it shows the live count while the child pushes beads, so the left side is never empty. Hidden when blank. */
+#readTeach .rt-count{ font:800 clamp(76px,10vw,120px)/1 var(--toy-display); color:#2c3f86; display:flex; align-items:center; justify-content:center; }
+#readTeach .rt-count:not(:empty){ min-width:clamp(156px,17vw,208px); min-height:clamp(156px,17vw,208px); box-sizing:border-box; padding:10px;
+  background:linear-gradient(#fffdf7,#f6efdf); border-radius:30px; box-shadow:0 6px 0 #d8c09a, 0 10px 20px rgba(90,61,28,.16); }
 #readTeach .rt-count.pulse{ animation:rtCountPulse .5s ease; }
 @keyframes rtCountPulse{ 0%{ transform:scale(.6); opacity:.3; } 60%{ transform:scale(1.18); } 100%{ transform:scale(1); opacity:1; } }
-/* v4.61: board + its controls centre together as one group (no reserved panel width — that left a void on
-   beats with only the Next button). Bigger board + choices give the group real presence on the canvas. */
-#readTeach .rt-side{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(16px,3vh,28px); min-width:0; }
-#readTeach .rt-pad{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; min-height:108px; align-items:center; }
-#readTeach .rt-choice{ font:800 46px/1 inherit; width:108px; height:108px; border-radius:24px; border:none; cursor:pointer;
+/* Left panel reserves a stable width so the board on the right never jumps between beats; always holds
+   something (count card / number choices / Next), so the canvas stays balanced on every beat. */
+#readTeach .rt-side{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(20px,4vh,36px); min-width:clamp(300px,33vw,400px); }
+#readTeach .rt-pad{ display:flex; gap:24px; flex-wrap:wrap; justify-content:center; min-height:124px; align-items:center; max-width:46vw; }
+#readTeach .rt-choice{ font:800 52px/1 inherit; width:124px; height:124px; border-radius:26px; border:none; cursor:pointer;
   background:#fbf3e2; color:#5a3d1c; box-shadow:0 4px 0 #d8c09a, 0 6px 10px rgba(90,61,28,.12); transition:transform .08s ease; }
 #readTeach .rt-choice:active{ transform:translateY(3px); box-shadow:0 1px 0 #d8c09a; }
 #readTeach .rt-choice.ok{ background:#d8f0c8; box-shadow:0 4px 0 #a9d38c; color:#2f6b1f; }
@@ -713,13 +717,14 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 @keyframes rtHintPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.09); } }
 #readTeach .rt-next{ margin:0; min-width:200px; visibility:hidden; }
 #readTeach .rt-next.on{ visibility:visible; }
-#readTeach .rt-bix{ position:absolute; right:14px; bottom:10px; pointer-events:none; z-index:2; }
-/* Portrait: stack the two panes vertically; the board gets a shorter cap so pad + Next still fit below it. */
+#readTeach .rt-bix{ position:absolute; left:16px; bottom:10px; pointer-events:none; z-index:2; }
+/* Portrait: stack the two panes vertically; a shorter board so the choices + Next still fit below it. */
 @media (orientation:portrait){
-  #readTeach .rt-stage{ flex-direction:column; justify-content:center; gap:clamp(14px,2.4vh,24px); }
-  /* column layout: cross-axis is horizontal, so restore centering (flex-end would shove the board right) */
+  #readTeach .rt-stage{ flex-direction:column; justify-content:flex-start; gap:clamp(16px,2.6vh,28px);
+    padding-top:clamp(150px,16vh,200px); padding-bottom:clamp(20px,4vh,40px); }   /* start below the wall+bubble so the board's top bead clears it */
   #readTeach .rt-abwrap{ align-self:center; }
-  #readTeach .rt-side{ gap:clamp(12px,2vh,20px); min-width:0; }   /* portrait stacks; drop the landscape reserved width */
-  #readTeach .rt-ab .abx-svg{ max-height:calc(100vh - var(--toy-wall-h) - 340px); }
-  #readTeach .rt-next{ margin-bottom:10px; }
+  #readTeach .rt-side{ gap:clamp(14px,2vh,22px); min-width:0; }
+  #readTeach .rt-pad{ max-width:none; flex-wrap:nowrap; }   /* keep the three choices on one row in portrait */
+  #readTeach .rt-ab .abx-svg{ height:calc(100vh - var(--toy-wall-h) - 470px); max-width:68vw; }   /* smaller in portrait so the top (heaven) bead clears the centred bubble */
+  #readTeach .rt-next{ margin-bottom:6px; }
 }

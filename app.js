@@ -2490,12 +2490,12 @@ const ReadTeach = (function(){
   // child pushes beads to a target (no-fail; stuck ~6.5s -> Juni demonstrates, then they retry)
   function waitBead(target, demoFn){
     return new Promise(res=>{
-      const my=token; ab.setReadOnly(false); waitKind='bead:'+target;
+      const my=token; ab.setReadOnly(false); waitKind='bead:'+target; $count().textContent='0';   // show the count card from 0 so the left panel is filled the moment it's the child's turn
       const done=()=>{ clearTimeout(stuckT); ab.setReadOnly(true); ab._rtOnChange=null; waitKind=null; };
-      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = v||''; if (v===target){ done(); Sfx.ok(); res(true); } };
+      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = String(v); if (v===target){ done(); Sfx.ok(); res(true); } };
       clearTimeout(stuckT);
       stuckT=setTimeout(async()=>{ if (token!==my || !alive) return; await beat('j_rt_stuck','Here — watch me do it.'); if (token!==my) return;
-        ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent=''; ab.setReadOnly(false); }, 6500);
+        ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent='0'; ab.setReadOnly(false); }, 6500);
     });
   }
   // a few friendly choices including the answer (single digit, within the taught range)
@@ -3097,7 +3097,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.61';
+const APP_VERSION='4.62';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
