@@ -160,9 +160,13 @@ const Practice = {
     }
     this.type = 'reading';
     if (n && n.drill) return startDrill('visual', n);                   // Reading: the whole sum is shown with +/- signs; child solves it and types the answer (misses fixed after the set)
-    SetClock.start(); return Games.runSet('read', SET_LEN, () => this.sessionDone(), L1_LABELS.reading);     // no-sums level fallback: read the beads (title matches the "Read the beads" card)
+    // No-sums level: brand-new child. "Read the beads" is Juni-led interactive TEACHING, not a quiz — no timer, no score.
+    return ReadTeach.start(n, () => this.teachDone());
   },
   setDone(){ this.sessionDone(); },                                     // the listen drill's finish() calls this
+  // Level-1 "Read the beads" teaching finished: advance reading progress by one session (so level mastery still
+  // works), with NO timer reveal (teaching isn't timed) — celebrate() shows the X-of-7 progress with t=null.
+  teachDone(){ if (!this.on) return; this.celebrate('reading', bumpMode(this.node, 'reading'), null); },
   sessionDone(){
     if (!this.on) return;
     if (this._savedCount != null){ settings.count = this._savedCount; this._savedCount = null; }
@@ -2456,6 +2460,145 @@ async function showMe(p){
   await new Promise(res=>{ $('#showmeClose').onclick=()=>{ showToken++; $('#showme').classList.remove('active'); res(); }; run(); });
   SetClock.resume();
 }
+
+/* ---------------- Level-1 "Read the beads": interactive teaching (v4.58) ----------------
+   For a brand-new child at a no-sums level, "Read the beads" is NOT the Bead Detective recognition quiz.
+   It is a Juni-led, NO-FAIL teaching flow: she shows a bead's worth, demonstrates, hands it to the child,
+   ladders 1-4 -> 5 -> 6, and checks reading with count-together help on a wrong tap. No score, no timer.
+   Reuses DemoAbacus (board + Juni demos via .move / child moves via setReadOnly(false)+onChange),
+   juniSayOn (Juni voice+caption, silent fallback), and onboarding's duration-aware beat timing so captions
+   aren't truncated and advance cleanly with voice off. Completion -> Practice.teachDone() advances reading
+   progress by one session, so level mastery (7) still works.
+   SEAM: start() could branch to a lighter path on repeat visits later (a follow-up; not built yet). */
+const ReadTeach = (function(){
+  let ab=null, onDoneCb=null, alive=false, token=0, stuckT=null, waitNextRes=null, waitKind=null;   // waitKind: test hook — what the flow is waiting on ('next' | 'bead:N' | 'read:N' | null)
+  const $sky=()=>$('#rtSky'), $bub=()=>$('#rtJuni'), $bix=()=>$('#rtBix'), $next=()=>$('#rtNext'), $pad=()=>$('#rtPad'), $count=()=>$('#rtCount');
+  // timing (ported from onboarding.beat): a PLAYING clip runs to completion; the cap only fires if audio hangs/off.
+  const SAY_BUFFER=1800, SAY_CEILING=6500, SAY_FLOOR=650, SAY_OFF=950;
+  const voiceOn=()=> !!(settings.bixTalks!==false && window.Speaker && Speaker.gestured);
+  function clipMs(key){ try{ const V=CL()&&CL().Voice; if (V&&V.find){ const r=V.find('juni',key); if (r&&r[1]&&typeof r[1][1]==='number') return Math.round(r[1][1]*1000); } }catch(e){} return 0; }
+  function say(key, text){ return juniSayOn($bub(), $sky(), key, text, 0); }
+  function beat(key, text){ const p=say(key,text); if (!alive) return Promise.resolve(); if (!voiceOn()) return sleep(SAY_OFF);
+    const cap=(clipMs(key) ? clipMs(key)+SAY_BUFFER : SAY_CEILING);
+    return Promise.race([ Promise.all([Promise.resolve(p).catch(()=>{}), sleep(SAY_FLOOR)]), sleep(cap) ]); }
+  // child-paced "Next"
+  function showNext(on){ const b=$next(); if (b) b.classList.toggle('on', !!on); }
+  function waitNext(){ return new Promise(res=>{ waitNextRes=res; waitKind='next'; showNext(true); }); }
+  function onNextClick(){ if (!waitNextRes) return; Sfx.tap(); const r=waitNextRes; waitNextRes=null; waitKind=null; showNext(false); r(); }
+  function clearPad(){ const p=$pad(); if (p){ p.innerHTML=''; p.onclick=null; } }
+  // child pushes beads to a target (no-fail; stuck ~6.5s -> Juni demonstrates, then they retry)
+  function waitBead(target, demoFn){
+    return new Promise(res=>{
+      const my=token; ab.setReadOnly(false); waitKind='bead:'+target;
+      const done=()=>{ clearTimeout(stuckT); ab.setReadOnly(true); ab._rtOnChange=null; waitKind=null; };
+      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = v||''; if (v===target){ done(); Sfx.ok(); res(true); } };
+      clearTimeout(stuckT);
+      stuckT=setTimeout(async()=>{ if (token!==my || !alive) return; await beat('j_rt_stuck','Here — watch me do it.'); if (token!==my) return;
+        ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent=''; ab.setReadOnly(false); }, 6500);
+    });
+  }
+  // a few friendly choices including the answer (single digit, within the taught range)
+  function choices(answer){
+    const set=new Set([answer]);
+    while (set.size<3){ const d=answer + (Math.random()<0.5?-1:1)*(1+Math.floor(Math.random()*2)); if (d>=1 && d<=9) set.add(d); }
+    const arr=[...set]; for (let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    return arr;
+  }
+  // count-together help (no-fail): Juni counts the beads at the bar; heaven bead is 5, then +1 per earth bead.
+  async function countTogether(answer){
+    const my=token; await beat('j_rt_count','Let’s count together.'); if (token!==my || !alive) return;
+    ab.highlight && ab.highlight(0, true);
+    const start = answer>=5 ? 5 : 1;
+    for (let k=start;k<=answer;k++){ if (token!==my) return; const c=$count(); c.textContent=k; c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); await sleep(680); }
+    await sleep(300); $count().textContent=''; ab.clearHighlights && ab.clearHighlights();
+  }
+  // child reads the shown beads by tapping a number; wrong tap -> count-together, then a gentle hint, retry (no fail)
+  function waitRead(answer){
+    return new Promise(res=>{
+      const my=token, pad=$pad(); pad.innerHTML=''; waitKind='read:'+answer;
+      const btns=choices(answer).map(d=>{ const b=document.createElement('button'); b.type='button'; b.className='rt-choice'; b.textContent=d; b.dataset.d=d; pad.appendChild(b); return b; });
+      pad.onclick=async(e)=>{ const b=e.target.closest('.rt-choice'); if (!b || token!==my || b.disabled) return; const d=+b.dataset.d;
+        if (d===answer){ Sfx.ok(); b.classList.add('ok'); pad.onclick=null; waitKind=null; await sleep(320); res(true); }
+        else { Sfx.tap(); b.classList.add('miss'); b.disabled=true; await countTogether(answer); if (token!==my) return; btns.forEach(x=>{ if (+x.dataset.d===answer) x.classList.add('hint'); }); } };
+    });
+  }
+  async function run(){
+    const my=token;
+    await beat('j_rt_intro','Let’s learn to read the beads! Every bead you push up to the bar counts.'); if (token!==my) return;
+    await waitNext(); if (token!==my) return;
+    // Juni shows 1
+    ab.reset(); ab.setReadOnly(true); $count().textContent='';
+    await beat('j_rt_show1','Watch — I push one bead up to the bar.'); if (token!==my) return;
+    await ab.move(0, +1, 600, ()=>token===my); $count().textContent='1'; if (token!==my) return;
+    await beat('j_rt_show1b','One bead at the bar — that’s 1!'); if (token!==my) return;
+    await waitNext(); if (token!==my) return;
+    // child does 1
+    ab.reset(); $count().textContent='';
+    await beat('j_rt_you1','Now you — push one bead up to the bar.'); if (token!==my) return;
+    await waitBead(1, async()=>{ await ab.move(0,+1,600,()=>token===my); }); if (token!==my) return;
+    await beat('j_rt_you1ok','Yes! One bead — that’s 1.'); if (token!==my) return;
+    // ladder the ones (Juni demos 1,2,3)
+    ab.reset(); ab.setReadOnly(true); $count().textContent='';
+    await beat('j_rt_ladder','Each bead adds one more. Count with me…'); if (token!==my) return;
+    for (let k=1;k<=3;k++){ if (token!==my) return; await ab.move(0,+1,520,()=>token===my); $count().textContent=k; await sleep(640); }
+    await beat('j_rt_ladder3','One, two, three — that’s 3!'); if (token!==my) return;
+    await waitNext(); if (token!==my) return;
+    // child reads 3
+    ab.reset(); ab.input.setValue(3,{animate:true}); $count().textContent='';
+    await beat('j_rt_read','How many beads are at the bar? Count them, then tap the number.'); if (token!==my) return;
+    await waitRead(3); if (token!==my) return;
+    clearPad(); await beat('j_rt_readok','That’s 3 — you read it!'); if (token!==my) return;
+    // the heaven bead (worth 5)
+    ab.reset(); ab.setReadOnly(true); $count().textContent='';
+    await beat('j_rt_heaven','This top bead is special — it’s worth 5 all by itself!'); if (token!==my) return;
+    await ab.move(0, +5, 700, ()=>token===my); $count().textContent='5'; if (token!==my) return;
+    await beat('j_rt_heaven5','One top bead down — that’s 5!'); if (token!==my) return;
+    await waitNext(); if (token!==my) return;
+    // child does 5
+    ab.reset(); $count().textContent='';
+    await beat('j_rt_you5','Now you — push the big top bead down. What number is that?'); if (token!==my) return;
+    await waitBead(5, async()=>{ await ab.move(0,+5,700,()=>token===my); }); if (token!==my) return;
+    await beat('j_rt_you5ok','Yes — the top bead is 5!'); if (token!==my) return;
+    // combine -> 6, child reads
+    ab.reset(); ab.setReadOnly(true); $count().textContent='';
+    await beat('j_rt_combine','5 up here… and 1 more down here… 5 and 1 makes 6!'); if (token!==my) return;
+    ab.input.setValue(6,{animate:true}); if (token!==my) return;
+    await waitNext(); if (token!==my) return;
+    await beat('j_rt_read6','Your turn to read. How many is this?'); if (token!==my) return;
+    await waitRead(6); if (token!==my) return;
+    clearPad(); await beat('j_rt_read6ok','5 and 1 — that’s 6. Brilliant!'); if (token!==my) return;
+    // celebrate
+    Fun.confetti(70); Sfx.star();
+    await beat('j_rt_done','You can read the beads now! High five!'); if (token!==my) return;
+    finish();
+  }
+  function start(node, onDone){
+    token++; alive=true; onDoneCb=onDone;
+    try { Speaker.unlock && Speaker.unlock(); } catch(e){}
+    try { toySky($sky()); } catch(e){}
+    try { toyBix($bix(), 'happy', {size:96, keep:false, bubble:false}); } catch(e){}
+    const t=$('#rtTitle'); if (t) t.textContent = (typeof L1_LABELS!=='undefined' && L1_LABELS.reading) || 'Read the beads';
+    const host=$('#rtAbacus');
+    if (!ab){ ab=DemoAbacus(host, {rods:1, readout:false, onBead:()=>Sfx.tap(), onChange:(v)=>{ if (ab && ab._rtOnChange) ab._rtOnChange(v); }}); }
+    ab.reset(); ab.setReadOnly(true); $count().textContent=''; clearPad(); showNext(false);
+    if (!start._wired){ start._wired=true;
+      $next().addEventListener('click', onNextClick);
+      $('#exitReadTeach').addEventListener('click', ()=>{ Sfx.tap(); stop(); if (Practice && Practice.on) Practice.pick(); else { renderHome(); show('home'); } });
+    }
+    show('readTeach');
+    run().catch(()=>{});
+  }
+  function finish(){ const cb=onDoneCb; alive=false; onDoneCb=null; token++; clearTimeout(stuckT); waitNextRes=null; if (cb) cb(); }
+  function stop(){ alive=false; onDoneCb=null; token++; clearTimeout(stuckT); waitNextRes=null; clearPad(); }
+  return { start, stop, _run:run,
+    // test hooks: inspect what the flow is waiting on, and simulate the child's bead-moves / number-taps
+    _waiting:()=>waitKind, _alive:()=>alive,
+    _poke:(v)=>{ if (ab) ab.poke(v); },
+    _pick:(d)=>{ const b=$pad().querySelector('.rt-choice[data-d="'+d+'"]'); if (b) b.click(); return !!b; },
+    _choices:()=>[...$pad().querySelectorAll('.rt-choice')].map(b=>+b.dataset.d) };
+})();
+window.ReadTeach = ReadTeach;
+
 // With the on-screen beads in use, Bix demonstrates right on her abacus, then hands it back cleared.
 async function showMeHere(p){
   const my=++demoToken; demoing=true; SetClock.pause(); $('#answerTool').classList.add('demo');   // hold the silent set clock during the demo
@@ -2953,7 +3096,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.57';
+const APP_VERSION='4.58';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
