@@ -572,6 +572,9 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 .pp-card:active{ transform:translateY(5px); box-shadow:0 5px 0 rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.18); }
 .pp-card--reading{ background:#E8F0FF; }
 .pp-card--listening{ background:#FFF0D6; }
+.pp-card--mental{ background:#EAF7EC; }
+/* Three cards (Mental Math unlocked): shrink a little so all three sit in one row. */
+.pp-cards:has(.pp-card--mental) .pp-card{ width:min(30%,300px); }
 .pp-card.is-done{ filter:saturate(.9); }
 .pp-lab{ font-size:clamp(24px,4.4vw,42px); font-weight:800; }
 .pp-prog{ font-size:clamp(16px,2.6vw,24px); font-weight:700; opacity:.78; }

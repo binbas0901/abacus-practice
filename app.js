@@ -67,18 +67,25 @@ function modeDone(id, mode){ return Math.min(MODE_SESSIONS, _modes(id)[mode] || 
 function modeComplete(id, mode){ return modeDone(id, mode) >= MODE_SESSIONS; }
 function bumpMode(id, mode){ const m = _modes(id); m[mode] = Math.min(MODE_SESSIONS, (m[mode] || 0) + 1); saveProgress(); return m[mode]; }
 function isFlashNode(id){ const n = NODES[NODE_IDX[id]]; return !!(n && n.kind === 'flash'); }
-// A level is finished when BOTH modes reach 7 sessions (flash nodes: a single 7-session flash track).
-function levelComplete(id){ return isFlashNode(id) ? modeComplete(id, 'flash') : (modeComplete(id, 'reading') && modeComplete(id, 'listening')); }
-function levelDoneCount(id){ return isFlashNode(id) ? modeDone(id, 'flash') : (modeDone(id, 'reading') + modeDone(id, 'listening')); }
-function levelTotalCount(id){ return isFlashNode(id) ? MODE_SESSIONS : MODE_SESSIONS * PRACTICE_MODES.length; }
-window.__level = { MODE_SESSIONS, SET_LEN, PRACTICE_MODES, modeDone, modeComplete, bumpMode, isFlashNode, levelComplete, levelDoneCount, levelTotalCount,
-  // back-compat shims for untouched callers (e.g. the home moon): "sets" now means this level's sessions (0..14).
-  get LEVEL_SETS(){ return MODE_SESSIONS * PRACTICE_MODES.length; }, setsDone: id => levelDoneCount(id),
-  // Seeding/compat helper: advance one session, filling Reading and Listening evenly (both reach 7 at 14).
+// Mental Math (anzan) becomes a REQUIRED third mode once the child has mastered `combined` — the last single-digit
+// complement skill ("both friends"), the spec's "single-digit complement add/subtract is automatic" gate. Below that
+// gate a level clears on Reading(7)+Listening(7) only; at or after it, every level also needs Mental Math(7).
+function anzanEligible(){ const c = progress.nodes && progress.nodes.combined; return !!(c && c.mastered); }
+// The REQUIRED modes for a (non-flash) level: Reading + Listening always, plus Mental Math once eligible.
+function levelModes(){ return anzanEligible() ? ['reading', 'listening', 'mental'] : ['reading', 'listening']; }
+// A level is finished when every required mode reaches 7 sessions. (Standalone flash nodes are off-path now, but the
+// legacy single-flash-track branch is kept for back-compat / any saved child still sitting on a flash node.)
+function levelComplete(id){ return isFlashNode(id) ? modeComplete(id, 'flash') : levelModes().every(m => modeComplete(id, m)); }
+function levelDoneCount(id){ return isFlashNode(id) ? modeDone(id, 'flash') : levelModes().reduce((s, m) => s + modeDone(id, m), 0); }
+function levelTotalCount(id){ return isFlashNode(id) ? MODE_SESSIONS : MODE_SESSIONS * levelModes().length; }
+window.__level = { MODE_SESSIONS, SET_LEN, PRACTICE_MODES, modeDone, modeComplete, bumpMode, isFlashNode, anzanEligible, levelModes, levelComplete, levelDoneCount, levelTotalCount,
+  // back-compat shims for untouched callers (e.g. the home moon): "sets" now means this level's sessions (0..14, or 0..21 once Mental Math is required).
+  get LEVEL_SETS(){ return MODE_SESSIONS * levelModes().length; }, setsDone: id => levelDoneCount(id),
+  // Seeding/compat helper: advance one session, filling the required modes evenly (each reaches 7 at full completion).
   completeSet: id => { if (isFlashNode(id)) return bumpMode(id, 'flash'), levelDoneCount(id);
-    const r = modeDone(id, 'reading'), l = modeDone(id, 'listening');
-    const useR = r < MODE_SESSIONS && (r <= l || modeComplete(id, 'listening'));
-    bumpMode(id, useR ? 'reading' : 'listening'); return levelDoneCount(id); } };
+    const modes = levelModes().filter(m => !modeComplete(id, m));
+    if (modes.length){ const least = modes.reduce((a, b) => modeDone(id, b) < modeDone(id, a) ? b : a); bumpMode(id, least); }
+    return levelDoneCount(id); } };
 
 // ---- Set stopwatch (v4.46): a SILENT, background measure of the child's SOLVING time for one set ----
 // Owner's hard requirement: NO clock/timer/elapsed value is shown ANYWHERE while the child is practising. This object
@@ -133,6 +140,10 @@ const Practice = {
     if (mode !== 'flash' && modeComplete(this.node, mode)) return this.pick();
     this.mode = mode; const n = this.nodeObj(this.node);
     this._savedCount = settings.count; settings.count = SET_LEN;
+    // Mental Math: a REQUIRED third track at eligible levels. It reuses the Flash drill verbatim, SOURCED from the
+    // current band's off-path flash node (anzan / anzan_more / anzan_2d). The intro card shows once (startFlash ->
+    // startLesson for an unseen flash node), then the flash drill routes through finish() -> setDone() like the others.
+    if (mode === 'mental'){ this.type = 'mental'; const aid = C.anzanForLevel(levelOf(n)); return startFlash(this.nodeObj(aid) || n, 'practice'); }
     if (mode === 'flash'){ this.type = 'flash'; return startFlash(n); }
     if (mode === 'listening'){
       this.type = 'listening';
@@ -150,7 +161,7 @@ const Practice = {
     const mode = this.mode || 'reading';
     // Stop the silent stopwatch and fold this set's solving time into the store BEFORE the reveal. flash stays untimed.
     const elapsed = SetClock.stop();
-    const t = (mode === 'reading' || mode === 'listening') ? recordSetTime(this.node, mode, elapsed) : null;
+    const t = (mode === 'reading' || mode === 'listening' || mode === 'mental') ? recordSetTime(this.node, mode, elapsed) : null;
     this.celebrate(mode, bumpMode(this.node, mode), t);
   },
   async celebrate(mode, n, t){
@@ -186,7 +197,8 @@ const Practice = {
     try { Treats.earn(Treats.EARN.skill, 'you mastered a new skill!'); } catch (e) {}   // mastering a skill earns more beads
     await sleep(1200);                                            // let Juni's unlock line land before the card
     Fun.confetti(120); Sfx.star();
-    await TOY.confirm('Level complete!', `You finished Reading and Listening — you unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
+    const finishedWhat = anzanEligible() ? 'Reading, Listening and Mental Math' : 'Reading and Listening';
+    await TOY.confirm('Level complete!', `You finished ${finishedWhat} — you unlocked a new skill!`, { ok: 'Yay!', cancel: 'Back' });
     renderHome(); show('home');
   }
 };
@@ -821,9 +833,10 @@ function renderHome(opts){
   Fun.save();
   renderTrophy(done, total, allDone);
   // Per-mode label so the home reflects the Reading/Listening structure, not just a raw session count.
-  { const lab = $('#homeTrophy .th-trophy-lab');
-    if (lab && !window.__level.isFlashNode(cur.id))
-      lab.textContent = allDone ? 'Level done!' : `Read ${window.__level.modeDone(cur.id,'reading')}/${window.__level.MODE_SESSIONS} · Listen ${window.__level.modeDone(cur.id,'listening')}/${window.__level.MODE_SESSIONS}`; }
+  { const lab = $('#homeTrophy .th-trophy-lab'), Lv = window.__level, T = Lv.MODE_SESSIONS;
+    if (lab && !Lv.isFlashNode(cur.id)){
+      const base = `Read ${Lv.modeDone(cur.id,'reading')}/${T} · Listen ${Lv.modeDone(cur.id,'listening')}/${T}`;
+      lab.textContent = allDone ? 'Level done!' : (Lv.anzanEligible() ? `${base} · Mental ${Lv.modeDone(cur.id,'mental')}/${T}` : base); } }
   Treats.renderJar();
 }
 // The level trophy sits above the big Practice button: ten little beads fill as sets are cleared, the cup lights
@@ -1179,8 +1192,11 @@ function renderPracticePick(id){
       + `<span class="pp-pips">${Array.from({length:T},(_,i)=>`<i class="pp-pip${i<done?' on':''}"></i>`).join('')}</span>`
       + `<span class="pp-best"${bestLab?'':' hidden'}>${bestLab}</span></button>`;
   };
-  $('#ppCards').innerHTML = card('reading','Reading', modeDone(id,'reading')) + card('listening','Listening', modeDone(id,'listening'));
-  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = 'Pick how you want to practise — Reading or Listening.'; jb.classList.add('on'); }
+  let html = card('reading','Reading', modeDone(id,'reading')) + card('listening','Listening', modeDone(id,'listening'));
+  // Mental Math: a third card, shown ONLY once the child is eligible (combined mastered). Hidden otherwise — never a locked/greyed card.
+  if (anzanEligible()) html += card('mental','Mental math', modeDone(id,'mental'));
+  $('#ppCards').innerHTML = html;
+  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how you want to practise — Reading, Listening or Mental math.' : 'Pick how you want to practise — Reading or Listening.'; jb.classList.add('on'); }
   toySky('#ppSky');
 }
 $('#exitPick').innerHTML = TOY.icon('back', 32, 'currentColor');
@@ -1865,10 +1881,11 @@ function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now(); feedStreak=0;
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred();
-  if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening')) Tool.kind = 'keys';   // Reading & Listening answer on the number pad (owner's design); the abacus is still one tap away via the switch
+  if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening' || Practice.type === 'mental')) Tool.kind = 'keys';   // Reading, Listening & Mental Math answer on the number pad (the abacus is hidden in Mental Math)
   // Start the silent set stopwatch as the first problem of a timed practice set is shown. It runs in the background
   // through the whole set (including the after-set polish pass) and stops at sessionDone(). Nothing of it shows on screen.
-  if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening')) SetClock.start();
+  // Mental Math is a 7-set mode too, so it is timed like Reading/Listening (reveal only after the set, best logged).
+  if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening' || Practice.type === 'mental')) SetClock.start();
   Tool.apply();
   setStages(); toySky('#drillSky'); show('drill');
   PB.show('');   // Bixi mounts as the quiet, reacting sidekick (figure only; his bubble stays empty — Juni leads)
