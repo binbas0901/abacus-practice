@@ -21,21 +21,26 @@ async def main():
         await pg.goto(URL)
         await pg.wait_for_function("window.Curriculum && window.App && window.Classroom", timeout=20000)
 
-        # seed progress so 'anzan' is the current skill and its intro has NOT been seen (anzan not mastered, so
-        # advanceCurrent won't skip past it; everything before it mastered so it's reachable)
+        # v4.51: flash/anzan nodes are OFF the mandatory path (advanceCurrent skips them); the Mental Math MODE is a
+        # required third practice track, reached from the picker's "Mental math" card once eligible (combined mastered).
+        # Seed everything through `combined` mastered (so eligible) with current = two_digit (a Level-3 physical skill),
+        # and the anzan content node's intro NOT seen, so the Mental Math card shows the one-time intro card first.
         await pg.evaluate("""()=>{
-          const NS=window.Curriculum.NODES, i=NS.findIndex(n=>n.id==='anzan'), nodes={};
-          for (let j=0;j<i;j++) nodes[NS[j].id]={lesson:true, mastered:'parent', hist:[]};
-          nodes['anzan']={lesson:false, mastered:null, hist:[]};
-          localStorage.setItem('abacus.progress', JSON.stringify({current:'anzan', nodes}));
+          const NS=window.Curriculum.NODES, i=NS.findIndex(n=>n.id==='two_digit'), nodes={};
+          for (let j=0;j<i;j++){ if (NS[j].kind!=='flash') nodes[NS[j].id]={lesson:true, mastered:'parent', hist:[]}; }
+          nodes['two_digit']={lesson:true, mastered:null, hist:[]};   // current physical skill, learned, not mastered
+          // leave 'anzan' (the Level-3 Mental Math content node) absent so its intro has not been seen
+          localStorage.setItem('abacus.progress', JSON.stringify({current:'two_digit', nodes}));
           localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:6, speakFeedback:false, gap:0.4, voice:'ljspeech', sfx:false, flashSec:1.0}));
         }""")
         await pg.reload()
-        await pg.wait_for_function("window.App && window.Classroom", timeout=20000)
+        await pg.wait_for_function("window.App && window.Classroom && window.__practice", timeout=20000)
         await pg.wait_for_timeout(800)
 
         cur = await pg.evaluate("()=>window.Curriculum.NODES[(window.App.nodeIndex&&window.App.nodeIndex())||0].id")
-        check('current skill is the mental-math node (anzan)', cur == 'anzan', cur)
+        check('current skill is a physical Level-3 skill (two_digit); flash nodes are off-path', cur == 'two_digit', cur)
+        elig = await pg.evaluate("()=>window.__level.anzanEligible()")
+        check('Mental Math is unlocked (combined mastered)', elig is True, elig)
 
         # the anzan intro line must be recorded (the card would be silent otherwise) -- load the pack first
         await pg.evaluate("async()=>{ try{ await window.Classroom.Voice.load('juni'); }catch(e){} }")
@@ -43,9 +48,13 @@ async def main():
         clip = await pg.evaluate("()=>{const r=window.Classroom.Voice.find('juni','intro_anzan');return !!(r&&r[0]&&r[1]);}")
         check('anzan intro has a recorded Juni voice line', clip)
 
-        # unlock audio, then start the Flash mode -> should show the New-skill intro CARD, not jump to the drill
+        # unlock audio, open the picker, then tap Mental Math -> should show the New-skill intro CARD, not jump to the drill
         await pg.evaluate("()=>window.App.Speaker.unlock()")
-        await pg.evaluate("()=>window.App.startMode('flash')")
+        await pg.evaluate("()=>window.__practice.start('two_digit')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        mental = await pg.eval_on_selector_all('#ppCards .pp-card', 'els=>els.map(e=>e.getAttribute("data-mode"))')
+        check('the picker shows the Mental Math card when eligible', 'mental' in mental, mental)
+        await pg.evaluate("()=>window.__practice.runMode('mental')")
         await pg.wait_for_timeout(700)
 
         lesson_active = await pg.evaluate("()=>document.querySelector('#lesson').classList.contains('active')")
@@ -71,13 +80,14 @@ async def main():
         seen = await pg.evaluate("""()=>{ try{ return !!progress.nodes.anzan.lesson; }catch(e){ try{ return !!Store.get('progress').nodes.anzan.lesson; }catch(e2){ return 'noaccess'; } } }""")
         check('the intro is marked seen after the card', seen is True, seen)
 
-        # second entry: the card is one-time, so Flash now goes straight to the drill
-        await pg.evaluate("()=>{ if (window.App.renderHome) window.App.renderHome(); }")
-        await pg.evaluate("()=>window.App.startMode('flash')")
+        # second entry: the card is one-time, so Mental Math now goes straight to the drill (back to picker, tap it again)
+        await pg.evaluate("()=>{ const x=document.querySelector('#exitDrill'); if(x) x.click(); }")
+        await pg.wait_for_timeout(400)
+        await pg.evaluate("()=>window.__practice.runMode('mental')")
         await pg.wait_for_timeout(600)
         second_direct = await pg.evaluate("""()=>document.querySelector('#drill').classList.contains('active')
                                               && !document.querySelector('#lesson').classList.contains('active')""")
-        check('second time, Flash skips the card and goes straight to the drill', second_direct)
+        check('second time, Mental Math skips the card and goes straight to the drill', second_direct)
 
         check('no page errors', not errs, errs[:4])
         await b.close()
