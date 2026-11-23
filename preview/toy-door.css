@@ -3,13 +3,13 @@
    so it never touches other screens (the lesson soroban is restyled here only, not in abacus-input.css). */
 
 #door.td-door,#lesson.td-lesson{--pad:clamp(24px,3.4vw,46px);padding:0;gap:0;min-height:0;font-family:var(--toy-body);color:var(--toy-ink)}
-#door .td-sky,#lesson .td-sky{display:contents}
+#door .td-sky,#lesson .td-sky,#practicePick .td-sky{display:contents}
 
 /* things on the wall: the back button, a hanging sign / board */
-#door .td-top,#lesson .td-top{position:absolute;z-index:3;left:0;right:0;top:0;height:var(--toy-wall-h);box-sizing:border-box;padding:22px var(--pad) 0;
+#door .td-top,#lesson .td-top,#practicePick .td-top{position:absolute;z-index:3;left:0;right:0;top:0;height:var(--toy-wall-h);box-sizing:border-box;padding:22px var(--pad) 0;
   display:flex;align-items:flex-start;gap:18px;pointer-events:none;min-height:0}
-#door .td-top > *,#lesson .td-top > *{pointer-events:auto;flex:none}
-#door .exit.toy-iconbtn,#lesson .exit.toy-iconbtn{width:68px;height:68px;color:var(--toy-walnut)}
+#door .td-top > *,#lesson .td-top > *,#practicePick .td-top > *{pointer-events:auto;flex:none}
+#door .exit.toy-iconbtn,#lesson .exit.toy-iconbtn,#practicePick .exit.toy-iconbtn{width:68px;height:68px;color:var(--toy-walnut)}
 
 /* small local motions (tap feedback only; nothing idles) */
 @keyframes td-pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
@@ -27,11 +27,11 @@
    ===================================================================== */
 #door.td-door{--toy-window-x:clamp(300px,29.5vw,420px)}
 /* the "Practice" sign hangs on the wall by a string */
-#door .td-sign{position:relative;margin:26px 0 0;display:inline-flex;align-items:center;gap:12px;padding:9px 26px 12px;border-radius:18px;
+#door .td-sign,#practicePick .td-sign{position:relative;margin:26px 0 0;display:inline-flex;align-items:center;gap:12px;padding:9px 26px 12px;border-radius:18px;
   font:700 clamp(28px,3vw,36px)/1.1 var(--toy-display);color:var(--toy-ink);white-space:nowrap;
   background-image:var(--toy-grain),linear-gradient(var(--toy-wood-lt),var(--toy-wood));background-size:512px 256px,auto;
   box-shadow:inset 0 0 0 2px rgba(255,243,216,.7),inset 0 10px 0 rgba(255,244,220,.35),0 5px 0 var(--toy-wood-deep),5px 12px 12px rgba(81,104,63,.34)}
-#door .td-sign::before{content:"";position:absolute;left:50%;top:-34px;width:96px;height:38px;margin-left:-48px;
+#door .td-sign::before,#practicePick .td-sign::before{content:"";position:absolute;left:50%;top:-34px;width:96px;height:38px;margin-left:-48px;
   background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 38'><path d='M8 37 L48 9 L88 37' fill='none' stroke='%23B48C54' stroke-width='3' stroke-linejoin='round'/><circle cx='49.5' cy='10.5' r='8' fill='%234A2E12' opacity='.25'/><circle cx='48' cy='8.5' r='8' fill='%23B98448'/><circle cx='46' cy='6.5' r='3' fill='%23FCE4B8' opacity='.7'/></svg>") center/contain no-repeat}
 /* rainbow and plant stand at the back of the table, against the wall */
 #door .td-shelf{position:absolute;z-index:1;right:calc(var(--pad) - 8px);top:var(--toy-wall-h);height:0;display:flex;align-items:flex-end;gap:14px;pointer-events:none}
