@@ -36,7 +36,7 @@
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
     // Extra line packs recorded after the main set (audio/bix-<voice>-<pack>.js, see tools/make_bix_pack.py).
     // Newest first: a line re-recorded in a pack replaces the take in the main recording (see find).
-    PACKS: ['polish', 'home'],
+    PACKS: ['polish', 'home', 'teach'],
     load(tag) {
       if (!tag) { const s = App() && App().settings, want = s && this.voices[s.bixVoice] ? s.bixVoice : 'sweet';
         if (want !== 'sweet') return this.load(want).then(() => { this.missing[want] = !this.buf[want]; if (this.missing[want]) return this.load('sweet'); }); }
