@@ -562,8 +562,13 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 
 /* ---- Reading / Listening practice picker (v4.42) ---- */
 /* only lay out as a flex column when this screen is the active one — never override the base .screen{display:none} */
-#practicePick.pp.active{ display:flex; flex-direction:column; }
-.pp .pp-jbub{ margin:10px auto 0; max-width:34rem; text-align:center; padding-top:20px; }   /* padding-top clears the "Juni" name chip (::after, top:-13px) so a longer prompt never sits under it */
+/* v4.67: use the universal wall/sign format (shared #door/#lesson/#practicePick rules in toy-door.css): a short
+   wall with the window+moon, the title on a hanging wooden sign top-left (was an unstyled, clipped heading), and
+   the body below the wall. */
+#practicePick.pp{ --toy-wall-h:clamp(116px,16vh,156px); --toy-window-x:clamp(340px,38vw,540px); }
+#practicePick.pp.active{ display:flex; flex-direction:column; padding-top:var(--toy-wall-h); box-sizing:border-box; }
+.pp .pp-jbub{ margin:14px auto 0; max-width:34rem; text-align:center; }
+#practicePick .pp-jbub::after{ display:none; }   /* drop the floating "Juni" chip — the moon in the window already shows who's speaking; the prompt reads clean */
 .pp-cards{ flex:1; display:flex; gap:clamp(16px,4vw,44px); align-items:center; justify-content:center; padding:clamp(16px,4vw,48px); flex-wrap:wrap; }
 .pp-card{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
   width:min(42%,320px); min-width:200px; aspect-ratio:3/4; max-height:58vh;
