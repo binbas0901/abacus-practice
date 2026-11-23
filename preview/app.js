@@ -774,7 +774,7 @@ async function speakHomeGreeting(jKey, jText, bKey, bText){
   const seq = ++homeGreetSeq;
   const jb = $('#homeJuni'), sky = $('#homeSky'), bh = $('#bixHome');
   Fun.Mascot.quiet(bh);                                   // Bixi stays a quiet, waving sidekick; Juni is the lead and the only greeter
-  await CLr.say(jKey, { who:'juni', text:jText, bubble:jb, figure:sky, ms:0 });
+  try{ await CLr.say(jKey, { who:'juni', text:jText, bubble:jb, figure:sky, ms:0 }); }catch(e){}   // a failed/hung greeting clip must never surface as an uncaught rejection
 }
 // Show Juni's greeting bubble without playing audio (returning to home, or before the first tap). Juni leads; Bixi has no competing bubble.
 function showHomeBubbles(jText, bText){
@@ -1342,7 +1342,7 @@ function lessonScript(nodeId){
   return by;
 }
 // Juni narrates (plays her clip + moves her mouth) WITHOUT touching the caption, so the existing captions/tests stay intact.
-function juniNarrate(key){ if (!key || !window.Classroom) return; Classroom.Voice.play('juni', key, juniFig()); }
+function juniNarrate(key){ if (!key || !window.Classroom) return; Promise.resolve(Classroom.Voice.play('juni', key, juniFig())).catch(()=>{}); }   // a failed clip must not surface as an uncaught rejection
 // The Bixi interlude runs once, after the guided turns, when the node has a bixi_wrong step and the grown-up left mistakes on.
 function hasInterlude(n){ return settings.bixiMistakes!==false && n && n.kind!=='numbers' && !!(lessonScript(n.id)||{}).bixi_wrong && (n.guided&&n.guided.length || n.demos&&n.demos.length); }
 // A visibly-wrong but correctable value for Bixi to land on (the narration explains the real slip).
@@ -1626,14 +1626,15 @@ $('#exitLesson').addEventListener('click', ()=>{ stopVoices(); leaveLesson(); })
 // Juni leads from the window. juniSay shows her bubble (the lesson caption) and animates her mouth on the sky moon.
 const CL = ()=>window.Classroom;
 function juniFig(){ return $('#lessonSky'); }
-function juniSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'juni', figure:juniFig()}, o)); }
+function juniSay(key, o={}){ if (!CL()) return Promise.resolve(); return Promise.resolve(CL().say(key, Object.assign({who:'juni', figure:juniFig()}, o))).catch(()=>{}); }
 function bixiFig(){ return $('#bixLesson'); }
-function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return CL().say(key, Object.assign({who:'bixi', figure:bixiFig(), bubble:$('#bixiBubble')}, o)); }
+function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return Promise.resolve(CL().say(key, Object.assign({who:'bixi', figure:bixiFig(), bubble:$('#bixiBubble')}, o))).catch(()=>{}); }
 // Juni leads a line on ANY screen: pass her bubble element + the screen's moon figure. Falls back to a silent bubble
 // if the clip isn't recorded yet. One voice at a time is enforced in the Classroom/Fun audio layers.
 function juniSayOn(bubble, figure, key, text, ms){
   if (!CL()){ if (bubble){ if (text!=null) bubble.textContent = text; bubble.classList.add('on'); } return Promise.resolve(); }
-  return CL().say(key, { who:'juni', text, bubble, figure, ms: ms||0 });
+  // never surface a failed clip as an uncaught rejection: these are fire-and-forget on every screen (incl. the first-run gate)
+  return Promise.resolve(CL().say(key, { who:'juni', text, bubble, figure, ms: ms||0 })).catch(()=>{});
 }
 // Tapping the moon plays one of Juni's calm lines; mark her tappable where she can be tapped (home, lesson).
 function wireMoonTap(sel){ const sky=$(sel); if (!sky) return;
@@ -2887,7 +2888,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.52';
+const APP_VERSION='4.53';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

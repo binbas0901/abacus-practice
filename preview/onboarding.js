@@ -17,6 +17,43 @@
   const PER = 3;
   let token = 0, state = { name: '', keepName: false };
 
+  /* ---------------- onboarding audio safety net (v4.53) ----------------
+     Each intro beat used to advance on `await juniSay(...)` — i.e. on the audio promise itself. If that promise
+     hangs (audio never resolves) or rejects (audio fails/off), the whole first-run chain STALLS (observed at the
+     "meet Bixi" beat on a real iPad). beat() makes a spoken step advance on "clip finished OR a safety timeout,
+     whichever comes first", and it never rejects, so onboarding always reaches the drill whether audio plays,
+     fails, is slow, or is turned off.
+     The timeout is a TRUE safety net for a hung/failed clip only — a clip that is actually playing must run to
+     completion (some intro lines are long: j_intro_help ~7.7s, j_intro_begin ~6.2s). So the per-beat cap is based
+     on the clip's own recorded duration + a buffer when that duration is known (Classroom.Voice sprite data), and
+     falls back to a ceiling that EXCEEDS the longest intro clip when it isn't. Either way a playing clip resolves
+     (via Voice.play's onended) well before the cap; the cap only fires when audio never resolves. */
+  const SAY_BUFFER = 1800;   // voice on: added to a clip's known duration so onended always wins over the cap (covers Voice.play's start offset + its own +400ms net + resume slack)
+  const SAY_CEILING = 9500;  // voice on, duration unknown (pack not loaded yet / clip hung): exceeds the longest intro clip (~7.7s) so a real clip is never truncated; a truly hung clip caps here
+  const SAY_FLOOR = 700;     // voice on: keep the words on screen a readable minimum even if a clip fails/returns instantly
+  const SAY_OFF = 900;       // voice off / before the first tap: a short readable pause instead of waiting on audio that won't play
+  const voiceOn = () => { const a = App(), s = a && a.settings; return !!(s && s.bixTalks !== false && a.Speaker && a.Speaker.gestured); };
+  // The recorded length of a clip in ms (from the loaded Classroom voice sprite), or 0 if not known yet.
+  function clipMs(who, key) {
+    try { const V = CL() && CL().Voice; if (V && V.find) { const r = V.find(who, key); if (r && r[1] && typeof r[1][1] === 'number') return Math.round(r[1][1] * 1000); } } catch (e) {}
+    return 0;
+  }
+  // Per-beat safety cap: a known clip's duration + buffer, else a ceiling above the longest intro clip.
+  function capFor(who, key) { const ms = clipMs(who, key); return ms ? ms + SAY_BUFFER : SAY_CEILING; }
+  // Await a spoken beat safely. p is the juniSay/bixiSay promise; opts.cap is the safety timeout.
+  function beat(p, opts = {}) {
+    const clip = Promise.resolve(p).catch(() => {});                 // a rejected/failed clip must never break the chain
+    if (!voiceOn()) return sleep(opts.off || SAY_OFF);               // muted or no sound yet: fixed readable timing, don't await audio
+    const floor = opts.floor != null ? opts.floor : SAY_FLOOR, cap = opts.cap || SAY_CEILING;
+    // advance when the clip ends (but not before the readable floor), or at the safety cap — whichever comes first.
+    return Promise.race([ Promise.all([clip, sleep(floor)]), sleep(cap) ]);
+  }
+  // Speak a Juni/Bixi line and await it safely, with the safety cap sized to that clip's own length.
+  function jBeat(key, opts = {}) { return beat(juniSay(key, opts), { cap: capFor('juni', key) }); }
+  function bBeat(key, opts = {}) { return beat(bixiSay(key, opts), { cap: capFor('bixi', key) }); }
+  // Await a non-audio step (e.g. Bixi's roll-in move) without ever hanging the chain.
+  function settle(p, cap = SAY_CEILING) { return Promise.race([ Promise.resolve(p).catch(() => {}), sleep(cap) ]); }
+
   /* ---------------- staging ---------------- */
   const setup = () => $('#setup');
   function step(id) { $$('#setup .su-step').forEach(s => s.classList.toggle('on', s.id === id)); setup().dataset.step = id; setup().classList.toggle('toy-scene--calm', id === 'suCheck' || id === 'suPick'); }
@@ -27,15 +64,17 @@
 
   // Say a Juni line: hide Bixi's bubble, show Juni's (her name chip + talking mouth on the moon), play the clip.
   // opts.text overrides the on-screen words (e.g. to keep the child's name) while the generic clip still plays.
+  // juniSay/bixiSay never reject: a failed audio clip resolves quietly so no call site (awaited or fire-and-forget)
+  // can halt onboarding with an uncaught rejection. Hang protection (a clip that never resolves) is added by beat().
   function juniSay(key, opts = {}) {
     bixiBub().classList.remove('on'); juniFig()._last = key;
     if (!CL()) return Promise.resolve();
-    return CL().say(key, Object.assign({ who: 'juni', figure: juniFig(), bubble: juniBub() }, opts));
+    return Promise.resolve(CL().say(key, Object.assign({ who: 'juni', figure: juniFig(), bubble: juniBub() }, opts))).catch(() => {});
   }
   function bixiSay(key, opts = {}) {
     juniBub().classList.remove('on'); bixiFig()._last = key;
     if (!CL()) return Promise.resolve();
-    return CL().say(key, Object.assign({ who: 'bixi', figure: bixiFig(), bubble: bixiBub() }, opts));
+    return Promise.resolve(CL().say(key, Object.assign({ who: 'bixi', figure: bixiFig(), bubble: bixiBub() }, opts))).catch(() => {});
   }
   function bixiRest(mood) { if (root.Fun && root.Fun.Mascot) root.Fun.Mascot.rest(bixiFig(), mood, { keep: false, bubble: false }); }
   // Show Juni's bubble with ad-hoc UI words and no clip (nothing recorded says exactly this), so the audio never
@@ -86,10 +125,10 @@
   // Juni's spoken welcome, then she asks the name. Audio begins on the first tap (the clips play in order).
   async function intro(my) {
     if (!onStep('suName')) return;   // the first tap landed on a control that already moved us on
-    await juniSay('j_intro_hello'); if (my !== token || !onStep('suName')) return;
-    await juniSay('j_intro_welcome'); if (my !== token || !onStep('suName')) return;
+    await jBeat('j_intro_hello'); if (my !== token || !onStep('suName')) return;
+    await jBeat('j_intro_welcome'); if (my !== token || !onStep('suName')) return;
     await sleep(150);
-    await juniSay('j_intro_name'); if (my !== token || !onStep('suName')) return;
+    await jBeat('j_intro_name'); if (my !== token || !onStep('suName')) return;
     focusName();
   }
 
@@ -103,17 +142,17 @@
   // Juni greets the named child, then introduces Bixi, who rolls in. Then on to the grown-up setup.
   async function meetAndBixi(my, n) {
     step('suMeet');
-    await juniSay('j_intro_meet', { text: `Lovely to meet you, ${n}!` }); if (my !== token) return;
+    await jBeat('j_intro_meet', { text: `Lovely to meet you, ${n}!` }); if (my !== token) return;
     await sleep(150);
-    await juniSay('j_intro_bixi1'); if (my !== token) return;
+    await jBeat('j_intro_bixi1'); if (my !== token) return;
     // Bixi rolls in from the side (classroom roll move; silent under reduced motion, he just appears).
     setup().classList.add('cl-bixi-here'); bixiRest('happy');
     await sleep(120);
-    if (CL()) await CL().move(bixiFig(), 'rollback'); if (my !== token) return;
-    await bixiSay('b_intro_hi'); if (my !== token) return;
-    await juniSay('j_intro_bixi2'); if (my !== token) return;
-    await juniSay('j_intro_help'); if (my !== token) return;
-    await bixiSay('b_intro_help'); if (my !== token) return;
+    if (CL()) await settle(CL().move(bixiFig(), 'rollback')); if (my !== token) return;
+    await bBeat('b_intro_hi'); if (my !== token) return;
+    await jBeat('j_intro_bixi2'); if (my !== token) return;
+    await jBeat('j_intro_help'); if (my !== token) return;
+    await bBeat('b_intro_help'); if (my !== token) return;
     // Bixi settles to the side as the smaller sidekick; Juni stays the lead.
     setup().classList.add('cl-bixi-side');
     await sleep(200); if (my !== token) return;
@@ -125,7 +164,7 @@
     const my = token;
     $('#suAbacusH').textContent = `${state.name}’s abacus`;
     step('suAbacus');
-    await juniSay('j_intro_grownup'); if (my !== token || !onStep('suAbacus')) return;
+    await jBeat('j_intro_grownup'); if (my !== token || !onStep('suAbacus')) return;
     await sleep(120);
     juniSay('j_onboard_abacus');
   }
@@ -247,7 +286,7 @@
     $('#suInstall').style.display = inBrowserTab() ? '' : 'none';
     step('suDone'); root.Fun.confetti(70); App().Sfx.star();
     // Juni calls it done, Bixi cheers; then the child taps Start to go in.
-    await juniSay('j_intro_begin'); if (my !== token) return;
+    await jBeat('j_intro_begin'); if (my !== token) return;
     bixiSay('b_intro_go');
   }
 
