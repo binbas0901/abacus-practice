@@ -154,7 +154,7 @@
 #drill .tp-msg{font:600 22px/1.2 var(--toy-display);color:var(--toy-ink);min-height:27px}
 #drill .tp-listen .toy-block,#drill .tp-flash .toy-block{padding-left:16px;padding-right:18px;font-size:22px}
 #drill .tp-flashdots{display:flex;gap:5px;min-height:20px;align-items:center;justify-content:center;flex-wrap:wrap;line-height:0}
-#drill .flash-num{font:700 calc(min(92px, var(--board) * 1.05 / var(--len, 2)))/1 var(--toy-display);color:var(--toy-ink);min-height:100px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+#drill .flash-num{font:700 calc(min(var(--tf-max,98px), var(--board) * 1.05 / var(--len, 2)))/1 var(--toy-display);color:var(--toy-ink);min-height:100px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 #drill .flash-num b{font-weight:700;margin-right:.08em;font-size:.82em}
 #drill .flash-num b.plus{color:#A86F08} #drill .flash-num b.minus{color:var(--toy-red)} #drill .flash-num b.times{color:var(--toy-indigo)}
 #drill .flash-num.pop{animation:tp-pop .3s cubic-bezier(.3,1.5,.5,1) both}
@@ -624,19 +624,19 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
    step. Bixi's figure sits in front too; it already keeps real clearance from the board, so the box never covers him. */
 #drill[data-mode=visual]:not(.tb):not(.long) .tp-bixcol{position:relative;z-index:5}
 @media (orientation:landscape) and (min-width:1024px) and (max-width:1140px){
-  #drill[data-mode=visual]:not(.tb):not(.long){--bixcol:200px;--board:300px;--th-max:min(118px,15.8vh);--tf-max:min(106px,14.2vh);--ans-h:74px}
+  #drill[data-mode=visual]:not(.tb):not(.long),#drill[data-mode=flash]:not(.tb):not(.long){--bixcol:200px;--board:300px;--th-max:min(118px,15.8vh);--tf-max:min(106px,14.2vh);--ans-h:74px}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.wide{--tf-max:min(74px,10vh)}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.xwide{--tf-max:min(58px,7.8vh)}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-bubble{width:300px;max-width:none}
 }
 @media (orientation:landscape) and (min-width:1141px){
-  #drill[data-mode=visual]:not(.tb):not(.long){--bixcol:208px;--board:376px;--th-max:min(124px,17vh);--tf-max:min(116px,15.4vh);--ans-h:78px}
+  #drill[data-mode=visual]:not(.tb):not(.long),#drill[data-mode=flash]:not(.tb):not(.long){--bixcol:208px;--board:376px;--th-max:min(124px,17vh);--tf-max:min(116px,15.4vh);--ans-h:78px}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.wide{--tf-max:min(84px,11.4vh)}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.xwide{--tf-max:min(66px,9vh)}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-bubble{width:320px;max-width:none}
 }
 @media (min-width:1300px) and (min-height:960px){
-  #drill[data-mode=visual]:not(.tb):not(.long){--bixcol:252px;--board:430px;--th-max:min(138px,15vh);--tf-max:min(128px,13.6vh);--ans-h:98px}
+  #drill[data-mode=visual]:not(.tb):not(.long),#drill[data-mode=flash]:not(.tb):not(.long){--bixcol:252px;--board:430px;--th-max:min(138px,15vh);--tf-max:min(128px,13.6vh);--ans-h:98px}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.wide{--tf-max:min(96px,10vh)}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-problem.xwide{--tf-max:min(76px,8vh)}
   #drill[data-mode=visual]:not(.tb):not(.long) .tp-bubble{width:348px;max-width:none}
