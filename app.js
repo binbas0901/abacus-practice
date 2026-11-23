@@ -2473,9 +2473,13 @@ async function showMe(p){
    SEAM: start() could branch to a lighter path on repeat visits later (a follow-up; not built yet). */
 const ReadTeach = (function(){
   let ab=null, onDoneCb=null, alive=false, token=0, stuckT=null, waitNextRes=null, waitKind=null, bixIdleT=null;   // waitKind: test hook — what the flow is waiting on ('next' | 'bead:N' | 'read:N' | null)
-  // Bixi is the classmate who reacts: a hop/cheer on each success, and a gentle idle bob so he's never static.
-  function bixReact(state){ try{ Fun.Mascot.react($bix(), state||'cheer'); }catch(e){} }
-  function bixIdleStart(){ clearInterval(bixIdleT); bixIdleT=setInterval(()=>{ if (alive && $bix()) bixReact('happy'); }, 5200); }
+  // Bixi is the classmate who reacts: he bounces + chimes a short cheer on each success, and bounces gently while idle.
+  const BX_CHEERS=['bx_rt_nice','bx_rt_yes','bx_rt_got','bx_rt_woo','bx_rt_cool','bx_rt_me'];
+  function bixReact(state,ms){ try{ Fun.Mascot.react($bix(), state||'cheer', ms); }catch(e){} }
+  function bixSay(id,ms){ try{ Fun.Mascot.say($bix(), (window.BIX_LINES&&window.BIX_LINES[id])||'', ms||1800, id); }catch(e){} }
+  function bixCheer(){ bixReact('cheer'); bixSay(BX_CHEERS[Math.floor(Math.random()*BX_CHEERS.length)]); }
+  function bixDone(){ bixReact('cheer',2200); bixSay('bx_rt_done'+(1+Math.floor(Math.random()*2)), 2600); }
+  function bixIdleStart(){ clearInterval(bixIdleT); bixIdleT=setInterval(()=>{ if (alive && $bix()) bixReact('happy'); }, 4000); }
   function bixIdleStop(){ clearInterval(bixIdleT); bixIdleT=null; }
   const $sky=()=>$('#rtSky'), $bub=()=>$('#rtJuni'), $bix=()=>$('#rtBix'), $next=()=>$('#rtNext'), $pad=()=>$('#rtPad'), $count=()=>$('#rtCount');
   // timing (ported from onboarding.beat): a PLAYING clip runs to completion; the cap only fires if audio hangs/off.
@@ -2496,7 +2500,7 @@ const ReadTeach = (function(){
     return new Promise(res=>{
       const my=token; ab.setReadOnly(false); waitKind='bead:'+target; $count().textContent='0';   // show the count card from 0 so the left panel is filled the moment it's the child's turn
       const done=()=>{ clearTimeout(stuckT); ab.setReadOnly(true); ab._rtOnChange=null; waitKind=null; };
-      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = String(v); if (v===target){ done(); Sfx.ok(); bixReact('cheer'); res(true); } };
+      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = String(v); if (v===target){ done(); Sfx.ok(); bixCheer(); res(true); } };
       clearTimeout(stuckT);
       stuckT=setTimeout(async()=>{ if (token!==my || !alive) return; await beat('j_rt_stuck','Here — watch me do it.'); if (token!==my) return;
         ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent='0'; ab.setReadOnly(false); }, 6500);
@@ -2523,7 +2527,7 @@ const ReadTeach = (function(){
       const my=token, pad=$pad(); pad.innerHTML=''; waitKind='read:'+answer;
       const btns=choices(answer).map(d=>{ const b=document.createElement('button'); b.type='button'; b.className='rt-choice'; b.textContent=d; b.dataset.d=d; pad.appendChild(b); return b; });
       pad.onclick=async(e)=>{ const b=e.target.closest('.rt-choice'); if (!b || token!==my || b.disabled) return; const d=+b.dataset.d;
-        if (d===answer){ Sfx.ok(); b.classList.add('ok'); bixReact('cheer'); pad.onclick=null; waitKind=null; await sleep(320); res(true); }
+        if (d===answer){ Sfx.ok(); b.classList.add('ok'); bixCheer(); pad.onclick=null; waitKind=null; await sleep(320); res(true); }
         else { Sfx.tap(); b.classList.add('miss'); b.disabled=true; await countTogether(answer); if (token!==my) return; btns.forEach(x=>{ if (+x.dataset.d===answer) x.classList.add('hint'); }); } };
     });
   }
@@ -2573,7 +2577,7 @@ const ReadTeach = (function(){
     await waitRead(6); if (token!==my) return;
     clearPad(); await beat('j_rt_read6ok','5 and 1 — that’s 6. Brilliant!'); if (token!==my) return;
     // celebrate
-    Fun.confetti(70); Sfx.star(); bixReact('cheer', 2200);
+    Fun.confetti(70); Sfx.star(); bixDone();
     await beat('j_rt_done','You can read the beads now! High five!'); if (token!==my) return;
     finish();
   }
@@ -2581,7 +2585,7 @@ const ReadTeach = (function(){
     token++; alive=true; onDoneCb=onDone;
     try { Speaker.unlock && Speaker.unlock(); } catch(e){}
     try { toySky($sky()); } catch(e){}
-    try { toyBix($bix(), 'happy', {size:132, keep:false, bubble:false}); } catch(e){}
+    try { toyBix($bix(), 'happy', {size:132, keep:false}); } catch(e){}
     bixIdleStart();
     const t=$('#rtTitle'); if (t) t.textContent = (typeof L1_LABELS!=='undefined' && L1_LABELS.reading) || 'Read the beads';
     const host=$('#rtAbacus');
@@ -3102,7 +3106,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.64';
+const APP_VERSION='4.65';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

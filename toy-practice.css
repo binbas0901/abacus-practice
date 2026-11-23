@@ -718,7 +718,13 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 #readTeach .rt-next{ margin:0; min-width:200px; visibility:hidden; }
 #readTeach .rt-next.on{ visibility:visible; }
 /* Bix sits up from the corner (was cut off at the very bottom-left) so he's fully visible and lively. */
-#readTeach .rt-bix{ position:absolute; left:clamp(18px,2.5vw,44px); bottom:clamp(30px,6vh,76px); pointer-events:none; z-index:2; }
+#readTeach .rt-bix{ position:absolute; left:clamp(18px,2.5vw,44px); bottom:clamp(30px,6vh,76px); pointer-events:none; z-index:6; }
+/* A bigger, springier bounce for Bix here (idle bob + cheer both use it). */
+@keyframes rt-bixbounce{ 0%,100%{transform:translateY(0) scale(1,1)} 28%{transform:translateY(-26%) scale(.93,1.09)} 58%{transform:translateY(0) scale(1.07,.93)} 82%{transform:translateY(-8%) scale(.99,1.01)} }
+#readTeach .rt-bix .bix.happy > .toy-bix,
+#readTeach .rt-bix .bix.cheer > .toy-bix{ animation-name:rt-bixbounce; animation-duration:.66s; }
+/* His speech bubble pops up and to the right of him, into the open space (never off-screen). */
+#readTeach .rt-bix .bubble{ position:absolute; left:84%; bottom:86%; margin:0; min-width:150px; max-width:min(280px,48vw); white-space:normal; z-index:7; }
 /* Portrait: stack the two panes vertically; a shorter board so the choices + Next still fit below it. */
 @media (orientation:portrait){
   #readTeach .rt-stage{ flex-direction:column; justify-content:flex-start; gap:clamp(16px,2.6vh,28px);

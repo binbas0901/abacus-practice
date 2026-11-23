@@ -79,5 +79,13 @@ window.BIX_LINES = {
 "lesson_done": "You learned a new skill! I'm so proud of you!",
 "showme": "Watch the beads move.",
 "bead_earn": "Golden beads for you!",
-"unlock_next": "A new skill is open on the bead path!"
+"unlock_next": "A new skill is open on the bead path!",
+"bx_rt_nice": "Nice one!",
+"bx_rt_yes": "Yes! You did it!",
+"bx_rt_got": "You got it!",
+"bx_rt_woo": "Woohoo!",
+"bx_rt_cool": "So cool!",
+"bx_rt_me": "I counted too — same as you!",
+"bx_rt_done1": "We did it! High five!",
+"bx_rt_done2": "You can read the beads now, just like me!"
 };
