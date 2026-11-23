@@ -114,6 +114,34 @@ async def main():
                   and a6['demoIdx'] == before['demoIdx'] and a6['did'] == before['did'], a6)
 
         check('no page errors', not errs, errs[:3])
+
+        # v4.57 FIX 3 - the two "skip" controls on the Your-turn step are distinguishable:
+        #   #lessonSkip (static) skips the WHOLE lesson and now reads "Skip lesson";
+        #   #lessonNext in its td-skip state skips THIS number and still reads "Skip".
+        shots457 = '/tmp/v457'; os.makedirs(shots457, exist_ok=True)
+        ctx2 = await b.new_context(viewport={'width': 1180, 'height': 820}); pg2 = await ctx2.new_page()
+        errs2 = []; pg2.on('pageerror', lambda e: errs2.append(str(e)))
+        await pg2.goto(URL); await pg2.wait_for_function("window.App && window.Lessons", timeout=30000)
+        await pg2.evaluate("([s])=>localStorage.setItem('abacus.settings',JSON.stringify(s))", [SETTINGS])
+        await pg2.evaluate("localStorage.setItem('abacus.progress',JSON.stringify({current:'beads',nodes:{}}))")
+        await pg2.reload(); await pg2.wait_for_function("window.App && window.Lessons", timeout=30000)
+        await pg2.wait_for_timeout(300); await pg2.evaluate("()=>window.App.Speaker.unlock()")
+        await pg2.evaluate("window.App.lessonSkipMs=500")   # make the per-number Skip surface quickly
+        await pg2.evaluate("()=>window.Lessons.start('beads','home')"); await pg2.wait_for_timeout(200)
+        ok2 = await to_numbers(pg2)
+        check('reached the Your-turn step for the skip-label check', ok2, await pg2.evaluate("__lesson()"))
+        await pg2.wait_for_function("getComputedStyle(document.querySelector('#lessonNext')).visibility==='visible'", timeout=8000)
+        labels = await pg2.evaluate("""()=>{const ls=document.querySelector('#lessonSkip'), ln=document.querySelector('#lessonNext');
+          const vis=e=>!!e && e.offsetParent!==null && getComputedStyle(e).visibility!=='hidden';
+          return {skip: ls.textContent.trim(), next: ln.textContent.trim(), skipVis: vis(ls), nextVis: vis(ln), nextSkip: ln.classList.contains('td-skip')};}""")
+        check('Your-turn: the whole-lesson skip reads "Skip lesson"', labels['skip'] == 'Skip lesson', labels)
+        check('Your-turn: the per-number skip (td-skip) still reads "Skip"', labels['next'] == 'Skip' and labels['nextSkip'], labels)
+        check('Your-turn: the two skip controls have DISTINCT labels, both visible',
+              labels['skip'] != labels['next'] and labels['skipVis'] and labels['nextVis'], labels)
+        await pg2.screenshot(path=f'{shots457}/your_turn_two_skips_1180x820.png')
+        check('no page errors (two-skip labels)', not errs2, errs2[:3])
+        await ctx2.close()
+
         await ctx.close(); await b.close()
 
 asyncio.run(main())

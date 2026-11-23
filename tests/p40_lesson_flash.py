@@ -88,6 +88,33 @@ async def main():
         check('anzan first time -> intro card (lesson) before the flash drill', await active(pg, '#lesson'))
         await ctx.close()
 
+        # v4.57 FIX 1 - at the first (no-sums) level the picker card and the activity it launches share a name
+        # (the card no longer says "Reading"/"Listening" while opening "Bead Detective"/"Bead Builder")
+        # v4.57 FIX 2 - a "Watch the lesson again" button in the picker replays the current skill's lesson
+        shots = '/tmp/v457'; os.makedirs(shots, exist_ok=True)
+        ctx, pg, errs = await boot(b, {"current": "beads", "nodes": {"beads": {"lesson": True, "mastered": None, "hist": []}}})
+        await pg.evaluate("()=>window.__practice.start('beads')"); await pg.wait_for_timeout(700)
+        check('learned no-sums level -> straight to the picker', await active(pg, '#practicePick'))
+        cards = await pg.eval_on_selector_all('#ppCards .pp-card', 'els=>els.map(e=>({mode:e.getAttribute("data-mode"), lab:e.querySelector(".pp-lab").textContent.trim()}))')
+        check('no-sums picker: the two cards still drive the reading/listening modes', [c['mode'] for c in cards] == ['reading', 'listening'], cards)
+        check('no-sums picker: cards are labelled by what they DO, not "Reading"/"Listening"',
+              [c['lab'] for c in cards] == ['Read the beads', 'Make the number'], cards)
+        check('no-sums picker: a "Watch the lesson again" button is present (the skill has a lesson)',
+              await pg.evaluate("()=>{const b=document.querySelector('#ppWatch'); return !!b && b.offsetParent!==null && /Watch the lesson again/.test(b.textContent);}"))
+        await pg.wait_for_timeout(300); await pg.screenshot(path=f'{shots}/level1_picker_820x1180.png')
+        # (a) the launched activity's on-screen title matches the card that opened it
+        # (don't return the runMode promise - the game awaits pad input and never resolves, which would hang evaluate)
+        await pg.evaluate("()=>{ window.__practice.runMode('reading'); }"); await pg.wait_for_selector('#game.active'); await pg.wait_for_timeout(300)
+        gt = (await pg.evaluate("()=>document.querySelector('#gameTitle').lastElementChild.textContent") or '').strip()
+        check('no-sums "Read the beads" card launches an activity titled the same (not "Bead Detective")',
+              await active(pg, '#game') and gt == 'Read the beads', gt)
+        # (b) the Watch button replays the lesson
+        await pg.evaluate("()=>window.__practice.start('beads')"); await pg.wait_for_timeout(700)
+        await pg.wait_for_selector('#ppWatch'); await pg.evaluate("()=>document.querySelector('#ppWatch').click()"); await pg.wait_for_timeout(700)
+        check('tapping "Watch the lesson again" replays the current skill lesson', await active(pg, '#lesson'))
+        check('no page errors (no-sums picker naming + watch-again)', not errs, errs[:3])
+        await ctx.close()
+
         await b.close()
     print('\n' + ('ALL PASS' if not fails else 'FAILURES: ' + str(fails)))
 
