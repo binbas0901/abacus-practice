@@ -54,6 +54,10 @@ const firstRun = !progress;
 if (!progress){ progress = { current: 'beads', nodes:{} }; }
 function node(id){ return progress.nodes[id] || (progress.nodes[id] = {lesson:false, mastered:null, hist:[]}); }
 function saveProgress(){ save('progress', progress); }
+// Move `current` to the next node the child should sit on, via the pure curriculum walk: it skips mastered nodes AND
+// the off-path flash/anzan (optional) nodes, so a level-up never parks the child on a standalone flash node. Does NOT
+// save — the caller persists. Used on load and on every level-up (levelDone / checkMastery).
+function advancePastMastered(){ if (!C.advanceCurrent) return; const nx=C.advanceCurrent(progress.current, id=>!!(progress.nodes[id]&&progress.nodes[id].mastered)); if (nx!==progress.current) progress.current=nx; }
 
 // ---- Practice-first level model (redesign) ----
 // A level (one skill) is 10 sets of 10 problems = 100. The 10 sets cycle through three REQUIRED types,
@@ -191,7 +195,7 @@ const Practice = {
   async levelDone(){
     const id = this.node, st = node(id);
     if (!st.mastered) st.mastered = 'auto'; st.lesson = true;
-    if (NODE_IDX[id] === curIdx() && curIdx() < NODES.length - 1) progress.current = NODES[curIdx() + 1].id;
+    if (NODE_IDX[id] === curIdx()) advancePastMastered();   // advance past optional/flash nodes — never park current on a standalone anzan node
     saveProgress(); this.stop(); stopVoices();
     juniNarrate('j_unlock');                                      // Juni's unlock line, then the level card
     try { Treats.earn(Treats.EARN.skill, 'you mastered a new skill!'); } catch (e) {}   // mastering a skill earns more beads
@@ -1201,7 +1205,7 @@ function renderPracticePick(id){
   // Mental Math: a third card, shown ONLY once the child is eligible (combined mastered). Hidden otherwise — never a locked/greyed card.
   if (anzanEligible()) html += card('mental','Mental math', modeDone(id,'mental'));
   $('#ppCards').innerHTML = html;
-  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how you want to practise — Reading, Listening or Mental math.' : 'Pick how you want to practise — Reading or Listening.'; jb.classList.add('on'); }
+  const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.' : 'Pick how to practise — Reading or Listening.'; jb.classList.add('on'); }
   toySky('#ppSky');
 }
 $('#exitPick').innerHTML = TOY.icon('back', 32, 'currentColor');
@@ -1766,7 +1770,8 @@ const Tool = {
     if (beads && problems[idx]) this.ensureAb(this.rodsForSet());
     this.readout();
   },
-  switchTo(kind){ this.kind=kind; Fun.data.answerTool=kind; Fun.save(); this.apply(); if (kind==='beads'){ this.ab.clear({animate:false}); this.readout(); JB.setBase(baseLine()); } else setEntry(''); markTiles(); },
+  switchTo(kind){ if (kind==='beads' && mode==='flash') return;   // Mental Math / Flash: never reveal the abacus — it would defeat mental math
+    this.kind=kind; Fun.data.answerTool=kind; Fun.save(); this.apply(); if (kind==='beads'){ this.ab.clear({animate:false}); this.readout(); JB.setBase(baseLine()); } else setEntry(''); markTiles(); },
   reset(){ verdict(null); setEntry(''); if (this.kind==='beads' && problems[idx]){ this.ensureAb(this.rodsForSet()).clear({animate:false}); } this.readout(); },
   // Listen / Flash: the keypad, the beads and Check wait (dimmed) until the numbers are done and Bix asks "Your answer?".
   setReady(on){ $('#answerTool').classList.toggle('waiting', !on); Keys.setEnabled(on); $('#checkBtn').disabled=!on; },
@@ -2222,7 +2227,7 @@ function next(){
 function checkMastery(nid){
   const st=node(nid); if (st.mastered) return false; const h=st.hist.slice(-20); if (h.length<20) return false;
   const acc=h.filter(x=>x.ok).length/h.length; const daysN=new Set(h.map(x=>x.day)).size;
-  if (acc>=0.8 && daysN>=2){ st.mastered='auto'; if (NODE_IDX[nid]===curIdx() && curIdx()<NODES.length-1) progress.current=NODES[curIdx()+1].id; return true; }
+  if (acc>=0.8 && daysN>=2){ st.mastered='auto'; if (NODE_IDX[nid]===curIdx()) advancePastMastered(); return true; }   // skip optional/flash nodes when advancing
   return false;
 }
 

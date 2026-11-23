@@ -169,6 +169,48 @@ async def main():
         check('e: no page errors', not errs, errs[:3])
         await ctx.close()
 
+        # ===== (f) DEFECT GUARD: Mental Math hides "Use the beads" — the abacus can never be revealed =====
+        ctx, pg, errs = await boot(b, seed_js('two_digit', THRU_COMBINED, lessons=['two_digit', 'anzan']))
+        await pg.evaluate("()=>window.__practice.start('two_digit')")
+        await pg.wait_for_selector('#practicePick.active', timeout=15000)
+        await pg.evaluate("()=>window.__practice.runMode('mental')")
+        await pg.wait_for_selector('#drill.active', timeout=15000)
+        await pg.wait_for_function("()=>document.querySelector('#drill').dataset.mode==='flash'", timeout=15000)
+        sw_vis = await pg.evaluate("()=>{const s=document.querySelector('#toolSwitch'); if(!s) return false; const r=s.getBoundingClientRect(); return s.offsetParent!==null && r.height>0 && r.width>0;}")
+        check('Mental Math: the "Use the beads" switch is NOT present/visible', sw_vis is False, sw_vis)
+        # even force-clicking it must not reveal an on-screen soroban
+        await pg.evaluate("()=>{const s=document.querySelector('#toolSwitch'); if(s) s.click();}")
+        await pg.wait_for_timeout(300)
+        revealed = await pg.evaluate("""()=>{const at=document.querySelector('#answerTool');
+            const host=document.querySelector('#abHost');
+            const hostShown = host && host.offsetParent!==null && host.getBoundingClientRect().height>0;
+            return {beads: at && at.classList.contains('beads'), hostShown: !!hostShown, mode: document.querySelector('#drill').dataset.mode};}""")
+        check('Mental Math: tapping the switch does NOT reveal a visible abacus', revealed['beads'] is False and revealed['hostShown'] is False, revealed)
+        check('f: no page errors', not errs, errs[:3])
+        await ctx.close()
+
+        # ===== (g) DEFECT GUARD: a level-up advances past the optional flash node (never parks current on anzan) =====
+        # Drive the real Practice level-up path (levelDone): fill all three required modes, then start -> levelComplete -> levelDone.
+        ctx, pg, errs = await boot(b, seed_js('two_digit', THRU_COMBINED, lessons=['two_digit']))
+        await pg.evaluate("()=>{const id='two_digit', L=window.__level; for(let i=0;i<7;i++){L.bumpMode(id,'reading');L.bumpMode(id,'listening');L.bumpMode(id,'mental');}}")
+        await pg.evaluate("()=>window.__practice.start('two_digit')")   # levelComplete -> levelDone advances current
+        await pg.wait_for_timeout(700)
+        cur = await pg.evaluate("()=>window.__prog().current")
+        check('level-up: current advances to the next PHYSICAL skill (long_rows), not the optional anzan node', cur == 'long_rows', cur)
+        mastered = await pg.evaluate("()=>{const p=window.__prog('two_digit'); return !!(p.node && p.node.mastered);}")
+        check('level-up: the finished skill (two_digit) is marked mastered', mastered is True, mastered)
+        # dismiss the "Level complete!" dialog, then tapping Practice must NOT drop into a standalone anzan flash drill
+        await pg.evaluate("()=>{const d=document.querySelector('.toy-dialog'); if(d){const okb=[...d.querySelectorAll('[data-r]')]; (okb.find(x=>x.dataset.r==='1')||okb[0]||{click:()=>{}}).click();}}")
+        await pg.wait_for_timeout(400)
+        await pg.evaluate("()=>window.__practice.start()")
+        await pg.wait_for_timeout(600)
+        after = await pg.evaluate("""()=>({cur:window.__prog().current,
+            flashDrill: document.querySelector('#drill').classList.contains('active') && document.querySelector('#drill').dataset.mode==='flash',
+            ptype: window.__practice.type, pnode: window.__practice.node})""")
+        check('after level-up, tapping Practice does NOT enter a standalone anzan flash drill', after['flashDrill'] is False and after['pnode'] != 'anzan', after)
+        check('g: no page errors', not errs, errs[:3])
+        await ctx.close()
+
         await b.close()
     print('errors: %s' % ('[]' if not fails else str(fails)))
     if fails:
