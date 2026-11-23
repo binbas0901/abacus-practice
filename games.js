@@ -345,22 +345,24 @@
   /* ---------- runner ---------- */
   // from: where Done goes back to ('home' for a Today step, 'door' for the Practice door; otherwise the Play hub).
   let cameFrom = '';
-  let practiceCB = null, practiceOpts = null;   // set by runSet: when present, open() runs ONE orchestrated set and calls back instead of showing its own results
+  let practiceCB = null, practiceOpts = null, practiceTitle = null;   // set by runSet: when present, open() runs ONE orchestrated set and calls back instead of showing its own results
   // Run one practice set of a game-based type ('read'->reader, 'build'->build): n items, all-correct, then onDone({allCorrect,...}).
-  async function runSet(type, n, onDone) {
-    practiceCB = onDone; practiceOpts = { n, requireAll: type === 'read' };
+  // title: an optional on-screen name for this set, so a no-sums picker card ("Read the beads"/"Make the number") and the
+  // activity it launches share a name — otherwise the game's own name ("Bead Detective"/"Bead Builder") is shown.
+  async function runSet(type, n, onDone, title) {
+    practiceCB = onDone; practiceOpts = { n, requireAll: type === 'read' }; practiceTitle = title || null;
     await open(type === 'read' ? 'reader' : 'build', { from: 'practice' });
   }
   async function open(id, o) {
     const a = App(); const my = ++token; a.Sfx.tap(); a.unlock(); clearScrim(); if (o) cameFrom = o.from || '';
     $('#exitGame').setAttribute('aria-label', cameFrom === 'home' ? 'Back home' : cameFrom === 'door' ? 'Back to Practice' : 'Back to the games');
-    const g = GAMES[id]; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${g.name}</span>`; $('#game').dataset.game = id; setScore('');
+    const g = GAMES[id]; const gname = (cameFrom === 'practice' && practiceTitle) ? practiceTitle : g.name; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${gname}</span>`; $('#game').dataset.game = id; setScore('');
     root.Fun.Mascot.mount(bix(), { size: 76 }); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
     a.show('game');
     const r = id === 'pop' ? await pop(my) : id === 'reader' ? await reader(my, practiceOpts) : await build(my, practiceOpts);
     if (!r || my !== token) return;
     // Practice set (orchestrated by the level flow): no results card / leveling here — hand the result back and stop.
-    if (practiceCB) { const cb = practiceCB; practiceCB = null; practiceOpts = null; const marks = id === 'reader' ? r.marks : Array(r.n).fill(true); cb({ allCorrect: marks.every(m => m !== false), score: r.score != null ? r.score : r.n, of: r.of != null ? r.of : r.n, marks }); return; }
+    if (practiceCB) { const cb = practiceCB; practiceCB = null; practiceOpts = null; practiceTitle = null; const marks = id === 'reader' ? r.marks : Array(r.n).fill(true); cb({ allCorrect: marks.every(m => m !== false), score: r.score != null ? r.score : r.n, of: r.of != null ? r.of : r.n, marks }); return; }
     const best = root.Fun.data.best; let isBest = false, card;
     if (id === 'pop') {
       best.popTotal = popTotal(best) + r.score; isBest = r.wrong === 0;
