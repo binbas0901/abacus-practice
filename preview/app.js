@@ -445,6 +445,25 @@ const Speaker = {
     try{ const b=this.ctx.createBuffer(1,1,22050), s=this.ctx.createBufferSource(); s.buffer=b; s.connect(this.ctx.destination); s.start(0); }catch(e){}
     try{ Diag.add('ctx rebuilt -> '+this.ctx.state); }catch(e){}
   },
+  // Self-heal after the app returns from the background. iOS frequently refuses to resume/rebuild audio OUTSIDE a real
+  // finger gesture, so a revive() fired by visibilitychange/pageshow/focus can quietly fail and leave faces moving with
+  // no sound. Arm a one-shot, capture-phase listener on the first touch/click after return: it unlocks INSIDE that
+  // gesture (the reliable iOS path), re-primes speechSynthesis (which a plain revive() leaves alone once unlocked) by
+  // clearing ttsReady first, rebuilds the context via revive(), then removes itself. Idempotent; re-armed on each
+  // hide->show, so audio comes back the instant the child taps the screen. Best-effort: never throws, never blocks UI.
+  armResume(){
+    if (this._resumeArmed) return; this._resumeArmed=true;
+    const evs=['pointerdown','touchend','click'];
+    const fire=()=>{
+      evs.forEach(ev=>document.removeEventListener(ev, fire, true));
+      this._resumeArmed=false;
+      this.ttsReady=false;                              // force unlock() to re-prime the device voice inside this gesture
+      try{ this.unlock(); }catch(e){}                   // resume/rebuild + speech unlock, all inside the real gesture
+      try{ this.revive(); }catch(e){}                   // rebuild the context if iOS left it interrupted/dead
+      try{ Diag.add('return-gesture resume fired'); }catch(e){}
+    };
+    evs.forEach(ev=>document.addEventListener(ev, fire, true));
+  },
   unlock(){ // must run inside a user gesture on iOS (a finger LIFT or click, not a touch-down)
     this.gestured=true;
     try{ const c=this.ensureCtx(); if (c.state!=='running') c.resume(); const b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){}
@@ -1056,9 +1075,11 @@ const BixExtra = {
   },
   async play(id, el){
     const BV=Fun.BixVoice; if (!id || !BV.enabled() || App.quietNow() || !Speaker.gestured) return;
-    const ctx=Speaker.ensureCtx(), tag=BV.tag(); const my=++BV.seq; BV.queued++;
-    try{ if (ctx.state!=='running'){ try{ await Promise.race([ctx.resume(), sleep(800)]); }catch(e){} } await this.load(tag); } finally { BV.queued--; }
-    if (my!==BV.seq || ctx.state!=='running') return;
+    let ctx=Speaker.ensureCtx(); const tag=BV.tag(); const my=++BV.seq; BV.queued++;
+    // iOS may have left the context suspended/interrupted after a background trip; revive() resumes or rebuilds it.
+    // Re-fetch the live context after, since a rebuild swaps Speaker.ctx (the old one is closed and would throw).
+    try{ if (ctx.state!=='running'){ try{ await Speaker.revive(); }catch(e){} ctx=Speaker.ensureCtx(); } await this.load(tag); } finally { BV.queued--; }
+    if (my!==BV.seq || ctx.state!=='running') return;                 // still not running: stay silent, never mouth to a dead context
     const buf=this.buf[tag], sp=this.map[tag] && this.map[tag][id]; if (!buf || !sp) return;
     BV.stop();
     const s=ctx.createBufferSource(); s.buffer=buf; s.connect(ctx.destination); s.start(ctx.currentTime+0.02, sp[0], sp[1]); BV.src=s;
@@ -1419,7 +1440,7 @@ async function renderLesson(){
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (a number-agnostic one — never a hard-coded number)
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); $('#lessonHint').style.display=''; if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (number-agnostic); "Show me" lets a stuck child be shown how to form this number
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
@@ -1619,7 +1640,34 @@ function guidedText(ls, pair, lead){
   if (ls.op==='mul') return `${lead}Start at <b>0</b>. Work out <b>${x} × ${y}</b> on the abacus.`;
   return `${lead}${lead?'the abacus':'The abacus'} shows <b>${x}</b>. ${lead?(y<0?'Take away':'Add'):'Now '+(y<0?'take away':'add')} <b>${Math.abs(y)}</b>.`;
 }
-$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return; const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
+// The move-steps that FORM a single-digit number v on the units rod, as a "Show me" demo (numbers phase, first lesson).
+// Same {k, say, do} shape playSteps consumes: heaven bead first (five), then earth beads. Narration is in words a
+// six-year-old follows. Keys are stable (not the sentence) so Juni's clips can be recorded against them later;
+// until recorded, playSteps shows the caption silently (same as the quick-win fallback).
+function makeNumberSteps(v){
+  const steps=[];
+  if (v>=5){
+    steps.push({ k:'show.heaven', say:'Slide the heaven bead down — that’s five.', do:[{rod:0, delta:5}] });
+    const more=v-5;
+    if (more>0) steps.push({ k:`show.more.${more}`, say:`Slide up ${more} more earth bead${more>1?'s':''} — now it’s ${v}.`, do:[{rod:0, delta:more}] });
+  } else {
+    steps.push({ k:`show.earth.${v}`, say:`Slide up ${v} earth bead${v>1?'s':''} — that’s ${v}.`, do:[{rod:0, delta:v}] });
+  }
+  return steps;
+}
+$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return;
+  if (L.phase==='numbers'){   // "Your turn — Show N": Juni demonstrates forming N on the abacus, then the child tries again (not auto-completed)
+    const di=L.demoIdx, v=L.node.lesson.numbers[di]; L.target=v;
+    const steps=makeNumberSteps(v);
+    L.busy=true; lessonAb.reset(); lessonAb.setReadOnly(true);   // busy before reset so the reset-to-0 doesn't register as a try
+    const tok=animToken+1;
+    await playSteps(lessonAb, steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>')));
+    if (tok!==animToken || L.phase!=='numbers' || L.demoIdx!==di) return;   // phase/number changed (Next, Back, exit): bail, leave beads to whoever took over
+    lessonAb.reset(); lessonAb.setReadOnly(false);
+    cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip();   // back to "Your turn", abacus reset, re-pressable
+    return;
+  }
+  const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
 $('#exitLesson').addEventListener('click', ()=>{ stopVoices(); leaveLesson(); });
 
 /* ---------------- Juni the teacher: a speaker in her own right (Part 2) ---------------- */
@@ -2888,7 +2936,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.54';
+const APP_VERSION='4.56';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
@@ -2904,11 +2952,18 @@ ClipStore.migrate().catch(e=>Diag.add('migrate failed '+(e&&e.message||e))).then
 // suspended or 'interrupted' so faces move but no sound comes out. Revive it the moment the app is shown again.
 document.addEventListener('visibilitychange', ()=>{
   // A hidden tab is not solving time: hold the silent set clock so a gap between sittings never counts.
-  if (document.hidden) SetClock.pause(); else SetClock.resume();
-  if (document.visibilityState==='visible') Speaker.revive();
+  if (document.hidden){
+    SetClock.pause();
+    Speaker.armResume();                 // arm the next-tap self-heal while we're away (iOS kills audio in the background)
+  } else {
+    SetClock.resume();
+    Speaker.revive();                    // try to bring audio back right away (works when iOS allows a non-gesture resume)
+    Speaker.armResume();                 // and guarantee it comes back on the child's first tap if the non-gesture revive failed
+  }
 });
-window.addEventListener('pageshow', ()=>Speaker.revive());
-window.addEventListener('focus', ()=>Speaker.revive());
+// focus / pageshow fire on some returns where visibilitychange does not; revive now and arm the gesture fallback too.
+window.addEventListener('pageshow', ()=>{ Speaker.revive(); Speaker.armResume(); });
+window.addEventListener('focus', ()=>{ Speaker.revive(); Speaker.armResume(); });
 if (false && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
   // Auto-update: when a NEW service worker takes control (sw.js does skipWaiting + clients.claim on deploy),
   // reload once so the device runs the new build instead of stale cached files. Only wire this when a worker
