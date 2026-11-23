@@ -29,6 +29,7 @@ async def main():
         await pg.wait_for_selector('#bixiSetupBubble.on', timeout=15000); await pg.wait_for_timeout(1200); cl=await clplays(pg)
         pairs=[(x['src'],x['id']) for x in cl]
         check('after the name: Juni "Lovely to meet you", then Bixi rolls in and greets', ('juni','j_intro_meet') in pairs and ('bixi','b_intro_hi') in pairs, pairs)
+        await pg.wait_for_selector('#suWin.on', timeout=20000); await pg.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens')   # quick win: make 1
         await pg.wait_for_selector('#suAbacus.on', timeout=20000); await pg.click('[data-abacus=yes]')
         await pg.wait_for_selector('#suLevel.on'); await pg.click('[data-lv=pick]')
         await pg.wait_for_selector('#suPick.on'); await pg.click('.su-skill[data-id=bf_add_a]')

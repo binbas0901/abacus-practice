@@ -29,7 +29,12 @@ async def to_check(pg, abacus):
     await pg.wait_for_selector('#gate.active', timeout=20000)
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk')
     await pg.wait_for_selector('#suName.on', timeout=20000)
+    try: await pg.evaluate("App.settings.bixTalks=false")   # keep the intro fast + deterministic (audio pacing is covered elsewhere)
+    except Exception: pass
     await pg.fill('#suNameIn', 'Leo'); await pg.click('#suNameGo')
+    # Quick win (v4.54): make 1 on the on-screen soroban to advance to the abacus question.
+    await pg.wait_for_selector('#suWin.on', timeout=20000)
+    await pg.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens')
     await pg.wait_for_selector('#suAbacus.on'); await pg.click(f'[data-abacus={abacus}]')
     await pg.wait_for_selector('#suLevel.on'); await pg.click('[data-lv=check]')
     await pg.wait_for_selector('#suCheck.on'); await pg.wait_for_timeout(500)

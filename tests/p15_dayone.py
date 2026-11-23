@@ -14,7 +14,9 @@ async def fresh(b, size=(1180,820)):
     await pg.goto(URL); await pg.wait_for_timeout(800)
     await pg.wait_for_selector('#gate.active', timeout=20000)
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk')
-    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', 'Leo'); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
+    await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', 'Leo'); await pg.click('#suNameGo')
+    await pg.wait_for_selector('#suWin.on', timeout=30000); await pg.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens')   # quick win: make 1
+    await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
     await pg.click('[data-lv=new]'); await pg.wait_for_selector('#suDone.on'); await pg.click('#suStart'); await pg.wait_for_selector('#home.active'); await pg.wait_for_timeout(500)
     return ctx, pg, errs
 async def collect_all(pg, first=15000):

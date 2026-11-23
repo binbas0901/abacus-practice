@@ -150,7 +150,9 @@ async def main():
             await pg.wait_for_selector('#gate.active', timeout=20000)
             await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk')
             await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', nm); await pg.click('#suNameGo')
-            # Juni-led: after the name she introduces Bixi, then (on the abacus step) a grown-up prompt and the abacus question.
+            # Juni-led: after the name she introduces Bixi, then the quick win (make 1), then the abacus question.
+            await pg.wait_for_selector('#suWin.on', timeout=15000)
+            await pg.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens')
             await pg.wait_for_selector('#suAbacus.on', timeout=15000)
             await pg.wait_for_function("()=>/abacus at home/i.test((document.querySelector('#juniBubble .ctext')||{}).textContent||'')", timeout=15000)
             q=await pg.text_content('#suAbacusH'); bq=await pg.text_content('#juniBubble .ctext')
@@ -167,7 +169,7 @@ async def main():
 
         # ---------- setup: skill examples, the kit keypad, "Stop here", confetti behind the content ----------
         c3=await b.new_context(viewport={'width':1180,'height':820}); p3=await c3.new_page(); p3.on('pageerror', lambda e: errs.append(str(e)))
-        await p3.goto(URL); await p3.wait_for_selector('#gate.active', timeout=20000); await p3.evaluate('window.__gateHold()'); await p3.fill('#gateA', str(await p3.evaluate('window.__gateAnswer'))); await p3.click('#gateOk'); await p3.wait_for_selector('#suName.on'); await p3.evaluate("App.settings.bixTalks=false"); await p3.fill('#suNameIn','Kai'); await p3.click('#suNameGo'); await p3.wait_for_selector('#suAbacus.on', timeout=15000); await p3.click('[data-abacus=yes]'); await p3.wait_for_selector('#suLevel.on')
+        await p3.goto(URL); await p3.wait_for_selector('#gate.active', timeout=20000); await p3.evaluate('window.__gateHold()'); await p3.fill('#gateA', str(await p3.evaluate('window.__gateAnswer'))); await p3.click('#gateOk'); await p3.wait_for_selector('#suName.on'); await p3.evaluate("App.settings.bixTalks=false"); await p3.fill('#suNameIn','Kai'); await p3.click('#suNameGo'); await p3.wait_for_selector('#suWin.on', timeout=15000); await p3.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens'); await p3.wait_for_selector('#suAbacus.on', timeout=15000); await p3.click('[data-abacus=yes]'); await p3.wait_for_selector('#suLevel.on')
         await p3.click('[data-lv=pick]'); await p3.wait_for_selector('#suPick.on')
         ex=await p3.evaluate("Object.fromEntries([...document.querySelectorAll('#suPickList .su-skill')].map(b=>[b.dataset.id, b.querySelector('small').textContent]))")
         mul=[k for k in ['times_a','times_b','mul_2x1','mul_3x1'] if k in ex]
@@ -210,7 +212,7 @@ async def main():
         for label, init in [('browser tab', None), ('Home Screen app (standalone)', "Object.defineProperty(navigator,'standalone',{get:()=>true})"), ('native wrapper', "window.Capacitor={isNativePlatform:()=>true}")]:
             c2=await b.new_context(viewport={'width':1180,'height':820}); p2=await c2.new_page(); p2.on('pageerror', lambda e: errs.append(str(e)))
             if init: await p2.add_init_script(init)
-            await p2.goto(URL); await p2.wait_for_selector('#gate.active', timeout=20000); await p2.evaluate('window.__gateHold()'); await p2.fill('#gateA', str(await p2.evaluate('window.__gateAnswer'))); await p2.click('#gateOk'); await p2.wait_for_selector('#suName.on'); await p2.evaluate("App.settings.bixTalks=false"); await p2.fill('#suNameIn','Zoe'); await p2.click('#suNameGo'); await p2.wait_for_selector('#suAbacus.on', timeout=15000); await p2.click('[data-abacus=yes]'); await p2.wait_for_selector('#suLevel.on'); await p2.click('[data-lv=new]'); await p2.wait_for_selector('#suDone.on')
+            await p2.goto(URL); await p2.wait_for_selector('#gate.active', timeout=20000); await p2.evaluate('window.__gateHold()'); await p2.fill('#gateA', str(await p2.evaluate('window.__gateAnswer'))); await p2.click('#gateOk'); await p2.wait_for_selector('#suName.on'); await p2.evaluate("App.settings.bixTalks=false"); await p2.fill('#suNameIn','Zoe'); await p2.click('#suNameGo'); await p2.wait_for_selector('#suWin.on', timeout=15000); await p2.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens'); await p2.wait_for_selector('#suAbacus.on', timeout=15000); await p2.click('[data-abacus=yes]'); await p2.wait_for_selector('#suLevel.on'); await p2.click('[data-lv=new]'); await p2.wait_for_selector('#suDone.on')
             vis=await p2.is_visible('#suInstall')
             check(f'setup finish, {label}: Home Screen advice {"shown" if not init else "hidden"}', vis == (init is None) and await p2.is_visible('#suStart'))
             await c2.close()

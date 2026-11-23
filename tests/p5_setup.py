@@ -10,10 +10,16 @@ async def fresh(b):
     try: await pg.evaluate("window.App && (App.settings.bixTalks=false)")
     except Exception: pass
     return ctx, pg
+# Quick win (v4.54): after meeting Bixi the child slides one earth bead up to make 1 on the on-screen soroban;
+# that success advances to the grown-up "abacus at home?" question. Drive it by tapping the target bead.
+async def quickwin(pg):
+    await pg.wait_for_selector('#suWin.on', timeout=20000)
+    await pg.click('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens')
+    await pg.wait_for_selector('#suAbacus.on', timeout=20000)
 # Juni leads: the first screen is hers. After the child's name, Bixi (the classmate) rolls in during the meet beat.
 async def name(pg, n):
     await pg.wait_for_selector('#suName.on'); await pg.fill('#suNameIn', n); await pg.click('#suNameGo')
-    await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
+    await quickwin(pg); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on')
 async def gate(pg):
     await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(400)
@@ -60,6 +66,11 @@ async def main():
         meet = await pg.evaluate("()=>({step:document.querySelector('#setup').dataset.step, bvis:getComputedStyle(document.querySelector('#bixSetup')).visibility, bwho:document.querySelector('#bixiSetupBubble').dataset.who, btxt:(document.querySelector('#bixiSetupBubble .ctext').textContent||'')});")
         check('Bixi is introduced after the name step (meet beat, rolls in, greets as who=bixi)', onname=='suMeet' and meet['bvis']=='visible' and meet['bwho']=='bixi' and len(meet['btxt'])>0, [onname, meet])
         await pg.screenshot(path='/tmp/su_meet.png')
+        # Quick win comes right after meeting Bixi, before the abacus question: the on-screen soroban + nudge, then the win advances.
+        await pg.wait_for_selector('#suWin.on', timeout=20000)
+        check('quick win appears after meeting Bixi, before the abacus question', await pg.locator('#suWin.on').count()==1 and await pg.locator('#suAbacus.on').count()==0 and await pg.locator('#suWinHost .abx-svg').count()==1)
+        await pg.screenshot(path='/tmp/su_win.png')
+        await quickwin(pg)
         await pg.wait_for_selector('#suAbacus.on'); await pg.click('[data-abacus=yes]'); await pg.wait_for_selector('#suLevel.on'); await pg.screenshot(path='/tmp/su_level.png')
         await pg.click('[data-lv=new]'); await pg.wait_for_selector('#suDone.on'); await pg.wait_for_timeout(500); await pg.screenshot(path='/tmp/su_done.png')
         check('install reminder shown in a browser tab', await pg.locator('#suInstall').is_visible())
@@ -117,7 +128,7 @@ async def main():
         try: await pg.evaluate("window.App && (App.settings.bixTalks=false)")
         except Exception: pass
         await pass_setup_gate(pg)
-        await pg.fill('#suNameIn', 'June'); await pg.click('#suNameGo'); await pg.wait_for_selector('#suAbacus.on'); await pg.wait_for_timeout(400)
+        await pg.fill('#suNameIn', 'June'); await pg.click('#suNameGo'); await quickwin(pg); await pg.wait_for_timeout(400)
         FIT="(sel)=>[...document.querySelectorAll(sel+' .to-card')].map(e=>{ const r=e.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.bottom), r.top>=0 && r.bottom<=innerHeight-8 && r.height>=64]; })"
         cards = await pg.evaluate(FIT, '#suAbacus')
         check('portrait setup: Yes / No / Not sure all fit on the page', len(cards)==3 and all(c[2] for c in cards), cards)

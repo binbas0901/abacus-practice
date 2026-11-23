@@ -45,6 +45,7 @@ async def main():
         check('  ...sound really on when she talks', all(x['state']=='running' for x in cl))
         await pg.fill('#suNameIn','Mia'); await pg.tap('#suNameGo')
         await pg.wait_for_selector('#bixiSetupBubble.on', timeout=20000); await pg.wait_for_timeout(1500)
+        await pg.wait_for_selector('#suWin.on', timeout=20000); await pg.tap('#suWinHost .abx-bead[data-kind="e"][data-k="0"] .abx-lens')   # quick win: make 1
         await pg.wait_for_selector('#suAbacus.on', timeout=20000); await pg.tap('[data-abacus=unsure]')
         await pg.wait_for_selector('#suLevel.on'); await pg.tap('[data-lv=pick]')
         await pg.wait_for_selector('#suPick.on'); await pg.tap('.su-skill[data-id=bf_add_a]')
