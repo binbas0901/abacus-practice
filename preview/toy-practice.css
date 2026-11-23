@@ -82,6 +82,7 @@
    stays clear of Juni's window/face on the left and never overlaps the rod (a flex sibling, so the gap keeps them apart). */
 #drill .tp-switch{flex:none;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;align-self:center;min-width:0;min-height:64px;padding:0 16px 0 10px;border:0;cursor:pointer;color:var(--toy-ink);touch-action:manipulation;transition:transform .09s ease-out;background:var(--toy-paper,#FFFDF6);border-radius:999px;box-shadow:0 3px 0 rgba(var(--toy-shade),.22),0 5px 11px rgba(var(--toy-shade),.16)}
 #drill.lt .tp-switch{display:none}   /* no tool-swapping during the timed level test (matches the hidden energy bar) */
+#drill[data-mode=flash] .tp-switch{display:none}   /* Mental Math / Flash: the abacus must stay hidden — no "Use the beads" switch to reveal a soroban and defeat mental math */
 #drill .tp-switch:active{transform:translateY(3px)}
 #drill .tp-switch:focus-visible{outline:4px solid var(--toy-ink);outline-offset:3px;border-radius:999px}
 #drill .tp-switch svg{display:block;overflow:visible;width:auto;height:38px}
@@ -562,7 +563,7 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 /* ---- Reading / Listening practice picker (v4.42) ---- */
 /* only lay out as a flex column when this screen is the active one — never override the base .screen{display:none} */
 #practicePick.pp.active{ display:flex; flex-direction:column; }
-.pp .pp-jbub{ margin:10px auto 0; max-width:30rem; text-align:center; }
+.pp .pp-jbub{ margin:10px auto 0; max-width:34rem; text-align:center; padding-top:20px; }   /* padding-top clears the "Juni" name chip (::after, top:-13px) so a longer prompt never sits under it */
 .pp-cards{ flex:1; display:flex; gap:clamp(16px,4vw,44px); align-items:center; justify-content:center; padding:clamp(16px,4vw,48px); flex-wrap:wrap; }
 .pp-card{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px;
   width:min(42%,320px); min-width:200px; aspect-ratio:3/4; max-height:58vh;
@@ -572,6 +573,9 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 .pp-card:active{ transform:translateY(5px); box-shadow:0 5px 0 rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.18); }
 .pp-card--reading{ background:#E8F0FF; }
 .pp-card--listening{ background:#FFF0D6; }
+.pp-card--mental{ background:#EAF7EC; }
+/* Three cards (Mental Math unlocked): shrink a little so all three sit in one row. */
+.pp-cards:has(.pp-card--mental) .pp-card{ width:min(30%,300px); }
 .pp-card.is-done{ filter:saturate(.9); }
 .pp-lab{ font-size:clamp(24px,4.4vw,42px); font-weight:800; }
 .pp-prog{ font-size:clamp(16px,2.6vw,24px); font-weight:700; opacity:.78; }
