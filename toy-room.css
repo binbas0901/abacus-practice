@@ -40,6 +40,10 @@
   top:calc((var(--toy-wall-h) - 16px)*.66);max-width:min(38vw,290px)}
 #gameJuni.tr-jbub,#rtJuni.tr-jbub{left:calc(var(--toy-window-x) + (var(--toy-wall-h) - 16px)*.5875);transform:translateX(-50%);
   top:calc(var(--toy-wall-h) - 4px);max-width:min(50vw,350px)}
+/* readTeach's Juni bubble is purely informational (no interactive children). In landscape the board's
+   top (heaven bead) can sit near it, so make the bubble click-through: a child's tap on a bead never
+   lands on the bubble. Scoped to #rtJuni so other screens' bubbles are unaffected. */
+#rtJuni.tr-jbub{pointer-events:none}
 .tr-flip .bubble::after{left:auto;right:-22px;clip-path:polygon(0 0,0 78%,100% 100%)}
 
 @keyframes tr-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}

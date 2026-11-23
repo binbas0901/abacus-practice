@@ -71,6 +71,8 @@ async def main():
 
         # --- drive the flow; prove no-fail on the first read beat ---
         did_bead = False; did_read = False; no_fail_ok = None; shot_read = False; read_onscreen = None
+        heaven_probe = None   # v4.60: at the heaven-bead ("push the big top bead") beat, the heaven bead must be
+                              # visible (not under Juni's bubble) AND a tap at its centre must hit the bead, not #rtJuni.
         for i in range(160):
             if (await reading_prog(pg)) >= 1: break
             if not await active(pg, 'readTeach'): break
@@ -79,6 +81,21 @@ async def main():
                 await pg.click('#rtNext'); await pg.wait_for_timeout(120)
             elif w and w.startswith('bead:'):
                 target = int(w.split(':')[1])
+                if target >= 5 and heaven_probe is None:
+                    # heaven bead at rest sits at the board's top — the spot most at risk of the bubble.
+                    heaven_probe = await pg.evaluate("""()=>{
+                        const hb = document.querySelector('#rtAbacus .abx-bead[data-kind="h"]');
+                        const hit = hb && hb.querySelector('.abx-hit'); if(!hit) return {found:false};
+                        const r = hit.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2;
+                        const el = document.elementFromPoint(cx, cy);
+                        const juni = document.getElementById('rtJuni');
+                        const jr = juni ? juni.getBoundingClientRect() : null;
+                        const juniVis = juni && getComputedStyle(juni).visibility!=='hidden' && getComputedStyle(juni).display!=='none';
+                        const overlap = jr ? !(r.right<=jr.left||r.left>=jr.right||r.bottom<=jr.top||r.top>=jr.bottom) : false;
+                        return { found:true, inBead: !!(el && hb.contains(el)),
+                                 hitsJuni: !!(el && juni && (el===juni||juni.contains(el))),
+                                 occluded: !!(overlap && juniVis) }; }""")
+                    await pg.screenshot(path=f'{SHOTS}/readteach_bead5.png')
                 await pg.evaluate("(v)=>window.ReadTeach._poke(v)", target)
                 did_bead = True; await pg.wait_for_timeout(120)
             elif w and w.startswith('read:'):
@@ -111,6 +128,12 @@ async def main():
         check('child read beads by tapping a number (a "read" beat completed)', did_read)
         check('a WRONG read tap did not fail or advance (no-fail: stayed on the read beat, progress still 0)', no_fail_ok is True)
         check('landscape: board and number choices are fully on-screen on a read beat', read_onscreen is True)
+        check('reached the heaven-bead ("push the big top bead") beat', heaven_probe is not None and heaven_probe.get('found'))
+        if heaven_probe and heaven_probe.get('found'):
+            check('landscape: heaven bead is tappable — a tap at its centre hits the bead, not Juni\'s bubble',
+                  heaven_probe.get('inBead') and not heaven_probe.get('hitsJuni'), heaven_probe)
+            check('landscape: heaven bead is not visually covered by Juni\'s bubble (#rtJuni)',
+                  not heaven_probe.get('occluded'), heaven_probe)
         check('completing the flow advanced reading progress by one session',
               (await reading_prog(pg)) == 1)
         await pg.wait_for_timeout(200); await pg.screenshot(path=f'{SHOTS}/readteach_done.png')

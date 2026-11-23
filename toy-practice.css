@@ -687,10 +687,13 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
    screens, so the advance control always stays on screen. Portrait flips to a column (see @media below). */
 #readTeach .rt-stage{ flex:1 1 auto; min-height:0; display:flex; flex-direction:row; align-items:center; justify-content:center;
   gap:clamp(24px,4vw,56px); padding:6px clamp(16px,3vw,40px) clamp(14px,2.5vh,26px); box-sizing:border-box; }
-#readTeach .rt-abwrap{ display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0; min-height:0; }
+/* Landscape: drop the board to the bottom of the stage — close to the child's hands and well clear of
+   Juni's bubble hanging from the wall at the top (the heaven bead is the board's top-most bead, so it
+   must not sit under the bubble). Portrait restores align-self:center in the @media block below. */
+#readTeach .rt-abwrap{ display:flex; flex-direction:column; align-items:center; align-self:flex-end; gap:8px; min-width:0; min-height:0; }
 #readTeach .rt-ab{ touch-action:manipulation; line-height:0; display:flex; min-height:0; }
 #readTeach .rt-ab .abx{ display:flex; }
-#readTeach .rt-ab .abx-svg{ width:auto; height:auto; max-width:100%; max-height:calc(100vh - var(--toy-wall-h) - 160px); }
+#readTeach .rt-ab .abx-svg{ width:auto; height:auto; max-width:100%; max-height:calc(100vh - var(--toy-wall-h) - 200px); }
 #readTeach .rt-count{ font:800 42px/1.1 inherit; color:#5a3d1c; min-height:48px; display:flex; align-items:center; }
 #readTeach .rt-count.pulse{ animation:rtCountPulse .5s ease; }
 @keyframes rtCountPulse{ 0%{ transform:scale(.6); opacity:.3; } 60%{ transform:scale(1.18); } 100%{ transform:scale(1); opacity:1; } }
@@ -709,6 +712,8 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 /* Portrait: stack the two panes vertically; the board gets a shorter cap so pad + Next still fit below it. */
 @media (orientation:portrait){
   #readTeach .rt-stage{ flex-direction:column; justify-content:center; gap:clamp(14px,2.4vh,24px); }
+  /* column layout: cross-axis is horizontal, so restore centering (flex-end would shove the board right) */
+  #readTeach .rt-abwrap{ align-self:center; }
   #readTeach .rt-side{ gap:clamp(12px,2vh,20px); }
   #readTeach .rt-ab .abx-svg{ max-height:calc(100vh - var(--toy-wall-h) - 340px); }
   #readTeach .rt-next{ margin-bottom:10px; }
