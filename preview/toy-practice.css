@@ -717,7 +717,8 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 @keyframes rtHintPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.09); } }
 #readTeach .rt-next{ margin:0; min-width:200px; visibility:hidden; }
 #readTeach .rt-next.on{ visibility:visible; }
-#readTeach .rt-bix{ position:absolute; left:16px; bottom:10px; pointer-events:none; z-index:2; }
+/* Bix sits up from the corner (was cut off at the very bottom-left) so he's fully visible and lively. */
+#readTeach .rt-bix{ position:absolute; left:clamp(18px,2.5vw,44px); bottom:clamp(30px,6vh,76px); pointer-events:none; z-index:2; }
 /* Portrait: stack the two panes vertically; a shorter board so the choices + Next still fit below it. */
 @media (orientation:portrait){
   #readTeach .rt-stage{ flex-direction:column; justify-content:flex-start; gap:clamp(16px,2.6vh,28px);
