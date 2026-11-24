@@ -16,11 +16,12 @@ LINES, CLIPS, PACK, OUT = sys.argv[1:5]
 HERE = os.path.dirname(os.path.abspath(__file__))
 def P(p): return p if os.path.isabs(p) else os.path.join(HERE, p)
 SR = 44100
-ids = []
+ids = []; texts = {}
 for line in open(P(LINES), encoding='utf-8'):
     line = line.rstrip('\n')
     if not line or line.lstrip().startswith('#') or '\t' not in line: continue
-    ids.append(line.split('\t', 1)[0])
+    _id, _t = line.split('\t', 1)
+    ids.append(_id); texts[_id] = _t
 allpcm = bytearray(); sprite = {}; cur = 0.0; miss = 0
 for _id in ids:
     mp3 = os.path.join(P(CLIPS), f"{_id}.mp3")
@@ -34,6 +35,7 @@ for _id in ids:
 w = wave.open('/tmp/fulll.wav', 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes(allpcm); w.close()
 subprocess.run(['ffmpeg', '-y', '-i', '/tmp/fulll.wav', '-b:a', '48k', '/tmp/spritel.mp3'], capture_output=True)
 b64 = base64.b64encode(open('/tmp/spritel.mp3', 'rb').read()).decode()
-pack = 'window.__LINES_LOADED && window.__LINES_LOADED("' + PACK + '", ' + json.dumps({"who": "juni", "label": "Juni", "sprite": sprite}) + ', "' + b64 + '");\n'
+lines_map = {k: texts[k] for k in sprite if k in texts}   # embed caption text (loadKey merges into Voice.text) so nothing depends on clip order
+pack = 'window.__LINES_LOADED && window.__LINES_LOADED("' + PACK + '", ' + json.dumps({"who": "juni", "label": "Juni", "sprite": sprite, "lines": lines_map}, ensure_ascii=False) + ', "' + b64 + '");\n'
 open(P(OUT), 'w').write(pack)
 print(f"packed {len(sprite)} clips  missing: {miss}  total: {cur:.1f}s  pack: {len(pack)//1024} KB -> {OUT}")
