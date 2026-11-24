@@ -11,7 +11,7 @@ const NODES = C.NODES, NODE_IDX = Object.fromEntries(NODES.map((n,i)=>[n.id,i]))
 const DEFAULTS = {
   count:10, operands:0, sfx:true, speakFeedback:true, name:'',
   termGap:0.65, sayPlus:true, voice:'juni', voiceRate:1.0, answerPause:0.5,
-  flashSec:1.0, flashGap:0.2, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'sweet', settingsVersion:6,
+  flashSec:1.0, flashGap:0.2, flashN:3, profiles:[], recPid:null, bixTalks:true, bixVoice:'gigi', settingsVersion:6,
   bixiMistakes:true, bixiSilly:'normal',   // classroom: Bixi makes mistakes in lessons; how often Bixi's silliness fires
 };
 // All saving goes through store.js: family-wide settings are shared, progress and treats are per child.
@@ -2483,9 +2483,10 @@ const ReadTeach = (function(){
   const pickCheer=()=>BX_CHEERS[Math.floor(Math.random()*BX_CHEERS.length)];
   async function cheerBix(){ bixReact('cheer'); bixSay(pickCheer(),1600); await sleep(1150); }   // spoken cheer after Juni; finishes before the next line
   function bixClipMs(id){ try{ const r=Fun.BixVoice&&Fun.BixVoice.find&&Fun.BixVoice.find(id); if (r&&r[1]&&typeof r[1][1]==='number') return Math.round(r[1][1]*1000); }catch(e){} return 0; }
-  // Bixi says ONE specific line and we wait for it to finish — he only ever speaks in the gaps between Juni's lines
-  // (after a verdict, or in a Next-wait pause), so it's always one voice at a time.
-  async function bixLine(id, mood){ if (!alive) return; bixReact(mood||'cheer'); bixSay(id, 3000);
+  // Bixi says ONE specific line (voice + bounce, NO speech bubble — Juni owns the banner) and we wait for it to finish.
+  // He only ever speaks in the gaps between Juni's lines (after a verdict, or in a Next-wait), so it's one voice at a time.
+  async function bixLine(id, mood){ if (!alive) return; bixReact(mood||'cheer');
+    try{ if (Fun.BixVoice && Fun.BixVoice.play) Fun.BixVoice.play(id, $bix()); }catch(e){}
     const ms = (voiceOn() && bixClipMs(id)) ? Math.min(bixClipMs(id)+300, 5600) : 900; await sleep(ms); }
   const gap=()=>sleep(120);   // a short breath between spoken lines so voices never butt together
   function bixIdleStart(){ clearInterval(bixIdleT); bixIdleT=setInterval(()=>{ if (alive && $bix()) bixReact('happy'); }, 4000); }
@@ -2507,9 +2508,13 @@ const ReadTeach = (function(){
   // child pushes beads to a target (no-fail; stuck ~6.5s -> Juni demonstrates, then they retry)
   function waitBead(target, demoFn){
     return new Promise(res=>{
-      const my=token; ab.setReadOnly(false); waitKind='bead:'+target; $count().textContent='0';   // show the count card from 0 so the left panel is filled the moment it's the child's turn
+      const my=token; ab.setReadOnly(false); waitKind='bead:'+target;
+      const cur0 = (typeof ab.value === 'number' ? ab.value : 0);
+      $count().textContent = String(cur0);   // reflect whatever is already on the board (so the card is never stuck on 0 if a bead moved early)
       const done=()=>{ clearTimeout(stuckT); ab.setReadOnly(true); ab._rtOnChange=null; waitKind=null; };
-      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = String(v); if (v===target){ done(); Sfx.ok(); bixReact('cheer'); res(true); } };
+      const win=()=>{ done(); Sfx.ok(); bixReact('cheer'); res(true); };
+      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent = String(v); if (v===target) win(); };
+      if (cur0===target){ win(); return; }   // child already built it (e.g. pushed the bead before Juni finished)
       clearTimeout(stuckT);
       stuckT=setTimeout(async()=>{ if (token!==my || !alive) return; await beat(stuckKey,'Here — watch me do it.'); if (token!==my) return;
         ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent='0'; ab.setReadOnly(false); }, 6500);
@@ -3163,7 +3168,7 @@ window.App = {
 // A voice that is not in the default offline install (Boy) is saved for offline use when it is the chosen one:
 // asked of the service worker when a grown-up picks it and at every start (so a new app version keeps it).
 function keepVoiceOffline(){
-  const tag=settings.bixVoice; if (!tag || tag==='sweet' || !('serviceWorker' in navigator)) return;
+  const tag=settings.bixVoice; if (!tag || tag==='sweet' || tag==='gigi' || !('serviceWorker' in navigator)) return;   // sweet + gigi are precached in sw.js FILES
   navigator.serviceWorker.ready.then(reg=>{ if (reg.active) reg.active.postMessage({type:'cache-voice', tag}); }).catch(()=>{});
 }
 /* ---------------- boot ---------------- */
@@ -3184,7 +3189,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.70';
+const APP_VERSION='4.71';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

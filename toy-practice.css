@@ -714,6 +714,9 @@ body.ws-calm #drill .tp-readout.is-right,body.ws-calm #drill .tp-readout.is-wron
 #readTeach .rt-side{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(20px,4vh,36px); min-width:clamp(300px,33vw,400px); }
 #readTeach .rt-pad{ display:flex; gap:24px; flex-wrap:wrap; justify-content:center; min-height:124px; align-items:center; max-width:46vw; }
 #readTeach .rt-pad:empty{ min-height:0; }                 /* don't reserve the choices' height on bead beats, so the count card doesn't sit high */
+/* read-only must actually block taps: while Juni is demoing/instructing the board is locked, so an eager child can't
+   push a bead before it's their turn (which used to leave the count card stuck on 0). waitBead unlocks it for their turn. */
+#rtAbacus.ab-ro .abx-hit{ pointer-events:none; }
 #readTeach .rt-count:not(:empty){ margin-top:clamp(20px,6vh,64px); }   /* nudge the number box down a little (v4.68) */
 #readTeach .rt-choice{ font:800 52px/1 inherit; width:124px; height:124px; border-radius:26px; border:none; cursor:pointer;
   background:#fbf3e2; color:#5a3d1c; box-shadow:0 4px 0 #d8c09a, 0 6px 10px rgba(90,61,28,.12); transition:transform .08s ease; }
