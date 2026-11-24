@@ -2033,6 +2033,12 @@ function presentProblem(){
   $('#drill').classList.toggle('long', long);
   if (mode==='visual'){ const area=$('#problemArea'); area.innerHTML=tileHtml(p); const dg=Math.max(...p.terms.map(t=>String(Math.abs(t)).length)); area.classList.toggle('many', long); area.classList.toggle('wide', dg>=3); area.classList.toggle('xwide', dg>=4); markTiles(); locked=false; Tool.setReady(true); }
   JB.setBase(baseLine());            // Juni gives the per-problem instruction (silent; she leads the screen)
+  // Slice 3: in Look mode Juni SPEAKS the prompt now and then (every third problem; the mode-intro covers the first),
+  // so she has a warm voice presence without nagging a fast child. Listen/Flash keep their own spoken cues.
+  if (mode==='visual' && !LT && !reviewing && idx>0 && idx%3===0 && !(p && p._tries)){
+    if (Tool.kind==='beads') JB.say('Move the beads, then tap Check.', 'j_prompt_beads', 2200);
+    else JB.say((idx%2) ? 'Work it out — you\'ve got this.' : 'Solve it, then tell me the answer.', (idx%2)?'j_prompt_solve2':'j_prompt_solve1', 2200);
+  }
   if (mode==='visual') fitTiles();   // after the bubble and "Show me" are in place
   if (mode==='listen'){ if (!listenArmed) armListen(p); else dictate(p); }
   else if (mode==='flash') armFlash(p);
@@ -2244,15 +2250,20 @@ function renderEnergy(){
   el.setAttribute('aria-label', 'Bixi’s snack bar: ' + (s.full ? 'full' : s.n + ' of ' + FEED_GOAL));
 }
 function pulseEnergy(cls){ const el=$('#drillEnergy'); if(!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); clearTimeout(el['_'+cls]); el['_'+cls]=setTimeout(()=>el.classList.remove(cls), 650); }
+// Returns true if it played a Bixi voice line (fill or streak pipe-up), so the caller skips the ordinary cheer
+// and Bixi never talks over himself.
 function feedBixi(){
   const s=feedState();
-  if (s.full){ pulseEnergy('fed'); return; }          // already full today: a little shine, never over-feed
+  if (s.full){ pulseEnergy('fed'); return false; }          // already full today: a little shine, never over-feed
   feedStreak++;
   const burst = feedStreak % 3 === 0;                  // on a roll: a bigger bite
   s.n = Math.min(FEED_GOAL, s.n + (burst ? 2 : 1));
   pulseEnergy('fed'); if (burst) pulseEnergy('burst');
-  if (s.n >= FEED_GOAL && !s.full){ s.full=true; Fun.save(); renderEnergy(); bixiFull(); return; }
+  if (s.n >= FEED_GOAL && !s.full){ s.full=true; Fun.save(); renderEnergy(); bixiFull(); return true; }
   Fun.save(); renderEnergy();
+  // Slice 3: on a 3-in-a-row streak, Bixi pipes up — voice + figure only, never a banner (bigger line from 6+)
+  if (burst && settings.speakFeedback){ try{ if (Fun.BixVoice && Fun.BixVoice.play){ Fun.BixVoice.play(feedStreak>=6?'bx_drill_streak_big':'bx_drill_streak', $('#bixDrill')); return true; } }catch(e){} }
+  return false;
 }
 function bixiFull(){
   pulseEnergy('full');
@@ -2285,8 +2296,7 @@ async function submit(){
     verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
     await juniVerdict('yes');   // Juni (teacher) delivers the spoken verdict — same in Reading and Listening
-    reactVoice('yes');          // then Bixi (classmate) cheers WITH her (his own reaction, never the verdict word)
-    feedBixi();                 // ...and a correct answer feeds his snack bar
+    if (!feedBixi()) reactVoice('yes');   // feed his snack bar; Bixi speaks the streak/full line on milestones, else the ordinary cheer (never two Bixi voices)
     await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
   }
   else {
@@ -3155,7 +3165,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.81';
+const APP_VERSION='4.82';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
