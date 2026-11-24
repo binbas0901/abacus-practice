@@ -36,12 +36,15 @@
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
     // Extra line packs recorded after the main set (audio/bix-<voice>-<pack>.js, see tools/make_bix_pack.py).
     // Newest first: a line re-recorded in a pack replaces the take in the main recording (see find).
-    PACKS: ['polish', 'home', 'teach'],
+    // Extra sub-packs exist only for the Kokoro voices; gigi (the app-wide default) ships as one combined pack,
+    // so it has no sub-packs — requesting bix-gigi-*.js just 404s on every load.
+    SUBPACKS: { sweet: ['polish', 'home', 'teach'], boy: ['polish', 'home', 'teach'] },
+    subpacks(tag) { return this.SUBPACKS[tag] || []; },
     load(tag) {
       if (!tag) { const s = App() && App().settings, want = s && this.voices[s.bixVoice] ? s.bixVoice : 'gigi';
         if (want !== 'gigi') return this.load(want).then(() => { this.missing[want] = !this.buf[want]; if (this.missing[want]) return this.load('gigi'); }); }
       tag = tag || this.tag();
-      return Promise.all([this.loadKey(tag, `audio/bix-${tag}.js`)].concat(this.PACKS.map(p => this.loadKey(tag + '-' + p, `audio/bix-${tag}-${p}.js`))));
+      return Promise.all([this.loadKey(tag, `audio/bix-${tag}.js`)].concat(this.subpacks(tag).map(p => this.loadKey(tag + '-' + p, `audio/bix-${tag}-${p}.js`))));
     },
     loadKey(key, src) {
       if (this.buf[key]) return Promise.resolve(); if (this.loading[key]) return this.loading[key];
@@ -61,7 +64,7 @@
     // Where a line lives: the extra packs first (they hold the newer take of a re-recorded line), then the main recording.
     find(id) {
       const tag = this.tag();
-      for (const p of this.PACKS) { const k = tag + '-' + p; if (this.map[k] && this.map[k][id]) return [this.buf[k], this.map[k][id]]; }
+      for (const p of this.subpacks(tag)) { const k = tag + '-' + p; if (this.map[k] && this.map[k][id]) return [this.buf[k], this.map[k][id]]; }
       if (this.map[tag] && this.map[tag][id]) return [this.buf[tag], this.map[tag][id]];
       return [null, null];
     },
