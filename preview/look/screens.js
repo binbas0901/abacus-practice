@@ -55,6 +55,9 @@
     connectedCallback() { this._r(); } attributeChangedCallback() { if (this.isConnected) this._r(); }
     _r() {
       const a = k => this.getAttribute(k), name = a('name') || 'friend';
+      // Progress moons: a level can have many sets (10-14+); cap the row at 10 and scale so it never crowds the card.
+      let mt = Math.max(1, parseInt(a('total')) || 6), md = Math.max(0, Math.min(mt, parseInt(a('done')) || 0));
+      if (mt > 10) { md = Math.round(md / mt * 10); mt = 10; }
       const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
       root.innerHTML = `<style>
         :host{display:block;position:relative;width:100%;height:100%;min-height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
@@ -65,18 +68,27 @@
         .right{display:flex;gap:12px;align-items:center}
         .prof{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:56px;padding:0 22px 0 8px;border-radius:999px;background:#fff;box-shadow:0 2px 0 rgba(46,35,72,.08);font:800 20px ${FONT}}
         .ava{width:40px;height:40px;border-radius:50%;background:#F9C784;color:#7A4300;display:flex;align-items:center;justify-content:center;font-weight:900}
-        main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:28px;align-items:center;padding:4px 0 110px}
+        main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:28px;align-items:center;padding:4px 0 132px}
         .teacher{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:0}
         .teacher ab-bubble{align-self:flex-end;max-width:340px}
         .col{display:flex;flex-direction:column;gap:20px}
         .lab{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:${v('purple', '#5B3596')}}
-        h1{margin:6px 0;font-size:clamp(32px,4.2cqw,46px);line-height:1.05;font-weight:900}
-        .txt{margin:0 0 16px;font-size:19px;line-height:1.4;font-weight:600;color:${v('ink-soft', '#5E5478')}}
-        .row{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-size:16px;font-weight:700;color:${v('ink-soft', '#5E5478')}}
-        .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-        .bixi{position:absolute;right:28px;bottom:14px;display:flex;align-items:flex-end;gap:6px;pointer-events:none}
-        .bixi ab-bubble{max-width:270px;margin-bottom:18px}
+        h1{margin:4px 0;font-size:clamp(28px,3.6cqw,42px);line-height:1.05;font-weight:900}
+        .txt{margin:0 0 14px;font-size:18px;line-height:1.38;font-weight:600;color:${v('ink-soft', '#5E5478')}}
+        .row{display:flex;align-items:center;gap:12px;margin-bottom:18px;font-size:15px;font-weight:700;color:${v('ink-soft', '#5E5478')}}
+        .moonlab{white-space:nowrap}
+        .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+        .tiles ab-tile::part(button){min-height:112px}
+        .bixi{position:absolute;right:22px;bottom:8px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;z-index:3}
+        .bixi ab-bubble{max-width:230px;margin-bottom:14px}
         ab-button.go{width:100%}
+        @container (max-height: 760px) {
+          main{gap:20px;padding-bottom:120px}
+          h1{font-size:clamp(24px,3cqw,34px);margin:2px 0}
+          .txt{font-size:16px;margin:0 0 10px}
+          .row{margin-bottom:12px}
+          .tiles ab-tile::part(button){min-height:94px;border-radius:22px}
+        }
         @container (max-aspect-ratio: 1/1) {
           main{grid-template-columns:1fr;align-content:center;gap:16px}
           .teacher{flex-direction:row;align-items:flex-end;justify-content:center}
@@ -94,14 +106,14 @@
           <main>
             <div class="teacher">
               <ab-bubble tail="bottom-left" size="22">${esc(a('greeting') || `Hi ${name}! Ready to learn something new?`)}</ab-bubble>
-              <ab-juni pose="wave" size="${300}" idle></ab-juni>
+              <ab-juni pose="wave" size="260" idle></ab-juni>
             </div>
             <div class="col">
-              <ab-card pad="lg">
+              <ab-card pad="md">
                 <div class="lab">${esc(a('lesson-label') || "Today's lesson")}</div>
                 <h1>${esc(a('lesson-title') || 'Your next lesson')}</h1>
                 ${a('lesson-text') ? `<p class="txt">${esc(a('lesson-text'))}</p>` : ''}
-                <div class="row"><ab-moons total="${esc(a('total') || 6)}" done="${esc(a('done') || 0)}"></ab-moons><span>Juni's moon is filling up</span></div>
+                <div class="row"><ab-moons total="${mt}" done="${md}" size="18"></ab-moons><span class="moonlab">Juni's moon is filling up</span></div>
                 <ab-button class="go" size="lg" icon="play" data-a="start">Start lesson</ab-button>
               </ab-card>
               <div class="tiles">
@@ -112,7 +124,7 @@
             </div>
           </main>
         </div>
-        ${a('bixi-line') === '' ? '' : `<div class="bixi"><ab-bubble tone="bixi" tail="bottom-right" size="16">${esc(a('bixi-line') || 'Psst… help me today?')}</ab-bubble><ab-bixi pose="wave" size="140"></ab-bixi></div>`}`;
+        ${a('bixi-line') === '' ? '' : `<div class="bixi"><ab-bubble tone="bixi" tail="bottom-right" size="16">${esc(a('bixi-line') || 'Psst… help me today?')}</ab-bubble><ab-bixi pose="wave" size="112"></ab-bixi></div>`}`;
       root.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(this, b.dataset.a)));
       this._fit();
     }
