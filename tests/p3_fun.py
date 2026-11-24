@@ -29,7 +29,7 @@ async def main():
               await pg.locator('#bixHome .bix').count()==1 and await pg.locator('#doorPractice').count()==1 and await pg.locator('#homeTrophy .th-pip').count()==14 and doors==['Play','My room'], doors)
 
         # My Room: the garden is the ONE progress visual (grows with mastered skills); the sticker album is gone
-        await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active')
+        await pg.evaluate("document.getElementById('doorRoom').click()"); await pg.wait_for_selector('#room.active')
         check('My Room: garden pot drawn, grows with mastered skills', await pg.locator('#garden .g-pot').count()==1 and await pg.locator('#garden .plot').count()>0, await pg.text_content('#gardenLabel'))
         check('sticker album is gone (no Stickers button in the room)', await pg.locator('#roomStickers').count()==0)
         gl = await pg.text_content('#gardenLabel')

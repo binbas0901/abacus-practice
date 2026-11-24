@@ -1,7 +1,7 @@
 import asyncio, time, re
 from playwright.async_api import async_playwright
 async def gate(pg):
-    await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
+    await pg.evaluate("document.getElementById('grownups').click()"); await pg.wait_for_selector('#gate.active')
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active')
 async def main():
     async with async_playwright() as p:

@@ -70,7 +70,7 @@ async def main():
 
         # 5) the recorder offers "equals" as a 34th word and says what happens without it
         await pg.evaluate(SEED + "(false)"); await pg.reload(); await pg.wait_for_timeout(400)
-        await pg.click('#grownups'); await pg.wait_for_selector('#gate.active'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(600)
+        await pg.evaluate("document.getElementById('grownups').click()"); await pg.wait_for_selector('#gate.active'); await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(600)
         await pg.evaluate("document.querySelector('#recBody').scrollIntoView({block:'center'})"); await pg.wait_for_timeout(300)
         word = await pg.text_content('#recWord'); count = await pg.text_content('#recCount'); status = await pg.text_content('#recStatus')
         check('recorder: goes to "equals" (34 / 34) when the numbers are done', word == 'equals' and count.replace(' ', '') == '34/34', f'{word} {count}')

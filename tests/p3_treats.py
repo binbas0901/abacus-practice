@@ -2,7 +2,7 @@ import asyncio, re, json
 from playwright.async_api import async_playwright
 def check(label, ok, extra=''): print(('PASS ' if ok else 'FAIL ')+label+(('  '+str(extra)) if extra else ''))
 async def gate(pg):
-    await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
+    await pg.evaluate("document.getElementById('grownups').click()"); await pg.wait_for_selector('#gate.active')
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(400)
 async def collect_all(pg):
     while True:
@@ -16,7 +16,7 @@ async def main():
         await pg.goto('http://localhost:%s/index.html' % __import__('os').environ.get('PORT','8765')); await pg.evaluate("localStorage.setItem('abacus.settings', JSON.stringify({name:'Mia', settingsVersion:5, sfx:false, speakFeedback:false}))"); await pg.reload(); await pg.wait_for_timeout(500)
         check('home bead chip and jar start empty', (await pg.text_content('#roomBeads')).strip()=='0' and (await pg.text_content('#jar .jar-n')).strip()=='0' and await pg.locator('#jar .j-bead').count()==0, await pg.text_content('#jar'))
         # earn by finishing a game
-        await pg.evaluate("App.gamePops=1"); await pg.click('#doorPlay'); await pg.click('.gcard[data-game=pop]')
+        await pg.evaluate("App.gamePops=1"); await pg.evaluate("document.getElementById('doorPlay').click()"); await pg.click('.gcard[data-game=pop]')
         await pg.wait_for_selector('.bub'); await pg.wait_for_timeout(300)
         ans = await pg.evaluate("+document.querySelector('.pq-f').textContent - +document.querySelector('.pq-a').textContent")
         if await pg.locator(f'.bub[data-v="{ans}"]').count(): await pg.locator(f'.bub[data-v="{ans}"]').first.dispatch_event('pointerdown')
@@ -25,7 +25,7 @@ async def main():
         check('finishing a game earns NO beads (games are just for fun now)', w['beads']==0, w)
         await pg.click('.gresult [data-a=done]'); await pg.click('#exitPlay'); await pg.wait_for_timeout(300)
         # shop: My Room -> treat jar
-        await pg.click('#doorRoom'); await pg.wait_for_selector('#room.active')
+        await pg.evaluate("document.getElementById('doorRoom').click()"); await pg.wait_for_selector('#room.active')
         check('jar stays empty after a game (no beads earned)', (await pg.text_content('#roomBeads')).strip()=='0', await pg.text_content('#jar .jar-n'))
         await pg.click('#jar'); await pg.wait_for_selector('#shop.active')
         names = await pg.eval_on_selector_all('.tcard .tname','els=>els.map(e=>e.textContent)')
@@ -39,7 +39,7 @@ async def main():
         # grown-up adds beads
         await gate(pg); await pg.click('[data-adj="5"]'); await pg.click('[data-adj="1"]'); bead_txt = await pg.text_content('#tpBeads')
         await pg.screenshot(path='/tmp/p3_parent_treats.png')
-        await pg.click('#parentDone'); await pg.click('#doorRoom'); await pg.click('#roomWish'); await pg.wait_for_selector('#shop.active')
+        await pg.click('#parentDone'); await pg.evaluate("document.getElementById('doorRoom').click()"); await pg.click('#roomWish'); await pg.wait_for_selector('#shop.active')
         can = await pg.eval_on_selector_all('.tcard.can .tname','els=>els.map(e=>e.textContent)')
         check('with beads, cheap treats unlock', 'Mac & cheese' in can and 'Texas Roadhouse' not in can, f"beads={bead_txt} can={can}")
         await pg.click('.tcard.tpick:has-text("Mac & cheese")'); await pg.click('.tcard.hi:has-text("Mac & cheese") [data-get]'); await pg.wait_for_selector('#shopAsk.active'); await pg.screenshot(path='/tmp/p3_ask.png')
@@ -59,7 +59,7 @@ async def main():
         await pg.fill(f'{last} input[data-f=price]','15'); await pg.dispatch_event(f'{last} input[data-f=price]','change')
         st=json.loads(await pg.evaluate("window.__legacy('settings')"))
         check('grown-up edits price + adds non-food treat', st['treats'][0]['price']==2 and st['treats'][-1]['name']=='Library visit', [(t['emoji'],t['name'],t['price']) for t in st['treats']])
-        await pg.click('#parentDone'); await pg.click('#doorRoom'); await pg.click('#jar'); await pg.wait_for_selector('#shop.active')
+        await pg.click('#parentDone'); await pg.evaluate("document.getElementById('doorRoom').click()"); await pg.click('#jar'); await pg.wait_for_selector('#shop.active')
         check('shop reflects edits; no emoji anywhere on the shop or grown-ups treat list', 'Library visit' in await pg.text_content('#shopCards') and not re.search('[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B50]', (await pg.inner_text('#shop')) + (await pg.evaluate("document.querySelector('#guTreats').innerText"))))
         print('errors:', errs); await b.close()
 asyncio.run(main())

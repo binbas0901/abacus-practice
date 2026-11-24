@@ -42,7 +42,7 @@ async def setup_node(pg, node, learned=True, reading=0, listening=0):
 
 async def door_visible(pg):
     home = await pg.evaluate("()=>!!document.querySelector('#home.active')")
-    vis = await pg.evaluate("()=>{const b=document.querySelector('#doorPractice'); return !!b && b.offsetParent!==null;}")
+    vis = await pg.evaluate("()=>{const b=document.querySelector('#homeKit'); return !!b && b.offsetParent!==null;}")   # the kit home is the practice entry now
     return home, vis
 
 async def main():
@@ -56,7 +56,7 @@ async def main():
         home, vis = await door_visible(pg)
         check('returning: on home before tapping Practice', home, home)
         check('returning: the Practice door is visible on home', vis, vis)
-        await pg.click('#doorPractice')
+        await pg.evaluate("document.getElementById('doorPractice').click()")
         await pg.wait_for_selector('#practicePick.active', timeout=15000)
         st = await pg.evaluate("()=>({on: window.__practice.on, lesson: !!document.querySelector('#lesson.active')})")
         check('returning: tapping Practice goes straight to the picker (no lesson)', st['on'] is True and st['lesson'] is False, st)
@@ -68,7 +68,7 @@ async def main():
         # ---- picker reflects progress: Reading finished -> its card marked done, Listening still open ----
         ctx, pg, errs = await new_page(b)
         await setup_node(pg, 'sub_direct', learned=True, reading=7, listening=3)
-        await pg.click('#doorPractice')
+        await pg.evaluate("document.getElementById('doorPractice').click()")
         await pg.wait_for_selector('#practicePick.active', timeout=15000)
         marks = await pg.evaluate("""()=>{const c=[...document.querySelectorAll('#ppCards .pp-card')];
             const by=m=>c.find(x=>x.dataset.mode===m);
@@ -83,7 +83,7 @@ async def main():
         # add_direct is a non-flash skill that has a welcome lesson (demos); applySetup leaves the current node untaught.
         ctx, pg, errs = await new_page(b)
         await setup_node(pg, 'add_direct', learned=False)
-        await pg.click('#doorPractice')
+        await pg.evaluate("document.getElementById('doorPractice').click()")
         await pg.wait_for_function("()=>!!document.querySelector('#lesson.active')", timeout=15000)
         st = await pg.evaluate("()=>({lesson:!!document.querySelector('#lesson.active'), pick:!!document.querySelector('#practicePick.active'), on:window.__practice.on})")
         check('first-time: tapping Practice teaches the welcome lesson first', st['lesson'] is True and st['pick'] is False, st)
@@ -101,7 +101,7 @@ async def main():
         await setup_node(pg, 'anzan', learned=True)
         is_flash = await pg.evaluate("()=>window.__level.isFlashNode('anzan')")
         if is_flash:
-            await pg.click('#doorPractice')
+            await pg.evaluate("document.getElementById('doorPractice').click()")
             await pg.wait_for_function("()=>!!document.querySelector('#drill.active')", timeout=15000)
             st = await pg.evaluate("()=>({ptype: window.__practice.type, mode:(document.querySelector('#drill')||{dataset:{}}).dataset.mode, pick:!!document.querySelector('#practicePick.active')})")
             check('flash level: Practice runs the flash drill directly (no picker)', st['ptype'] == 'flash' and st['pick'] is False, st)

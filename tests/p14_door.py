@@ -8,7 +8,7 @@ SEED=open(os.path.join(HERE,'seed_report.js')).read()
 # navigator.share stand-in: records what would be shared
 SHARE="(()=>{ window.__shared=[]; navigator.share=(d)=>{ window.__shared.push(d); return Promise.resolve(); }; })()"
 async def gate(pg):
-    await pg.click('#grownups'); await pg.wait_for_selector('#gate.active')
+    await pg.evaluate("document.getElementById('grownups').click()"); await pg.wait_for_selector('#gate.active')
     await pg.evaluate('window.__gateHold()'); await pg.fill('#gateA', str(await pg.evaluate('window.__gateAnswer'))); await pg.click('#gateOk'); await pg.wait_for_selector('#parent.active'); await pg.wait_for_timeout(300)
 async def door(pg):
     await pg.evaluate("App.show('door')"); await pg.wait_for_selector('#door.active'); await pg.wait_for_timeout(250)

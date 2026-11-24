@@ -872,6 +872,38 @@ function renderHome(opts){
       const base = `Read ${Lv.modeDone(cur.id,'reading')}/${T} · Listen ${Lv.modeDone(cur.id,'listening')}/${T}`;
       lab.textContent = allDone ? 'Level done!' : (Lv.anzanEligible() ? `${base} · Mental ${Lv.modeDone(cur.id,'mental')}/${T}` : base); } }
   Treats.renderJar();
+  driveHomeKit(done, total, allDone);   // new look: drive the <ab-home-screen> component from the same state
+}
+// Kit home (new look): populate <ab-home-screen> from the current state and route its taps to the engine.
+// Staged migration — the old #homeOld markup stays hidden in the DOM (its load-time handlers remain valid) until
+// this is approved, then it gets removed with a deliberate contract-baseline update.
+let homeKitWired = false;
+function driveHomeKit(done, total, allDone){
+  const el = document.getElementById('homeKit'); if (!el) return;
+  const cur = NODES[curIdx()];
+  const beads = (Fun.data.wallet && Fun.data.wallet.beads) || 0;
+  const greet = juniGreet(allDone)[1];
+  const set = (k,v)=>{ v=String(v); if (el.getAttribute(k)!==v) el.setAttribute(k,v); };
+  set('name', settings.name || 'friend');
+  set('stars', beads);
+  set('lesson-label', "Today's lesson");
+  set('lesson-title', cur.title);
+  set('lesson-text', cur.intro || '');
+  set('done', done); set('total', total);
+  set('greeting', greet);
+  set('bixi-line', 'Psst… practice with me today?');
+  if (!homeKitWired){
+    homeKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action; Speaker.unlock();
+      if (a==='start') return Practice.start();          // primary: the current level's flow (lesson first time, then the picker)
+      if (a==='practice') return startMode('visual');    // direct reading/visual drill
+      if (a==='listen') return startMode('listen');      // direct listening drill
+      if (a==='play') return goPlay();                   // games hub
+      if (a==='grownups') return openGate();             // grown-ups gate
+      if (a==='profile') return showWho();               // switch / manage child
+    });
+  }
 }
 // The level trophy sits above the big Practice button: ten little beads fill as sets are cleared, the cup lights
 // at 10/10. This is the child's motivator — one clear goal, no scattered tiles.
@@ -3192,7 +3224,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.92';
+const APP_VERSION='4.93';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
