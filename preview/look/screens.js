@@ -343,6 +343,53 @@
     say(text) { this.bubble.say(text); }
   });
 
+  /* ---------- ab-meet-screen ----------
+     A short dialogue cutscene (after the name): Juni greets the child, introduces Bixi, he says hi and asks for help.
+     Both characters are on screen; only the current speaker's bubble shows. No input — the engine runs the beats
+     and then advances. Driven by the engine:
+       el.juni / el.bixi    the characters (el.bixi.pose = 'cheer')
+       el.say(text)         Juni speaks (her bubble on, Bixi's off)
+       el.bixiSay(text)     Bixi speaks (his bubble on, Juni's off) */
+  customElements.define('ab-meet-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;align-items:center;justify-content:center;
+          padding:max(24px,env(safe-area-inset-top)) 28px max(28px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .cast{display:flex;align-items:flex-end;justify-content:center;gap:40px;max-width:100%}
+        .who{position:relative;display:flex;flex-direction:column;align-items:center}
+        .who ab-bubble{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:14px;
+          width:max-content;max-width:min(72cqw,320px);opacity:0;transition:opacity .18s;pointer-events:none}
+        .who ab-bubble.on{opacity:1}
+        @container (max-aspect-ratio: 1/1){ .cast{gap:22px} .who ab-bubble{max-width:min(80cqw,280px)} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap"><div class="cast">
+          <div class="who"><ab-bubble class="jb" tail="bottom-left" size="23"></ab-bubble><ab-juni pose="wave" size="220" idle></ab-juni></div>
+          <div class="who"><ab-bubble class="bb" tone="bixi" tail="bottom-right" size="21"></ab-bubble><ab-bixi pose="wave" size="150" idle></ab-bixi></div>
+        </div></div>`;
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni'), b = this.shadowRoot.querySelector('ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; const portrait = r.height >= r.width;
+        const js = Math.round(Math.max(150, Math.min(portrait ? r.width * 0.36 : r.width * 0.22, r.height * 0.34)));
+        j.setAttribute('size', js); b.setAttribute('size', Math.round(js * 0.68)); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+    get _jb() { return this.shadowRoot.querySelector('.jb'); }
+    get _bb() { return this.shadowRoot.querySelector('.bb'); }
+    say(text) { this._jb.say(text); this._jb.classList.add('on'); this._bb.classList.remove('on'); }
+    bixiSay(text) { this._bb.say(text); this._bb.classList.add('on'); this._jb.classList.remove('on'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
