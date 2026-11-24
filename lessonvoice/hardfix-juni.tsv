@@ -7,3 +7,6 @@ l_two_digit_help	Good catch, Bixi. Start on the left, the tens, so the carry has
 j_try_again	Not quite — have another try.
 l_three_digit_help	Bixi found a tricky one! When a carry lands on a rod that is already full, that rod makes a whole ten too. Which way does that ten go next?
 l_rows_2d_help	Bixi's tens rod is overflowing. When the tens make a whole ten, a big friend carries one rod to the left. Which rod is that?
+j_prompt_solve1	Solve it, then tell me the answer.
+j_prompt_solve2	Work it out — you've got this.
+j_prompt_beads	Move the beads, then tap Check.
