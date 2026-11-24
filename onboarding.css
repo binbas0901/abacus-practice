@@ -110,3 +110,7 @@ html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
   #setup.cl-onboard #juniSetup,#setup.cl-onboard #bixSetup{transition:none}
   #setup.cl-onboard .cl-su-bubble.pop{animation:none}
 }
+
+/* New-kit welcome screen: overlays #setup during the welcome step only (shown/hidden by onboarding.js). */
+#setup > #suWelcome{ position:absolute; inset:0; z-index:5; }
+#setup > #suWelcome[hidden]{ display:none !important; }
