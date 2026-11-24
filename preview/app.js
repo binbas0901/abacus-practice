@@ -548,15 +548,16 @@ const Speaker = {
     return whole ? b.duration : dur;
   },
   // Schedule one term at audio-clock time `when`; returns end time. Only when canSchedule().
-  scheduleTerm(d, first, when){
+  hasTimes(){ const m=this.spriteMap[settings.voice]; return !!(m && m.t2 && m.t9); },   // voice has "times N" clips -> multiplication can be spoken in-voice (not device)
+  scheduleTerm(d, first, when, kind){
     const c=this.ctx; let t=Math.max(when||0, c.currentTime+0.02);
     if (this.kind()==='rec'){
       const r=this.recs[this.activePid];
       for (const w of termTokens(d, first)){ const b=r[w]; if(!b) continue; t+=this.playClip('rec:'+this.activePid+':'+w, b, t)+0.06; }
     } else {
       const buf=this.sprite[settings.voice], m=this.spriteMap[settings.voice];
-      const a=Math.abs(d), pre=first?'n':d<0?'m':(settings.sayPlus?'p':'n');
-      const ids = a<100 ? [pre+a] : [pre+Math.floor(a/100),'hundred'].concat(a%100?['n'+(a%100)]:[]);
+      const a=Math.abs(d), pre = kind==='times' ? 't' : (first?'n':d<0?'m':(settings.sayPlus?'p':'n'));
+      const ids = kind==='times' ? ['t'+a] : (a<100 ? [pre+a] : [pre+Math.floor(a/100),'hundred'].concat(a%100?['n'+(a%100)]:[]));
       for (const id of ids){ const sp=m[id]; if(!sp) continue; t+=this.playClip(settings.voice+':'+id, buf, t, sp[0], sp[1])+0.05; }
     }
     return t;
@@ -2044,7 +2045,7 @@ async function speakTerms(p, alive, pulse){
   if (Speaker.kind()!=='device'){
     await Speaker.prepare(); if (!alive()) return false;
     try{ if (Speaker.ctx && Speaker.ctx.state!=='running') await Promise.race([Speaker.ctx.resume(), sleep(1500)]); }catch(e){}
-    scheduled = p.op!=='mul' && Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';   // clips have no "times": mul problems use the device voice
+    scheduled = (p.op!=='mul' || Speaker.hasTimes()) && Speaker.canSchedule() && Speaker.ctx && Speaker.ctx.state==='running';   // mul uses in-voice "times N" clips when present, else device voice
     Diag.add(`clips ready=${Speaker.canSchedule()} ctx=${Speaker.ctx?Speaker.ctx.state:'none'} -> ${scheduled?'audio clock':'device voice fallback'}`);
   }
   if (scheduled){
@@ -3131,7 +3132,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.74';
+const APP_VERSION='4.75';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
