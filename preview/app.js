@@ -1403,6 +1403,8 @@ function renderLessonSteps(){
 }
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
+  // R2 (mental-math bridge): the board is faded only while watching the flash-node demos; every other phase shows it full.
+  { const ab$=$('#lessonAbacus'); if (ab$){ ab$.style.transition='opacity .7s ease'; if (!(L.phase==='demo' && n.kind==='flash')) ab$.style.opacity=''; } }
   $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided')); renderBackBtn();
   if (L.phase!=='fingers') hideHand();
   if (L.phase!=='anatomy') anatHL(null);
@@ -1469,8 +1471,11 @@ async function renderLesson(){
   }
   if (L.phase==='demo'){
     const ls=lessonStep(n, n.demos[L.demoIdx]); L.steps=ls.steps; L.step=0; lessonAb.value=ls.start; if (!n.family) lessonPair(null);
+    const ab$=$('#lessonAbacus'), flash=n.kind==='flash';
+    if (ab$ && flash) ab$.style.opacity = L.demoIdx===0 ? '1' : '0.5';   // R2: watch the first sum on full beads, then the board fades as the demos go on — easing toward picturing it
     cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, '', ls.label); lessonBtn('Next', 'play');   // Juni now narrates each step in sync (playSteps); no separate whole-demo clip
     await playSteps(lessonAb, L.steps, (s)=>cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, s.say.replace(/(\d+)/g,'<b>$1</b>')));
+    if (ab$ && flash && L.demoIdx>=n.demos.length-1){ await sleep(450); if (L.phase==='demo'){ ab$.style.opacity='0.12'; cap(`Watch ${L.demoIdx+1} of ${n.demos.length}`, 'Now hold that picture in your mind — the beads are still there, just invisible.', ls.label); } }   // R2: last demo fades out, inviting the mental picture before the flash drill
     return;
   }
   if (L.phase==='guided'){
@@ -3183,7 +3188,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.83';
+const APP_VERSION='4.84';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
