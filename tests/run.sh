@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Run every browser test against a local copy of the app. Usage: tests/run.sh [test names...]
+# Run the browser test suite against a local copy of the app. Usage: tests/run.sh [test names...]
+# The default list below is the maintained suite (pre-redesign legacy tests were retired in Nov 2026;
+# see git history if you need them). Each test reads PORT and connects to http://localhost:$PORT/index.html.
 cd "$(dirname "$0")/.." || exit 1
 PORT="${PORT:-8765}"; export PORT
 python3 -c "import urllib.request;urllib.request.urlopen('http://localhost:$PORT/index.html')" 2>/dev/null || { nohup python3 -m http.server "$PORT" >/dev/null 2>&1 & sleep 1; }
-SUITES="${*:-p2_test p2_master p2_listen p2_myvoice p2_overlap p2_family p3_fun p3_treats p4_fix p5_setup p6_name p7_bix p8_ipad p9_boy p10_flash p11_kids p12_home p13_practice p14_door p15_dayone p16_polish p17_portrait p18_equals p19_typing p20_speed p21_fit p22_fit2} p23_juni p24_classroom p25_feed p26_bixcard p27_voiced p42_timing"
+SUITES="${*:-homeshot p10_flash p14_door p18_equals p23_juni p25_feed p26_bixcard p27_voiced p28_revive p2_listen p2_myvoice p30_doorgreet p31_anatomy p32_praise p33_back p34_gamelevel p35_stickerwait p36_levelmodel p38_practice_exit p39_practice_entry p3_fun p3_treats p41_placement_tool p42_timing p44_quickwin p45_shownumber p46_readteach p47_maketeach p48_drill_nofail p49_anzan_bridge p50_interludes p6_name}"
 fail=0
 for t in $SUITES; do
   out=$(timeout 400 python3 "tests/$t.py" 2>&1); code=$?
