@@ -2227,7 +2227,7 @@ function juniVerdict(kind){ // kind: 'yes' | 'notyet'
 // if his voice isn't loaded, and it never falls back to the narrator saying the verdict.
 function reactVoice(kind){ // kind: 'yes' | 'notyet'
   if(!settings.speakFeedback) return;
-  if(CL()) CL().say(bixiReactKey(kind), {who:'bixi'});
+  if(CL()) CL().say(bixiReactKey(kind), {who:'bixi', figure:$('#bixDrill')});   // figure: Bixi hops/mouth-moves with his reaction (was voice-only, detached)
 }
 
 /* ---------------- Bixi's snack bar: she feeds him by solving problems (per child, resets each day) ---------------- */
@@ -2256,7 +2256,9 @@ function feedBixi(){
 }
 function bixiFull(){
   pulseEnergy('full');
-  PB.say('Yum! I’m all full — thank you!', 'proud', null, 3000);
+  // Bixi NEVER gets a speech banner: animate the figure + play his (Gigi) voice, no bubble text.
+  PB.draw('proud');
+  try{ if (Fun.BixVoice && Fun.BixVoice.play) Fun.BixVoice.play('bx_drill_full', PB.el()); }catch(e){}
   // Feeding Bixi is just encouragement during the set; beads are earned for finishing the whole set, not per streak.
   try{ Sfx.ok(); }catch(e){}
 }
@@ -3153,7 +3155,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.78';
+const APP_VERSION='4.79';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
