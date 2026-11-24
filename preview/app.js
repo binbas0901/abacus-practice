@@ -972,7 +972,7 @@ async function activityDone(kind, info={}){
 // (The old "Today" Start button is gone — the big Practice button, #doorPractice, launches the level run below.)
 function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
-  Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game to play!');
+  Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');   // caption matches the recorded clip
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
 function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
@@ -2003,9 +2003,9 @@ async function startDrill(m, n){
   try { problems = E.generateSet2(drillConfig(n), settings.count); } catch(e){ TOY.confirm('No problems to make', 'The grown-up settings for numbers and speed can’t make problems for this skill. Change them in Grown-ups → Practice.', {ok:'OK', cancel:'Close'}); return; }
   beginSet();
   presentProblem();                       // start speaking while we are still inside the tap
-  if (mode==='listen') JB.say('Listen carefully!', 'j_start_listen', 2600);   // Juni leads; spoken before Ready, numbers stop her
+  if (mode==='listen') JB.say('Listen carefully to each number.', 'j_start_listen', 2600);   // Juni leads; spoken before Ready, numbers stop her (caption matches the recorded clip)
   else if (mode==='flash') JB.say('Watch the numbers carefully!', 'j_start_flash', 2200);
-  else JB.say('You can do it!', Tool.kind==='beads' ? 'j_start_lookbeads' : 'j_start_look', 2200);
+  else JB.say(Tool.kind==='beads' ? 'Use your abacus for each one. Slow and careful.' : 'Look at each problem and work it out. Take your time.', Tool.kind==='beads' ? 'j_start_lookbeads' : 'j_start_look', 2200);   // caption matches the recorded clip
   try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
 }
 // Show only the stage for the current mode (Look: number tiles; Listen: the listening card; Flash: the flash card). Used by drills, the fix pass and level tests.
@@ -3192,7 +3192,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.87';
+const APP_VERSION='4.88';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
