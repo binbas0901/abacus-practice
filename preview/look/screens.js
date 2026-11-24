@@ -342,4 +342,130 @@
     get bubble() { return this.shadowRoot.querySelector('ab-bubble'); }
     say(text) { this.bubble.say(text); }
   });
+
+  /* ---------- ab-gate-screen ----------
+     The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
+       1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
+       2. an adult reading task — "type the Nth, Mth and Kth digits of 5 2 8 9 3".
+     The hold timer lives inside the component; the engine owns the question + the answer check:
+       el.say(text)          Juni's line (engine plays the voice clip)
+       el.reset()            back to the hold step, cleared
+       el.setQuestion(html)  put the generated question in the ask step, clear the field
+       el.setStep('ask')     reveal the question step; el.focusAnswer() focuses the field
+       el.setMessage(text)   status line; el.shake() nudges the card on a wrong answer
+       el.answer             the typed answer (string)
+     Sends 'ab-action' with detail.action = back | held (hold complete) | submit (Open / Enter). */
+  customElements.define('ab-gate-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true; this._step = 'hold'; this._t0 = 0; this._raf = 0;
+      const HOLD_MS = 3000;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;padding:max(20px,env(safe-area-inset-top)) 32px 24px;box-sizing:border-box}
+        header{display:flex}
+        main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;align-items:center;padding:4px 0 16px}
+        .teacher{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:0}
+        .teacher ab-bubble{max-width:360px}
+        .card{width:100%;max-width:520px;justify-self:center}
+        .lab{font-size:15px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:${v('purple', '#5B3596')};text-align:center;margin-bottom:16px}
+        .htitle{font-size:22px;font-weight:900;text-align:center;margin:0 0 18px;line-height:1.22}
+        .hold{all:unset;box-sizing:border-box;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;
+          width:100%;min-height:76px;border-radius:999px;background:${v('orange', '#F08A1C')};color:#fff;box-shadow:0 6px 0 ${v('orange-deep', '#C66A0C')};
+          cursor:pointer;-webkit-tap-highlight-color:transparent;font:900 24px ${FONT};user-select:none;touch-action:none}
+        .hold:focus-visible{outline:4px solid ${v('purple', '#5B3596')};outline-offset:4px}
+        .hold.holding{box-shadow:0 2px 0 ${v('orange-deep', '#C66A0C')};transform:translateY(4px)}
+        .fill{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:rgba(255,255,255,.32);pointer-events:none}
+        .hlabel{position:relative;display:flex;align-items:center;gap:10px;z-index:1}
+        .hold-step[hidden],.ask-step[hidden]{display:none}
+        .q{text-align:center;margin-bottom:16px}
+        .q small{display:block;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:${v('ink-soft', '#5E5478')};margin-bottom:8px}
+        .q .gw{display:block;font-size:19px;font-weight:800;line-height:1.3;margin-bottom:14px}
+        .q .gw b{color:${v('purple', '#5B3596')}}
+        .q .gnum{display:flex;gap:8px;justify-content:center}
+        .q .gnum i{display:flex;align-items:center;justify-content:center;width:46px;height:56px;border-radius:14px;background:${v('cream', '#FFF7EC')};
+          border:2px solid ${v('purple-line', '#DCD3EC')};font-style:normal;font-weight:900;font-size:28px}
+        .ans{all:unset;box-sizing:border-box;display:block;width:168px;height:64px;margin:0 auto 16px;padding:0 16px;border-radius:18px;
+          background:${v('cream', '#FFF7EC')};border:3px solid ${v('purple-line', '#DCD3EC')};font:900 30px ${FONT};color:${v('ink', '#2E2348')};text-align:center}
+        .ans:focus{border-color:${v('purple', '#5B3596')};background:#fff}
+        ab-button.open{width:100%}
+        .msg{min-height:22px;margin-top:14px;text-align:center;font-size:15px;font-weight:800;color:#C0392B}
+        .msg:empty{min-height:0}
+        @keyframes ab-gshake{10%,90%{transform:translateX(-5px)}30%,70%{transform:translateX(6px)}50%{transform:translateX(-6px)}}
+        .shake{animation:ab-gshake .3s}
+        .bixi{position:absolute;right:22px;bottom:10px;z-index:3;pointer-events:none}
+        @container (max-aspect-ratio: 1/1){
+          main{grid-template-columns:1fr;align-content:center;gap:16px}
+          .teacher{flex-direction:row;align-items:flex-end;justify-content:center}
+          .teacher ab-juni{order:-1}
+          .bixi{display:none}
+        }
+        @container (max-height: 640px){ main{gap:14px} .htitle{margin-bottom:12px} .teacher ab-bubble{max-width:300px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header><ab-icon-button icon="back" label="Back" data-a="back"></ab-icon-button></header>
+          <main>
+            <div class="teacher">
+              <ab-bubble tail="bottom-left" size="22">This part is for a grown-up. Can you go and get one?</ab-bubble>
+              <ab-juni pose="point" size="200" idle></ab-juni>
+            </div>
+            <ab-card pad="lg" class="card">
+              <div class="lab">For grown-ups</div>
+              <div class="hold-step">
+                <p class="htitle">Press and hold for 3 seconds</p>
+                <button class="hold" type="button"><i class="fill"></i><span class="hlabel"><ab-icon name="lock" size="26"></ab-icon><span class="htxt">Hold</span></span></button>
+              </div>
+              <div class="ask-step" hidden>
+                <div class="q"></div>
+                <input class="ans" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="?" aria-label="Your answer">
+                <ab-button class="open" size="md" data-a="submit">Open</ab-button>
+              </div>
+              <div class="msg" role="status" aria-live="polite"></div>
+            </ab-card>
+          </main>
+          <div class="bixi"><ab-bixi pose="wave" size="112"></ab-bixi></div>
+        </div>`;
+      root.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(this, b.dataset.a)));
+      const hold = root.querySelector('.hold');
+      const start = () => { if (this._step !== 'hold' || this._t0) return; this._t0 = performance.now(); hold.classList.add('holding'); this._setMsg(''); this._htxt('Keep holding…'); this._tick(HOLD_MS); };
+      const stop = () => { if (!this._t0) return; const early = performance.now() - this._t0 < HOLD_MS; this._resetHold(); if (early) this._setMsg('Keep holding until the bar is full.'); };
+      hold.addEventListener('pointerdown', e => { e.preventDefault(); try { hold.setPointerCapture(e.pointerId); } catch (x) {} start(); });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => hold.addEventListener(ev, stop));
+      hold.addEventListener('contextmenu', e => e.preventDefault());
+      hold.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); start(); } });
+      hold.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') stop(); });
+      root.querySelector('.ans').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); act(this, 'submit'); } });
+      this._fit();
+    }
+    _tick(ms) {
+      const p = Math.min(1, (performance.now() - this._t0) / ms);
+      this.shadowRoot.querySelector('.fill').style.transform = 'scaleX(' + p.toFixed(3) + ')';
+      if (p >= 1) { this._resetHold(); act(this, 'held'); return; }
+      this._raf = requestAnimationFrame(() => this._tick(ms));
+    }
+    _resetHold() { cancelAnimationFrame(this._raf); this._t0 = 0; const h = this.shadowRoot.querySelector('.hold'); h.classList.remove('holding'); this.shadowRoot.querySelector('.fill').style.transform = 'scaleX(0)'; this._htxt('Hold'); }
+    _htxt(t) { const s = this.shadowRoot.querySelector('.htxt'); if (s) s.textContent = t; }
+    _setMsg(t) { const m = this.shadowRoot.querySelector('.msg'); if (m) m.textContent = t || ''; }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; const portrait = r.height >= r.width;
+        j.setAttribute('size', Math.round(Math.max(140, Math.min(portrait ? r.width * 0.3 : r.width * 0.22, r.height * (portrait ? 0.26 : 0.46))))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    setStep(s) { this._step = s; this.shadowRoot.querySelector('.hold-step').hidden = s !== 'hold'; this.shadowRoot.querySelector('.ask-step').hidden = s !== 'ask'; }
+    setQuestion(html) { this.shadowRoot.querySelector('.q').innerHTML = html; const i = this.shadowRoot.querySelector('.ans'); if (i) i.value = ''; }
+    setMessage(t) { this._setMsg(t); }
+    shake() { const c = this.shadowRoot.querySelector('.card'); if (!c) return; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+    focusAnswer() { const i = this.shadowRoot.querySelector('.ans'); setTimeout(() => { try { i.focus(); } catch (e) {} }, 60); }
+    reset() { this._resetHold(); this.setStep('hold'); this._setMsg(''); const i = this.shadowRoot.querySelector('.ans'); if (i) i.value = ''; }
+    get answer() { return (this.shadowRoot.querySelector('.ans').value || '').trim(); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+    get bubble() { return this.shadowRoot.querySelector('ab-bubble'); }
+    say(text) { this.bubble.say(text); }
+  });
 })();
