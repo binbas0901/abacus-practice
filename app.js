@@ -2627,7 +2627,7 @@ const ReadTeach = (function(){
     const my=token;
     await beat('j_pr_read_intro','Let’s read some beads together!'); if (token!==my) return;
     await gap(); await bixLine('bx_hi_class','happy'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
+    await gap(); if (token!==my) return;   // after the opening line, go straight into the first number — no "Next" tap (the first round starts on its own)
     const nums = pickRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); ab.input.setValue(N,{animate:true}); $count().textContent='';
@@ -2647,7 +2647,7 @@ const ReadTeach = (function(){
     const my=token;
     await beat('j_pr_make_intro','Let’s make some numbers! I’ll say one, and you build it.'); if (token!==my) return;
     await gap(); await bixLine('bx_mk_cheerme','happy'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
+    await gap(); if (token!==my) return;   // after the opening line, go straight into the first number — no "Next" tap (the first round starts on its own)
     const nums = pickRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); $count().textContent='';
@@ -3192,7 +3192,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.91';
+const APP_VERSION='4.92';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

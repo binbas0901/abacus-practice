@@ -60,8 +60,10 @@ async def main():
         check('title reads "Read the beads"', title.strip() == 'Read the beads', title)
         check('it is NOT the Bead Detective quiz (#game not active)', not await active(pg, 'game'))
         check('reading progress starts at 0', (await reading_prog(pg)) == 0)
-        await pg.wait_for_function("()=>window.ReadTeach._waiting()==='next'", timeout=8000)
-        check('landscape: Next/advance control is fully on-screen at the intro', await onscreen(pg, '#rtNext'))
+        # v4.92: the opening line auto-advances into the first round — no "Next" tap
+        await pg.wait_for_function("()=>{const w=window.ReadTeach._waiting(); return !!(w && w.indexOf('read:')===0);}", timeout=12000)
+        rtnext_on = await pg.evaluate("()=>{const b=document.getElementById('rtNext'); return !!(b && b.classList.contains('on'));}")
+        check('intro auto-advances into the first read round, no Next button shown', not rtnext_on)
         await pg.screenshot(path=f'{SHOTS}/read_intro.png')
 
         rounds = 0; no_fail_ok = None; shot = False
@@ -69,9 +71,7 @@ async def main():
             if (await reading_prog(pg)) >= 1: break
             if not await active(pg, 'readTeach'): break
             w = await pg.evaluate("()=>window.ReadTeach._waiting()")
-            if w == 'next':
-                await pg.click('#rtNext'); await pg.wait_for_timeout(120)
-            elif w and w.startswith('read:'):
+            if w and w.startswith('read:'):
                 ans = int(w.split(':')[1])
                 if not shot:
                     check('landscape: board and number choices are fully on-screen on a read round',
