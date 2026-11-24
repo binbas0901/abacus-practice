@@ -2553,110 +2553,52 @@ const ReadTeach = (function(){
     await moveFn(); if (token!==my) return; $count().textContent=String(val);
     await Promise.resolve(p).catch(()=>{});
   }
+  // Level-1 cards are PRACTICE, not teaching — the opening lesson ("Watch the lesson again") teaches the fundamentals
+  // (bead values, the 5-bead, how to make/read). These two flows just practise the two directions: no re-explaining.
+  const PR_YES=['j_pr_yes1','j_pr_yes2','j_pr_yes3','j_pr_yes4'];
+  const PR_BIX=['bx_try_woo','bx_try_smart','bx_try_strong'];
+  let yesIdx=0; const nextYes=()=>PR_YES[(yesIdx++)%PR_YES.length];
+  const pick1=a=>a[Math.floor(Math.random()*a.length)];
+  function pickRounds(k){ const pool=[1,2,3,4,5,6,7,8,9]; for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; } return pool.slice(0,k); }
+  async function demoBuild(N){ ab.reset(); if (N>=5){ await ab.move(0,+5,560,()=>alive); for(let k=0;k<N-5;k++){ await ab.move(0,+1,380,()=>alive); } } else { for(let k=0;k<N;k++){ await ab.move(0,+1,400,()=>alive); } } }
+  const ROUNDS=5;
+  // READING practice: a number is shown on the beads; the child reads it by tapping the number. No-fail (count together, retry).
   async function runRead(){
     const my=token;
-    await beat('j_rt_intro','Let’s learn to read the beads! Every bead you push up to the bar counts.'); if (token!==my) return;
-    await gap(); await bixLine('bx_hi_class','happy'); if (token!==my) return;   // Bixi greets his classmate
+    await beat('j_pr_read_intro','Let’s read some beads together!'); if (token!==my) return;
+    await gap(); await bixLine('bx_hi_class','happy'); if (token!==my) return;
     await gap(); await waitNext(); if (token!==my) return;
-    // Juni shows 1 — bead moves as she says it
-    ab.reset(); ab.setReadOnly(true); $count().textContent='';
-    await demoMove('j_rt_show1','Watch — I push one bead up to the bar.', 650, ()=>ab.move(0,+1,600,()=>token===my), 1); if (token!==my) return;
-    await gap(); await beat('j_rt_show1b','One bead at the bar — that’s 1!'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    // child does 1
-    ab.reset(); $count().textContent='';
-    await beat('j_rt_you1','Now you — push one bead up to the bar.'); if (token!==my) return;
-    await waitBead(1, async()=>{ await ab.move(0,+1,600,()=>token===my); }); if (token!==my) return;
-    await gap(); await beat('j_rt_you1ok','Yes! One bead — that’s 1.'); if (token!==my) return;
-    await bixLine('bx_try_woo','cheer'); if (token!==my) return;   // Bixi celebrates the child's first success
-    // ladder the ones (Juni demos 1,2,3)
-    ab.reset(); ab.setReadOnly(true); $count().textContent='';
-    await beat('j_rt_ladder','Each bead adds one more. Count with me…'); if (token!==my) return;
-    for (let k=1;k<=3;k++){ if (token!==my) return; await ab.move(0,+1,520,()=>token===my); $count().textContent=k; await sleep(430); }
-    await gap(); await beat('j_rt_ladder3','One, two, three — that’s 3!'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    // child reads 3
-    ab.reset(); ab.input.setValue(3,{animate:true}); $count().textContent='';
-    await beat('j_rt_read','How many beads are at the bar? Count them, then tap the number.'); if (token!==my) return;
-    await waitRead(3); if (token!==my) return;                                   // success: Bix bounces (silent)
-    clearPad(); await gap(); await beat('j_rt_readok','That’s 3 — you read it!'); if (token!==my) return;
-    // the heaven bead (worth 5) — bead moves as she says it
-    ab.reset(); ab.setReadOnly(true); $count().textContent='';
-    await demoMove('j_rt_heaven','This top bead is special — it’s worth 5 all by itself!', 1600, ()=>ab.move(0,+5,700,()=>token===my), 5); if (token!==my) return;
-    await gap(); await beat('j_rt_heaven5','One top bead down — that’s 5!'); if (token!==my) return;
-    await gap(); await bixLine('bx_wow_five','happy'); if (token!==my) return;   // Bixi's quiet awe at the heaven bead
-    await gap(); await waitNext(); if (token!==my) return;
-    // child does 5
-    ab.reset(); $count().textContent='';
-    await beat('j_rt_you5','Now you — push the big top bead down. What number is that?'); if (token!==my) return;
-    await waitBead(5, async()=>{ await ab.move(0,+5,700,()=>token===my); }); if (token!==my) return;
-    await gap(); await beat('j_rt_you5ok','Yes — the top bead is 5!'); if (token!==my) return;
-    await bixLine('bx_try_strong','cheer'); if (token!==my) return;
-    // combine -> 6, child reads
-    ab.reset(); ab.setReadOnly(true); $count().textContent='';
-    await beat('j_rt_combine','5 up here… and 1 more down here… 5 and 1 makes 6!'); if (token!==my) return;
-    ab.input.setValue(6,{animate:true}); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    await beat('j_rt_read6','Your turn to read. How many is this?'); if (token!==my) return;
-    await waitRead(6); if (token!==my) return;
-    clearPad(); await gap(); await beat('j_rt_read6ok','5 and 1 — that’s 6. Brilliant!'); if (token!==my) return;
-    // celebrate — Juni's line, then Bix's cheer (one at a time)
+    const nums = pickRounds(ROUNDS);
+    for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
+      ab.reset(); ab.setReadOnly(true); ab.input.setValue(N,{animate:true}); $count().textContent='';
+      await beat('j_pr_read_ask','What number is this?'); if (token!==my) return;
+      await waitRead(N); if (token!==my) return;
+      clearPad(); await gap(); await beat(nextYes(),'Yes!'); if (token!==my) return;
+      if (i===1 || i===nums.length-1){ await bixLine(pick1(PR_BIX),'cheer'); if (token!==my) return; }   // Bixi pipes up now and then, not every round
+      await gap();
+    }
     Fun.confetti(70); Sfx.star(); bixReact('cheer',2200);
-    await beat('j_rt_done','You can read the beads now! High five!'); if (token!==my) return;
-    await bixLine('bx_done_highfive','cheer'); await sleep(300);
+    await beat('j_pr_read_done','Lovely reading! You’re getting quick at it.'); if (token!==my) return;
+    await bixLine('bx_done_readstar','cheer'); await sleep(300);
     finish();
   }
-  // "Make the number": the reverse of reading — Juni names a number, the child BUILDS it on the beads.
-  // Reuses every primitive above; child interaction is always waitBead. No-fail throughout; title = "Make the number".
+  // MAKING practice: Juni says a number; the child builds it on the beads. No-fail (stuck -> Juni builds it, then retry).
   async function runMake(){
     const my=token;
-    await beat('j_mk_intro','Now let’s make the numbers! I say a number, and you build it with the beads.'); if (token!==my) return;
-    await gap(); await bixLine('bx_mk_cheerme','happy'); if (token!==my) return;   // Bixi's excited "I love this!"
+    await beat('j_pr_make_intro','Let’s make some numbers! I’ll say one, and you build it.'); if (token!==my) return;
+    await gap(); await bixLine('bx_mk_cheerme','happy'); if (token!==my) return;
     await gap(); await waitNext(); if (token!==my) return;
-    // hand posture (fundamental, light)
-    await beat('j_mk_hands','Only your right hand moves the beads. Keep it ready — never resting on the frame.'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    // Juni demos making 1 — bead rises as she speaks
-    ab.reset(); ab.setReadOnly(true); $count().textContent='';
-    await demoMove('j_mk_make1','Watch. My thumb pushes one bottom bead up to the bar.', 650, async()=>{ ab.reset(); await ab.move(0,+1,600,()=>token===my); }, 1); if (token!==my) return;
-    await gap(); await beat('j_mk_make1b','One bead up — that makes 1!'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    // child makes 1
-    ab.reset(); $count().textContent='';
-    await beat('j_mk_you1','Now you. Push one bead up to make 1.'); if (token!==my) return;
-    await waitBead(1, async()=>{ ab.reset(); await ab.move(0,+1,600,()=>token===my); }); if (token!==my) return;
-    await gap(); await beat('j_mk_you1ok','Yes! You made 1.'); if (token!==my) return;
-    await bixLine('bx_try_woo','cheer'); if (token!==my) return;
-    // ladder 2 -> 3 -> 4, the child builds each (one more bead each time)
-    await beat('j_mk_climb','Each time, add one more bead. No rushing — slow and sure.'); if (token!==my) return;
-    ab.reset(); $count().textContent='';
-    await beat('j_mk_you2','Make 2. Push up one more bead.'); if (token!==my) return;
-    await waitBead(2, async()=>{ ab.reset(); for(let k=0;k<2;k++){ await ab.move(0,+1,480,()=>token===my); } }); if (token!==my) return;
-    await gap(); await beat('j_mk_you2ok','Two beads — that’s 2.'); if (token!==my) return;
-    ab.reset(); $count().textContent='';
-    await beat('j_mk_you3','Now make 3.'); if (token!==my) return;
-    await waitBead(3, async()=>{ ab.reset(); for(let k=0;k<3;k++){ await ab.move(0,+1,480,()=>token===my); } }); if (token!==my) return;
-    await gap(); await beat('j_mk_you3ok','Lovely — that’s 3.'); if (token!==my) return;
-    ab.reset(); $count().textContent='';
-    await beat('j_mk_you4','And make 4.'); if (token!==my) return;
-    await waitBead(4, async()=>{ ab.reset(); for(let k=0;k<4;k++){ await ab.move(0,+1,480,()=>token===my); } }); if (token!==my) return;
-    await gap(); await beat('j_mk_you4ok','That’s 4 — all four bottom beads!'); if (token!==my) return;
-    await bixLine('bx_try_strong','cheer'); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    // introduce 5 — board still shows the child's 4
-    await beat('j_mk_five_setup','You used all four bottom beads. For 5, there are no more — so we use the special top bead.'); if (token!==my) return;
-    await demoMove('j_mk_five_clear','First, your left finger presses the button to clear them.', 700, async()=>{ ab.reset(); }, 0); if (token!==my) return;
-    await demoMove('j_mk_five_demo','Now your index finger brings the top bead down. That’s 5!', 1200, async()=>{ ab.reset(); await ab.move(0,+5,700,()=>token===my); }, 5); if (token!==my) return;
-    await gap(); await waitNext(); if (token!==my) return;
-    // child makes 5
-    ab.reset(); $count().textContent='';
-    await beat('j_mk_you5','Your turn. Bring the top bead down to make 5.'); if (token!==my) return;
-    await waitBead(5, async()=>{ ab.reset(); await ab.move(0,+5,700,()=>token===my); }); if (token!==my) return;
-    await gap(); await beat('j_mk_you5ok','Yes! The top bead is 5.'); if (token!==my) return;
-    await bixLine('bx_wow_five','happy'); if (token!==my) return;   // awe at the top bead worth five
-    // celebrate — Juni's line, then Bix's cheer (one at a time)
+    const nums = pickRounds(ROUNDS);
+    for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
+      ab.reset(); ab.setReadOnly(true); $count().textContent='';
+      await beat('j_pr_make_'+N,'Can you make '+N+'?'); if (token!==my) return;
+      await waitBead(N, async()=>{ await demoBuild(N); }); if (token!==my) return;
+      await gap(); await beat(nextYes(),'Yes!'); if (token!==my) return;
+      if (i===1 || i===nums.length-1){ await bixLine(pick1(PR_BIX),'cheer'); if (token!==my) return; }
+      await gap();
+    }
     Fun.confetti(70); Sfx.star(); bixReact('cheer',2200);
-    await beat('j_mk_done','You can make the numbers now! Practise a little every day and you’ll get even faster.'); if (token!==my) return;
+    await beat('j_pr_make_done','Great building! A little practice every day and you’ll fly.'); if (token!==my) return;
     await bixLine('bx_done_proud','cheer'); await sleep(300);
     finish();
   }
@@ -3189,7 +3131,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.71';
+const APP_VERSION='4.72';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
