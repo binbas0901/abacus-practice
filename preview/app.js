@@ -1403,8 +1403,9 @@ function renderLessonSteps(){
 }
 async function renderLesson(){
   const n=L.node; renderLessonSteps(); $('#lessonHint').style.display='none';
-  // R2 (mental-math bridge): the board is faded only while watching the flash-node demos; every other phase shows it full.
-  { const ab$=$('#lessonAbacus'); if (ab$){ ab$.style.transition='opacity .7s ease'; if (!(L.phase==='demo' && n.kind==='flash')) ab$.style.opacity=''; } }
+  // R2 (mental-math bridge): the board fades through a flash node's demo AND guided turns (easing off the visual crutch);
+  // every other phase, and every non-flash lesson, shows it full.
+  { const ab$=$('#lessonAbacus'); if (ab$){ ab$.style.transition='opacity .7s ease'; if (!(n.kind==='flash' && (L.phase==='demo' || L.phase==='guided'))) ab$.style.opacity=''; } }
   $('#lesson').dataset.phase=L.phase; lessonAb.setReadOnly(!(L.phase==='numbers' || L.phase==='guided')); renderBackBtn();
   if (L.phase!=='fingers') hideHand();
   if (L.phase!=='anatomy') anatHL(null);
@@ -1480,6 +1481,9 @@ async function renderLesson(){
   }
   if (L.phase==='guided'){
     const ls=lessonStep(n, n.guided[L.guidedIdx]); L.target=ls.target; lessonAb.value=ls.start;
+    // R2: on a flash (mental-math) node the board stays a faint-but-usable ghost through the guided turns, fading further
+    // each turn (opacity never blocks taps), so the child acts on less and less of a crutch before the boardless flash drill.
+    { const ab$=$('#lessonAbacus'); if (ab$ && n.kind==='flash'){ const t = n.guided.length>1 ? L.guidedIdx/(n.guided.length-1) : 0; ab$.style.opacity = (0.55 - 0.25*t).toFixed(2); } }
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label); { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
     lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else { juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } } return;
   }
@@ -3188,7 +3192,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.84';
+const APP_VERSION='4.85';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
