@@ -138,12 +138,46 @@
     meetAndBixi(token, n);   // continue into the existing flow, unchanged
   }
 
+  /* ---------------- greeting (the true first screen) ----------------
+     Shown before the grown-up gate: a warm hello that asks for nothing. "Let's go" opens the gate; tapping Juni
+     replays her hello. The gate (and everything that collects info or decides) follows. */
+  function greetingEl() { return document.getElementById('suGreeting'); }
+  function showGreeting(my) {
+    const g = greetingEl(); if (!g) return false;
+    g.hidden = false;
+    g.say("Hi! I'm Juni. Welcome to abacus class!");
+    if (!g._wired) {
+      g._wired = true;
+      g.addEventListener('ab-action', e => {
+        const a = e.detail && e.detail.action;
+        App().unlock();
+        if (a === 'start') { g.hidden = true; toGate(token); }
+        else if (a === 'hear' && CL()) CL().say('j_intro_hello', { who: 'juni', bubble: null });
+      });
+    }
+    return true;
+  }
+  // The grown-up gate, then the first setup step. (Was inline in open(); now reached after the greeting.)
+  function toGate(my) {
+    App().openGate(() => {
+      if (my !== token) return;
+      App().unlock();
+      if (showWelcome(my)) return;   // new-kit welcome screen asks the name (first setup step, behind the gate)
+      // Fallback (component absent): the original light-DOM welcome step.
+      step('suName');
+      juniSay('j_intro_hello');
+      const begin = () => { if (my !== token || state.introDone) return; state.introDone = true; intro(my); };
+      setTimeout(begin, 80);
+    });
+  }
+
   /* ---------------- open ---------------- */
   function open(from) {
     const my = ++token; App().show('setup');
     qwTeardown();   // never carry a quick-win soroban across a re-open (new child / re-run setup)
     stage();
-    if (welcomeEl()) welcomeEl().hidden = true;   // never leave the welcome overlay up across a re-open / re-entry
+    if (greetingEl()) greetingEl().hidden = true;   // never leave an overlay up across a re-open / re-entry
+    if (welcomeEl()) welcomeEl().hidden = true;
     juniBub().classList.remove('on'); bixiBub().classList.remove('on');
     setup().classList.remove('cl-bixi-here', 'cl-bixi-side');
     // Re-entry from the Grown-ups page (re-run level check / grown-up chooses): keep the name, skip the whole intro.
@@ -155,18 +189,10 @@
     }
     state = { name: '', keepName: false, introDone: false };
     $('#suNameIn').value = '';
-    // First-run setup (name, "do you have an abacus?", skill pick / level check) is a grown-up task: gate it behind
-    // the grown-up challenge first. The child-facing intro + quick win follow once a grown-up passes the gate.
-    App().openGate(() => {
-      if (my !== token) return;
-      App().unlock();
-      if (showWelcome(my)) return;   // new-kit welcome screen drives the greeting + name
-      // Fallback (component absent): the original light-DOM welcome step.
-      step('suName');
-      juniSay('j_intro_hello');
-      const begin = () => { if (my !== token || state.introDone) return; state.introDone = true; intro(my); };
-      setTimeout(begin, 80);
-    });
+    // Flow: a warm greeting (Juni + Bixi) comes first, then the grown-up gate, then setup (name, abacus, level).
+    // The greeting asks for nothing; collecting the name and the grown-up decisions stay behind the gate.
+    if (showGreeting(my)) return;   // the greeting's "Let's go" opens the gate
+    toGate(my);                     // fallback (no greeting component): straight to the gate
   }
   // Juni's spoken welcome, then she asks the name. Audio begins on the first tap (the clips play in order).
   async function intro(my) {
