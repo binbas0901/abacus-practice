@@ -95,14 +95,14 @@
       demos: [[10, -1], [11, -2], [10, -3], [12, -4], [10, -5]], guided: [[10, -2], [11, -3], [13, -4], [10, -4], [14, -5], [21, -2]],
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true, allow: ['direct', 'five:add', 'five:sub', 'ten:add', 'ten:sub'], require: ['ten:sub:1-5'] } },
     { id: 'combined', title: 'Both friends together', short: 'Both', icon: 'yoyo',
-      intro: 'Adding 6, 7, 8 or 9 and the big friend will not come off? Use the small friend inside the big-friend move. Taking away works the same way. Two tricks, one move.',
+      intro: 'Last time the big friend came right off. This time it will not come off, because there are no little beads to take it off with. So we take the big friend off with a small friend. Add ten first, then take the big friend using five. Two friends, one answer.',
       // For grown-ups (Grown-ups > Practice, under "Current skill"): what classes call this group of formulas.
       parentNote: 'Both friends together: a big-friend move that needs a small-friend move inside it (+6 = +1 −5 +10 … +9 = +4 −5 +10; −6 = −10 +5 −1 … −9 = −10 +5 −4). Classes call these combination, mixed-friend or family formulas.',
-      demos: [[6, 7], [5, 8], [12, -7], [11, -6]], guided: [[6, 6], [7, 7], [5, 9], [13, -7], [14, -6], [13, -8]],   // (12 − 8 is a plain big friend)
+      demos: [[5, 8], [6, 7], [12, -7], [11, -6]], guided: [[6, 6], [7, 7], [5, 9], [13, -7], [14, -6], [13, -8]],   // 5+8 first: gentlest combined add, clean 13 (12 − 8 is a plain big friend)
       drill: { operands: 4, digits: 1, maxTotal: 99, allowSubtraction: true, allowedRules: ['direct', 'five', 'ten', 'combined'], require: ['combined'] } },
     { id: 'two_digit', title: 'Two-digit numbers', short: '2-digit', icon: 'lion',
-      intro: 'Work left to right: tens rod first, then units. Every rod uses the same friends.',
-      demos: [[23, 45], [38, 27], [64, -29]], guided: [[12, 34], [25, 48], [57, 36], [72, -45], [60, -27], [81, -56]],
+      intro: 'Two rods now: tens and units. Always start on the left, with the tens. Then do the units. If the units make a whole ten, that ten jumps left to the tens rod. That is a carry.',
+      demos: [[23, 45], [38, 27], [64, -29]], guided: [[28, 37], [25, 48], [57, 36], [72, -45], [60, -27], [81, -56]],   // lead with 28+37 (a units carry) so the interlude example actually shows a carry
       drill: { operands: 4, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ['direct', 'five', 'ten', 'combined'] } },
     { id: 'anzan', title: 'Mental abacus', short: 'Mental', icon: 'owl', kind: 'flash', optional: true, track: 'anzan',
       // optional/track: a flash node is OFF the mandatory skill-path (advanceCurrent skips it, so a child is never
@@ -167,7 +167,7 @@
 
     // Level 6
     { id: 'four_digit', level: 6, title: 'Four-digit numbers', short: '4-digit', icon: 'rocket', iconKey: 'star',
-      intro: 'Thousands, hundreds, tens, units: four rods for each number. Left to right, one rod at a time, every friend still works.',
+      intro: 'Four rods now: thousands, hundreds, tens, units. Keep your eyes moving left to right and do not lose your place. Same friends, same carries, just a longer walk.',
       demos: [[1234, 2345], [4876, 3459], [8205, -3768]],
       guided: [[2513, 1264], [3777, 4685], [8462, -2938], [5524, 3891]],               // one row: = 9415
       review: ['three_digit', 'rows_2d', 'long_rows'],
