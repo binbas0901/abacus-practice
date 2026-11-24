@@ -1960,7 +1960,17 @@ function drillConfig(n){
     if (!n.drill.flash || settings.flashN!==DEFAULTS.flashN){ c.operands=settings.flashN; delete c.operandsMax; } }
   return c;
 }
-function flashSeconds(){ const d=drillNode && drillNode.drill; return (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec && !settings.flashOwn) ? d.flashSec : settings.flashSec; }   // a skill's own pace, until someone picks one
+function flashSeconds(){ const d=drillNode && drillNode.drill;
+  let base = (d && d.flashSec && settings.flashSec===DEFAULTS.flashSec && !settings.flashOwn) ? d.flashSec : settings.flashSec;   // a skill's own pace, until someone picks one
+  // Gentle first exposure (R3): until the child picks their own flash speed, the first few mental sets at a node run
+  // SLOWER, easing toward the base pace — a first-timer shouldn't meet 1s/number cold. Never speeds anything up.
+  if (!settings.flashOwn && mode==='flash' && drillNode){
+    const done = (modeDone(drillNode.id,'mental')||0) + (modeDone(drillNode.id,'flash')||0);
+    const ramp = [2.5, 2.0, 1.5];   // set 0, 1, 2 at this node
+    if (done < ramp.length) base = Math.max(base, ramp[done]);
+  }
+  return Math.min(3.0, Math.max(0.3, base));
+}
 function beginSet(){
   results = problems.map(()=>null); idx=0; t0=Date.now(); feedStreak=0;
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
@@ -3143,7 +3153,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.77';
+const APP_VERSION='4.78';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
