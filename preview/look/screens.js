@@ -224,4 +224,73 @@
     setSum(t) { this.shadowRoot.querySelector('.sum').textContent = t || ''; }
     setStep(done, total) { const m = this.shadowRoot.querySelector('ab-moons'); if (total != null) m.setAttribute('total', total); m.setAttribute('done', done); }
   });
+
+  /* ---------- ab-welcome-screen ----------
+     The very first screen on a fresh download: Juni says hello and asks the child's name.
+     Built once (it holds a live text input), then driven by the engine:
+       el.juni / el.bubble   the character and her speech bubble
+       el.say(text)          set Juni's words (the engine plays the matching voice clip)
+       el.value              the typed name (trimmed); el.value = '' to clear
+       el.focusInput()       put the cursor in the field; el.shake() nudges on an empty submit
+     Sends 'ab-action' with detail.action = submit (button tap or Enter). */
+  customElements.define('ab-welcome-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+          padding:max(24px,env(safe-area-inset-top)) 28px max(24px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .teacher{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:100%}
+        .teacher ab-bubble{max-width:min(88cqw,520px)}
+        .card{width:min(90cqw,440px)}
+        .prompt{margin:0 0 14px;font-size:16px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+          color:${v('purple', '#5B3596')};text-align:center}
+        .field{display:flex;flex-direction:column;gap:16px}
+        input{all:unset;box-sizing:border-box;width:100%;height:64px;padding:0 22px;border-radius:20px;
+          background:${v('cream', '#FFF7EC')};border:3px solid ${v('purple-line', '#DCD3EC')};
+          font:800 20px ${FONT};color:${v('ink', '#2E2348')};text-align:center;-webkit-tap-highlight-color:transparent}
+        input::placeholder{color:${v('ink-faint', '#9A90B0')};font-weight:700}
+        input:focus{border-color:${v('purple', '#5B3596')};background:#fff}
+        ab-button.go{width:100%}
+        @keyframes ab-wk-shake{10%,90%{transform:translateX(-5px)}30%,70%{transform:translateX(6px)}50%{transform:translateX(-6px)}}
+        .shake{animation:ab-wk-shake .3s}
+        @container (max-height: 620px){ .wrap{gap:16px} .prompt{margin-bottom:10px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="teacher">
+            <ab-bubble tail="bottom-left" size="24">Hi! I'm Juni.</ab-bubble>
+            <ab-juni pose="wave" size="200" idle></ab-juni>
+          </div>
+          <ab-card pad="lg" class="card">
+            <div class="field">
+              <input type="text" maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words"
+                spellcheck="false" enterkeyhint="done" placeholder="Type your name" aria-label="Your name">
+              <ab-button class="go" size="lg" icon-end="arrow" data-a="submit">Let's go</ab-button>
+            </div>
+          </ab-card>
+        </div>`;
+      root.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => act(this, b.dataset.a)));
+      const inp = root.querySelector('input');
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); act(this, 'submit'); } });
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; const portrait = r.height >= r.width;
+        j.setAttribute('size', Math.round(Math.max(140, Math.min(portrait ? r.width * 0.42 : r.width * 0.24, r.height * 0.3)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bubble() { return this.shadowRoot.querySelector('ab-bubble'); }
+    get value() { return (this.shadowRoot.querySelector('input').value || '').trim().replace(/\s+/g, ' ').slice(0, 20); }
+    set value(x) { this.shadowRoot.querySelector('input').value = x || ''; }
+    say(text) { this.bubble.say(text); }
+    focusInput() { const i = this.shadowRoot.querySelector('input'); setTimeout(() => { try { i.focus(); } catch (e) {} }, 60); }
+    shake() { const c = this.shadowRoot.querySelector('.card'); if (!c) return; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+  });
 })();

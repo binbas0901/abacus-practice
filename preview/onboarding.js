@@ -96,11 +96,54 @@
   function focusName() { setTimeout(() => root.Typing.focus($('#suNameIn')), 60); }
   const onStep = id => setup().dataset.step === id;
 
+  /* ---------------- new-kit welcome screen (first child-facing moment) ----------------
+     Replaces the light-DOM suName step when the kit component is present. Juni greets + asks the name on the
+     component's own bubble; the matching voice clip still plays (voice-only — the kit character is a still drawing,
+     like on the home). On submit we read the name and hand straight to the existing meetAndBixi flow, untouched. */
+  function welcomeEl() { return document.getElementById('suWelcome'); }
+  function welcomeShown() { const w = welcomeEl(); return !!(w && !w.hidden); }
+  function juniText(key) {
+    try { const i = CL() && CL().lineInfo && CL().lineInfo(key); if (i && i.text) return i.text;
+      const t = CL() && CL().Voice && CL().Voice.text; if (t && t[key]) return t[key]; } catch (e) {}
+    return '';
+  }
+  // One spoken welcome beat: show Juni's words on the component bubble and play the clip (hang-safe via beat()).
+  function welcomeBeat(key) {
+    const w = welcomeEl(); if (!w) return Promise.resolve();
+    const text = juniText(key); if (text) w.say(text);
+    const p = CL() ? Promise.resolve(CL().say(key, { who: 'juni', text, bubble: null })).catch(() => {}) : Promise.resolve();
+    return beat(p, { cap: capFor('juni', key) });
+  }
+  async function welcomeIntro(my) {
+    await welcomeBeat('j_intro_hello'); if (my !== token || !welcomeShown()) return;
+    await welcomeBeat('j_intro_welcome'); if (my !== token || !welcomeShown()) return;
+    await sleep(150);
+    await welcomeBeat('j_intro_name'); if (my !== token || !welcomeShown()) return;
+    welcomeEl().focusInput();
+  }
+  function showWelcome(my) {
+    const w = welcomeEl(); if (!w) return false;
+    w.hidden = false; w.value = '';
+    if (!w._wired) { w._wired = true; w.addEventListener('ab-action', e => { if (e.detail && e.detail.action === 'submit') welcomeGo(); }); }
+    const begin = () => { if (my !== token || state.introDone) return; state.introDone = true; welcomeIntro(my); };
+    setTimeout(begin, 80);
+    return true;
+  }
+  function welcomeGo() {
+    const w = welcomeEl(); if (!w) return;
+    const n = w.value;
+    if (!n) { w.say('Type your name first!'); w.shake(); w.focusInput(); return; }
+    state.name = n; App().Sfx.ok();
+    w.hidden = true;
+    meetAndBixi(token, n);   // continue into the existing flow, unchanged
+  }
+
   /* ---------------- open ---------------- */
   function open(from) {
     const my = ++token; App().show('setup');
     qwTeardown();   // never carry a quick-win soroban across a re-open (new child / re-run setup)
     stage();
+    if (welcomeEl()) welcomeEl().hidden = true;   // never leave the welcome overlay up across a re-open / re-entry
     juniBub().classList.remove('on'); bixiBub().classList.remove('on');
     setup().classList.remove('cl-bixi-here', 'cl-bixi-side');
     // Re-entry from the Grown-ups page (re-run level check / grown-up chooses): keep the name, skip the whole intro.
@@ -117,6 +160,8 @@
     App().openGate(() => {
       if (my !== token) return;
       App().unlock();
+      if (showWelcome(my)) return;   // new-kit welcome screen drives the greeting + name
+      // Fallback (component absent): the original light-DOM welcome step.
       step('suName');
       juniSay('j_intro_hello');
       const begin = () => { if (my !== token || state.introDone) return; state.introDone = true; intro(my); };
