@@ -102,7 +102,7 @@
      like on the home). On submit we read the name and hand straight to the existing meetAndBixi flow, untouched. */
   function welcomeEl() { return document.getElementById('suWelcome'); }
   function welcomeShown() { const w = welcomeEl(); return !!(w && !w.hidden); }
-  function juniText(key) {
+  function lineText(key) {
     try { const i = CL() && CL().lineInfo && CL().lineInfo(key); if (i && i.text) return i.text;
       const t = CL() && CL().Voice && CL().Voice.text; if (t && t[key]) return t[key]; } catch (e) {}
     return '';
@@ -110,7 +110,7 @@
   // One spoken welcome beat: show Juni's words on the component bubble and play the clip (hang-safe via beat()).
   function welcomeBeat(key) {
     const w = welcomeEl(); if (!w) return Promise.resolve();
-    const text = juniText(key); if (text) w.say(text);
+    const text = lineText(key); if (text) w.say(text);
     const p = CL() ? Promise.resolve(CL().say(key, { who: 'juni', text, bubble: null })).catch(() => {}) : Promise.resolve();
     return beat(p, { cap: capFor('juni', key) });
   }
@@ -135,7 +135,42 @@
     if (!n) { w.say('Type your name first!'); w.shake(); w.focusInput(); return; }
     state.name = n; App().Sfx.ok();
     w.hidden = true;
-    meetAndBixi(token, n);   // continue into the existing flow, unchanged
+    startMeet(token, n);
+  }
+
+  /* ---------------- meet Bixi (kit dialogue) ----------------
+     A short cutscene after the name: Juni greets, introduces Bixi, he says hi and asks for help. Both characters are
+     on the kit meet screen; only the speaker's bubble shows. Then it hands to the (still-old) quick win. */
+  function meetKitEl() { return document.getElementById('suMeetKit'); }
+  function startMeet(my, n) { return meetKitEl() ? meetAndBixiKit(my, n) : meetAndBixi(my, n); }
+  // One spoken beat on the kit meet screen: caption on the component, voice via Classroom (voice-only; hang-safe).
+  function meetBeat(who, key, text) {
+    const m = meetKitEl(); if (!m) return Promise.resolve();
+    const t = text || lineText(key);
+    if (who === 'bixi') m.bixiSay(t); else m.say(t);
+    const p = CL() ? Promise.resolve(CL().say(key, { who, text: t, bubble: null })).catch(() => {}) : Promise.resolve();
+    return beat(p, { cap: capFor(who, key) });
+  }
+  async function meetAndBixiKit(my, n) {
+    const m = meetKitEl(); if (!m) return meetAndBixi(my, n);
+    if (welcomeEl()) welcomeEl().hidden = true;
+    m.hidden = false;
+    if (m.juni) m.juni.pose = 'wave';
+    await meetBeat('juni', 'j_intro_meet', `Lovely to meet you, ${n}!`); if (my !== token) return;
+    await sleep(150);
+    if (m.juni) m.juni.pose = 'point';
+    await meetBeat('juni', 'j_intro_bixi1'); if (my !== token) return;
+    if (m.bixi) m.bixi.pose = 'cheer';
+    await sleep(120); if (my !== token) return;
+    await meetBeat('bixi', 'b_intro_hi'); if (my !== token) return;
+    await meetBeat('juni', 'j_intro_bixi2'); if (my !== token) return;
+    await meetBeat('juni', 'j_intro_help'); if (my !== token) return;
+    await meetBeat('bixi', 'b_intro_help'); if (my !== token) return;
+    await sleep(200); if (my !== token) return;
+    // Hand to the (still-old) quick win: prepare the old setup scene's Bixi so it's present there.
+    m.hidden = true;
+    setup().classList.add('cl-bixi-here', 'cl-bixi-side'); bixiRest('happy');
+    quickWin(my);
   }
 
   /* ---------------- greeting (the true first screen) ----------------
@@ -178,6 +213,7 @@
     stage();
     if (greetingEl()) greetingEl().hidden = true;   // never leave an overlay up across a re-open / re-entry
     if (welcomeEl()) welcomeEl().hidden = true;
+    if (meetKitEl()) meetKitEl().hidden = true;
     juniBub().classList.remove('on'); bixiBub().classList.remove('on');
     setup().classList.remove('cl-bixi-here', 'cl-bixi-side');
     // Re-entry from the Grown-ups page (re-run level check / grown-up chooses): keep the name, skip the whole intro.

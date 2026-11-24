@@ -118,3 +118,5 @@ html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
 #setup > #suGreeting[hidden]{ display:none !important; }
 #gate > #gateKit{ position:absolute; inset:0; z-index:5; }
 #gate > #gateKit[hidden]{ display:none !important; }
+#setup > #suMeetKit{ position:absolute; inset:0; z-index:5; }
+#setup > #suMeetKit[hidden]{ display:none !important; }
