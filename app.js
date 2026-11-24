@@ -1972,7 +1972,7 @@ function flashSeconds(){ const d=drillNode && drillNode.drill;
   return Math.min(3.0, Math.max(0.3, base));
 }
 function beginSet(){
-  results = problems.map(()=>null); idx=0; t0=Date.now(); feedStreak=0;
+  results = problems.map(()=>null); idx=0; t0=Date.now(); feedStreak=0; bixiSlipDone=false;
   Tool.setRods = Math.max(3, ...problems.map(p=>Tool.rodsFor(p)));
   Tool.kind = Tool.preferred();
   if (Practice.on && (Practice.type === 'reading' || Practice.type === 'listening' || Practice.type === 'mental')) Tool.kind = 'keys';   // Reading, Listening & Mental Math answer on the number pad (the abacus is hidden in Mental Math)
@@ -2240,6 +2240,7 @@ function reactVoice(kind){ // kind: 'yes' | 'notyet'
 // Never punishing: a wrong answer only cools the streak, it never drains the bar; stopping early keeps what she fed him.
 const FEED_GOAL = 10;        // correct answers to fill Bixi up for the day
 let feedStreak = 0;          // consecutive corrects; every third is a "burst" (the race-to-feed feeling)
+let bixiSlipDone = false;    // Slice 5: Bixi's playful "oops, I got one wrong" beat fires at most once per set
 function feedState(){ const F=Fun.data; if (!F.feed || F.feed.day!==todayKey()) F.feed={ day:todayKey(), n:0, full:false }; return F.feed; }
 function renderEnergy(){
   const el=$('#drillEnergy'); if (!el) return;
@@ -2274,6 +2275,19 @@ function bixiFull(){
   try{ Sfx.ok(); }catch(e){}
 }
 
+// Slice 5: Bixi's rare, once-per-set playful slip. Mid-set, after a clean correct answer, he "admits" he got one
+// wrong (voice + an oops wobble, NEVER a banner — Bixi only speaks and animates). Gated behind the same
+// "Bixi mistakes" family setting as the lesson interlude, and off in level tests / the polish pass. Deterministic
+// (fires on the midpoint problem) so it stays rare and testable; skipped if that answer was a snack-bar milestone.
+function bixiSlipBeat(){
+  if (bixiSlipDone || settings.bixiMistakes===false || !settings.speakFeedback || LT || reviewing) return false;
+  if (idx !== Math.floor(problems.length/2)) return false;
+  bixiSlipDone=true;
+  try{ if (Fun.Mascot && Fun.Mascot.react) Fun.Mascot.react($('#bixDrill'), 'oops', 1400); }catch(e){}
+  try{ if (CL() && CL().move) CL().move($('#bixDrill'), 'dizzy'); }catch(e){}
+  try{ if (Fun.BixVoice && Fun.BixVoice.play){ Fun.BixVoice.play('bx_drill_oops_me', $('#bixDrill')); return true; } }catch(e){}
+  return false;
+}
 async function submit(){
   const val=Tool.value(); const p=problems[idx];
   if (val===null){ shake(); return; }
@@ -2296,15 +2310,19 @@ async function submit(){
     verdict('right');
     if(!reviewing){ results[idx]=true; record(p,true); renderStrip(idx); } else { p._fixed=true; fb.textContent='Polished!'; renderStrip(idx); }
     await juniVerdict('yes');   // Juni (teacher) delivers the spoken verdict — same in Reading and Listening
-    if (!feedBixi()) reactVoice('yes');   // feed his snack bar; Bixi speaks the streak/full line on milestones, else the ordinary cheer (never two Bixi voices)
-    await sleep(mf && mf.text && !mf.ok ? 2600 : 650);
+    let slip=false;
+    if (!feedBixi()){ slip=bixiSlipBeat(); if (!slip) reactVoice('yes'); }   // milestone -> streak/full line; else the rare slip beat, else the ordinary cheer (never two Bixi voices)
+    await sleep(slip ? 2000 : (mf && mf.text && !mf.ok ? 2600 : 650));
   }
   else {
     feedStreak=0;        // a miss only cools the streak — the bar never drains
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
     p._tries=(p._tries||0)+1;
     await juniVerdict('notyet');   // Juni (teacher) delivers the spoken verdict — same in Reading and Listening
-    reactVoice('notyet');          // then Bixi (classmate) commiserates WITH her (his own reaction, never the verdict word)
+    // Bixi commiserates WITH her (his own reaction, never the verdict word): a warm, specific "shake it off" line on the
+    // first miss of a problem, the pooled reaction otherwise.
+    if (settings.speakFeedback && p._tries===1 && Fun.BixVoice && Fun.BixVoice.play){ try{ Fun.BixVoice.play((idx%2)?'bx_drill_miss_b':'bx_drill_miss_a', $('#bixDrill')); }catch(e){ reactVoice('notyet'); } }
+    else reactVoice('notyet');
     // NO-FAIL (matches Level 1): never skip a missed problem. Fix pass always teaches; first pass gives a
     // second try, then shows the beads. The miss is recorded once (first attempt) so mastery still reflects
     // first-try skill; the eventual correct answer records a success too (so a child who learns isn't stuck).
@@ -3165,7 +3183,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.82';
+const APP_VERSION='4.83';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
