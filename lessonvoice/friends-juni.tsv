@@ -1,0 +1,113 @@
+f+.1.0	There aren't enough one-beads for 1. That's okay — the small friend of 1 is 4. So add five, and take away 4.
+f+.2.0	There aren't enough one-beads for 2. That's okay — the small friend of 2 is 3. So add five, and take away 3.
+f+.3.0	There aren't enough one-beads for 3. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+f+.4.0	There aren't enough one-beads for 4. That's okay — the small friend of 4 is 1. So add five, and take away 1.
+f-.1.0	There aren't enough one-beads to take 1. The small friend of 1 is 4. So take away five, and add 4.
+f-.2.0	There aren't enough one-beads to take 2. The small friend of 2 is 3. So take away five, and add 3.
+f-.3.0	There aren't enough one-beads to take 3. The small friend of 3 is 2. So take away five, and add 2.
+f-.4.0	There aren't enough one-beads to take 4. The small friend of 4 is 1. So take away five, and add 1.
+t+i.9.0	There's no room for 9. The big friend of 9 is 1. So we add ten on the next rod…
+c+.1	Add one on the tens rod.
+t+f.1	Then take away 1 from this rod.
+t+i.8.0	There's no room for 8. The big friend of 8 is 2. So we add ten on the next rod…
+t+f.2	Then take away 2 from this rod.
+t+i.7.0	There's no room for 7. The big friend of 7 is 3. So we add ten on the next rod…
+t+f.3	Then take away 3 from this rod.
+t+i.6.0	There's no room for 6. The big friend of 6 is 4. So we add ten on the next rod…
+t+f.4	Then take away 4 from this rod.
+t+i.1.0	There's no room for 1. The big friend of 1 is 9. So we add ten on the next rod…
+t+f.9	Then take away 9 from this rod.
+t+i.2.0	There's no room for 2. The big friend of 2 is 8. So we add ten on the next rod…
+t+f.8	Then take away 8 from this rod.
+t+i.3.0	There's no room for 3. The big friend of 3 is 7. So we add ten on the next rod…
+t+f.7	Then take away 7 from this rod.
+t+i.4.0	There's no room for 4. The big friend of 4 is 6. So we add ten on the next rod…
+t+f.6	Then take away 6 from this rod.
+t+i.5.0	There's no room for 5. The big friend of 5 is 5. So we add ten on the next rod…
+t+f.5	Then take away 5 from this rod.
+t-i.9.0	There aren't enough to take 9. The big friend of 9 is 1. So we take ten from the next rod…
+c-.1	Take one on the tens rod.
+t-f.1	Then add 1 to this rod.
+t-i.8.0	There aren't enough to take 8. The big friend of 8 is 2. So we take ten from the next rod…
+t-f.2	Then add 2 to this rod.
+t-i.7.0	There aren't enough to take 7. The big friend of 7 is 3. So we take ten from the next rod…
+t-f.3	Then add 3 to this rod.
+t-i.6.0	There aren't enough to take 6. The big friend of 6 is 4. So we take ten from the next rod…
+t-f.4	Then add 4 to this rod.
+t-i.1.0	There aren't enough to take 1. The big friend of 1 is 9. So we take ten from the next rod…
+t-f.9	Then add 9 to this rod.
+t-i.2.0	There aren't enough to take 2. The big friend of 2 is 8. So we take ten from the next rod…
+t-f.8	Then add 8 to this rod.
+t-i.3.0	There aren't enough to take 3. The big friend of 3 is 7. So we take ten from the next rod…
+t-f.7	Then add 7 to this rod.
+t-i.4.0	There aren't enough to take 4. The big friend of 4 is 6. So we take ten from the next rod…
+t-f.6	Then add 6 to this rod.
+t-i.5.0	There aren't enough to take 5. The big friend of 5 is 5. So we take ten from the next rod…
+t-f.5	Then add 5 to this rod.
+t+fc.3	Then take away 3 using the small friend: take away five, then add 2 back.
+t+fc.2	Then take away 2 using the small friend: take away five, then add 3 back.
+t-fc.3	Then add 3 using the small friend: add five, then take 2 off.
+t-fc.4	Then add 4 using the small friend: add five, then take 1 off.
+f+.4.1	There aren't enough one-beads for 4 on the tens rod. That's okay — the small friend of 4 is 1. So add five, and take away 1.
+f+.2.1	There aren't enough one-beads for 2 on the tens rod. That's okay — the small friend of 2 is 3. So add five, and take away 3.
+f-.2.1	There aren't enough one-beads to take 2 on the tens rod. The small friend of 2 is 3. So take away five, and add 3.
+t-fc.1	Then add 1 using the small friend: add five, then take 4 off.
+t+fc.4	Then take away 4 using the small friend: take away five, then add 1 back.
+f+.3.1	There aren't enough one-beads for 3 on the tens rod. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+t+i.5.1	There's no room for 5 on the tens rod. The big friend of 5 is 5. So we add ten on the next rod…
+c+.2	Add one on the hundreds rod.
+t-i.6.1	There aren't enough to take 6 on the tens rod. The big friend of 6 is 4. So we take ten from the next rod…
+c-.2	Take one on the hundreds rod.
+f+.2.2	There aren't enough one-beads for 2 on the hundreds rod. That's okay — the small friend of 2 is 3. So add five, and take away 3.
+t+i.7.1	There's no room for 7 on the tens rod. The big friend of 7 is 3. So we add ten on the next rod…
+f-.4.2	There aren't enough one-beads to take 4 on the hundreds rod. The small friend of 4 is 1. So take away five, and add 1.
+t-i.5.1	There aren't enough to take 5 on the tens rod. The big friend of 5 is 5. So we take ten from the next rod…
+f-.1.1	There aren't enough one-beads to take 1 on the tens rod. The small friend of 1 is 4. So take away five, and add 4.
+t-fc.2	Then add 2 using the small friend: add five, then take 3 off.
+t+i.1.1	There's no room for 1 on the tens rod. The big friend of 1 is 9. So we add ten on the next rod…
+f+.3.2	There aren't enough one-beads for 3 on the hundreds rod. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+f+.3.3	There aren't enough one-beads for 3 on the thousands rod. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+t+i.4.2	There's no room for 4 on the hundreds rod. The big friend of 4 is 6. So we add ten on the next rod…
+c+.3	Add one on the thousands rod.
+t-i.7.2	There aren't enough to take 7 on the hundreds rod. The big friend of 7 is 3. So we take ten from the next rod…
+f-.1.3	There aren't enough one-beads to take 1 on the thousands rod. The small friend of 1 is 4. So take away five, and add 4.
+f-.1.2	There aren't enough one-beads to take 1 on the hundreds rod. The small friend of 1 is 4. So take away five, and add 4.
+l_sf_add_open	Sometimes there are not enough little beads. Meet the small friends. 1 and 4 make 5. 2 and 3 make 5.
+l_sf_add_watch1	We have 4. Add 1, but no little bead is free. The small friend of 1 is 4. So pull down 5 and take away 4. Now it shows 5.
+l_sf_add_watch2	We have 3. Add 2. The small friend of 2 is 3. Pull down 5, take away 3. Now it shows 5.
+l_sf_add_help	Good start, Bixi pulled the 5 down. Now, which friend do we take away for the 1? Show Bixi.
+l_sf_add_turn1	Your turn. Show 4 and add 2.
+l_sf_add_close	Not enough little beads? Use 5 and take away the small friend.
+l_sf_sub_open	Taking away with small friends. Take the 5 away, then add back the small friend.
+l_sf_sub_watch1	We have 5. Take away 1. The 1-beads are not there. The small friend of 1 is 4. Take away 5 and add back 4. Now it shows 4.
+l_sf_sub_watch2	We have 6. Take away 2. The small friend of 2 is 3. Take away 5, add back 3. Now it shows 4.
+l_sf_sub_turn1	Your turn. Show 7, then take away 3.
+l_sf_sub_close	Take the 5 away, then add back the small friend. Do not forget the friend.
+l_bf_add_a_open	When the rod is full, call a big friend. Add 10 next door and take away the big friend. 1 and 9, 2 and 8, 3 and 7, 4 and 6 make 10.
+l_bf_add_a_watch1	We have 8. Add 9. No room. The big friend of 9 is 1. Add 10 on the next rod, take away 1. Now it shows 17.
+l_bf_add_a_watch2	We have 7. Add 8. The big friend of 8 is 2. Add 10 next door, take away 2. Now it shows 15.
+l_bf_add_a_help	Bixi took the big friend away. But something is missing next door. What do we add first?
+l_bf_add_a_turn1	Your turn. Show 4 and add 7.
+l_bf_add_a_close	Big-friend add: 10 next door first, then take the friend away.
+l_bf_add_b_open	The same big-friend trick, with smaller adds. Add 10, take away the big friend.
+l_bf_add_b_watch1	We have 9. Add 1. No room. The big friend of 1 is 9. Add 10, take away 9. Now it shows 10.
+l_bf_add_b_watch2	We have 8. Add 2. The big friend of 2 is 8. Add 10, take away 8. Now it shows 10.
+l_bf_add_b_turn1	Your turn. Show 7 and add 3.
+l_bf_add_b_close	Rod full? Add 10 next door, take the big friend away. Every time.
+l_bf_sub_a_open	Taking away with big friends. Take 10 from next door, then add back the big friend.
+l_bf_sub_a_watch1	We have 10. Take away 9. No beads to take here. The big friend of 9 is 1. Take 10 from next door, add back 1. Now it shows 1.
+l_bf_sub_a_watch2	We have 11. Take away 8. The big friend of 8 is 2. Take 10 from next door, add back 2. Now it shows 3.
+l_bf_sub_a_turn1	Your turn. Show 16, then take away 7.
+l_bf_sub_a_close	Not enough to take? Borrow 10 next door, then add the big friend back.
+l_bf_sub_b_open	The same borrow, with smaller takes. Take 10 next door, add back the big friend.
+l_bf_sub_b_watch1	We have 10. Take away 1. The big friend of 1 is 9. Take 10 from next door, add back 9. Now it shows 9.
+l_bf_sub_b_watch2	We have 11. Take away 2. The big friend of 2 is 8. Take 10 next door, add back 8. Now it shows 9.
+l_bf_sub_b_help	Bixi took the 10. We are not finished yet. What do we add back for the 2?
+l_bf_sub_b_turn1	Your turn. Show 10 and take away 3.
+l_bf_sub_b_close	Borrow 10, then always add the big friend back. Never stop halfway.
+l_combined_open	Here both friends work together. Add 10, and take the big friend away using a small friend.
+l_combined_watch1	We have 6. Add 7. The big friend of 7 is 3. Add 10 next door. Now take away 3, but no little beads, so take 5 and add 2. Now it shows 13.
+l_combined_watch2	We have 5. Add 8. The big friend of 8 is 2. Add 10, then take away 2 with the small friend: take 5, add 3. Now it shows 13.
+l_combined_help	Bixi is so close. We cannot take 3 little beads, so we use a small friend. How do we take away 3?
+l_combined_turn1	Your turn. Show 12 and take away 7.
+l_combined_close	When the big friend will not come off, let the small friend help inside. Two tricks, one move.
