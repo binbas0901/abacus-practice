@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Abacus design kit</title>
+<link rel="stylesheet" href="tokens.css">
+<script src="characters.js"></script>
+<style>
+  body { margin: 0; background: var(--ab-cream); color: var(--ab-ink); font-family: var(--ab-font); font-weight: 700; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: var(--ab-text-hero); font-weight: 900; margin: 0 0 4px; }
+  h2 { font-size: var(--ab-text-xl); font-weight: 900; margin: 48px 0 6px; }
+  p.lead { color: var(--ab-ink-soft); font-size: var(--ab-text-md); margin: 0 0 8px; }
+  .note { color: var(--ab-ink-soft); font-size: var(--ab-text-sm); margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+  .card { background: var(--ab-white); border-radius: var(--ab-radius-md); box-shadow: var(--ab-shadow-soft); padding: 18px; }
+  .swatch { height: 64px; border-radius: var(--ab-radius-sm); margin-bottom: 10px; border: 1px solid rgba(46,35,72,0.08); }
+  .swatch-name { font-size: 15px; font-weight: 800; }
+  .swatch-val { font-size: 13px; color: var(--ab-ink-soft); font-weight: 600; }
+  .cast { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .who { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; border: none; font: inherit; color: inherit; }
+  .who .stage { height: 210px; display: flex; align-items: flex-end; justify-content: center; }
+  .who code { font-size: 13px; color: var(--ab-purple); background: var(--ab-purple-soft); padding: 3px 8px; border-radius: 8px; }
+  .type-row { display: flex; align-items: baseline; gap: 18px; padding: 10px 0; border-bottom: 1px solid var(--ab-purple-line); }
+  .type-row span:first-child { width: 90px; font-size: 14px; color: var(--ab-ink-soft); }
+  pre { background: var(--ab-white); border-radius: var(--ab-radius-md); padding: 18px; overflow-x: auto; font-size: 15px; line-height: 1.5; box-shadow: var(--ab-shadow-soft); }
+  .live { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .pill { min-height: var(--ab-tap-min); padding: 0 24px; border: none; border-radius: var(--ab-radius-pill); background: var(--ab-purple-soft); color: var(--ab-purple); font: inherit; font-size: 18px; font-weight: 900; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Abacus design kit</h1>
+  <p class="lead">Every building block of the new look, one at a time. Nothing here touches the live app.</p>
+  <p class="note">Kit v0.1 · slice 1: colors, type, characters</p>
+
+  <h2>Characters</h2>
+  <p class="note">Tap a character to see the pose change with its little pop.</p>
+  <div class="cast" id="cast"></div>
+
+  <h2>Characters together</h2>
+  <p class="note">Gentle idle float on (the "idle" option). Tap the button to make them react.</p>
+  <div class="card live">
+    <ab-juni pose="wave" size="200" idle id="dJuni"></ab-juni>
+    <ab-bixi pose="wave" size="140" idle id="dBixi"></ab-bixi>
+    <button class="pill" id="react">Make them react</button>
+  </div>
+
+  <h2>Colors</h2>
+  <p class="note">Purple = Juni, calm and teaching. Orange = Bixi, the one main action on a screen. Red and yellow = the abacus beads.</p>
+  <div class="grid" id="swatches"></div>
+
+  <h2>Type</h2>
+  <p class="note">Nunito, a rounded friendly font, stored inside the app so it works offline.</p>
+  <div class="card">
+    <div class="type-row"><span>Hero 44</span><span style="font-size: var(--ab-text-hero); font-weight: 900">Big friends of 10</span></div>
+    <div class="type-row"><span>Title 34</span><span style="font-size: var(--ab-text-xl); font-weight: 900">Today's lesson</span></div>
+    <div class="type-row"><span>Speech 25</span><span style="font-size: var(--ab-text-lg); font-weight: 800">Seven needs three to make ten.</span></div>
+    <div class="type-row"><span>Body 20</span><span style="font-size: var(--ab-text-md); font-weight: 700">Push the bead up to the beam.</span></div>
+    <div class="type-row" style="border: none"><span>Small 16</span><span style="font-size: var(--ab-text-sm); font-weight: 700; color: var(--ab-ink-soft)">Step 4 of 6</span></div>
+  </div>
+
+  <h2>How the app plugs it in</h2>
+  <pre>&lt;link rel="stylesheet" href="look/tokens.css"&gt;
+&lt;script src="look/characters.js"&gt;&lt;/script&gt;
+
+&lt;ab-juni pose="point" size="160"&gt;&lt;/ab-juni&gt;
+&lt;ab-bixi pose="confused" size="120" idle&gt;&lt;/ab-bixi&gt;
+
+// in code: change a pose
+document.querySelector('ab-bixi').pose = 'cheer';</pre>
+</main>
+<script>
+  const cast = ABKit.cast, box = document.getElementById('cast');
+  for (const who in cast) for (const p in cast[who].poses) {
+    const b = document.createElement('button'); b.className = 'card who'; b.setAttribute('aria-label', `${cast[who].name} ${cast[who].poses[p]}`);
+    b.innerHTML = `<div class="stage"><ab-${who} pose="${p}" size="${who === 'juni' ? 170 : 150}"></ab-${who}></div><code>&lt;ab-${who} pose="${p}"&gt;</code>`;
+    const el = b.querySelector(`ab-${who}`), poses = Object.keys(cast[who].poses);
+    b.addEventListener('click', () => { el.pose = poses[(poses.indexOf(el.pose) + 1) % poses.length]; b.querySelector('code').textContent = `<ab-${who} pose="${el.pose}">`; });
+    box.appendChild(b);
+  }
+  const sw = [['--ab-purple','Juni purple'],['--ab-purple-soft','Purple soft'],['--ab-orange','Bixi orange'],['--ab-orange-soft','Orange soft'],
+    ['--ab-cream','Cream ground'],['--ab-ink','Ink'],['--ab-ink-soft','Ink soft'],['--ab-gold','Moon gold'],
+    ['--ab-wood','Abacus wood'],['--ab-heaven','Heaven bead (red)'],['--ab-earth','Earth bead (yellow)'],['--ab-abacus-back','Abacus back']];
+  const cs = getComputedStyle(document.documentElement), sbox = document.getElementById('swatches');
+  for (const [v, n] of sw) { const val = cs.getPropertyValue(v).trim();
+    sbox.insertAdjacentHTML('beforeend', `<div class="card"><div class="swatch" style="background:var(${v})"></div><div class="swatch-name">${n}</div><div class="swatch-val">${v} · ${val}</div></div>`); }
+  const seq = [['point','confused'],['clap','cheer'],['think','giggle'],['wave','wave']]; let k = 0;
+  document.getElementById('react').addEventListener('click', () => { const [j, x] = seq[k++ % seq.length]; dJuni.pose = j; dBixi.pose = x; });
+</script>
+</body>
+</html>
