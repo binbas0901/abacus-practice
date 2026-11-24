@@ -1700,7 +1700,7 @@ const CL = ()=>window.Classroom;
 function juniFig(){ return $('#lessonSky'); }
 function juniSay(key, o={}){ if (!CL()) return Promise.resolve(); return Promise.resolve(CL().say(key, Object.assign({who:'juni', figure:juniFig()}, o))).catch(()=>{}); }
 function bixiFig(){ return $('#bixLesson'); }
-function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return Promise.resolve(CL().say(key, Object.assign({who:'bixi', figure:bixiFig(), bubble:$('#bixiBubble')}, o))).catch(()=>{}); }
+function bixiSay(key, o={}){ if (!CL()) return Promise.resolve(); return Promise.resolve(CL().say(key, Object.assign({who:'bixi', figure:bixiFig()}, o, {bubble:null}))).catch(()=>{}); }   // Bixi in lessons: voice + animation only, NEVER a banner
 // Juni leads a line on ANY screen: pass her bubble element + the screen's moon figure. Falls back to a silent bubble
 // if the clip isn't recorded yet. One voice at a time is enforced in the Classroom/Fun audio layers.
 function juniSayOn(bubble, figure, key, text, ms){
@@ -3131,7 +3131,7 @@ window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.72';
+const APP_VERSION='4.73';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
