@@ -86,7 +86,7 @@ window.LESSONS = {
     "id": "l_add_direct_turn2",
     "who": "juni",
     "tuning": "default",
-    "text": "One more. Show 1, then add 3.",
+    "text": "Your turn. Push up the beads for the first number, then add the next. Move them and tap Check.",
     "act": "your_turn"
    },
    {
@@ -135,7 +135,7 @@ window.LESSONS = {
     "id": "l_sub_direct_turn2",
     "who": "juni",
     "tuning": "default",
-    "text": "Now show 9 and take away 4.",
+    "text": "Your turn. Set the number, then take the next one away. Move the beads and tap Check.",
     "act": "your_turn"
    },
    {
@@ -177,7 +177,7 @@ window.LESSONS = {
     "id": "l_sf_add_slip",
     "who": "bixi",
     "tuning": "maths",
-    "text": "Oh, I know this one! We have 4, add 1. Pull the 5 down... then take away the 1. Um, that gives 8?",
+    "text": "I want to add, but there aren't enough little beads left on this rod! Hmm... I'm stuck.",
     "act": "bixi_wrong",
     "wrong": "adds the 5-bead then takes away 1, the number, instead of 4, its small friend; lands on 8"
    },
@@ -185,21 +185,21 @@ window.LESSONS = {
     "id": "l_sf_add_help",
     "who": "juni",
     "tuning": "default",
-    "text": "Good start, Bixi pulled the 5 down. Now, which friend do we take away for the 1? Show Bixi.",
+    "text": "Bixi needs a small friend! When there aren't enough little beads, slide the five-bead down, then take its small friend off. Which small friend?",
     "act": "ask_help"
    },
    {
     "id": "l_sf_add_thanks",
     "who": "bixi",
     "tuning": "maths",
-    "text": "The small friend, 4! Take away 4, not 1. Now it shows 5. Thank you!",
+    "text": "Slide five down, then take the small friend off! That makes it. Thank you!",
     "act": "bixi_thanks"
    },
    {
     "id": "l_sf_add_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 4 and add 2.",
+    "text": "Your turn. Not enough little beads? Slide the five-bead down, then take its small friend off.",
     "act": "your_turn"
    },
    {
@@ -241,7 +241,7 @@ window.LESSONS = {
     "id": "l_sf_sub_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 7, then take away 3.",
+    "text": "Your turn. Not enough little beads to take away? Take the five-bead off, then add its small friend back.",
     "act": "your_turn"
    },
    {
@@ -283,7 +283,7 @@ window.LESSONS = {
     "id": "l_bf_add_a_slip",
     "who": "bixi",
     "tuning": "maths",
-    "text": "We have 9, add 6. The big friend of 6 is 4, so take away 4... done! It shows 5?",
+    "text": "There's no room on this rod for that many beads! Where do they all go? I'm stuck.",
     "act": "bixi_wrong",
     "wrong": "takes away the big friend 4 but forgets to add 10 on the next rod; lands on 5"
    },
@@ -291,21 +291,21 @@ window.LESSONS = {
     "id": "l_bf_add_a_help",
     "who": "juni",
     "tuning": "default",
-    "text": "Bixi took the big friend away. But something is missing next door. What do we add first?",
+    "text": "Bixi needs a big friend! When there's no room, add ten on the next rod, then take the big friend off here. Which big friend?",
     "act": "ask_help"
    },
    {
     "id": "l_bf_add_a_thanks",
     "who": "bixi",
     "tuning": "maths",
-    "text": "The 10! Add 10 on the next rod first. Now it shows 15. Thank you!",
+    "text": "Add ten next door, then take the big friend away! Now it fits. Thank you!",
     "act": "bixi_thanks"
    },
    {
     "id": "l_bf_add_a_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 4 and add 7.",
+    "text": "Your turn. No room on the rod? Add ten next door, then take the big friend off.",
     "act": "your_turn"
    },
    {
@@ -347,7 +347,7 @@ window.LESSONS = {
     "id": "l_bf_add_b_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 7 and add 3.",
+    "text": "Your turn. No room on the rod? Add ten next door, then take the big friend off.",
     "act": "your_turn"
    },
    {
@@ -389,7 +389,7 @@ window.LESSONS = {
     "id": "l_bf_sub_a_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 16, then take away 7.",
+    "text": "Your turn. Not enough to take away? Take ten from next door, then add the big friend back.",
     "act": "your_turn"
    },
    {
@@ -431,7 +431,7 @@ window.LESSONS = {
     "id": "l_bf_sub_b_slip",
     "who": "bixi",
     "tuning": "maths",
-    "text": "We have 11, take away 2. Take 10 from next door... all done! It shows 1?",
+    "text": "I need to take some away, but there aren't enough beads on this rod to take! I'm stuck.",
     "act": "bixi_wrong",
     "wrong": "takes 10 from the next rod and stops, forgetting to add back the big friend 8; lands on 1"
    },
@@ -439,21 +439,21 @@ window.LESSONS = {
     "id": "l_bf_sub_b_help",
     "who": "juni",
     "tuning": "default",
-    "text": "Bixi took the 10. We are not finished yet. What do we add back for the 2?",
+    "text": "Bixi needs a big friend! When there aren't enough to take away, take ten from the next rod, then add the big friend back. Which big friend?",
     "act": "ask_help"
    },
    {
     "id": "l_bf_sub_b_thanks",
     "who": "bixi",
     "tuning": "maths",
-    "text": "The big friend, 8! Add back 8. Now it shows 9. Thank you so much.",
+    "text": "Take ten from next door, then add the big friend back! There it is. Thank you so much.",
     "act": "bixi_thanks"
    },
    {
     "id": "l_bf_sub_b_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 10 and take away 3.",
+    "text": "Your turn. Not enough to take away? Take ten from next door, then add the big friend back.",
     "act": "your_turn"
    },
    {
@@ -581,7 +581,7 @@ window.LESSONS = {
     "id": "l_two_digit_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 12 and add 34.",
+    "text": "Your turn. Start on the left — tens rod first, then units. If the units make a ten, carry it left.",
     "act": "your_turn"
    },
    {
@@ -630,7 +630,7 @@ window.LESSONS = {
     "id": "l_anzan_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Picture 6. Add 3 in your head. What do you see?",
+    "text": "Your turn. Picture the first number, then add the next one in your head. What do you see?",
     "act": "your_turn"
    },
    {
@@ -720,7 +720,7 @@ window.LESSONS = {
     "id": "l_rows_2d_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 35 and add 47.",
+    "text": "Your turn. Tens rod first, then units, every time — and when a rod fills, carry left.",
     "act": "your_turn"
    },
    {
@@ -818,7 +818,7 @@ window.LESSONS = {
     "id": "l_three_digit_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 214 and add 352.",
+    "text": "Your turn. Left to right — hundreds, then tens, then units, one rod at a time.",
     "act": "your_turn"
    },
    {
@@ -860,7 +860,7 @@ window.LESSONS = {
     "id": "l_times_a_slip",
     "who": "bixi",
     "tuning": "maths",
-    "text": "4 times 5, easy! 4 plus 5 is... 9. Right?",
+    "text": "Times? Easy — I'll just add the two numbers together!",
     "act": "bixi_wrong",
     "wrong": "adds the two numbers, 4 plus 5, instead of making five groups of 4"
    },
@@ -868,21 +868,21 @@ window.LESSONS = {
     "id": "l_times_a_help",
     "who": "juni",
     "tuning": "default",
-    "text": "Bixi added them. But times means groups. 4 times 5 is five 4s. Can you count them up with Bixi?",
+    "text": "Oh Bixi, times is not adding! Times means groups: count the number up, one group at a time, and add as you go. Can you show Bixi the real answer?",
     "act": "ask_help"
    },
    {
     "id": "l_times_a_thanks",
     "who": "bixi",
     "tuning": "maths",
-    "text": "Oh, groups, not plus! 4, 8, 12, 16, 20. 4 times 5 is 20! Thank you, that is so much more.",
+    "text": "Ohhh — groups, not plus! Count them up, one at a time. Thank you, that is so much more!",
     "act": "bixi_thanks"
    },
    {
     "id": "l_times_a_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Count up 2 times 3. That is two 3s.",
+    "text": "Your turn. Remember, times means groups — count the number up, one group at a time.",
     "act": "your_turn"
    },
    {

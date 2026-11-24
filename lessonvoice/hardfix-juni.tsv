@@ -10,3 +10,20 @@ l_rows_2d_help	Bixi's tens rod is overflowing. When the tens make a whole ten, a
 j_prompt_solve1	Solve it, then tell me the answer.
 j_prompt_solve2	Work it out — you've got this.
 j_prompt_beads	Move the beads, then tap Check.
+l_sf_add_help	Bixi needs a small friend! When there aren't enough little beads, slide the five-bead down, then take its small friend off. Which small friend?
+l_sf_add_turn1	Your turn. Not enough little beads? Slide the five-bead down, then take its small friend off.
+l_bf_add_a_help	Bixi needs a big friend! When there's no room, add ten on the next rod, then take the big friend off here. Which big friend?
+l_bf_add_a_turn1	Your turn. No room on the rod? Add ten next door, then take the big friend off.
+l_bf_sub_b_help	Bixi needs a big friend! When there aren't enough to take away, take ten from the next rod, then add the big friend back. Which big friend?
+l_bf_sub_b_turn1	Your turn. Not enough to take away? Take ten from next door, then add the big friend back.
+l_times_a_help	Oh Bixi, times is not adding! Times means groups: count the number up, one group at a time, and add as you go. Can you show Bixi the real answer?
+l_times_a_turn1	Your turn. Remember, times means groups — count the number up, one group at a time.
+l_sf_sub_turn1	Your turn. Not enough little beads to take away? Take the five-bead off, then add its small friend back.
+l_bf_add_b_turn1	Your turn. No room on the rod? Add ten next door, then take the big friend off.
+l_bf_sub_a_turn1	Your turn. Not enough to take away? Take ten from next door, then add the big friend back.
+l_two_digit_turn1	Your turn. Start on the left — tens rod first, then units. If the units make a ten, carry it left.
+l_anzan_turn1	Your turn. Picture the first number, then add the next one in your head. What do you see?
+l_rows_2d_turn1	Your turn. Tens rod first, then units, every time — and when a rod fills, carry left.
+l_three_digit_turn1	Your turn. Left to right — hundreds, then tens, then units, one rod at a time.
+l_add_direct_turn2	Your turn. Push up the beads for the first number, then add the next. Move them and tap Check.
+l_sub_direct_turn2	Your turn. Set the number, then take the next one away. Move the beads and tap Check.
