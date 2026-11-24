@@ -66,10 +66,12 @@
       if (!this.isConnected || oldV === newV) return;
       if (name === 'value') this.setValue(parseInt(newV) || 0);
       else if (name === 'highlight') this._applyHighlightAttr();
+      else if (name === 'size') this.style.width = (parseFloat(newV) || 760) + 'px';   // resizing never resets the beads
       else this._build();
     }
 
     _build() {
+      const keep = this._state.length ? this.value : null;   // rebuilding (rods/labels change) keeps the number shown
       const n = this.rods, W = (n - 1) * PITCH + PAD * 2 + IN * 2, labels = this.hasAttribute('labels');
       const HT = H + (labels ? 34 : 0);
       this.style.width = (parseFloat(this.getAttribute('size')) || 760) + 'px';
@@ -96,7 +98,7 @@
       this._state = [...Array(n)].map(() => ({ h: false, e: 0 }));
       this._svg = this.shadowRoot.querySelector('svg');
       this._svg.addEventListener('pointerdown', e => this._tap(e));
-      this._render(false, parseInt(this.getAttribute('value')) || 0);
+      this._render(false, keep ?? (parseInt(this.getAttribute('value')) || 0));
       this._applyHighlightAttr();
     }
 
