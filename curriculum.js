@@ -227,7 +227,13 @@
         rods[r] += sign * d;
         steps.push({ k: isCarry ? (op === 'add' ? `c+.${r}` : `c-.${r}`) : (op === 'add' ? `d+.${d}.${r}` : `d-.${d}.${r}`),
                      say: isCarry ? (op === 'add' ? `Add one${place(r)}.` : `Take one${place(r)}.`)
-                                  : (op === 'add' ? `There are enough beads, so just push ${d}${place(r)} up.` : `There are enough to take, so push ${d}${place(r)} down.`), do: [{ rod: r, delta: sign * d }] });
+                                  : (op === 'add'
+                                      ? (d < 5 ? `There are enough beads, so just push ${d}${place(r)} up.`
+                                         : d === 5 ? `There's room, so pull the five-bead${place(r)} down.`
+                                         : `There's room, so pull the five-bead${place(r)} down and push ${d - 5} up.`)
+                                      : (d < 5 ? `There are enough to take, so push ${d}${place(r)} down.`
+                                         : d === 5 ? `There are enough to take, so push the five-bead${place(r)} up.`
+                                         : `There are enough to take, so push the five-bead${place(r)} up and pull ${d - 5} down.`)), do: [{ rod: r, delta: sign * d }] });
         return;
       }
       if (rule === 'five') {
@@ -266,11 +272,12 @@
     const ans = a * b, steps = [];
     const countUp = opts && opts.countUp !== undefined ? opts.countUp : (a < 10 && b < 10);
     if (countUp && a < 10 && b < 10) {
-      const big = Math.max(a, b), times = Math.min(a, b);
-      const seq = []; for (let k = 1; k <= times; k++) seq.push(big * k);
-      steps.push({ k: `m.cu.${a}.${b}`, say: `${a} × ${b} means ${times} groups of ${big}. Count up by ${big}s.`, do: [] });
+      // First factor = number of groups (matches the lesson: "3 × 4 means three 4s"), even when a > b.
+      const groups = a, addend = b;
+      const seq = []; for (let k = 1; k <= groups; k++) seq.push(addend * k);
+      steps.push({ k: `m.cu.${a}.${b}`, say: `${a} × ${b} means ${groups} groups of ${addend}. Count up by ${addend}s.`, do: [] });
       let total = 0;
-      for (let k = 1; k <= times; k++) { steps.push({ k: `m.cua.${big}.${k}`, say: `Add ${big}: ${seq.slice(0, k).join(', ')}.`, do: moveList(explain(total, big)) }); total += big; }
+      for (let k = 1; k <= groups; k++) { steps.push({ k: `m.cua.${addend}.${k}`, say: `Add ${addend}: ${seq.slice(0, k).join(', ')}.`, do: moveList(explain(total, addend)) }); total += addend; }
       steps.push({ k: `m.cue.${a}.${b}`, say: `${a} × ${b} = ${ans}. Say it by heart: ${a} times ${b} is ${ans}.`, do: [] });
       return steps;
     }

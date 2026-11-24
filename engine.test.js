@@ -454,7 +454,8 @@ function checkExplain(total, delta) {
     'Now it shows 204. 34 × 6 = 204.'], 'explainMul(34, 6) text, left to right');
   eq(C.explainMul(23, 3)[1].say.includes('= 06'), true, 'explainMul says a 1-digit product as two digits');
   eq(C.explainMul(406, 7)[2].say, '0 × 7 = 00. Nothing to add: move one rod to the right.', 'explainMul: zero digit');
-  eq(C.explainMul(7, 3).map(s => s.say)[3], 'Add 7: 7, 14, 21.', 'explainMul counts up for a times fact');
+  eq(C.explainMul(7, 3).map(s => s.say)[0], '7 × 3 means 7 groups of 3. Count up by 3s.', 'explainMul: first factor is the number of groups (matches the lesson, even when a > b)');
+  eq(C.explainMul(7, 3).map(s => s.say)[3], 'Add 3: 3, 6, 9.', 'explainMul counts up by the second factor');
   eq(C.explainMul(7, 3, { countUp: false }).length, 3, 'explainMul countUp:false places the fact in one step');
   eq([C.lessonStep(C.BY_ID.mul_2x1, [34, 6]).label, C.lessonStep(C.BY_ID.long_rows, [16, -8]).label, C.lessonStep(C.BY_ID.long_rows, [16, -8]).op], ['34 × 6', '16 − 8', 'sub'], 'lessonStep labels');
   // level tests on the new nodes

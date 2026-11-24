@@ -27,3 +27,7 @@ l_rows_2d_turn1	Your turn. Tens rod first, then units, every time — and when a
 l_three_digit_turn1	Your turn. Left to right — hundreds, then tens, then units, one rod at a time.
 l_add_direct_turn2	Your turn. Push up the beads for the first number, then add the next. Move them and tap Check.
 l_sub_direct_turn2	Your turn. Set the number, then take the next one away. Move the beads and tap Check.
+d+.5.0	There's room, so pull the five-bead down.
+d+.6.0	There's room, so pull the five-bead down and push 1 up.
+d-.5.0	There are enough to take, so push the five-bead up.
+m.cu.6.2	6 × 2 means 6 groups of 2. Count up by 2s.
