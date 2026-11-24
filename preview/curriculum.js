@@ -110,7 +110,8 @@
       // practice mode (anzanForLevel). The Mental Math MODE is still a required track at eligible levels (app.js).
       intro: 'Picture the beads in your head. Numbers flash by; move the beads in your mind; say the answer.',
       review: ['add_direct', 'sf_add', 'bf_add_a', 'bf_add_b'],      // flash test reviews add-only skills
-      drill: { operands: 3, digits: 1, maxTotal: 99, allowSubtraction: false, allowedRules: ['direct', 'five', 'ten', 'combined'], flash: true } },
+      demos: [[5, 2], [6, 3]], guided: [[4, 3], [7, 2], [5, 4]],      // "your turn" material for the first mental lesson (add-only, <=99)
+      drill: { operands: 3, digits: 1, maxTotal: 99, allowSubtraction: false, allowedRules: ['direct', 'five', 'ten', 'combined'], flash: true, flashSec: 2.0 } },   // first mental node starts slower than the 1.0s default
 
     // ---- Levels 4-6 (appended: the 12 nodes above keep their ids and order, so saved progress stays valid) ----
     // Order follows the shared ladder of KSC sheets 09-12 / Japanese 10-9 kyu: longer rows, 2-digit x 5 rows,
