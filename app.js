@@ -2879,21 +2879,35 @@ const GATE_ART = (()=>{ const sh=(cx,cy,rx,ry,o)=>`<ellipse cx="${cx}" cy="${cy}
     + doll(76, 184, 36, 104, 25, 'indigo') + doll(164, 184, 26, 64, 19, 'mustard')
     + `<circle cx="144" cy="140" r="9" fill="url(#toy-lac-mustard)"/></svg>`; })();
 // A new question: 5 digits (1-9, so no leading-zero answers) and 3 different positions in a random order.
-function gateQuestion(){
+function buildGateQuestion(){
   const digits=Array.from({length:5}, ()=>1+Math.floor(Math.random()*9));
   let pos; do { pos=[0,1,2,3,4].sort(()=>Math.random()-0.5).slice(0,3); } while (pos[0]<pos[1] && pos[1]<pos[2]);   // never in plain left-to-right order
-  gateAnswer=+pos.map(i=>digits[i]).join(''); window.__gateAnswer=gateAnswer;
+  const answer=+pos.map(i=>digits[i]).join('');
   const ord=pos.map(i=>'<b>'+GATE_ORD[i]+'</b>');
-  $('#gateQ').innerHTML='<small>Type these digits, in this order</small><span class="gw">The '+ord[0]+', '+ord[1]+' and '+ord[2]+' digits of</span>'
+  const html='<small>Type these digits, in this order</small><span class="gw">The '+ord[0]+', '+ord[1]+' and '+ord[2]+' digits of</span>'
     +'<span class="gnum" aria-label="'+digits.join(' ')+'">'+digits.map(d=>'<i>'+d+'</i>').join('')+'</span>';
-  $('#gateA').value='';
+  return {html, answer};
+}
+function gateQuestion(){ const q=buildGateQuestion(); gateAnswer=q.answer; window.__gateAnswer=gateAnswer; $('#gateQ').innerHTML=q.html; $('#gateA').value=''; }
+// ---- new-kit gate (<ab-gate-screen id="gateKit">) ----
+const gateKit = ()=>document.getElementById('gateKit');
+// Hold complete -> show the digit question on the kit card.
+function gateRevealKit(){ const gk=gateKit(); if(!gk) return; const q=buildGateQuestion(); gateAnswer=q.answer; window.__gateAnswer=gateAnswer; gk.setQuestion(q.html); gk.setStep('ask'); gk.focusAnswer(); }
+// Answer submitted on the kit card: same pass/fail as the old gate.
+function gateSubmitKit(){
+  const gk=gateKit(); if(!gk) return; const val=gk.answer;
+  const right = val!=='' && parseInt(val,10)===gateAnswer;
+  if(right) gk.hidden=true;                                                               // the keyboard goes away with the gate
+  if(right && gateCb){ const cb=gateCb; gateCb=null; Fun.BixVoice.stop(); show(gateFrom); cb(); return; }   // a grown-up action, then back
+  if(right){ Fun.BixVoice.stop(); renderParent(); show('parent'); $('#parent').scrollTop=0; if (gateNext==='skills') setTimeout(()=>$('#guSkills').scrollIntoView({block:'start'}), 60); return; }
+  const q=buildGateQuestion(); gateAnswer=q.answer; window.__gateAnswer=gateAnswer; gk.setQuestion(q.html); gk.setMessage('That wasn’t it. Here is a new number to try.'); gk.shake(); gk.focusAnswer();
 }
 // Step 1 -> 2: show the question (after a full hold; tests may call window.__gateHold()).
 function gateReveal(){ const c=$('#gateCard'); if (c.dataset.step==='ask') return; c.dataset.step='ask'; c.setAttribute('aria-labelledby','gateQ'); $('#gateMsg').textContent=''; gateQuestion();
   // The finger is still on the Hold button here. The box gets the focus when it lifts (a touch iOS accepts for opening
   // the keyboard); with a mouse or a keyboard, straight away. Never from a timer: see Typing.
   Typing.afterTap($('#gateA'), ()=>$('#gate').classList.contains('active') && c.dataset.step==='ask'); }
-window.__gateHold=gateReveal;
+window.__gateHold=()=>{ const gk=gateKit(); if (gk && !gk.hidden) return gateRevealKit(); return gateReveal(); };
 const GateHold={ t0:0, raf:0,
   start(){ if (this.t0 || $('#gateCard').dataset.step!=='hold') return; this.t0=performance.now(); $('#gateHold').classList.add('holding'); $('#gateMsg').textContent=''; $('#gateHoldL').textContent='Keep holding…'; this.tick(); },
   tick(){ const p=Math.min(1,(performance.now()-this.t0)/GATE_HOLD_MS); $('#gateHold').style.setProperty('--p', p.toFixed(3));
@@ -2915,13 +2929,25 @@ function openGate(next){
   gateNext = typeof next==='string' ? next : null; gateCb = typeof next==='function' ? next : null; const a=document.querySelector('.screen.active'); gateFrom = a ? a.id : 'home';
   // Leaving a practice set for the gate: whatever is being read or flashed stops, and the problem waits at "Ready" again.
   if (gateFrom==='drill' && (mode==='listen' || mode==='flash') && problems[idx]){ dictateToken++; Speaker.stop(); Fun.BixVoice.stop(); if (mode==='listen') armListen(problems[idx]); else armFlash(problems[idx]); }
-  GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   gateAnswer=-1; window.__gateAnswer=null;
+  const gk=gateKit();
+  if (gk){
+    if (!gk._wired){ gk._wired=true; gk.addEventListener('ab-action', e=>{ const a2=e.detail&&e.detail.action;
+      if (a2==='back') return leaveGate();
+      if (a2==='held') return gateRevealKit();
+      if (a2==='submit') return gateSubmitKit(); }); }
+    gk.reset(); show('gate'); gk.hidden=false;
+    gk.say('This part is for a grown-up. Can you go and get one?');
+    if (window.Classroom) Promise.resolve(Classroom.Voice.play('juni','j_gate_grownup', null)).catch(()=>{});
+    return;
+  }
+  // Fallback: the original light-DOM gate.
+  GateHold.reset(); const c=$('#gateCard'); c.dataset.step='hold'; c.setAttribute('aria-labelledby','gateHoldT'); $('#gateMsg').textContent=''; $('#gateA').value='';
   if (!$('#gateArt').innerHTML) $('#gateArt').innerHTML=GATE_ART;
   toySky('#gateSky'); show('gate'); const bg=$('#bixGate'); toyBix(bg, 'happy'); Fun.Mascot.quiet(bg);
   juniSayOn($('#gateJuni'), $('#gateSky'), 'j_gate_grownup', 'This part is for a grown-up. Can you go and get one?');
 }
-function leaveGate(){ gateCb=null; $('#gateA').blur(); GateHold.reset(); Fun.BixVoice.stop();
+function leaveGate(){ gateCb=null; const gk=gateKit(); if (gk) gk.hidden=true; $('#gateA').blur(); GateHold.reset(); Fun.BixVoice.stop();
   if (gateFrom==='setup' && !settings.name){ Setup.open(); return; }   // first-run setup stays behind the gate: don't strand on a blank setup
   if (gateFrom==='door') show('door'); else if (gateFrom && gateFrom!=='home' && gateFrom!=='gate' && $('#'+gateFrom)) show(gateFrom); else { renderHome(); show('home'); } }
 $('#gateBack').addEventListener('click', leaveGate);
@@ -3224,7 +3250,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.96';
+const APP_VERSION='4.97';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
