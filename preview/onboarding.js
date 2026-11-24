@@ -217,6 +217,7 @@
     if (qwKitEl()) qwKitEl().hidden = true;
     if (chooseEl()) chooseEl().hidden = true;
     if (doneEl()) doneEl().hidden = true;
+    if (checkKitEl()) checkKitEl().hidden = true;
     juniBub().classList.remove('on'); bixiBub().classList.remove('on');
     setup().classList.remove('cl-bixi-here', 'cl-bixi-side');
     // Re-entry from the Grown-ups page (re-run level check / grown-up chooses): keep the name, skip the whole intro.
@@ -483,21 +484,61 @@
   }
 
   /* ---------- level check ---------- */
+  function checkKitEl() { return document.getElementById('suCheckKit'); }
+  // Problem terms as HTML (shared): "7 − 3 + 2".
+  function termsHtml(p) { return p.terms.map((t, i) => `<span class="term to-term${t < 0 ? ' neg' : ''}">${i === 0 ? '' : `<i>${t < 0 ? '−' : '+'}</i>`}<b>${Math.abs(t)}</b></span>`).join(''); }
+  // Old light-DOM level-check UI.
+  function oldCheckUI(onScreen) {
+    $('#suCheck').classList.toggle('to-check--beads', onScreen);
+    step('suCheck');
+    const pad = onScreen ? makeBeadsPad($('#suPad'), $('#suAns')) : makePad($('#suPad'), $('#suAns'));
+    return {
+      voiceIntro() { juniSay(onScreen ? 'j_start_look' : 'j_intro_abacususe'); },
+      onStop(cb) { $('#suStop').onclick = cb; },
+      setSkill(t) { $('#suLevelName').textContent = t; },
+      setDots(li) { $('#suDots').innerHTML = CHECK.map((id, k) => `<i class="${k < li ? 'ok' : k === li ? 'cur' : ''}">${root.TOY.bead(k < li ? 'teal' : 'mustard', k === li ? 46 : 34, { dim: k > li })}</i>`).join(''); },
+      setProblem(p) { $('#suProb').innerHTML = termsHtml(p); },
+      clearFb() { $('#suFb').textContent = ''; $('#suFb').className = 'to-fb'; },
+      ok() { $('#suFb').innerHTML = root.TOY.bead('teal', 58); $('#suFb').className = 'to-fb ok to-pop'; },
+      no() { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'to-fb'; },
+      hint(t) { juniShow(t); }, praise(t) { juniShow(t, 1500); },
+      ask() { return pad.ask(); }, cancel() { pad.cancel(); },
+    };
+  }
+  // New-kit level-check UI (ab-check-screen + slotted pad/soroban).
+  function kitCheckUI(onScreen) {
+    const kit = checkKitEl(); kit.hidden = false;
+    const host = document.getElementById('suPadKit'); if (host) host.innerHTML = '';
+    const pad = onScreen ? makeBeadsPad(host, kit.ansEl, kit.goBtn) : makePad(host, kit.ansEl, kit.goBtn);
+    if (!kit._stopWired) { kit._stopWired = true; kit.addEventListener('ab-action', e => { if (e.detail.action === 'stop' && kit._onStop) kit._onStop(); }); }
+    return {
+      voiceIntro() { if (CL()) Promise.resolve(CL().say(onScreen ? 'j_start_look' : 'j_intro_abacususe', { who: 'juni', bubble: null })).catch(() => {}); },
+      onStop(cb) { kit._onStop = cb; },
+      setSkill(t) { kit.setSkill(t); kit.setNote(''); },
+      setDots(li) { kit.setProgress(li, CHECK.length); },
+      setProblem(p) { kit.setProblem(termsHtml(p)); },
+      clearFb() { kit.feedback(''); },
+      ok() { kit.feedback('ok'); },
+      no() { kit.feedback('no'); },
+      hint(t) { kit.setNote(t); }, praise(t) { kit.setNote(t, 1500); },
+      ask() { return pad.ask(); }, cancel() { pad.cancel(); },
+    };
+  }
+  // The level check: one problem loop; the level decision is identical whichever UI is in use.
   async function check() {
     const my = ++token; const E = root.SorobanEngine, C = root.Curriculum;
-    // No abacus at home → the child works each problem on the on-screen soroban (the same one practice uses),
-    // so "find the level" is actually doable. With a physical abacus they keep the keypad and type the answer.
+    // No abacus at home → the child works each problem on the on-screen soroban; with a physical abacus they type.
     const onScreen = App().settings.hasAbacus === false;
-    $('#suCheck').classList.toggle('to-check--beads', onScreen);
-    step('suCheck'); juniSay(onScreen ? 'j_start_look' : 'j_intro_abacususe');
-    const pad = onScreen ? makeBeadsPad($('#suPad'), $('#suAns')) : makePad($('#suPad'), $('#suAns'));
+    const kit = checkKitEl();
+    const fin = kit ? finishKit : finish;
+    const ui = kit ? kitCheckUI(onScreen) : oldCheckUI(onScreen);
+    ui.voiceIntro();
     // "Stop here": the check ends now and practice starts at this level (it does not wait for the next answer).
     let stopAt = false, hinted = false; const mastered = [];
-    $('#suStop').onclick = () => { if (my !== token) return; App().Sfx.tap(); stopAt = true; pad.cancel(); };
+    ui.onStop(() => { if (my !== token) return; App().Sfx.tap(); stopAt = true; ui.cancel(); });
     for (let li = 0; li < CHECK.length; li++) {
       const n = C.BY_ID[CHECK[li]];
-      $('#suLevelName').textContent = n.title;
-      $('#suDots').innerHTML = CHECK.map((id, k) => `<i class="${k < li ? 'ok' : k === li ? 'cur' : ''}">${root.TOY.bead(k < li ? 'teal' : 'mustard', k === li ? 46 : 34, { dim: k > li })}</i>`).join('');
+      ui.setSkill(n.title); ui.setDots(li);
       const cfg = Object.assign({}, n.drill, { operands: 3 });
       let probs; try { probs = E.generateSet2(cfg, PER); } catch (e) { probs = []; }
       let right = 0;
@@ -505,29 +546,29 @@
         if (my !== token) return;
         if (stopAt) break;
         const p = probs[k];
-        $('#suProb').innerHTML = p.terms.map((t, i) => `<span class="term to-term${t < 0 ? ' neg' : ''}">${i === 0 ? '' : `<i>${t < 0 ? '−' : '+'}</i>`}<b>${Math.abs(t)}</b></span>`).join('');
-        $('#suFb').textContent = ''; $('#suFb').className = 'to-fb';
-        const a = await pad.ask(); if (my !== token) return;
+        ui.setProblem(p); ui.clearFb();
+        const a = await ui.ask(); if (my !== token) return;
         if (stopAt) break;
-        if (a === p.answer) { right++; $('#suFb').innerHTML = root.TOY.bead('teal', 58); $('#suFb').className = 'to-fb ok to-pop'; App().Sfx.ok(); }
-        else { $('#suFb').textContent = 'Next one!'; $('#suFb').className = 'to-fb'; App().Sfx.tap();
-          if (!hinted) { hinted = true; juniShow('Too tricky? Tap “Stop here” and we’ll start with this one.'); } }
+        if (a === p.answer) { right++; ui.ok(); App().Sfx.ok(); }
+        else { ui.no(); App().Sfx.tap();
+          if (!hinted) { hinted = true; ui.hint('Too tricky? Tap “Stop here” and we’ll start with this one.'); } }
         await sleep(600);
       }
       if (my !== token) return;
       if (stopAt || right < PER) {
-        const start = li === 0 ? 'beads' : CHECK[li];
-        if (li === 0) return finish('beads', 'check', "Let's start with the beads!", []);
-        return finish(start, 'check', `You're ready for ${n.title}!`, ['beads', ...mastered]);
+        if (kit) kit.hidden = true;
+        if (li === 0) return fin('beads', 'check', "Let's start with the beads!", []);
+        return fin(CHECK[li], 'check', `You're ready for ${n.title}!`, ['beads', ...mastered]);
       }
       mastered.push(CHECK[li]);
-      if (li < CHECK.length - 1) { juniShow(['Wow!', 'You know this!', 'Super!', 'Next level!'][li % 4], 1500); }
+      if (li < CHECK.length - 1) { ui.praise(['Wow!', 'You know this!', 'Super!', 'Next level!'][li % 4]); }
     }
-    finish('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
+    if (kit) kit.hidden = true;
+    fin('anzan', 'check', 'Amazing! You are ready for mental abacus!', ['beads', ...mastered]);
   }
   // The kit's one keypad (TOY.keypad, calculator order: 7-8-9 / 4-5-6 / 1-2-3, then delete and a wide 0). The round teal Check button sits beside the mat.
-  function makePad(el, ansEl) {
-    const go = $('#suGo');
+  function makePad(el, ansEl, go) {
+    go = go || $('#suGo');
     let val = '', waiting = null; const set = v => { val = v; ansEl.textContent = v || ' '; go.disabled = !v; };
     el.innerHTML = '';
     root.TOY.keypad(el, { label: 'Number keys',
@@ -539,8 +580,8 @@
   }
   // The on-screen soroban for a child with no abacus at home: they build each sum on the beads and the answer is
   // read straight off them; the round Check button submits. Same component the real practice uses (AbacusInput).
-  function makeBeadsPad(el, ansEl) {
-    const go = $('#suGo');
+  function makeBeadsPad(el, ansEl, go) {
+    go = go || $('#suGo');
     el.innerHTML = '';
     const host = document.createElement('div'); host.className = 'to-beadhost'; el.appendChild(host);
     let waiting = null;

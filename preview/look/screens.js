@@ -566,6 +566,75 @@
     get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
   });
 
+  /* ---------- ab-check-screen ----------
+     The level check: the engine walks the skills, showing a problem at a time; the child answers on the slotted
+     pad or soroban. The component is only chrome — the engine owns the loop and the level decision.
+       el.setSkill(name) / el.setProgress(done,total) / el.setProblem(html) / el.setAnswer(text)
+       el.feedback('ok'|'no'|'') / el.hint(text)
+       el.ansEl / el.goBtn   the answer readout + Check button (passed to the pad builders)
+     Sends 'ab-action' with detail.action = stop ("Stop here"). The pad/soroban is a light-DOM child (default slot). */
+  customElements.define('ab-check-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{height:30%;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:12px;
+          padding:max(18px,env(safe-area-inset-top)) 24px max(18px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:14px}
+        .skill{font-size:20px;font-weight:900;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        ab-button.stop{flex:none}
+        .card{background:#fff;border-radius:26px;box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};
+          padding:18px 22px;display:flex;flex-direction:column;align-items:center;gap:8px}
+        .prob{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;justify-content:center;font-weight:900;font-size:clamp(28px,5cqw,44px)}
+        .prob .term{display:inline-flex;align-items:baseline;gap:6px}
+        .prob .term i{font-style:normal;color:${v('purple', '#5B3596')};font-size:.7em}
+        .prob .term.neg i{color:${v('orange-deep', '#C66A0C')}}
+        .ansrow{display:flex;align-items:center;gap:14px;min-height:46px}
+        .fb{font-size:20px;font-weight:900;min-width:28px;text-align:center}
+        .fb.ok{color:#2FA36B}
+        .ans{min-width:90px;height:46px;padding:0 16px;border-radius:14px;background:${v('purple-soft', '#EEE6FA')};
+          color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900}
+        .note{text-align:center;font-size:15px;font-weight:800;color:${v('ink-soft', '#5E5478')};min-height:20px}
+        .note:empty{min-height:0}
+        .entry{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:18px}
+        ::slotted(*){max-width:100%}
+        .go{all:unset;box-sizing:border-box;flex:none;width:76px;height:76px;border-radius:50%;background:${v('orange', '#F08A1C')};color:#fff;
+          display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 ${v('orange-deep', '#C66A0C')};cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .go:active{transform:translateY(4px);box-shadow:0 2px 0 ${v('orange-deep', '#C66A0C')}}
+        .go[disabled]{opacity:.45;cursor:default}
+        .go:focus-visible{outline:4px solid ${v('purple', '#5B3596')};outline-offset:4px}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header>
+            <span class="skill"></span>
+            <ab-moons class="dots" size="16"></ab-moons>
+            <ab-button class="stop" variant="soft" size="sm" data-a="stop">Stop here</ab-button>
+          </header>
+          <div class="card">
+            <div class="prob"></div>
+            <div class="ansrow"><span class="fb"></span><span class="ans">&nbsp;</span></div>
+          </div>
+          <div class="note"></div>
+          <div class="entry"><slot></slot><button class="go" aria-label="Check" disabled><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+        </div>`;
+      root.querySelector('[data-a="stop"]').addEventListener('click', () => this.dispatchEvent(new CustomEvent('ab-action', { detail: { action: 'stop' }, bubbles: true, composed: true })));
+    }
+    setSkill(t) { this.shadowRoot.querySelector('.skill').textContent = t || ''; }
+    setProgress(done, total) { const m = this.shadowRoot.querySelector('.dots'); m.setAttribute('total', total); m.setAttribute('done', done); }
+    setProblem(html) { this.shadowRoot.querySelector('.prob').innerHTML = html; }
+    setAnswer(t) { this.shadowRoot.querySelector('.ans').textContent = (t == null || t === '') ? ' ' : t; }
+    feedback(state, html) { const f = this.shadowRoot.querySelector('.fb'); f.className = 'fb' + (state === 'ok' ? ' ok' : ''); f.innerHTML = html != null ? html : (state === 'ok' ? '✓' : state === 'no' ? 'Next one!' : ''); }
+    setNote(t, ms) { const n = this.shadowRoot.querySelector('.note'); n.textContent = t || ''; clearTimeout(this._noteT); if (t && ms) this._noteT = setTimeout(() => { n.textContent = ''; }, ms); }
+    get ansEl() { return this.shadowRoot.querySelector('.ans'); }
+    get goBtn() { return this.shadowRoot.querySelector('.go'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
