@@ -293,4 +293,53 @@
     focusInput() { const i = this.shadowRoot.querySelector('input'); setTimeout(() => { try { i.focus(); } catch (e) {} }, 60); }
     shake() { const c = this.shadowRoot.querySelector('.card'); if (!c) return; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
   });
+
+  /* ---------- ab-greeting-screen ----------
+     The true first screen on a fresh download: a warm hello from Juni (with Bixi waving beside her), no input and
+     no lock — just one "Let's go". The grown-up gate comes after this. Built once; driven by the engine:
+       el.juni / el.bixi / el.bubble   the characters and Juni's bubble
+       el.say(text)                    set Juni's words (engine plays the matching voice clip)
+     Sends 'ab-action' with detail.action = start ("Let's go") | hear (child taps Juni to hear her again). */
+  customElements.define('ab-greeting-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
+          padding:max(24px,env(safe-area-inset-top)) 28px max(28px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .cast{display:flex;align-items:flex-end;justify-content:center;gap:18px;max-width:100%}
+        .juni{cursor:pointer;-webkit-tap-highlight-color:transparent}
+        ab-bubble{max-width:min(88cqw,560px)}
+        ab-button.go{min-width:min(80cqw,360px)}
+        @container (max-height: 620px){ .wrap{gap:18px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <ab-bubble tail="bottom-left" size="26">Hi! I'm Juni. Welcome to abacus class!</ab-bubble>
+          <div class="cast">
+            <ab-juni class="juni" pose="wave" size="220" idle></ab-juni>
+            <ab-bixi pose="wave" size="150" idle></ab-bixi>
+          </div>
+          <ab-button class="go" size="lg" icon-end="arrow" data-a="start">Let's go</ab-button>
+        </div>`;
+      root.querySelector('[data-a="start"]').addEventListener('click', () => act(this, 'start'));
+      root.querySelector('.juni').addEventListener('click', () => act(this, 'hear'));
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni'), b = this.shadowRoot.querySelector('ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; const portrait = r.height >= r.width;
+        const js = Math.round(Math.max(150, Math.min(portrait ? r.width * 0.38 : r.width * 0.22, r.height * 0.32)));
+        j.setAttribute('size', js); b.setAttribute('size', Math.round(js * 0.68)); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+    get bubble() { return this.shadowRoot.querySelector('ab-bubble'); }
+    say(text) { this.bubble.say(text); }
+  });
 })();
