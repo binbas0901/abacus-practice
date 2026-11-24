@@ -1,0 +1,64 @@
+/* Abacus app design kit: tokens (colors, type, shape).
+   Plug in with: <link rel="stylesheet" href="look/tokens.css">
+   Every kit component reads these variables, so changing a value here restyles everything that uses it.
+   All names start with --ab- so they never clash with the app's own CSS. */
+
+@font-face { font-family: "AB Nunito"; font-weight: 600; font-display: swap; src: url("fonts/nunito-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "AB Nunito"; font-weight: 700; font-display: swap; src: url("fonts/nunito-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "AB Nunito"; font-weight: 800; font-display: swap; src: url("fonts/nunito-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "AB Nunito"; font-weight: 900; font-display: swap; src: url("fonts/nunito-latin-900-normal.woff2") format("woff2"); }
+
+:root {
+  /* Juni's purple: calm things, teaching, highlights */
+  --ab-purple: #5B3596;
+  --ab-purple-deep: #432672;
+  --ab-purple-soft: #EEE6FA;
+  --ab-purple-line: #DCD3EC;
+
+  /* Bixi's orange: the one main action on a screen */
+  --ab-orange: #F08A1C;
+  --ab-orange-deep: #C66A0C;
+  --ab-orange-soft: #FFF1DE;
+  --ab-orange-ink: #7A4300;
+
+  /* Ground and text */
+  --ab-cream: #FFF7EC;
+  --ab-white: #FFFFFF;
+  --ab-ink: #2E2348;
+  --ab-ink-soft: #5E5478;
+  --ab-ink-faint: #9A90B0;
+
+  /* Moon gold: progress, stars, sparkles */
+  --ab-gold: #F5D77A;
+  --ab-gold-line: #E2B94B;
+  --ab-star: #F5A623;
+
+  /* The abacus */
+  --ab-wood: #8A4F26;
+  --ab-wood-light: #A9683A;
+  --ab-wood-dark: #6B3A1C;
+  --ab-abacus-back: #FBF1E2;
+  --ab-heaven: #E0584A;        /* heaven beads (worth 5): red */
+  --ab-heaven-dark: #B93A2E;
+  --ab-heaven-line: #9C2F25;
+  --ab-earth: #FFD84D;         /* earth beads (worth 1): yellow */
+  --ab-earth-dark: #EDB51C;
+  --ab-earth-line: #B88A0E;
+
+  /* Type */
+  --ab-font: "AB Nunito", "Nunito", ui-rounded, system-ui, sans-serif;
+  --ab-text-sm: 16px;
+  --ab-text-md: 20px;
+  --ab-text-lg: 25px;
+  --ab-text-xl: 34px;
+  --ab-text-hero: 44px;
+
+  /* Shape */
+  --ab-radius-sm: 14px;
+  --ab-radius-md: 22px;
+  --ab-radius-lg: 32px;
+  --ab-radius-pill: 999px;
+  --ab-shadow-soft: 0 6px 18px rgba(91, 53, 150, 0.12);
+  --ab-shadow-card: 0 10px 30px rgba(91, 53, 150, 0.14);
+  --ab-tap-min: 56px;          /* smallest touch target for little fingers */
+}

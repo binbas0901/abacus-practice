@@ -515,3 +515,7 @@ body.ws-calm .toy-bix-breathe,body.ws-calm .toy-lid,body.ws-calm #home .toy-moon
   #todaySteps .step.just .th-bead,.tg-shake,.to-pop,.tn-card,#homeJuni.th-jbub.pop,#homeJuni.th-jbub.on{animation:none;transform:translateX(-50%) rotate(-1.4deg)}
   #home .toy-sky-moon-in,#home .toy-tag,#who .who-card,.tg-holdbtn,.to-card,#setup .su-skill{transition:none}
 }
+
+/* --- Kit home (new look): the ab-home-screen component fills the home; old markup kept hidden pending cleanup --- */
+#home > ab-home-screen#homeKit { position: absolute; inset: 0; z-index: 2; }
+#home > #homeOld[hidden] { display: none !important; }

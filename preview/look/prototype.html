@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Abacus prototype: new look</title>
+<link rel="stylesheet" href="tokens.css">
+<script src="characters.js"></script>
+<script src="abacus.js"></script>
+<script src="ui.js"></script>
+<script src="screens.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: var(--ab-cream); overflow: hidden; }
+  ab-home-screen, ab-lesson-screen { position: fixed; inset: 0; width: 100vw; height: 100dvh; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<!-- A clickable prototype built only from the kit. The words and the lesson are sample content;
+     in the real app the engine fills these screens in. -->
+<ab-home-screen id="home" name="June" stars="24" lesson-title="Big friends of 10"
+  lesson-text="Learn how 7 and 3 team up to make ten on the abacus." done="3" total="6"
+  greeting="Hi June! Ready to meet the big friends of ten?" bixi-line="Psst… I always forget my friends. Help me today?"></ab-home-screen>
+
+<ab-lesson-screen id="lesson" hidden lesson-title="Big friends of 10" done="3" total="6" rods="3" value="7" sum="7 + 3"></ab-lesson-screen>
+
+<script>
+  const home = document.getElementById('home'), L = document.getElementById('lesson');
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  let run = 0, mode = 'teach';
+
+  // Word-by-word highlight standing in for the voice (the engine will drive this from the real audio).
+  async function speak(text, who = 'juni') {
+    const b = who === 'juni' ? L.bubble : L.bixiBubble;
+    if (who === 'juni') L.say(text); else L.bixiSay(text);
+    const words = text.split(/\s+/), my = run;
+    for (let i = 0; i < words.length; i++) { if (my !== run) return; b.mark(i); await wait(250 + Math.min(words[i].length, 8) * 18); }
+    b.mark(words.length); await wait(450); if (my === run) b.mark(-1);
+  }
+
+  async function teach() {
+    const my = ++run, ok = () => my === run, A = L.abacus;
+    mode = 'teach'; A.removeAttribute('interactive'); A.clearHighlight();
+    L.setAttribute('primary-label', 'My turn!'); L.setAttribute('secondary-label', 'Show me again');
+    L.juni.pose = 'point'; L.bixiSay(''); L.setSum('7 + 3'); await A.setValue(7);
+    await speak('Here is seven. Now we want to add three.'); if (!ok()) return;
+    L.bixi.pose = 'confused'; await speak('Easy! Three more ones... wait, only two are left?!', 'bixi'); if (!ok()) return;
+    L.juni.pose = 'think'; await speak('Good spotting, Bixi! Seven needs three to make ten. So we use the big friend.'); if (!ok()) return;
+    L.juni.pose = 'point'; A.highlight(1, 'e1', 'up'); await speak('First, add one bead on the tens rod.'); if (!ok()) return;
+    await A.setRod(1, { earth: 1 }); A.clearHighlight(); await wait(400); if (!ok()) return;
+    A.highlight(0, 'h', 'up'); await speak('Then take away seven from the ones. The five goes up...'); if (!ok()) return;
+    await A.setRod(0, { heaven: false }); A.clearHighlight(); if (!ok()) return;
+    A.highlight(0, 'e2', 'down'); await speak('...and the two go down.'); if (!ok()) return;
+    await A.setRod(0, { earth: 0 }); A.clearHighlight(); if (!ok()) return;
+    L.juni.pose = 'clap'; L.bixi.pose = 'cheer'; L.bixiSay('Ten! I get it now!');
+    await speak('Ten! Seven plus three is ten. Now you try!');
+  }
+
+  async function yourTurn() {
+    const my = ++run; mode = 'turn';
+    L.bixiSay(''); L.abacus.clearHighlight(); await L.abacus.setValue(7); L.abacus.setAttribute('interactive', '');
+    L.juni.pose = 'point'; L.setAttribute('primary-label', 'Check'); L.setAttribute('secondary-label', 'Show me again');
+    await speak('Your turn! Start at seven, then add three. Tap the beads.');
+  }
+
+  async function check() {
+    const my = ++run;
+    if (L.abacus.value === 10) {
+      L.abacus.removeAttribute('interactive'); mode = 'done';
+      L.juni.pose = 'clap'; L.bixi.pose = 'cheer'; L.setStep(4, 6);
+      L.setAttribute('primary-label', 'Back home'); L.setAttribute('secondary-label', '');
+      L.bixiSay('Woohoo! You did it!');
+      await speak('Yes! Ten! You used the big friend. Juni\'s moon is a little fuller.');
+    } else {
+      L.juni.pose = 'think'; L.bixi.pose = 'giggle'; L.bixiSay('Hee hee, I did that too!');
+      await speak(`Hmm, that shows ${L.abacus.value}. Remember: add one ten, then take away seven.`);
+    }
+  }
+
+  home.addEventListener('ab-action', e => {
+    if (e.detail.action === 'start') { home.hidden = true; L.hidden = false; L.setStep(3, 6); teach(); }
+  });
+  L.addEventListener('ab-action', e => {
+    const a = e.detail.action;
+    if (a === 'close' || (a === 'primary' && mode === 'done')) { run++; L.hidden = true; home.hidden = false; if (mode === 'done') home.setAttribute('done', '4'); return; }
+    if (a === 'secondary') teach();
+    if (a === 'hear') speak(L.bubble._text || '');
+    if (a === 'primary') mode === 'turn' ? check() : yourTurn();
+  });
+</script>
+</body>
+</html>
