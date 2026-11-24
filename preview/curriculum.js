@@ -132,7 +132,7 @@
     { id: 'rows_2d', level: 4, title: 'Two-digit rows: 5 numbers', short: '2-digit ×5', icon: 'castle', iconKey: 'star',
       intro: 'Five two-digit numbers in a row. Tens rod first, then units. When the tens rod is full, a big friend carries onto the hundreds rod.',
       demos: [[46, 38], [84, 57], [141, -65]],
-      guided: [[35, 47], [82, 29], [111, -46], [65, 58], [123, -79]],                    // one row: = 44
+      guided: [[65, 58], [123, -79], [44, 38], [82, 29], [111, -46]],                    // chained row; leads with a tens->hundreds overflow for the Bixi interlude; = 65
       drill: { operands: 5, digits: 2, minTerm: 10, maxTotal: 999, allowSubtraction: true, allowedRules: ALL, require: ['ten:*:*:1-2', 'combined:*:*:1-2'] } },
     { id: 'anzan_more', level: 4, title: 'Mental abacus: 5 numbers', short: 'Mental ×5', icon: 'owl', iconKey: 'bolt', kind: 'flash', optional: true, track: 'anzan',
       intro: 'Same mental beads, more numbers. Picture the abacus, add each number as it flashes, and keep the picture still between numbers.',
@@ -145,7 +145,7 @@
     { id: 'three_digit', level: 5, title: 'Three-digit numbers', short: '3-digit', icon: 'tent', iconKey: 'sprout',
       intro: 'Now three rods for each number: hundreds, tens, units. Always start on the left. Each rod is just a one-digit sum you already know.',
       demos: [[125, 341], [468, 275], [703, -458]],
-      guided: [[214, 352], [566, 187], [753, -329], [424, 596], [1020, -485]],          // one row: = 535
+      guided: [[566, 187], [753, -329], [424, 358], [782, 145], [927, -488]],          // chained row; leads with a units->tens->hundreds chained carry for the Bixi interlude; = 439
       drill: { operands: 3, operandsMax: 5, digits: 3, minTerm: 100, maxTotal: 9999, allowSubtraction: true, allowedRules: ALL } },
     { id: 'times_a', level: 5, title: 'Times tables 2 to 5', short: '× 2–5', icon: 'ferriswheel', iconKey: 'keypad',
       intro: '3 × 4 means three 4s: 4, 8, 12. Count up on the abacus to see it, then learn the answer by heart. Fast facts make abacus multiplying easy.',

@@ -695,6 +695,28 @@ window.LESSONS = {
     "beads": "tens rod, then a carry onto the hundreds"
    },
    {
+    "id": "l_rows_2d_slip",
+    "who": "bixi",
+    "tuning": "maths",
+    "text": "I added on the tens rod, and now it has more than nine tens on it. But the tens rod cannot hold that many! Where does the extra ten go?",
+    "act": "bixi_wrong",
+    "wrong": "adding on the tens rod overflows it past nine, and Bixi tries to leave too many tens on the rod"
+   },
+   {
+    "id": "l_rows_2d_help",
+    "who": "juni",
+    "tuning": "default",
+    "text": "Bixi's tens rod is overflowing. When the tens make a whole ten, a big friend carries one rod to the left. Which rod is that?",
+    "act": "ask_help"
+   },
+   {
+    "id": "l_rows_2d_thanks",
+    "who": "bixi",
+    "tuning": "maths",
+    "text": "The hundreds rod! The ten jumps left onto the hundreds. Thank you, I nearly left it behind!",
+    "act": "bixi_thanks"
+   },
+   {
     "id": "l_rows_2d_turn1",
     "who": "juni",
     "tuning": "default",
@@ -769,6 +791,28 @@ window.LESSONS = {
     "text": "Start at 125. Add 341. Hundreds first: 1 plus 3. Then tens: 2 plus 4. Then units: 5 plus 1. Now it shows 466.",
     "act": "watch",
     "beads": "hundreds rod, then tens, then units"
+   },
+   {
+    "id": "l_three_digit_slip",
+    "who": "bixi",
+    "tuning": "maths",
+    "text": "The units made a ten, so I carry one to the tens rod. But the tens rod is already full! There is no room for the extra ten. I am stuck.",
+    "act": "bixi_wrong",
+    "wrong": "a carry lands on a tens rod that is already full, and Bixi has nowhere to put the extra ten"
+   },
+   {
+    "id": "l_three_digit_help",
+    "who": "juni",
+    "tuning": "default",
+    "text": "Bixi found a tricky one! When a carry lands on a rod that is already full, that rod makes a whole ten too. Which way does that ten go next?",
+    "act": "ask_help"
+   },
+   {
+    "id": "l_three_digit_thanks",
+    "who": "bixi",
+    "tuning": "maths",
+    "text": "It carries again, onto the hundreds! One carry can wake up the next one. Thank you!",
+    "act": "bixi_thanks"
    },
    {
     "id": "l_three_digit_turn1",
