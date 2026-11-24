@@ -1642,9 +1642,9 @@ function advanceLesson(){
   const n=L.node; animToken++; L.busy=false; L.won=false; lessonAb.clearHighlights();
   if ((L.phase==='numbers' || L.phase==='guided') && L.marks[turnIdx()]===undefined){ L.marks[turnIdx()]=false; L.skipped++; }   // skipped: not done
   if (L.phase==='intro'){ if (L.pages && L.page<L.pages.length-1){ L.page++; renderLesson(); return; }
-    if (n.kind==='flash'){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); }   // mental-math: the card IS the lesson; now straight into the flash drill
+    if (n.kind==='flash' && (!n.demos || !n.demos.length)){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); }   // a flash node with no teaching material: the card IS the lesson, straight to the drill
     if (n.kind==='numbers'){ const sc=lessonScript(n.id); if (sc && sc.watch && sc.watch.length){ L.phase='watch'; L.watchIdx=0; } else { L.phase='numbers'; L.demoIdx=0; } }
-    else { L.phase='demo'; L.demoIdx=0; } }
+    else { L.phase='demo'; L.demoIdx=0; } }   // demo nodes AND mental-math (flash) nodes with demos: first lesson watches the sums build on beads + a few guided turns, THEN the flash drill (repeat visits skip straight to it via startFlash)
   else if (L.phase==='anatomy'){ L.anatIdx++; if (L.anatIdx>=ANATOMY_STEPS.length){ L.phase='fingers'; L.fingerIdx=0; } }   // the parts now teach the values too, so go straight to the finger step (no separate New-skill card or watch demo)
   else if (L.phase==='watch'){ const sc=lessonScript(n.id), ws=(sc&&sc.watch)||[]; L.watchIdx++; if (L.watchIdx>=ws.length){ L.phase='fingers'; L.fingerIdx=0; } }
   else if (L.phase==='fingers'){ L.fingerIdx++; if (L.fingerIdx>=FINGER_STEPS.length){ L.phase='numbers'; L.demoIdx=0; } }
@@ -1652,7 +1652,7 @@ function advanceLesson(){
   else if (L.phase==='demo'){ L.demoIdx++; if (L.demoIdx>=n.demos.length){ L.phase='guided'; L.guidedIdx=0; } }
   else if (L.phase==='guided'){ L.guidedIdx++; if (L.guidedIdx>=n.guided.length) L.phase = hasInterlude(n) ? 'help' : 'done'; }
   else if (L.phase==='help'){ L.phase='done'; }
-  else if (L.phase==='done'){ leaveLesson(); return; }
+  else if (L.phase==='done'){ if (n.kind==='flash'){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); } leaveLesson(); return; }   // mental-math: after the bridge lesson, into the flash drill
   renderLesson();
 }
 $('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; advanceLesson(); });   // (the step she just got right moves on by itself)
@@ -3155,7 +3155,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.79';
+const APP_VERSION='4.80';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
