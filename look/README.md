@@ -19,12 +19,17 @@ does not edit it, and the design chat does not edit anything outside it. Gallery
 
 <script src="look/abacus.js"></script>
 <ab-abacus value="7" rods="5" labels highlight="1 e1 up"></ab-abacus>
+
+<script src="look/ui.js"></script>
+<ab-button variant="primary" icon="play">Start lesson</ab-button>
+<ab-bubble tail="left">Seven needs three to make ten.</ab-bubble>   <!-- bubble.mark(i) lights word i -->
+<ab-moons total="6" done="3"></ab-moons>
 ```
 
 ## Slices
 1. **Foundation** (v0.1): tokens, Nunito font (self-hosted, SIL OFL), 8 character poses. Done.
 2. **Abacus** (v0.2): `<ab-abacus value rods size labels interactive highlight>`; `setValue`, `setRod`, `highlight`; events `change`, `bead`. Done.
-3. Buttons, cards, speech bubble, progress moons, top bar.
+3. **Everyday pieces** (v0.3, `ui.js`): `<ab-button variant size icon icon-end disabled>`, `<ab-icon-button icon label>`, `<ab-card pad>`, `<ab-chip icon>`, `<ab-moons total done>`, `<ab-bubble tone tail>` with `say()` and word-by-word `mark(i)` for syncing words to the voice, `<ab-icon name>` (15 icons). Done.
 4. Screens assembled from the pieces: home, lesson.
 
 ## Decisions (design chat, 23 Nov 2026)

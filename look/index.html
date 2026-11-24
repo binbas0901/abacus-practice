@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="tokens.css">
 <script src="characters.js"></script>
 <script src="abacus.js"></script>
+<script src="ui.js"></script>
 <style>
   body { margin: 0; background: var(--ab-cream); color: var(--ab-ink); font-family: var(--ab-font); font-weight: 700; }
   main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
@@ -34,7 +35,7 @@
 <main>
   <h1>Abacus design kit</h1>
   <p class="lead">Every building block of the new look, one at a time. Nothing here touches the live app.</p>
-  <p class="note">Kit v0.2 · slice 1: colors, type, characters · slice 2: the abacus</p>
+  <p class="note">Kit v0.3 · characters · abacus · buttons, cards, bubbles, moons</p>
 
   <h2>Characters</h2>
   <p class="note">Tap a character to see the pose change with its little pop.</p>
@@ -72,12 +73,68 @@
   <div class="card" style="display:flex; flex-direction:column; gap:16px">
     <div style="display:flex; align-items:center; gap:16px">
       <ab-juni id="tJuni" pose="point" size="120"></ab-juni>
-      <p id="tSay" style="flex:1; margin:0; font-size: var(--ab-text-lg); font-weight: 800; line-height: 1.35">Tap "Watch Juni teach" to start.</p>
+      <ab-bubble id="tSay" tail="left" style="flex:1">Tap "Watch Juni teach" to start.</ab-bubble>
       <ab-bixi id="tBixi" pose="wave" size="100"></ab-bixi>
     </div>
     <div style="display:flex; justify-content:center"><ab-abacus id="abT" value="7" rods="3" size="520" labels></ab-abacus></div>
     <div style="display:flex; justify-content:center"><button class="pill" id="teach" style="background: var(--ab-orange); color: #fff">Watch Juni teach</button></div>
   </div>
+
+  <h2>Buttons</h2>
+  <p class="note">Orange is for the ONE main thing to do on a screen. Purple (soft) and white (plain) for everything else. Press one: it sinks like a real button.</p>
+  <ab-card>
+    <div class="live">
+      <ab-button variant="primary" size="lg" icon="play">Start lesson</ab-button>
+      <ab-button variant="primary" icon-end="arrow">My turn!</ab-button>
+      <ab-button variant="soft" icon="replay">Show me again</ab-button>
+      <ab-button variant="plain" icon="headphones">Listen</ab-button>
+      <ab-button variant="primary" size="sm" disabled>Not yet</ab-button>
+    </div>
+    <div class="live" style="margin-top:22px">
+      <ab-icon-button icon="close" label="Close"></ab-icon-button>
+      <ab-icon-button icon="back" label="Back"></ab-icon-button>
+      <ab-icon-button icon="speaker" label="Hear it again"></ab-icon-button>
+      <ab-icon-button icon="pause" label="Pause"></ab-icon-button>
+      <ab-icon-button icon="lock" label="Grown-ups"></ab-icon-button>
+      <ab-chip icon="star">24</ab-chip>
+      <ab-chip>June</ab-chip>
+    </div>
+  </ab-card>
+
+  <h2>Icons</h2>
+  <div class="card live" id="icons" style="gap:28px"></div>
+
+  <h2>Speech bubbles</h2>
+  <p class="note">Juni speaks in white, Bixi in orange. Words light up as they are spoken, so the voice, the words and the beads all match. Tap "Play line".</p>
+  <div style="display:flex; flex-direction:column; gap:22px">
+    <div style="display:flex; align-items:center; gap:18px">
+      <ab-juni pose="point" size="110"></ab-juni>
+      <ab-bubble id="bJ" tail="left" style="flex:1">Seven needs three to make ten. So first, we add one bead on the tens rod.</ab-bubble>
+    </div>
+    <div style="display:flex; align-items:center; gap:18px; justify-content:flex-end">
+      <ab-bubble id="bB" tone="bixi" tail="right" size="20" style="max-width:420px">Easy! Just push up three more ones... wait, there are only two left?!</ab-bubble>
+      <ab-bixi pose="confused" size="100"></ab-bixi>
+    </div>
+    <div><ab-button variant="soft" icon="play" id="playLine">Play line</ab-button></div>
+  </div>
+
+  <h2>Juni's moons</h2>
+  <p class="note">Progress through a lesson. Each finished step fills a moon with gold; the next step has a purple ring.</p>
+  <ab-card>
+    <div class="live">
+      <ab-moons id="moons" total="6" done="3"></ab-moons>
+      <ab-button variant="soft" size="sm" id="moonStep">Finish a step</ab-button>
+    </div>
+  </ab-card>
+
+  <h2>Card</h2>
+  <ab-card pad="lg" style="max-width:560px">
+    <div style="font-size:15px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; color:var(--ab-purple)">Today's lesson</div>
+    <div style="font-size:var(--ab-text-hero); font-weight:900; margin:8px 0">Big friends of 10</div>
+    <div style="font-size:var(--ab-text-md); color:var(--ab-ink-soft); margin-bottom:18px">Learn how 7 and 3 team up to make ten.</div>
+    <ab-moons total="6" done="3"></ab-moons>
+    <div style="margin-top:22px"><ab-button size="lg" icon="play" style="width:100%">Start lesson</ab-button></div>
+  </ab-card>
 
   <h2>Colors</h2>
   <p class="note">Purple = Juni, calm and teaching. Orange = Bixi, the one main action on a screen. Red and yellow = the abacus beads.</p>
@@ -134,10 +191,20 @@ document.querySelector('ab-bixi').pose = 'cheer';</pre>
   abMinus.onclick = () => showA(abA.value - 1); abPlus.onclick = () => showA(abA.value + 1);
   abRand.onclick = () => showA(Math.floor(Math.random() * 1000));
   abB.addEventListener('change', e => { abBNum.textContent = e.detail.value; });
+  let kTimer = null;
+  function karaoke(b, t) { clearInterval(kTimer); const n = t.split(/\s+/).length; let i = 0; b.mark(0);
+    kTimer = setInterval(() => { i++; if (i >= n) { clearInterval(kTimer); b.mark(n); } else b.mark(i); }, 230); }
+  for (const name of ABKit.icons) document.getElementById('icons').insertAdjacentHTML('beforeend',
+    `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--ab-purple)"><ab-icon name="${name}" size="30"></ab-icon><span style="font-size:13px;color:var(--ab-ink-soft)">${name}</span></div>`);
+  playLine.onclick = () => { karaoke(bJ, bJ._text); setTimeout(() => karaoke2(bB), 230 * 18); };
+  let k2 = null;
+  function karaoke2(b) { clearInterval(k2); const n = b._text.split(/\s+/).length; let i = 0; b.mark(0);
+    k2 = setInterval(() => { i++; if (i >= n) { clearInterval(k2); b.mark(n); } else b.mark(i); }, 230); }
+  moonStep.onclick = () => { const d = (+moons.getAttribute('done') + 1) % 7; moons.setAttribute('done', d); };
   const wait = ms => new Promise(r => setTimeout(r, ms)); let busy = false;
   teach.onclick = async () => {
     if (busy) return; busy = true;
-    const say = t => { tSay.textContent = t; };
+    const say = t => { tSay.say(t); karaoke(tSay, t); };
     tJuni.pose = 'point'; tBixi.pose = 'wave'; abT.clearHighlight(); await abT.setValue(7);
     say('We have seven. We want to add three.'); await wait(1800);
     tBixi.pose = 'confused'; say('Bixi wants three more ones... but only two are left!'); await wait(2200);
