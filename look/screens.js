@@ -390,6 +390,182 @@
     bixiSay(text) { this._bb.say(text); this._bb.classList.add('on'); this._jb.classList.remove('on'); }
   });
 
+  /* ---------- ab-activity-screen ----------
+     A kit frame around a live interactive tool (e.g. the quick-win soroban). The tool is LIGHT-DOM content
+     slotted in, so it keeps its own stylesheet; the component supplies the sky, Juni + bubble, and Bixi.
+       el.say(text)      Juni speaks (top bubble)
+       el.bixiSay(text)  Bixi speaks (corner bubble; '' hides it)
+       el.juni / el.bixi the characters   —   put the tool host inside as a child (default slot). */
+  customElements.define('ab-activity-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{height:34%;border-radius:0 0 50% 50%/0 0 70px 70px}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:10px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .talk{display:flex;align-items:center;gap:14px;min-height:0}
+        .talk ab-bubble{flex:1;min-width:0}
+        .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+        ::slotted(*){max-width:100%}
+        .bx{position:absolute;right:18px;bottom:12px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;width:210px;z-index:3;pointer-events:none}
+        .bx ab-bubble{max-width:200px}
+        .bx[hidden]{display:none}
+        @container (max-aspect-ratio: 1/1){ .bx{width:150px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="talk">
+            <ab-juni pose="point" size="120" idle></ab-juni>
+            <ab-bubble tail="left" size="20"></ab-bubble>
+          </div>
+          <div class="stage"><slot></slot></div>
+        </div>
+        <div class="bx" hidden><ab-bubble tone="bixi" tail="bottom-right" size="18"></ab-bubble><ab-bixi pose="cheer" size="120"></ab-bixi></div>`;
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('.talk ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return;
+        j.setAttribute('size', Math.round(Math.max(96, Math.min(r.width * 0.12, r.height * 0.18)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    get juni() { return this.shadowRoot.querySelector('.talk ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('.bx ab-bixi'); }
+    get bubble() { return this.shadowRoot.querySelector('.talk ab-bubble'); }
+    say(text) { this.bubble.say(text); }
+    bixiSay(text) { const bx = this.shadowRoot.querySelector('.bx'); bx.hidden = !text; if (text) this.shadowRoot.querySelector('.bx ab-bubble').say(text); }
+  });
+
+  /* ---------- ab-choose-screen ----------
+     A question with a few choices (abacus? / starting point / pick a skill). The engine configures it and reacts:
+       el.say(text)                     Juni speaks
+       el.configure({heading, layout, options})   layout: 'cards' (2-3 big) | 'list' (scrolling); options: [{id,label,sub}]
+       el.back = true/false             show a back arrow (emits ab-choose id="__back")
+     Sends 'ab-choose' with detail.id = the chosen option's id. */
+  customElements.define('ab-choose-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;gap:18px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(24px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px;align-self:stretch}
+        .top .back{visibility:hidden}
+        :host([data-back]) .top .back{visibility:visible}
+        .talk{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+        .talk ab-bubble{flex:1;min-width:0}
+        .mid{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;width:100%}
+        .heading{margin:0;font-size:clamp(22px,3cqw,30px);font-weight:900;text-align:center}
+        .heading:empty{display:none}
+        .opts{display:flex;justify-content:center;gap:16px;width:100%;min-height:0}
+        .opts.cards{flex-wrap:wrap;align-items:stretch}
+        .opts.list{flex-direction:column;align-items:stretch;max-width:600px;overflow:auto;padding:4px}
+        .opt{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:26px;padding:22px 20px;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};display:flex;flex-direction:column;gap:6px;
+          transition:transform .08s;-webkit-tap-highlight-color:transparent;border:3px solid transparent}
+        .opt:active{transform:scale(.97)}
+        .opt:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .opt .ol{font-size:21px;font-weight:900}
+        .opt .os{font-size:15px;font-weight:600;color:${v('ink-soft', '#5E5478')}}
+        .opts.cards .opt{flex:1 1 0;min-width:150px;max-width:260px;align-items:center;text-align:center}
+        .opts.list .opt{flex-direction:row;align-items:center;gap:14px;text-align:left}
+        .opts.list .opt .n{flex:none;width:44px;height:44px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};
+          color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:19px}
+        .opts.list .opt .ol{font-size:19px}
+        @container (max-aspect-ratio: 1/1){ .opts.cards{flex-direction:column;align-items:center} .opts.cards .opt{width:100%;max-width:440px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button class="back" icon="back" label="Back" data-back-btn></ab-icon-button>
+            <div class="talk"><ab-juni pose="point" size="110" idle></ab-juni><ab-bubble tail="left" size="20"></ab-bubble></div>
+          </div>
+          <div class="mid"><h2 class="heading"></h2><div class="opts cards"></div></div>
+        </div>`;
+      root.querySelector('[data-back-btn]').addEventListener('click', () => this._emit('__back'));
+      this._fit();
+    }
+    _emit(id) { this.dispatchEvent(new CustomEvent('ab-choose', { detail: { id }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('.talk ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return;
+        j.setAttribute('size', Math.round(Math.max(90, Math.min(r.width * 0.11, r.height * 0.16)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    set back(on) { if (on) this.setAttribute('data-back', ''); else this.removeAttribute('data-back'); }
+    configure({ heading = '', layout = 'cards', options = [] }) {
+      this.shadowRoot.querySelector('.heading').textContent = heading;
+      const box = this.shadowRoot.querySelector('.opts'); box.className = 'opts ' + layout;
+      box.innerHTML = options.map((o, i) => `<button class="opt" data-id="${esc(o.id)}">`
+        + (layout === 'list' ? `<span class="n">${i + 1}</span>` : '')
+        + `<span class="ol">${esc(o.label)}</span>${o.sub ? `<span class="os">${esc(o.sub)}</span>` : ''}</button>`).join('');
+      box.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => this._emit(b.dataset.id)));
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
+  /* ---------- ab-done-screen ----------
+     The last setup screen: celebration + where they'll start + (in a browser tab) add-to-Home-Screen advice + "Let's go".
+       el.configure({headline, subtitle, showInstall})   el.say(text)   el.juni / el.bixi
+     Sends 'ab-action' with detail.action = start. */
+  customElements.define('ab-done-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+          padding:max(24px,env(safe-area-inset-top)) 28px max(28px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .cast{display:flex;align-items:flex-end;justify-content:center;gap:16px}
+        h1{margin:0;font-size:clamp(26px,4cqw,40px);font-weight:900;text-align:center}
+        .sub{margin:0;font-size:18px;font-weight:600;line-height:1.4;color:${v('ink-soft', '#5E5478')};text-align:center;max-width:560px}
+        .install{font-size:14px;font-weight:600;line-height:1.45;color:${v('ink-soft', '#5E5478')};background:#fff;border-radius:18px;
+          padding:14px 18px;max-width:520px;text-align:center;box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')}}
+        .install[hidden]{display:none}
+        .install b{color:${v('ink', '#2E2348')}}
+        ab-button.go{min-width:min(80cqw,340px)}
+        @container (max-height: 620px){ .wrap{gap:12px} .cast ab-juni{}}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="cast"><ab-juni pose="clap" size="190" idle></ab-juni><ab-bixi pose="cheer" size="130" idle></ab-bixi></div>
+          <h1></h1>
+          <p class="sub"></p>
+          <div class="install" hidden><b>Grown-up:</b> add this to the Home Screen so progress is kept safe — tap the Share button, then <b>Add to Home Screen</b>, and open it from the new icon.</div>
+          <ab-button class="go" size="lg" icon-end="arrow" data-a="start">Let's go!</ab-button>
+        </div>`;
+      root.querySelector('[data-a="start"]').addEventListener('click', () => this.dispatchEvent(new CustomEvent('ab-action', { detail: { action: 'start' }, bubbles: true, composed: true })));
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni'), b = this.shadowRoot.querySelector('ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return;
+        const js = Math.round(Math.max(130, Math.min(r.width * 0.2, r.height * 0.26))); j.setAttribute('size', js); b.setAttribute('size', Math.round(js * 0.7)); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ headline = '', subtitle = '', showInstall = false }) {
+      this.shadowRoot.querySelector('h1').textContent = headline;
+      this.shadowRoot.querySelector('.sub').textContent = subtitle;
+      this.shadowRoot.querySelector('.install').hidden = !showInstall;
+    }
+    say() {}
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then

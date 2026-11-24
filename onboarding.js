@@ -144,13 +144,15 @@
   function meetKitEl() { return document.getElementById('suMeetKit'); }
   function startMeet(my, n) { return meetKitEl() ? meetAndBixiKit(my, n) : meetAndBixi(my, n); }
   // One spoken beat on the kit meet screen: caption on the component, voice via Classroom (voice-only; hang-safe).
-  function meetBeat(who, key, text) {
-    const m = meetKitEl(); if (!m) return Promise.resolve();
+  // One spoken beat on any kit screen that has say()/bixiSay(): caption on the component, voice via Classroom
+  // (voice-only; hang-safe via beat()).
+  function kitBeat(el, who, key, text) {
     const t = text || lineText(key);
-    if (who === 'bixi') m.bixiSay(t); else m.say(t);
+    if (el) { if (who === 'bixi') el.bixiSay(t); else el.say(t); }
     const p = CL() ? Promise.resolve(CL().say(key, { who, text: t, bubble: null })).catch(() => {}) : Promise.resolve();
     return beat(p, { cap: capFor(who, key) });
   }
+  function meetBeat(who, key, text) { return kitBeat(meetKitEl(), who, key, text); }
   async function meetAndBixiKit(my, n) {
     const m = meetKitEl(); if (!m) return meetAndBixi(my, n);
     if (welcomeEl()) welcomeEl().hidden = true;
@@ -167,10 +169,8 @@
     await meetBeat('juni', 'j_intro_help'); if (my !== token) return;
     await meetBeat('bixi', 'b_intro_help'); if (my !== token) return;
     await sleep(200); if (my !== token) return;
-    // Hand to the (still-old) quick win: prepare the old setup scene's Bixi so it's present there.
     m.hidden = true;
-    setup().classList.add('cl-bixi-here', 'cl-bixi-side'); bixiRest('happy');
-    quickWin(my);
+    startQuickWin(my);
   }
 
   /* ---------------- greeting (the true first screen) ----------------
@@ -214,6 +214,9 @@
     if (greetingEl()) greetingEl().hidden = true;   // never leave an overlay up across a re-open / re-entry
     if (welcomeEl()) welcomeEl().hidden = true;
     if (meetKitEl()) meetKitEl().hidden = true;
+    if (qwKitEl()) qwKitEl().hidden = true;
+    if (chooseEl()) chooseEl().hidden = true;
+    if (doneEl()) doneEl().hidden = true;
     juniBub().classList.remove('on'); bixiBub().classList.remove('on');
     setup().classList.remove('cl-bixi-here', 'cl-bixi-side');
     // Re-entry from the Grown-ups page (re-run level check / grown-up chooses): keep the name, skip the whole intro.
@@ -328,6 +331,115 @@
     await sleep(250); if (my !== token) return;
     qwTeardown();
     toAbacus();   // on to the existing grown-up setup (abacus question, then placement) — unchanged
+  }
+
+  /* ---------- quick win (kit): the live soroban is slotted into ab-activity-screen ---------- */
+  function qwKitEl() { return document.getElementById('suWinKit'); }
+  function qwActive() { const s = qwKitEl(); return !!(s && !s.hidden); }
+  function startQuickWin(my) {
+    if (qwKitEl()) return quickWinKit(my);
+    setup().classList.add('cl-bixi-here', 'cl-bixi-side'); bixiRest('happy');   // old scene: ensure Bixi is present
+    return quickWin(my);
+  }
+  function qwArmIdleKit(my) {
+    qwClearIdle();
+    qwIdle = setTimeout(async () => {
+      if (my !== token || qwDone || !qwActive()) return;
+      qwNudge();
+      await kitBeat(qwKitEl(), 'juni', 'j_qw_nudge', 'Give it a try — slide one bead up to make 1.');
+      if (my !== token || qwDone || !qwActive()) return;
+      qwArmIdleKit(my);
+    }, QW_IDLE);
+  }
+  async function quickWinKit(my) {
+    const s = qwKitEl(); if (!s) return quickWin(my);
+    qwDone = false; qwTeardown();
+    s.hidden = false; s.bixiSay('');
+    const host = document.getElementById('suWinHostKit'); if (host) host.innerHTML = '';
+    qwAb = root.AbacusInput.create(host, { rods: 1, showReadout: true, scale: 1.5,
+      onBead() { App().Sfx.tap(); qwClearIdle(); },
+      onChange(v) { if (qwDone) return; if (v === 1) qwWinKit(my); else qwArmIdleKit(my); } });
+    qwNudge();
+    await kitBeat(s, 'juni', 'j_qw_make1', 'Can you show Bixi how to make 1? Slide one bead up.');
+    if (my !== token || !qwActive() || qwDone) return;
+    qwNudge(); qwArmIdleKit(my);
+  }
+  async function qwWinKit(my) {
+    if (qwDone || my !== token) return;
+    qwDone = true; qwClearIdle();
+    const b = qwTarget(); if (b) b.classList.remove('qw-nudge');
+    if (qwAb && qwAb.feedback) qwAb.feedback('right');
+    const s = qwKitEl();
+    App().Sfx.star(); if (root.Fun && root.Fun.confetti) root.Fun.confetti(44);
+    if (s && s.bixi) s.bixi.pose = 'cheer';
+    await kitBeat(s, 'juni', 'j_qw_win', 'You did it — you made 1!'); if (my !== token) return;
+    await kitBeat(s, 'bixi', 'b_qw_cheer', 'Yay! You made one bead!'); if (my !== token) return;
+    await sleep(250); if (my !== token) return;
+    qwTeardown(); if (s) s.hidden = true;
+    toAbacusKit(my);
+  }
+  /* ---------- choice screens (kit): abacus? / starting point / pick a skill ---------- */
+  function chooseEl() { return document.getElementById('suChooseKit'); }
+  function doneEl() { return document.getElementById('suDoneKit'); }
+  let _chooseHandler = null;
+  function setChooseHandler(fn) {
+    _chooseHandler = fn;
+    const c = chooseEl();
+    if (c && !c._wired) { c._wired = true; c.addEventListener('ab-choose', e => { if (_chooseHandler) _chooseHandler(e.detail.id); }); }
+  }
+  // Play one or two Juni lines voice-only (the caption is already on the choose screen).
+  function chooseVoice(keys) { if (!CL()) return; (function next(i) { if (i >= keys.length) return; Promise.resolve(CL().say(keys[i], { who: 'juni', bubble: null })).then(() => next(i + 1)).catch(() => {}); })(0); }
+
+  function toAbacusKit(my) {
+    const c = chooseEl(); if (!c) return toAbacus();
+    if (qwKitEl()) qwKitEl().hidden = true;
+    c.back = false;
+    c.configure({ heading: `${state.name}’s abacus`, layout: 'cards', options: [
+      { id: 'yes', label: 'Yes', sub: 'We have one at home' },
+      { id: 'no', label: 'No', sub: 'We’ll use the on-screen one' },
+      { id: 'unsure', label: 'Not sure', sub: '' } ] });
+    c.say('Does a grown-up have an abacus at home?');
+    chooseVoice(['j_intro_grownup', 'j_onboard_abacus']);
+    setChooseHandler(id => { App().unlock(); App().settings.hasAbacus = id === 'yes' ? true : id === 'no' ? false : null; App().saveSettings(); App().Sfx.tap(); toLevelKit(); });
+    c.hidden = false;
+  }
+  function toLevelKit() {
+    const c = chooseEl(); if (!c) return toLevel();
+    c.back = false;
+    c.configure({ heading: '', layout: 'cards', options: [
+      { id: 'new', label: 'I’m new to the abacus', sub: 'Start from the very beginning' },
+      { id: 'check', label: 'Find my level', sub: 'A few quick problems' },
+      { id: 'pick', label: 'A grown-up will choose', sub: 'Pick the skill your class is on' } ] });
+    c.say('Where should we start?');
+    chooseVoice(['j_intro_pick']);
+    setChooseHandler(id => { App().unlock();
+      if (id === 'new') return finishKit('beads', 'new', 'Welcome to the abacus!', []);
+      if (id === 'check') { c.hidden = true; return check(); }   // level check still old for now
+      return toPickKit();
+    });
+    c.hidden = false;
+  }
+  function toPickKit() {
+    const c = chooseEl(); if (!c) return toPick();
+    const opts = App().nodes().map(n => ({ id: n.id, label: n.title, sub: example(n) }));
+    c.back = true;
+    c.configure({ heading: '', layout: 'list', options: opts });
+    c.say('Grown-up, please pick the skill they’re working on.');
+    setChooseHandler(id => { if (id === '__back') return toLevelKit();
+      const n = App().nodes().find(x => x.id === id); finishKit(id, 'parent', `We’ll start with ${n ? n.title : 'this one'}.`); });
+    c.hidden = false;
+  }
+  async function finishKit(current, how, headline, masteredIds) {
+    const d = doneEl(); if (!d) return finish(current, how, headline, masteredIds);
+    const my = ++token;
+    App().applySetup({ name: state.name, current, how, mastered: masteredIds });
+    if (chooseEl()) chooseEl().hidden = true;
+    d.configure({ headline, subtitle: `${state.name}, your first stop is ${App().nodeTitle(current)}. Tap Start each day for a short practice.`, showInstall: inBrowserTab() });
+    if (!d._wired) { d._wired = true; d.addEventListener('ab-action', e => { if (e.detail.action === 'start') App().goHome(); }); }
+    d.hidden = false;
+    root.Fun.confetti(70); App().Sfx.star();
+    if (CL()) Promise.resolve(CL().say('j_intro_begin', { who: 'juni', bubble: null }))
+      .then(() => { if (my === token && CL()) CL().say('b_intro_go', { who: 'bixi', bubble: null }); }).catch(() => {});
   }
 
   /* ---------- is there a real abacus at home? (decides the default answer tool in practice) ---------- */
