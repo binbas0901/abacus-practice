@@ -495,7 +495,7 @@ window.LESSONS = {
     "id": "l_combined_slip",
     "who": "bixi",
     "tuning": "maths",
-    "text": "We have 6, add 7. Add 10 next door. Now take away 3... but there are no little beads to take! I am stuck.",
+    "text": "I added the ten next door. Now I take the big friend off... but there are no little beads to take! I am stuck.",
     "act": "bixi_wrong",
     "wrong": "after adding 10, tries to take the big friend 3 straight off, but there are no little beads to take"
    },
@@ -503,21 +503,21 @@ window.LESSONS = {
     "id": "l_combined_help",
     "who": "juni",
     "tuning": "default",
-    "text": "Bixi is so close. We cannot take 3 little beads, so we use a small friend. How do we take away 3?",
+    "text": "Bixi is so close! The big friend will not come off by itself. Which small friend helps it off? Show Bixi.",
     "act": "ask_help"
    },
    {
     "id": "l_combined_thanks",
     "who": "bixi",
     "tuning": "maths",
-    "text": "Take 5 and add 2! That is taking away 3. Now it shows 13. Two friends, one move. Thank you!",
+    "text": "Take five and add the small friend back. That is how the big friend comes off! Thank you! Two friends, one move.",
     "act": "bixi_thanks"
    },
    {
     "id": "l_combined_turn1",
     "who": "juni",
     "tuning": "default",
-    "text": "Your turn. Show 12 and take away 7.",
+    "text": "Your turn now. Add ten first, then let the small friend finish the big friend.",
     "act": "your_turn"
    },
    {
@@ -559,7 +559,7 @@ window.LESSONS = {
     "id": "l_two_digit_slip",
     "who": "bixi",
     "tuning": "maths",
-    "text": "We have 38, add 27. I will start with the units, 8 plus 7... wait, which rod comes first again?",
+    "text": "I will start with the units. 8 and 7 is fifteen... wait, where does the extra ten go? I have muddled it up.",
     "act": "bixi_wrong",
     "wrong": "starts on the units rod instead of the tens rod; we work left to right"
    },
@@ -567,14 +567,14 @@ window.LESSONS = {
     "id": "l_two_digit_help",
     "who": "juni",
     "tuning": "default",
-    "text": "Good question, Bixi. On the abacus we start on the left. Which rod is that, the tens or the units?",
+    "text": "Good catch, Bixi. Start on the left, the tens, so the carry has somewhere to land. Which rod first?",
     "act": "ask_help"
    },
    {
     "id": "l_two_digit_thanks",
     "who": "bixi",
     "tuning": "maths",
-    "text": "The tens first! Left to right, like reading. Thank you. I always want to rush to the little end.",
+    "text": "Tens first, like reading! Then the units, and the carry jumps left. Thank you!",
     "act": "bixi_thanks"
    },
    {
