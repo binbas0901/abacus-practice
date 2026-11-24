@@ -73,7 +73,7 @@ async def main():
         did_bead = False; did_read = False; no_fail_ok = None; shot_read = False; read_onscreen = None
         heaven_probe = None   # v4.60: at the heaven-bead ("push the big top bead") beat, the heaven bead must be
                               # visible (not under Juni's bubble) AND a tap at its centre must hit the bead, not #rtJuni.
-        for i in range(160):
+        for i in range(240):   # budget covers Bixi's spoken asides (extra gaps between beats)
             if (await reading_prog(pg)) >= 1: break
             if not await active(pg, 'readTeach'): break
             w = await pg.evaluate("()=>window.ReadTeach._waiting()")

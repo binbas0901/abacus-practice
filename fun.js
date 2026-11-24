@@ -28,18 +28,18 @@
   const BixVoice = {
     buf: {}, map: {}, loading: {}, src: null, talkingEl: null, spokenIntro: false, queued: 0, seq: 0,
     busy() { return !!this.src || this.queued > 0; },
-    voices: { sweet:'Sweet', boy:'Boy' },
+    voices: { gigi:'Gigi', sweet:'Sweet', boy:'Boy' },   // gigi (ElevenLabs) is Bixi's real voice, default app-wide
     // The chosen voice; if its recordings could not be loaded (picked but never downloaded, now offline), Bix
     // keeps talking in the voice that is always installed.
     missing: {},
-    tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] && !this.missing[t] ? t : 'sweet'; },
+    tag() { const s = App() && App().settings; const t = s && s.bixVoice; return this.voices[t] && !this.missing[t] ? t : 'gigi'; },
     enabled() { const s = App() && App().settings; return !s || s.bixTalks !== false; },
     // Extra line packs recorded after the main set (audio/bix-<voice>-<pack>.js, see tools/make_bix_pack.py).
     // Newest first: a line re-recorded in a pack replaces the take in the main recording (see find).
     PACKS: ['polish', 'home', 'teach'],
     load(tag) {
-      if (!tag) { const s = App() && App().settings, want = s && this.voices[s.bixVoice] ? s.bixVoice : 'sweet';
-        if (want !== 'sweet') return this.load(want).then(() => { this.missing[want] = !this.buf[want]; if (this.missing[want]) return this.load('sweet'); }); }
+      if (!tag) { const s = App() && App().settings, want = s && this.voices[s.bixVoice] ? s.bixVoice : 'gigi';
+        if (want !== 'gigi') return this.load(want).then(() => { this.missing[want] = !this.buf[want]; if (this.missing[want]) return this.load('gigi'); }); }
       tag = tag || this.tag();
       return Promise.all([this.loadKey(tag, `audio/bix-${tag}.js`)].concat(this.PACKS.map(p => this.loadKey(tag + '-' + p, `audio/bix-${tag}-${p}.js`))));
     },
