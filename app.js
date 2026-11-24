@@ -2017,7 +2017,7 @@ function baseMood(){ return LT ? 'happy' : 'think'; }   // Bix thinks along whil
 function presentProblem(){
   const p=problems[idx]; $('#feedback').textContent=''; submitting=false;
   Tool.apply(); Tool.reset();
-  $('#showMeBtn').style.display = reviewing && !LT ? '' : 'none'; $('#drill').classList.toggle('fixing', reviewing && !LT);
+  $('#showMeBtn').style.display = ((reviewing || (p && p._tries)) && !LT) ? '' : 'none'; $('#drill').classList.toggle('fixing', reviewing && !LT);   // "Show me" appears once the child has missed this problem (not before — try first)
   renderStrip();
   const long = mode==='visual' && p.terms.length>4;
   $('#drill').classList.toggle('long', long);
@@ -2280,20 +2280,30 @@ async function submit(){
   else {
     feedStreak=0;        // a miss only cools the streak — the bar never drains
     fb.textContent='Not quite'; Sfx.bad(); verdict('wrong'); if (Tool.kind==='beads') shake();
-    if (!reviewing) JB.say("That's okay. We'll polish it together.", null, 1800);   // Juni reassures (the explain, on screen)
+    p._tries=(p._tries||0)+1;
     await juniVerdict('notyet');   // Juni (teacher) delivers the spoken verdict — same in Reading and Listening
     reactVoice('notyet');          // then Bixi (classmate) commiserates WITH her (his own reaction, never the verdict word)
-    if(!reviewing){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); await sleep(900); }
-    else {
-      // In the fix pass a wrong answer is a teaching moment: watch the bead moves, then try the same problem again.
-      const cb=$('#strip .tp-b.cur'); if (cb){ cb.innerHTML=rodBead('red', cb.querySelector('svg').getAttribute('height')|0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
-      JB.say('Let\'s watch the beads together.', 'j_showme', 0);
-      await sleep(900); await showMe(p);
-      if (!$('#drill').classList.contains('active')) return;
-      presentProblem(); return;
-    }
+    // NO-FAIL (matches Level 1): never skip a missed problem. Fix pass always teaches; first pass gives a
+    // second try, then shows the beads. The miss is recorded once (first attempt) so mastery still reflects
+    // first-try skill; the eventual correct answer records a success too (so a child who learns isn't stuck).
+    if (reviewing){ await teachAndRetry(p); return; }
+    if (p._tries===1){ results[idx]=false; p._given=String(val); record(p,false); renderStrip(idx); }
+    if (p._tries>=2){ await teachAndRetry(p); return; }   // second miss (or they didn't tap "Show me"): watch the beads
+    JB.say('Not quite — have another try.', 'j_try_again', 1700);   // first miss: stay on the problem, try again
+    await sleep(800);
+    if (!$('#drill').classList.contains('active')) return;
+    presentProblem(); return;   // re-arm the SAME problem; "Show me" is now visible
   }
   next();
+}
+// A missed problem's teaching beat, shared by the fix pass and a repeated first-pass miss: red bead, watch the
+// bead-by-bead solution, then retry the same problem (no-fail).
+async function teachAndRetry(p){
+  const cb=$('#strip .tp-b.cur'); if (cb){ const sv=cb.querySelector('svg'); cb.innerHTML=rodBead('red', sv?sv.getAttribute('height')|0:0); cb.classList.add('bad'); cb.classList.remove('tp-wob'); void cb.offsetWidth; cb.classList.add('tp-wob'); }
+  JB.say('Let\'s watch the beads together.', 'j_showme', 0);
+  await sleep(900); await showMe(p);
+  if (!$('#drill').classList.contains('active')) return;
+  presentProblem();
 }
 function record(p, ok){ const st=node(drillNode.id); st.hist.push({ok, day:todayKey()}); st.hist=st.hist.slice(-40); }
 function next(){
@@ -3128,11 +3138,12 @@ window.__lessonFinish = ()=>{ if (!L) return null; node(L.node.id).lesson=true; 
 window.__prog = (id)=>({ current: progress.current, node: id ? (progress.nodes[id]||null) : undefined });   // test hook: current skill + a node's saved flags
 window.__markLearned = (id)=>{ node(id).lesson=true; saveProgress(); };   // test hook: mark a skill's welcome-lesson as already seen
 window.__unlearn = (id)=>{ node(id).lesson=false; saveProgress(); };        // test hook: reset a skill to first-time (welcome-lesson not yet seen)
-window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
+window.__drill = ()=>({ idx, reviewing, mode, levelTest: !!LT, tool: Tool.kind, terms: problems[idx]&&problems[idx].terms, op: problems[idx]&&problems[idx].op, answer: problems[idx]&&problems[idx].answer, tries: (problems[idx]||{})._tries||0, showMe: $('#showMeBtn')&&$('#showMeBtn').style.display!=='none', len: problems.length, strip: problems.map((p,i)=>[i===idx?'cur':'', results[i]===true||p._fixed?'ok':results[i]===false?'bad':'', p._fixed?'fixed':''].filter(Boolean).join(' ')) });
+window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // test hook: submit an answer through the real drill path
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.76';
+const APP_VERSION='4.77';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
