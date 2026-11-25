@@ -971,6 +971,10 @@ $('#nameAskOk').addEventListener('click', saveAskedName);
 $('#nameAskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') saveAskedName(); });
 $('#nameAskNo').addEventListener('click', ()=>{ $('#nameAskIn').blur(); $('#nameAsk').classList.remove('active'); });
 function hasLesson(n){ return !!(n.demos || n.kind==='numbers'); }
+// A child who definitely has a physical abacus does the bead work on it, not on screen: lessons demonstrate and then
+// say "try it on your abacus", and "make the number" is made physically + self-checked. (Strict ===true: "not sure"
+// keeps the full on-screen teaching. hasAbacus===false is June and every no-abacus child — their path is untouched.)
+function ownerAbacus(){ return settings.hasAbacus === true; }
 // Each kind of Today step: [icon name, label]. (On the home rod the bead colour comes from its place: STEP_COLORS.)
 const STEP_INFO = { lesson:['book','Learn'], visual:['eye','Look'], listen:['ear','Listen'], flash:['bolt','Flash'], game:['game','Game'] };
 // Three short steps a day: learn/practise, a game, then the other practice mode.
@@ -1528,6 +1532,10 @@ async function renderLesson(){
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
+    if (ownerAbacus()){ lessonAb.setReadOnly(true); L.ownerTurn=true; $('#lessonHint').style.display='none';
+      cap('Your turn', `Make <b>${v}</b> on your own abacus, then tap <b>I did it</b>.`, String(v)); lessonBtn('I did it', 'play');
+      if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return; }
+    L.ownerTurn=false;
     cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); $('#lessonHint').style.display=''; if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (number-agnostic); "Show me" lets a stuck child be shown how to form this number
   }
   if (L.phase==='demo'){
@@ -1544,8 +1552,14 @@ async function renderLesson(){
     // R2: on a flash (mental-math) node the board stays a faint-but-usable ghost through the guided turns, fading further
     // each turn (opacity never blocks taps), so the child acts on less and less of a crutch before the boardless flash drill.
     { const ab$=$('#lessonAbacus'); if (ab$ && n.kind==='flash'){ const t = n.guided.length>1 ? L.guidedIdx/(n.guided.length-1) : 0; ab$.style.opacity = (0.55 - 0.25*t).toFixed(2); } }
-    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label); { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
-    lessonSkip(); $('#lessonHint').style.display=''; if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else { juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } } return;
+    { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
+    const narrateTurn = ()=>{ if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else { juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } } };
+    if (ownerAbacus()){ lessonAb.setReadOnly(true); L.ownerTurn=true; $('#lessonHint').style.display='none';
+      cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `Do <b>${probHtml(ls.label)}</b> on your own abacus, then tap <b>I did it</b>.`, ls.label); lessonBtn('I did it', 'play');
+      narrateTurn(); return; }
+    L.ownerTurn=false;
+    cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label);
+    lessonSkip(); $('#lessonHint').style.display=''; narrateTurn(); return;
   }
   if (L.phase==='help'){   // Bixi the classmate makes the classic slip; the child helps fix it (Part 4)
     const sc=lessonScript(n.id), ex=interludeExample(n);
@@ -1667,6 +1681,7 @@ function onLessonBeads(v){
     return;
   }
   if (L.phase==='numbers' || L.phase==='guided'){
+    if (L.ownerTurn) return;   // owner does the bead work on their own abacus; the "I did it" button advances instead
     clearTimeout(L.tryT);
     if (v!==L.target){ const l=L, at=l.phase+turnIdx();   // the beads rest on another number: a try. After two, Skip turns up.
       l.tryT=setTimeout(()=>{ if (L!==l || l.phase+turnIdx()!==at || l.busy || lessonAb.value===l.target) return; if (++l.tries>=2 && l.showSkip) l.showSkip(); }, 1500); }
@@ -1724,7 +1739,15 @@ function advanceLesson(){
   else if (L.phase==='done'){ if (n.kind==='flash'){ node(n.id).lesson=true; saveProgress(); stopVoices(); return startDrill('flash', n); } leaveLesson(); return; }   // mental-math: after the bridge lesson, into the flash drill
   renderLesson();
 }
-$('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; advanceLesson(); });   // (the step she just got right moves on by itself)
+// Owner "I did it": the child did the bead work on their own abacus, so this counts as a done turn (like reaching the
+// target on screen), then the lesson advances.
+function ownerTurnDone(){
+  if (!L || L.busy || !L.ownerTurn) return;
+  L.ownerTurn=false; $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok();
+  const pr=nextPraise(); cap('Great!', pr.text); juniNarrate(pr.k); capVoice(pr.k,'juni'); Fun.Mascot.react($('#bixLesson'), 'happy');
+  L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 800);
+}
+$('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; if (L.ownerTurn && (L.phase==='numbers'||L.phase==='guided')) return ownerTurnDone(); advanceLesson(); });   // (the step she just got right moves on by itself)
 $('#lessonBack').addEventListener('click', ()=>{ Speaker.unlock(); lessonBack(); });        // go back a step if the child missed something
 // Other screens and the tests can open any skill's lesson.
 window.Lessons = { start: (n, from)=>startLesson(typeof n==='string' ? C.BY_ID[n] : n, from) };
@@ -1749,7 +1772,7 @@ function makeNumberSteps(v){
   }
   return steps;
 }
-$('#lessonHint').addEventListener('click', async()=>{ if (L.busy) return;
+$('#lessonHint').addEventListener('click', async()=>{ if (L.busy || ownerAbacus()) return;   // owners do bead work on their own abacus; the on-screen "Show me" reveal is for the on-screen path only
   if (L.phase==='numbers'){   // "Your turn — Show N": Juni demonstrates forming N on the abacus, then the child tries again (not auto-completed)
     const di=L.demoIdx, v=L.node.lesson.numbers[di]; L.target=v;
     const steps=makeNumberSteps(v);
@@ -2640,6 +2663,18 @@ const ReadTeach = (function(){
         ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent='0'; ab.setReadOnly(false); }, 6500);
     });
   }
+  // Owner path: the child makes the number on their OWN abacus. No on-screen beads — just "Show me" (a reveal to
+  // self-check) and "I did it" to move on.
+  function waitMakeOwner(N, demoFn){
+    return new Promise(res=>{
+      const my=token; ab.setReadOnly(true); waitKind='makeown:'+N; $count().textContent='';
+      const pad=$pad(); pad.innerHTML=''; pad.onclick=null;
+      const mk=(label,wood)=>{ const b=document.createElement('button'); b.type='button'; b.className='toy-block toy-block--'+(wood?'wood':'teal'); b.innerHTML=`<span class="toy-block-label">${label}</span>`; pad.appendChild(b); return b; };
+      const show=mk('Show me', true), next=mk('I did it', false);
+      show.onclick=async()=>{ if (token!==my) return; show.disabled=true; ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(600); ab.reset(); $count().textContent=''; show.disabled=false; };
+      next.onclick=()=>{ if (token!==my) return; pad.innerHTML=''; waitKind=null; Sfx.ok(); bixReact('cheer'); res(true); };
+    });
+  }
   // a few friendly choices including the answer (single digit, within the taught range)
   function choices(answer){
     const set=new Set([answer]);
@@ -2711,8 +2746,10 @@ const ReadTeach = (function(){
     const nums = pickRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); $count().textContent='';
-      await beat('j_pr_make_'+N,'Can you make '+N+'?'); if (token!==my) return;
-      await waitBead(N, async()=>{ await demoBuild(N); }); if (token!==my) return;
+      await beat('j_pr_make_'+N, ownerAbacus() ? 'Can you make '+N+' on your abacus?' : 'Can you make '+N+'?'); if (token!==my) return;
+      if (ownerAbacus()) await waitMakeOwner(N, async()=>{ await demoBuild(N); });
+      else await waitBead(N, async()=>{ await demoBuild(N); });
+      if (token!==my) return;
       await gap(); await beat(nextYes(),'Yes!'); if (token!==my) return;
       if (i===1 || i===nums.length-1){ await bixLine(pick1(PR_BIX),'cheer'); if (token!==my) return; }
       await gap();
@@ -3298,7 +3335,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.103';
+const APP_VERSION='4.104';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
