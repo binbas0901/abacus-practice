@@ -135,4 +135,6 @@ html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
 #shop > #shopKit[hidden]{ display:none !important; }
 #play > #playKit{ position:absolute; inset:0; z-index:5; }
 #play > #playKit[hidden]{ display:none !important; }
+#album > #albumKit{ position:absolute; inset:0; z-index:5; }
+#album > #albumKit[hidden]{ display:none !important; }
 #who > #whoKit[hidden]{ display:none !important; }

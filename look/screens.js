@@ -1054,6 +1054,97 @@
     get bixi() { return this.shadowRoot.querySelector('.bixi ab-bixi'); }
   });
 
+  /* ---------- ab-album-screen ----------
+     "My stickers" — the sticker book. One page per pack; collected stickers are drawn, empty
+     spots are inviting dashed wells (never locked/grey). Read-only: the only control is Back.
+       el.configure({ title, count, total, packs })   el.say(text)   el.juni
+         packs: [{ name, got, total, full, items:[{ has, gold, n, svg }] }]  (svg = TOY.sticker string, '' when empty)
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-album-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{height:30%;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:12px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900;flex:1;min-width:0}
+        .top ab-chip{flex:none}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .book{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 2px 8px;
+          display:flex;flex-direction:column;gap:18px}
+        .page{background:#fff;border-radius:${v('radius-lg', '32px')};box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};
+          padding:18px 20px;border:3px solid transparent}
+        .page.full{border-color:${v('gold', '#F5A623')}}
+        .phead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
+        .phead h2{margin:0;font-size:20px;font-weight:900}
+        .pgot{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .page.full .pgot{color:${v('orange-deep', '#C66A0C')}}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:12px;justify-items:center}
+        .slot{position:relative;width:86px;height:86px;display:flex;align-items:center;justify-content:center}
+        .slot svg{width:100%;height:100%}
+        .slot.empty{border-radius:50%;background:${v('purple-soft', '#EEE6FA')};
+          border:2px dashed ${v('purple-line', '#DCD3EC')};color:${v('ink-faint', '#9A90B0')}}
+        .slot.empty ab-icon{opacity:.5}
+        .slot .mult{position:absolute;right:-2px;bottom:-2px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;
+          background:${v('purple', '#5B3596')};color:#fff;font:900 13px ${FONT};display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+        .slot.gold .mult{background:${v('star', '#F5A623')};color:#4A2D00}
+        @container (max-aspect-ratio: 1/1){ .teacher ab-bubble{max-width:min(86cqw,420px)} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back to My Room" data-a="back"></ab-icon-button>
+            <span class="title">My stickers</span>
+            <ab-chip icon="star"><b class="count">0</b>&nbsp;<span class="of">of 0</span></ab-chip>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="book"></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    // Clone the shared toy <defs> sprite into THIS shadow root once, so TOY.sticker's url(#...) fills resolve.
+    _ensureDefs() {
+      if (this._defsDone) return;
+      const src = document.getElementById('toy-defs');
+      if (src) { this.shadowRoot.appendChild(src.cloneNode(true)); this._defsDone = true; }
+    }
+    configure({ title = 'My stickers', count = 0, total = 0, packs = [] } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      this.shadowRoot.querySelector('.count').textContent = count;
+      this.shadowRoot.querySelector('.of').textContent = 'of ' + total;
+      this.renderGrid(packs);
+    }
+    renderGrid(packs = []) {
+      this._ensureDefs();
+      const spark = '<ab-icon name="sparkle" size="30"></ab-icon>';
+      const book = this.shadowRoot.querySelector('.book');
+      book.innerHTML = packs.map(p => {
+        const slots = (p.items || []).map(it => it.has
+          ? `<div class="slot has${it.gold ? ' gold' : ''}">${it.svg || ''}${it.n > 1 ? `<b class="mult">×${it.n}</b>` : ''}</div>`
+          : `<div class="slot empty" aria-label="not found yet">${spark}</div>`).join('');
+        return `<section class="page${p.full ? ' full' : ''}">`
+          + `<div class="phead"><h2>${esc(p.name)}</h2><span class="pgot">${esc(p.got)} of ${esc(p.total)}</span></div>`
+          + `<div class="grid">${slots}</div></section>`;
+      }).join('');
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
