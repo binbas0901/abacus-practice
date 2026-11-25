@@ -788,6 +788,73 @@
     get juni() { return this.shadowRoot.querySelector('ab-juni'); }
   });
 
+  /* ---------- ab-room-screen ----------
+     "My Room" — the rewards room: Juni's moon window, a golden-bead treat jar and a flower garden
+     (both SLOTTED so the engine keeps drawing them live via Treats.renderJar / Fun.renderGarden and
+     their existing click listeners), plus the "Treats" button.
+       el.configure({title, beads, nudge})   el.say(text)   el.juni / el.bixi
+       slots: slot="garden" (live #roomGarden), slot="jar" (live #jar)
+     Sends 'ab-action' with detail.action = back | treats. */
+  customElements.define('ab-room-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
+        .thing{display:flex;flex-direction:column;align-items:center;gap:10px}
+        .thing .cap{font-size:15px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        ::slotted(*){max-width:100%}
+        .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;min-height:0}
+        .bx{z-index:3;pointer-events:none}
+        @container (max-aspect-ratio: 1/1){ .mid{flex-direction:column;gap:22px} .bx{display:none} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back home" data-a="back"></ab-icon-button>
+            <span class="title">My room</span>
+            <ab-chip icon="star"><span class="beads">0</span></ab-chip>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="mid">
+            <div class="thing"><slot name="garden"></slot><span class="cap">My garden</span></div>
+            <div class="thing"><slot name="jar"></slot><span class="cap">Treat jar</span></div>
+          </div>
+          <div class="foot">
+            <span class="bx"><ab-bixi pose="wave" size="112"></ab-bixi></span>
+            <ab-button class="treats" variant="primary" icon="star" data-a="treats">Treats</ab-button>
+          </div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      root.querySelector('[data-a="treats"]').addEventListener('click', () => this._emit('treats'));
+      this._fit();
+    }
+    _emit(action) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ title = 'My room', beads = 0, nudge = false } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      this.shadowRoot.querySelector('.beads').textContent = String(beads);
+      this.shadowRoot.querySelector('.treats').classList.toggle('nudge', !!nudge);
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then

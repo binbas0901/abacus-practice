@@ -1096,6 +1096,29 @@ $('#exitShop').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitPlay').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitGame').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#roomWishIc').innerHTML = TOY.icon('star', 30, '#4A2C06');
+// New-kit My Room: drives <ab-room-screen> over the old #room markup (kept as fallback).
+// The live garden (#roomGarden) and jar (#jar) are slotted in — Fun.renderGarden / Treats.renderJar
+// and their existing click listeners keep working untouched.
+let roomKitWired = false;
+function driveRoomKit(){
+  const el = document.getElementById('roomKit'); if (!el || !el.configure) return;
+  const garden = document.getElementById('roomGarden'), jar = document.getElementById('jar');
+  if (garden && garden.getAttribute('slot') !== 'garden') garden.setAttribute('slot', 'garden');
+  if (jar && jar.getAttribute('slot') !== 'jar') jar.setAttribute('slot', 'jar');
+  if (garden && garden.parentElement !== el) el.appendChild(garden);   // re-parent into #roomKit (still light DOM; listeners survive)
+  if (jar && jar.parentElement !== el) el.appendChild(jar);
+  el.configure({ title: 'My room', beads: Treats.wallet().beads, nudge: !Treats.goal() });
+  if (!roomKitWired){
+    roomKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action;
+      if (a === 'back'){ stopVoices(); renderHome(); show('home'); return; }   // == #exitRoom
+      if (a === 'treats'){ Sfx.tap(); Treats.wish(); return; }                 // == #roomWish
+    });
+  }
+  el.hidden = false;
+}
+
 function renderRoom(){
   toySky('#roomSky');
   // The garden is the one progress visual: it grows a flower for every skill mastered (not for days shown up).
@@ -1104,6 +1127,7 @@ function renderRoom(){
   $('#roomGarden').setAttribute('aria-label', `My garden: ${$('#gardenLabel').textContent}`);
   Treats.renderJar();
   $('#roomWish').classList.toggle('tr-nudge', !Treats.goal());   // nudge only to pick a goal, never to spend
+  driveRoomKit();            // overlay the kit; keeps #garden/#jar live via slots
   return n;
 }
 function goRoom(){ stopVoices();
@@ -1114,6 +1138,7 @@ function goRoom(){ stopVoices();
   const jKey = vid==='shop_pick' ? 'j_room_jar_pick' : vid==='shop_saving' ? 'j_room_jar_saving' : 'j_room_jar_full';
   const jText = vid==='shop_pick' ? 'Pick a treat to save for. Tap Treats.' : vid==='shop_saving' ? text : 'Your jar is full enough for your treat!';
   juniSayOn($('#roomJuni'), $('#roomSky'), jKey, jText);
+  { const rk = document.getElementById('roomKit'); if (rk && rk.say) rk.say(jText); }   // mirror Juni's line into the kit bubble (audio stays on hidden #roomJuni)
 }
 $('#exitRoom').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#roomGarden').addEventListener('click', ()=>{
@@ -3387,7 +3412,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.109';
+const APP_VERSION='4.110';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
