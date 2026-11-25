@@ -1317,6 +1317,37 @@ function renderPracticePick(id){
   }
   const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.' : noSums ? 'Pick how to practise — read the beads, or make a number.' : 'Pick how to practise — Reading or Listening.'; jb.classList.add('on'); }
   toySky('#ppSky');
+  drivePracticePickKit(id);
+}
+
+// New-kit practice picker: drives <ab-practice-pick> over the old #ppCards markup (kept as fallback).
+let ppKitWired = false;
+function drivePracticePickKit(id){
+  const el = document.getElementById('ppKit'); if (!el || !el.configure) return;
+  const cur = NODES[NODE_IDX[id]], T = window.__level.MODE_SESSIONS;
+  const noSums = cur && !cur.drill;
+  const bestLab = (mode)=>{ const b = bestSetMs(id, mode); return b != null ? `Best ${TM.fmt(b)}` : ''; };
+  const mk = (mode, label, icon) => ({ mode, label, icon, done: modeDone(id, mode), total: T, best: bestLab(mode), full: modeDone(id, mode) >= T });
+  const cards = [
+    mk('reading',   noSums ? L1_LABELS.reading   : 'Reading',   'abacus'),
+    mk('listening', noSums ? L1_LABELS.listening : 'Listening', noSums ? 'abacus' : 'headphones'),
+  ];
+  if (anzanEligible()) cards.push(mk('mental', 'Mental math', 'sparkle'));
+  const n = NODES[curIdx()];
+  el.configure({ title: cur ? cur.title : 'Practice', cards, watch: !!(n && hasLesson(n)) });
+  el.say(anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.'
+    : noSums ? 'Pick how to practise — read the beads, or make a number.'
+    : 'Pick how to practise — Reading or Listening.');
+  if (!ppKitWired){
+    ppKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action;
+      if (a === 'back'){ stopVoices(); Practice.stop(); renderHome(); show('home'); return; }
+      if (a === 'watch'){ Sfx.tap(); Speaker.unlock(); startLesson(lessonTarget(NODES[curIdx()]), 'practice'); return; }
+      if (a === 'pick'){ Sfx.tap(); el.hidden = true; Practice.runMode(e.detail.mode); return; }
+    });
+  }
+  el.hidden = false;
 }
 $('#exitPick').innerHTML = TOY.icon('back', 32, 'currentColor');
 $('#exitPick').addEventListener('click', ()=>{ stopVoices(); Practice.stop(); renderHome(); show('home'); });
@@ -3356,7 +3387,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.108';
+const APP_VERSION='4.109';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

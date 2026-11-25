@@ -127,4 +127,6 @@ html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
 #setup > #suCheckKit{ position:absolute; inset:0; z-index:5; }
 #setup > #suCheckKit[hidden]{ display:none !important; }
 #who > #whoKit{ position:absolute; inset:0; z-index:5; }
+#practicePick > #ppKit{ position:absolute; inset:0; z-index:5; }
+#practicePick > #ppKit[hidden]{ display:none !important; }
 #who > #whoKit[hidden]{ display:none !important; }

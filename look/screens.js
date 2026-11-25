@@ -701,6 +701,93 @@
     get goBtn() { return this.shadowRoot.querySelector('.go'); }
   });
 
+  /* ---------- ab-practice-pick ----------
+     "Pick how to practise" — reading / listening / (mental). Each card shows its progress (sessions done of total,
+     pips, best time). The engine configures it and reacts:
+       el.configure({title, cards:[{mode,label,icon,done,total,best,full}], watch})   el.say(text)   el.juni
+     Sends 'ab-action' with detail.action = back | watch | pick (detail.mode). */
+  customElements.define('ab-practice-pick', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+        .cards{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;width:100%;max-width:760px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:28px;padding:24px 20px;
+          flex:1 1 0;min-width:180px;max-width:240px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};border:3px solid transparent;transition:transform .08s;position:relative;-webkit-tap-highlight-color:transparent}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .card.full{border-color:${v('gold', '#F5A623')}}
+        .ic{width:64px;height:64px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center}
+        .card.orange .ic{background:${v('orange-soft', '#FFF1DE')};color:${v('orange-deep', '#C66A0C')}}
+        .lab{font-size:21px;font-weight:900}
+        .prog{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .pips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:150px}
+        .pip{width:9px;height:9px;border-radius:50%;background:${v('purple-line', '#DCD3EC')}}
+        .pip.on{background:${v('gold', '#F5A623')}}
+        .best{font-size:12px;font-weight:700;color:${v('ink-faint', '#9A90B0')}}
+        .best:empty{display:none}
+        .done-badge{position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;background:${v('gold', '#F5A623')};color:#fff;display:flex;align-items:center;justify-content:center}
+        .card:not(.full) .done-badge{display:none}
+        .watch{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;align-self:center;color:${v('purple', '#5B3596')};font-weight:800;font-size:15px;padding:8px 14px;border-radius:999px}
+        .watch:focus-visible{outline:3px solid ${v('purple', '#5B3596')};outline-offset:2px}
+        .extra{min-height:24px;display:flex;justify-content:center}
+        @container (max-aspect-ratio: 1/1){ .cards{flex-direction:column;align-items:center} .card{width:100%;max-width:420px;flex-direction:row;justify-content:flex-start;text-align:left} .card .pips{justify-content:flex-start} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back" data-a="back"></ab-icon-button>
+            <span class="title"></span>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="mid"><div class="cards"></div></div>
+          <div class="extra"></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, mode) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, mode }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ title = 'Practice', cards = [], watch = false } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      const check = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+      const box = this.shadowRoot.querySelector('.cards');
+      box.innerHTML = cards.map(c => {
+        const total = c.total || 7, done = Math.max(0, Math.min(total, c.done || 0));
+        const pips = Array.from({ length: total }, (_, i) => `<span class="pip${i < done ? ' on' : ''}"></span>`).join('');
+        return `<button class="card${c.full ? ' full' : ''}${c.mode === 'mental' ? ' orange' : ''}" data-mode="${esc(c.mode)}">`
+          + `<span class="done-badge">${check}</span>`
+          + `<span class="ic"><ab-icon name="${esc(c.icon || 'abacus')}" size="32"></ab-icon></span>`
+          + `<span class="lab">${esc(c.label)}</span>`
+          + `<span class="prog">${c.full ? 'Done!' : done + ' / ' + total}</span>`
+          + `<span class="pips">${pips}</span>`
+          + `<span class="best">${c.best ? esc(c.best) : ''}</span></button>`;
+      }).join('');
+      box.querySelectorAll('.card').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.mode)));
+      const ex = this.shadowRoot.querySelector('.extra');
+      ex.innerHTML = watch ? `<button class="watch" data-a="watch"><ab-icon name="play" size="20"></ab-icon>Watch the lesson again</button>` : '';
+      if (watch) ex.querySelector('[data-a="watch"]').addEventListener('click', () => this._emit('watch'));
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
