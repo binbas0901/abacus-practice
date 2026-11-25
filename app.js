@@ -772,7 +772,18 @@ const Backup = {
 
 /* ---------------- screens ---------------- */
 function stopVoices(){ try{ if(window.Classroom) Classroom.Voice.stop(); }catch(e){} try{ Fun.BixVoice.stop(); }catch(e){} }   // cut any line from both systems
-function show(id){ $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
+// Set once the child has left home for an activity this visit, so coming back greets lightly instead of starting over.
+// Resets every app session (page load), so a genuinely new visit still gets the full hello.
+let homeLeft = false;
+function show(id){
+  // Leaving home for an activity marks this visit "under way", records that the child has now been welcomed, and
+  // stamps the time — so next session's welcome-back is based on a real gap, and this session's returns stay light.
+  if (id !== 'home' && id !== 'setup' && settings.name && $('#home').classList.contains('active')){
+    homeLeft = true;
+    if (Fun && Fun.data){ Fun.data.welcomed = true; Fun.data.lastVisit = Date.now(); Fun.save(); }
+  }
+  $$('.screen').forEach(s=>s.classList.toggle('active', s.id===id));
+}
 
 /* ---------------- home (Workshop: Bix, Today on the soroban, three doors) ---------------- */
 function curIdx(){ return NODE_IDX[progress.current] ?? 0; }
@@ -780,15 +791,23 @@ function stars(nid){ const h=node(nid).hist.slice(-20); if(!h.length) return 0; 
 // Home greeting: Juni (the teacher, the moon in the window) leads and greets FIRST; then Bixi (the classmate,
 // the bead on the table) adds a short countdown. Each helper returns [voice key, bubble caption].
 // The caption can use the child's name; the recorded voice line never does (voices/CONTRACT.md).
+// The home greeting matches the real moment:
+//  - returning to home within this same visit (after practice, a game, etc.) → a light "what next", not a fresh hello
+//  - a genuine new visit after ~a day away → the warm welcome-back
+//  - otherwise → the time-of-day hello
+// A brand-new child who has never left the home screen is never told "I missed you".
 function juniGreet(allDone){
   const nm = settings.name ? `, ${settings.name}` : '';
   if (allDone) return ['j_end_amazing', `Amazing work${nm}! You filled me all the way up today.`];
-  const h = new Date().getHours(), back = (Fun.data.seen % 2) === 1;       // alternate a warm welcome-back with the time-of-day hello
-  if (back) return ['j_hello_back', `You're back${nm}! I missed you!`];
+  if (homeLeft) return ['j_home_next', `What would you like to do next${nm}?`];    // came back within this visit (shown, not re-spoken)
+  const h = new Date().getHours();
+  if (Fun.data.welcomed && awayAWhile()) return ['j_hello_back', `You're back${nm}! I missed you!`];
   if (h < 12) return ['j_hello_morning', `Good morning${nm}! Ready to move some beads?`];
   if (h < 17) return ['j_hello_afternoon', `Good afternoon${nm}! Let's do some abacus!`];
   return ['j_hello_evening', `Good evening${nm}! A little practice before bed?`];
 }
+// "A while" = about a day since the last visit; only then is a warm welcome-back honest.
+function awayAWhile(){ const last = Fun.data.lastVisit || 0; return last > 0 && (Date.now() - last) >= 20 * 3600 * 1000; }
 // Bixi counts how many step-beads are left to fill up Juni. His recorded lines say "Juni", so when the owner
 // renames the moon the caption uses the real name and the clip stays silent (bubble still shows).
 function bixiCount(steps, allDone){
@@ -861,7 +880,7 @@ function renderHome(opts){
     const [jKey, jText] = juniGreet(allDone);
     const speak = canTalk && (!greeted || (allDone && !renderHome.saidDone));
     if (opts && opts.quietGreet){ showHomeBubbles(jText, ''); }
-    else if (speak){ Fun.data.seen++; greeted=true; if (allDone) renderHome.saidDone=true; speakHomeGreeting(jKey, jText, null, ''); }
+    else if (speak){ greeted=true; if (allDone) renderHome.saidDone=true; speakHomeGreeting(jKey, jText, null, ''); }
     else { showHomeBubbles(jText, ''); }
   }
   Fun.save();
@@ -3250,7 +3269,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.100';
+const APP_VERSION='4.101';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

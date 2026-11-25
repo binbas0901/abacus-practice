@@ -8,9 +8,9 @@
 
   /* ---------------- data ---------------- */
   // Stickers, garden, beads and treat tickets belong to the child who is practising (see store.js).
-  const data = Object.assign({ stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, Store.get('fun', {}));
+  const data = Object.assign({ stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0, welcomed: false, lastVisit: 0 }, Store.get('fun', {}));
   function save() { Store.set('fun', data); }
-  function replace(d) { Object.keys(data).forEach(k => delete data[k]); Object.assign(data, { stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0 }, d || {}); save(); }
+  function replace(d) { Object.keys(data).forEach(k => delete data[k]); Object.assign(data, { stickers: {}, gold: {}, garden: {}, best: {}, today: null, seen: 0, welcomed: false, lastVisit: 0 }, d || {}); save(); }
 
   /* ---------------- Bix, the bead mascot: the Toy Table figurine (TOY.bix) ---------------- */
   // Moods are the kit's: happy | wave | cheer | think | oops | sleepy | wow | proud ("concerned" is the old name for oops).
