@@ -855,6 +855,122 @@
     get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
   });
 
+  /* ---------- ab-shop-screen ----------
+     The Treat Shop (Bix's stall): golden-bead wallet, treat cards, "show a grown-up" tickets.
+     One featured card carries the loud buttons (Get it / Save for this); the rest are quiet pick
+     cards that bring a treat into the featured slot. The engine (inside treats.js) owns the money.
+       el.configure({title, beads, featuredId, goalId, treats:[{id,name,emoji,price,have,can}], tickets:[{name}]})
+       el.say(text)   Bix speaks     el.bixi   the character
+     Sends 'ab-action' with detail.action = back | pick (id) | goal (id) | buy (id). */
+  customElements.define('ab-shop-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:12px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900;flex:1;min-width:0}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .tickets{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:0}
+        .tickets:empty{display:none}
+        .tk-head{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .ticket{display:inline-flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:6px 14px;
+          font-size:15px;font-weight:800;box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')}}
+        .mid{flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:4px}
+        .cards{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%;max-width:820px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:26px;padding:18px 16px;
+          width:150px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};border:3px solid transparent;
+          transition:transform .08s;position:relative;-webkit-tap-highlight-color:transparent}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .card.goal{border-color:${v('gold', '#F5A623')}}
+        .art{font-size:48px;line-height:1}
+        .nm{font-size:17px;font-weight:900}
+        .price{display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:900;color:${v('orange-ink', '#7A4300')}}
+        .bar{width:100%;height:9px;border-radius:999px;background:${v('purple-line', '#DCD3EC')};overflow:hidden}
+        .bar i{display:block;height:100%;background:${v('gold', '#F5A623')}}
+        .card.hi{width:min(94%,300px);padding:24px 22px;gap:12px;border-color:transparent}
+        .card.hi.goal{border-color:${v('gold', '#F5A623')}}
+        .card.hi .art{font-size:92px}
+        .card.hi .nm{font-size:22px}
+        .card.hi .price{font-size:20px}
+        .tgoal{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:900;color:${v('orange-deep', '#C66A0C')};
+          letter-spacing:.04em;text-transform:uppercase}
+        .need{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .card.hi.can .need{color:#2FA36B}
+        .btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+        @container (max-aspect-ratio: 1/1){ .cards{flex-direction:column;align-items:center} .card{width:100%;max-width:420px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back to My Room" data-a="back"></ab-icon-button>
+            <span class="title">Treats</span>
+            <ab-chip icon="star"><b class="beads">0</b></ab-chip>
+          </div>
+          <div class="teacher"><ab-bixi pose="wave" size="84" idle></ab-bixi><ab-bubble tone="bixi" tail="left" size="18"></ab-bubble></div>
+          <div class="tickets"></div>
+          <div class="mid"><div class="cards"></div></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, id) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, id }, bubbles: true, composed: true })); }
+    _fit() {
+      const b = this.shadowRoot.querySelector('.teacher ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; b.setAttribute('size', Math.round(Math.max(72, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ title = 'Treats', beads = 0, featuredId = null, goalId = null, treats = [], tickets = [] } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      this.shadowRoot.querySelector('.beads').textContent = beads;
+      const tk = this.shadowRoot.querySelector('.tickets');
+      tk.innerHTML = tickets.length
+        ? `<span class="tk-head">Show a grown-up:</span>` + tickets.map(x =>
+            `<span class="ticket"><ab-icon name="star" size="18"></ab-icon>${esc(x.name)}</span>`).join('')
+        : '';
+      const feat = treats.find(t => t.id === featuredId) || treats[0] || null;
+      const rest = treats.filter(t => !feat || t.id !== feat.id);
+      const box = this.shadowRoot.querySelector('.cards');
+      const bead = '<ab-icon name="star" size="18"></ab-icon>';
+      const bigCard = t => {
+        const isGoal = goalId && goalId === t.id, can = !!t.can;
+        const need = can ? 'You have enough' : `${t.price - (t.have || 0)} more to go`;
+        const getBtn = can ? `<ab-button size="sm" variant="${isGoal ? 'primary' : 'soft'}" data-get="${esc(t.id)}">Get it</ab-button>` : '';
+        const goalBtn = isGoal ? '' : `<ab-button size="sm" variant="soft" icon="star" data-goal="${esc(t.id)}">Save for this</ab-button>`;
+        return `<div class="card hi${can ? ' can' : ''}${isGoal ? ' goal' : ''}">`
+          + (isGoal ? `<span class="tgoal"><ab-icon name="star" size="14"></ab-icon>Saving for this</span>` : '')
+          + `<span class="art">${esc(t.emoji || '🎁')}</span>`
+          + `<span class="nm">${esc(t.name)}</span>`
+          + `<span class="price">${bead}${t.price}</span>`
+          + `<span class="bar"><i style="width:${Math.min(100, Math.round(100 * (t.have || 0) / t.price))}%"></i></span>`
+          + `<span class="need">${esc(need)}</span>`
+          + `<span class="btns">${goalBtn}${getBtn}</span></div>`;
+      };
+      const smallCard = t => {
+        const isGoal = goalId && goalId === t.id;
+        return `<button class="card${isGoal ? ' goal' : ''}" data-pick="${esc(t.id)}" aria-label="${esc(t.name)}: ${t.price} golden beads">`
+          + `<span class="art">${esc(t.emoji || '🎁')}</span>`
+          + `<span class="nm">${esc(t.name)}</span>`
+          + `<span class="price">${bead}${t.price}</span>`
+          + `<span class="bar"><i style="width:${Math.min(100, Math.round(100 * (t.have || 0) / t.price))}%"></i></span></button>`;
+      };
+      box.innerHTML = (feat ? bigCard(feat) : '') + rest.map(smallCard).join('');
+      box.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.pick)));
+      box.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => this._emit('goal', b.dataset.goal)));
+      box.querySelectorAll('[data-get]').forEach(b => b.addEventListener('click', () => this._emit('buy', b.dataset.get)));
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get bixi() { return this.shadowRoot.querySelector('.teacher ab-bixi'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
