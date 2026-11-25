@@ -2755,7 +2755,13 @@ const ReadTeach = (function(){
   const SAY_BUFFER=1800, SAY_CEILING=6500, SAY_FLOOR=650, SAY_OFF=950;
   const voiceOn=()=> !!(settings.bixTalks!==false && typeof Speaker!=='undefined' && Speaker && Speaker.gestured && !navigator.webdriver);
   function clipMs(key){ try{ const V=CL()&&CL().Voice; if (V&&V.find){ const r=V.find('juni',key); if (r&&r[1]&&typeof r[1][1]==='number') return Math.round(r[1][1]*1000); } }catch(e){} return 0; }
-  function say(key, text){ return juniSayOn($bub(), $sky(), key, text, 0); }
+  // Juni speaks: caption on the kit bubble + voice via Classroom (bubble:null). Falls back to the old
+  // in-place bubble if the kit isn't present. (kitBeat pattern — same as the onboarding kit screens.)
+  function say(key, text){
+    const el = document.getElementById('rtKit');
+    if (el && el.say){ el.say(text); return CL() ? Promise.resolve(CL().say(key, { who:'juni', text, bubble:null })).catch(()=>{}) : Promise.resolve(); }
+    return juniSayOn($bub(), $sky(), key, text, 0);
+  }
   function beat(key, text){ const p=say(key,text); if (!alive) return Promise.resolve(); if (!voiceOn()) return sleep(SAY_OFF);
     const cap=(clipMs(key) ? clipMs(key)+SAY_BUFFER : SAY_CEILING);
     return Promise.race([ Promise.all([Promise.resolve(p).catch(()=>{}), sleep(SAY_FLOOR)]), sleep(cap) ]); }
@@ -2897,13 +2903,17 @@ const ReadTeach = (function(){
     try { toySky($sky()); } catch(e){}
     try { toyBix($bix(), 'happy', {size:132, keep:false}); } catch(e){}
     bixIdleStart();
-    const t=$('#rtTitle'); if (t) t.textContent = (typeof L1_LABELS!=='undefined' && L1_LABELS[teachMode==='make'?'listening':'reading']) || (teachMode==='make'?'Make the number':'Read the beads');
+    const title = (typeof L1_LABELS!=='undefined' && L1_LABELS[teachMode==='make'?'listening':'reading']) || (teachMode==='make'?'Make the number':'Read the beads');
+    const t=$('#rtTitle'); if (t) t.textContent = title;
+    const rtk=document.getElementById('rtKit'); if (rtk){ if (rtk.setTitle) rtk.setTitle(title); rtk.hidden=false; }   // show the new-kit chrome (old markup stays behind as fallback)
     const host=$('#rtAbacus');
     if (!ab){ ab=DemoAbacus(host, {rods:1, readout:false, onBead:()=>Sfx.tap(), onChange:(v)=>{ if (ab && ab._rtOnChange) ab._rtOnChange(v); }}); }
     ab.reset(); ab.setReadOnly(true); $count().textContent=''; clearPad(); showNext(false);
     if (!start._wired){ start._wired=true;
       $next().addEventListener('click', onNextClick);
-      $('#exitReadTeach').addEventListener('click', ()=>{ Sfx.tap(); stop(); if (Practice && Practice.on) Practice.pick(); else { renderHome(); show('home'); } });
+      const back = ()=>{ Sfx.tap(); stop(); if (Practice && Practice.on) Practice.pick(); else { renderHome(); show('home'); } };
+      $('#exitReadTeach').addEventListener('click', back);
+      const rtk2=document.getElementById('rtKit'); if (rtk2) rtk2.addEventListener('ab-action', (e)=>{ if (e.detail && e.detail.action==='back') back(); });
     }
     show('readTeach');
     (teachMode==='make'?runMake:runRead)().catch(()=>{});
@@ -3466,7 +3476,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.113';
+const APP_VERSION='4.114';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

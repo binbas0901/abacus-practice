@@ -1145,6 +1145,54 @@
     get juni() { return this.shadowRoot.querySelector('ab-juni'); }
   });
 
+  /* ---------- ab-readteach-screen ----------
+     Level-1 practice (Read the beads / Make the number). Kit chrome only: new sky + header (back +
+     title) + Juni teacher who speaks the captions; the live interactive stage (the soroban, the
+     running count, the choice/Next pad, Bixi) is a light-DOM child slotted in, so the ReadTeach
+     engine keeps driving it by id. Juni's voice plays via Classroom; the caption shows here.
+       el.setTitle(t)   el.say(text)   el.get juni
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-readteach-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{height:28%;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:10px;
+          padding:max(18px,env(safe-area-inset-top)) 24px max(18px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:14px;flex:none}
+        .title{flex:1;min-width:0;font-size:clamp(20px,2.4cqw,26px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .teacher{display:flex;align-items:center;gap:12px;flex:none}
+        .teacher ab-bubble{max-width:min(80cqw,560px)}
+        .stage{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center}
+        ::slotted(*){max-width:100%}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header>
+            <ab-icon-button icon="back" label="Back" data-a="back"></ab-icon-button>
+            <span class="title">Read the beads</span>
+          </header>
+          <div class="teacher"><ab-juni pose="point" size="84" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="stage"><slot></slot></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this.dispatchEvent(new CustomEvent('ab-action', { detail: { action: 'back' }, bubbles: true, composed: true })));
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(72, Math.min(r.width * 0.08, r.height * 0.12)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    setTitle(t) { this.shadowRoot.querySelector('.title').textContent = t || ''; }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
