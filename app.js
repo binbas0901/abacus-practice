@@ -923,11 +923,12 @@ function driveHomeKit(done, total, allDone){
     homeKitWired = true;
     el.addEventListener('ab-action', (e)=>{
       const a = e.detail && e.detail.action; Speaker.unlock();
-      if (a==='start') return Practice.start();          // primary: the day's practice (a new skill offers a quick lesson, skippable)
+      if (a==='start') return Practice.start();          // primary: the day's practice (a new skill offers a quick lesson, skippable; reading + listening live here)
       if (a==='learn') return startMode('learn');         // the Learn place: tutorials/demos for the current skill
-      if (a==='practice') return startMode('visual');    // (legacy action; tile replaced by Learn)
-      if (a==='listen') return startMode('listen');      // direct listening drill
+      if (a==='room') return goRoom();                    // My Room: sticker book, flowers, treat jar (rewards)
       if (a==='play') return goPlay();                   // games hub
+      if (a==='practice') return startMode('visual');    // (legacy actions; tiles removed)
+      if (a==='listen') return startMode('listen');
       if (a==='grownups') return openGate();             // grown-ups gate
       if (a==='profile') return showWho();               // switch / manage child
     });
@@ -3335,7 +3336,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.104';
+const APP_VERSION='4.105';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
