@@ -514,6 +514,72 @@
     get juni() { return this.shadowRoot.querySelector('ab-juni'); }
   });
 
+  /* ---------- ab-who-screen ----------
+     "Who's practising today?" — the child switcher behind the profile chip. Kid-facing (switch only; add/remove live
+     behind the grown-up gate). The engine configures it and reacts:
+       el.configure({children:[{id,name,color,initial,active}]})   el.say(text)   el.juni / el.bixi
+     Sends 'ab-action' with detail.action = pick (detail.id) | back. */
+  customElements.define('ab-who-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(24px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .talk{display:flex;align-items:center;gap:14px;min-width:0}
+        .talk ab-bubble{max-width:min(70cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto}
+        .cards{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-content:center;max-width:720px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:26px;padding:22px 18px 18px;width:150px;
+          display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};
+          border:3px solid transparent;transition:transform .08s;-webkit-tap-highlight-color:transparent;position:relative}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .card.active{border-color:${v('purple', '#5B3596')}}
+        .av{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+          font-size:38px;font-weight:900;color:#fff;box-shadow:inset 0 -6px 0 rgba(0,0,0,.12)}
+        .nm{font-size:19px;font-weight:900;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .now{position:absolute;top:10px;right:10px;background:${v('purple', '#5B3596')};color:#fff;font-size:12px;font-weight:800;
+          padding:3px 9px;border-radius:999px}
+        .card:not(.active) .now{display:none}
+        .bx{position:absolute;right:20px;bottom:12px;z-index:3;pointer-events:none}
+        @container (max-aspect-ratio: 1/1){ .bx{display:none} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back" data-a="back"></ab-icon-button>
+            <div class="talk"><ab-juni pose="point" size="110" idle></ab-juni><ab-bubble tail="left" size="20"></ab-bubble></div>
+          </div>
+          <div class="mid"><div class="cards"></div></div>
+          <div class="bx"><ab-bixi pose="wave" size="112"></ab-bixi></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, id) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, id }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(90, Math.min(r.width * 0.11, r.height * 0.16)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ children = [] }) {
+      const box = this.shadowRoot.querySelector('.cards');
+      box.innerHTML = children.map(c => `<button class="card${c.active ? ' active' : ''}" data-id="${esc(c.id)}">`
+        + `<span class="av" style="background:${esc(c.color || '#5B3596')}">${esc(c.initial || '?')}</span>`
+        + `<span class="nm">${esc(c.name || 'New child')}</span><span class="now">Now</span></button>`).join('');
+      box.querySelectorAll('.card').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.id)));
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+  });
+
   /* ---------- ab-done-screen ----------
      The last setup screen: celebration + where they'll start + (in a browser tab) add-to-Home-Screen advice + "Let's go".
        el.configure({headline, subtitle, showInstall})   el.say(text)   el.juni / el.bixi
