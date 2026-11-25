@@ -1535,7 +1535,7 @@ async function renderLesson(){
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
     if (ownerAbacus()){ lessonAb.setReadOnly(false); lessonAb.reset(); L.ownerTurn=true; L.ownerReady=false; $('#lessonHint').style.display='none'; lessonSkip();
       cap('Your turn', `Make <b>${v}</b> on your own abacus — then show it here too!`, String(v));   // do it physically, mirror it on screen (which checks it), then "I did it"
-      if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return; }
+      if (L.demoIdx===0){ juniNarrate('juni_turn_own'); capVoice('juni_turn_own','juni'); } return; }
     L.ownerTurn=false;
     cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); $('#lessonHint').style.display=''; if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (number-agnostic); "Show me" lets a stuck child be shown how to form this number
   }
@@ -1557,7 +1557,7 @@ async function renderLesson(){
     const narrateTurn = ()=>{ if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else { juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } } };
     if (ownerAbacus()){ lessonAb.setReadOnly(false); lessonAb.value=ls.start; L.ownerTurn=true; L.ownerReady=false; $('#lessonHint').style.display='none'; lessonSkip();
       cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `Do <b>${probHtml(ls.label)}</b> on your abacus — then show the answer here!`, ls.label);
-      narrateTurn(); return; }
+      if (L.guidedIdx===0){ juniNarrate('juni_turn_own'); capVoice('juni_turn_own','juni'); } return; }
     L.ownerTurn=false;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label);
     lessonSkip(); $('#lessonHint').style.display=''; narrateTurn(); return;
@@ -2749,13 +2749,13 @@ const ReadTeach = (function(){
   // MAKING practice: Juni says a number; the child builds it on the beads. No-fail (stuck -> Juni builds it, then retry).
   async function runMake(){
     const my=token;
-    await beat('j_pr_make_intro','Let’s make some numbers! I’ll say one, and you build it.'); if (token!==my) return;
+    await beat(ownerAbacus() ? 'j_pr_make_intro_own' : 'j_pr_make_intro', ownerAbacus() ? 'Let’s make some numbers! I’ll say one — make it on your own abacus, then show it to me here.' : 'Let’s make some numbers! I’ll say one, and you build it.'); if (token!==my) return;
     await gap(); await bixLine('bx_mk_cheerme','happy'); if (token!==my) return;
     await gap(); if (token!==my) return;   // after the opening line, go straight into the first number — no "Next" tap (the first round starts on its own)
     const nums = pickRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); $count().textContent='';
-      await beat('j_pr_make_'+N, ownerAbacus() ? 'Make '+N+' on your abacus, then show it here!' : 'Can you make '+N+'?'); if (token!==my) return;
+      await beat('j_pr_make_'+N, 'Can you make '+N+'?'); if (token!==my) return;   // owner framing is set once by the intro; per-number uses the shared clip
       if (ownerAbacus()) await waitMakeInteractive(N);
       else await waitBead(N, async()=>{ await demoBuild(N); });
       if (token!==my) return;
@@ -3344,7 +3344,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.106';
+const APP_VERSION='4.107';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
