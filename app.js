@@ -1035,7 +1035,35 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 // (The old "Today" Start button is gone — the big Practice button, #doorPractice, launches the level run below.)
-function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
+// New-kit Play hub: drives <ab-play-screen> over the old #playCards markup (kept as fallback).
+let playKitWired = false;
+function drivePlayKit(){
+  const el = document.getElementById('playKit'); if (!el || !el.configure) return;
+  const best = Fun.data.best || {};
+  const popTotal = best.popTotal || best.pop || 0;   // mirror games.js popTotal(best)
+  const ICON = { pop:'heart', reader:'abacus', build:'star' };   // closest existing kit icons (flag: no bead-pair/magnifier/number-tile glyph)
+  const TONE = { pop:'orange' };
+  const chipOf = (id)=> id==='pop'    ? (popTotal ? `${popTotal} friends popped` : '')
+                      : id==='reader' ? (best.reader ? `Best: ${best.reader} shiny beads` : '')
+                      :                 (best.buildTotal ? `${best.buildTotal} numbers built` : '');
+  const games = Object.entries(Games.GAMES).map(([id, g]) => {
+    const chip = chipOf(id);
+    return { id, label: g.name, desc: g.desc, icon: ICON[id] || 'star', tone: TONE[id], chip, isNew: !chip && id !== 'build' };
+  });
+  el.configure({ games, bixiLine: '' });
+  el.say('Pick a game! Every game gives you a sticker.');   // matches Juni's j_play_pick caption
+  if (!playKitWired){
+    playKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action;
+      if (a === 'back'){ stopVoices(); renderHome(); show('home'); return; }   // == #exitPlay
+      if (a === 'pick'){ Sfx.tap(); el.hidden = true; Games.open(e.detail.gameId, { from: '' }); return; }
+    });
+  }
+  el.hidden = false;
+}
+
+function goPlay(){ stopVoices(); Games.renderHub(); drivePlayKit(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
   Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');   // caption matches the recorded clip
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
@@ -3412,7 +3440,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.111';
+const APP_VERSION='4.112';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

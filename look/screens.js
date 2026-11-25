@@ -971,6 +971,89 @@
     get bixi() { return this.shadowRoot.querySelector('.teacher ab-bixi'); }
   });
 
+  /* ---------- ab-play-screen ----------
+     The "Play" games hub: a grid of game tiles. Juni leads from the top; Bixi waves in the corner.
+     Rendering/launching still live in games.js; the engine just configures the frame:
+       el.configure({games:[{id,label,desc,icon,chip,isNew,tone}], bixiLine})
+       el.say(text)  Juni's line    el.bixiSay(text)  Bixi corner line ('' hides)   el.juni / el.bixi
+     Sends 'ab-action' with detail.action = back | pick (detail.gameId). */
+  customElements.define('ab-play-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+        .cards{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;width:100%;max-width:820px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:28px;padding:24px 20px;
+          flex:1 1 0;min-width:190px;max-width:250px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};border:3px solid transparent;transition:transform .08s;position:relative;-webkit-tap-highlight-color:transparent}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .ic{width:64px;height:64px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center}
+        .card.orange .ic{background:${v('orange-soft', '#FFF1DE')};color:${v('orange-deep', '#C66A0C')}}
+        .lab{font-size:21px;font-weight:900}
+        .desc{font-size:14px;font-weight:600;line-height:1.35;color:${v('ink-soft', '#5E5478')}}
+        .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .chip:empty{display:none}
+        .new{font-size:13px;font-weight:900;color:${v('orange-deep', '#C66A0C')};background:${v('orange-soft', '#FFF1DE')};padding:3px 10px;border-radius:999px}
+        .bixi{position:absolute;right:22px;bottom:12px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;z-index:3}
+        .bixi ab-bubble{max-width:220px;margin-bottom:14px}
+        @container (max-aspect-ratio: 1/1){
+          .cards{flex-direction:column;align-items:center}
+          .card{width:100%;max-width:440px;flex-direction:row;justify-content:flex-start;text-align:left}
+          .bixi{display:none}
+        }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back home" data-a="back"></ab-icon-button>
+            <span class="title">Play</span>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="mid"><div class="cards"></div></div>
+          <div class="bixi"><ab-bubble tone="bixi" tail="bottom-right" size="16" style="display:none"></ab-bubble><ab-bixi pose="wave" size="112"></ab-bixi></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, gameId) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, gameId }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('.teacher ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ games = [], bixiLine = '' } = {}) {
+      const box = this.shadowRoot.querySelector('.cards');
+      box.innerHTML = games.map(g => {
+        const tag = g.chip ? `<span class="chip"><ab-icon name="star" size="16"></ab-icon>${esc(g.chip)}</span>`
+                  : g.isNew ? `<span class="new">New!</span>` : '';
+        return `<button class="card${g.tone === 'orange' ? ' orange' : ''}" data-game="${esc(g.id)}" aria-label="${esc(g.label)}: ${esc(g.desc || '')}">`
+          + `<span class="ic"><ab-icon name="${esc(g.icon || 'star')}" size="32"></ab-icon></span>`
+          + `<span class="lab">${esc(g.label)}</span>`
+          + (g.desc ? `<span class="desc">${esc(g.desc)}</span>` : '')
+          + tag
+          + `</button>`;
+      }).join('');
+      box.querySelectorAll('.card').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.game)));
+      this.bixiSay(bixiLine);
+    }
+    say(text) { this.shadowRoot.querySelector('.teacher ab-bubble').say(text); }
+    bixiSay(text) { const b = this.shadowRoot.querySelector('.bixi ab-bubble'); b.style.display = text ? '' : 'none'; if (text) b.say(text); }
+    get juni() { return this.shadowRoot.querySelector('.teacher ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('.bixi ab-bixi'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then
