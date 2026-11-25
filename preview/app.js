@@ -132,8 +132,16 @@ const Practice = {
     if (!this.on) return;
     const id = this.node, n = this.nodeObj(id);
     if (levelComplete(id)) return this.levelDone();
-    if (n && hasLesson(n) && !node(id).lesson){ this.type = 'lesson'; return startLesson(n, 'practice'); }   // first time at this level
+    // A brand-new skill offers a quick lesson once (skippable) instead of forcing it — lessons live in the Learn place now.
+    if (n && hasLesson(n) && !node(id).lesson && !node(id).lessonSkipped) return this.offerLesson(n);
     this.pick();
+  },
+  offerLesson(n){
+    const id = n.id;
+    TOY.confirm(`New skill: ${n.title}`, 'Would you like a quick lesson first, or jump straight into practice? You can always learn it later from the Learn button.', { ok: 'Learn it', cancel: 'Just practice' })
+      .then(yes=>{ if (!this.on) return;
+        if (yes){ this.type = 'lesson'; startLesson(n, 'practice'); }
+        else { node(id).lessonSkipped = true; saveProgress(); this.pick(); } });
   },
   // The simple Reading / Listening picker. (Mental-math "flash" nodes skip it and run the flash track.)
   pick(){
@@ -905,7 +913,7 @@ function driveHomeKit(done, total, allDone){
   const set = (k,v)=>{ v=String(v); if (el.getAttribute(k)!==v) el.setAttribute(k,v); };
   set('name', settings.name || 'friend');
   set('stars', beads);
-  set('lesson-label', "Today's lesson");
+  set('lesson-label', "Today's practice");               // home now leads with practice; lessons live in the Learn place
   set('lesson-title', cur.title);
   set('lesson-text', cur.intro || '');
   set('done', done); set('total', total);
@@ -915,8 +923,9 @@ function driveHomeKit(done, total, allDone){
     homeKitWired = true;
     el.addEventListener('ab-action', (e)=>{
       const a = e.detail && e.detail.action; Speaker.unlock();
-      if (a==='start') return Practice.start();          // primary: the current level's flow (lesson first time, then the picker)
-      if (a==='practice') return startMode('visual');    // direct reading/visual drill
+      if (a==='start') return Practice.start();          // primary: the day's practice (a new skill offers a quick lesson, skippable)
+      if (a==='learn') return startMode('learn');         // the Learn place: tutorials/demos for the current skill
+      if (a==='practice') return startMode('visual');    // (legacy action; tile replaced by Learn)
       if (a==='listen') return startMode('listen');      // direct listening drill
       if (a==='play') return goPlay();                   // games hub
       if (a==='grownups') return openGate();             // grown-ups gate
@@ -3289,7 +3298,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.102';
+const APP_VERSION='4.103';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

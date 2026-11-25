@@ -110,14 +110,14 @@
             </div>
             <div class="col">
               <ab-card pad="md">
-                <div class="lab">${esc(a('lesson-label') || "Today's lesson")}</div>
-                <h1>${esc(a('lesson-title') || 'Your next lesson')}</h1>
+                <div class="lab">${esc(a('lesson-label') || "Today's practice")}</div>
+                <h1>${esc(a('lesson-title') || 'Your next skill')}</h1>
                 ${a('lesson-text') ? `<p class="txt">${esc(a('lesson-text'))}</p>` : ''}
                 <div class="row"><ab-moons total="${mt}" done="${md}" size="18"></ab-moons><span class="moonlab">Juni's moon is filling up</span></div>
-                <ab-button class="go" size="lg" icon="play" data-a="start">Start lesson</ab-button>
+                <ab-button class="go" size="lg" icon="play" data-a="start">Start</ab-button>
               </ab-card>
               <div class="tiles">
-                <ab-tile icon="abacus" data-a="practice">Practice</ab-tile>
+                <ab-tile icon="book" data-a="learn">Learn</ab-tile>
                 <ab-tile icon="headphones" data-a="listen">Listen</ab-tile>
                 <ab-tile icon="star" tone="orange" data-a="play">Play</ab-tile>
               </div>
