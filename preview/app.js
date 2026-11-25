@@ -2623,7 +2623,7 @@ async function showMe(p){
    progress by one session, so level mastery (7) still works.
    SEAM: start() could branch to a lighter path on repeat visits later (a follow-up; not built yet). */
 const ReadTeach = (function(){
-  let ab=null, onDoneCb=null, alive=false, token=0, stuckT=null, waitNextRes=null, waitKind=null, bixIdleT=null, teachMode='read', stuckKey='j_rt_stuck';   // waitKind: test hook — what the flow is waiting on ('next' | 'bead:N' | 'read:N' | null). teachMode: 'read' (Read the beads) | 'make' (Make the number) — same engine, two scripts.
+  let ab=null, onDoneCb=null, alive=false, token=0, stuckT=null, waitNextRes=null, waitKind=null, bixIdleT=null, teachMode='read', stuckKey='j_rt_stuck', curNode=null;   // waitKind: test hook — what the flow is waiting on ('next' | 'bead:N' | 'read:N' | null). teachMode: 'read' (Read the beads) | 'make' (Make the number) — same engine, two scripts. curNode: the skill being practised (for difficulty graduation).
   // Bixi is the classmate who reacts. To keep ONE voice at a time, success = an instant silent bounce; his spoken
   // cheer (cheerBix) is played only AFTER Juni's verdict and is given time to finish before the next line.
   const BX_CHEERS=['bx_rt_nice','bx_rt_yes','bx_rt_got','bx_rt_woo','bx_rt_cool','bx_rt_me'];
@@ -2724,6 +2724,18 @@ const ReadTeach = (function(){
   let yesIdx=0; const nextYes=()=>PR_YES[(yesIdx++)%PR_YES.length];
   const pick1=a=>a[Math.floor(Math.random()*a.length)];
   function pickRounds(k){ const pool=[1,2,3,4,5,6,7,8,9]; for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; } return pool.slice(0,k); }
+  // Difficulty climbs with practice, so a brand-new child is never shown a big number first. The ceiling rises one
+  // number per completed practice set: earth beads (1-4) first, then the heaven bead (5), then the combined 6-9.
+  // Within a set the numbers always open low and climb, so the first number is never an 8 or 9.
+  function practiceSetsDone(){ try { return (curNode && window.__level) ? window.__level.setsDone(curNode.id) : 0; } catch(e){ return 0; } }
+  function gradedRounds(k){
+    const maxN = Math.min(9, 5 + practiceSetsDone());                 // first set -> up to 5; then +1 each set, to 9
+    const order = [1,2,3,4,5,6,7,8,9].filter(n=>n<=maxN);
+    if (order.length <= k) return order.slice(0, k);                  // early sets: the low numbers in order, e.g. [1,2,3,4,5]
+    const low = order.slice(0, 2), rest = order.slice(2);            // always open with two low ones...
+    for (let i=rest.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [rest[i],rest[j]]=[rest[j],rest[i]]; }
+    return [...low, ...rest.slice(0, k-2).sort((a,b)=>a-b)];          // ...then a climbing spread up to the ceiling
+  }
   async function demoBuild(N){ ab.reset(); if (N>=5){ await ab.move(0,+5,560,()=>alive); for(let k=0;k<N-5;k++){ await ab.move(0,+1,380,()=>alive); } } else { for(let k=0;k<N;k++){ await ab.move(0,+1,400,()=>alive); } } }
   const ROUNDS=5;
   // READING practice: a number is shown on the beads; the child reads it by tapping the number. No-fail (count together, retry).
@@ -2732,7 +2744,7 @@ const ReadTeach = (function(){
     await beat('j_pr_read_intro','Let’s read some beads together!'); if (token!==my) return;
     await gap(); await bixLine('bx_hi_class','happy'); if (token!==my) return;
     await gap(); if (token!==my) return;   // after the opening line, go straight into the first number — no "Next" tap (the first round starts on its own)
-    const nums = pickRounds(ROUNDS);
+    const nums = gradedRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); ab.input.setValue(N,{animate:true}); $count().textContent='';
       await beat('j_pr_read_ask','What number is this?'); if (token!==my) return;
@@ -2752,7 +2764,7 @@ const ReadTeach = (function(){
     await beat(ownerAbacus() ? 'j_pr_make_intro_own' : 'j_pr_make_intro', ownerAbacus() ? 'Let’s make some numbers! I’ll say one — make it on your own abacus, then show it to me here.' : 'Let’s make some numbers! I’ll say one, and you build it.'); if (token!==my) return;
     await gap(); await bixLine('bx_mk_cheerme','happy'); if (token!==my) return;
     await gap(); if (token!==my) return;   // after the opening line, go straight into the first number — no "Next" tap (the first round starts on its own)
-    const nums = pickRounds(ROUNDS);
+    const nums = gradedRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); $count().textContent='';
       await beat('j_pr_make_'+N, 'Can you make '+N+'?'); if (token!==my) return;   // owner framing is set once by the intro; per-number uses the shared clip
@@ -2769,7 +2781,7 @@ const ReadTeach = (function(){
     finish();
   }
   function start(node, onDone, which){
-    token++; alive=true; onDoneCb=onDone; teachMode = which||'read'; stuckKey = teachMode==='make' ? 'j_mk_stuck' : 'j_rt_stuck';
+    token++; alive=true; onDoneCb=onDone; curNode=node; teachMode = which||'read'; stuckKey = teachMode==='make' ? 'j_mk_stuck' : 'j_rt_stuck';
     try { Speaker.unlock && Speaker.unlock(); } catch(e){}
     try { Fun.BixVoice && Fun.BixVoice.load && Fun.BixVoice.load(); } catch(e){}   // preload Bixi's (Gigi) voice for the lesson
     try { toySky($sky()); } catch(e){}
@@ -3344,7 +3356,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.107';
+const APP_VERSION='4.108';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
