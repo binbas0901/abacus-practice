@@ -3198,7 +3198,9 @@ function renderChildren(){
 }
 $('#kidAdd').addEventListener('click', ()=>{ const id=Store.addChild(); Store.switchTo(id); location.reload(); });
 // "Who's practising?" when more than one child uses this device. Each child is a wooden block with a bead in their own lacquer colour.
+const KID_HEX = ['#E8615A', '#5B6CD9', '#2FA3A3', '#E0A52E'];   // profile avatar colours (match the KID_COLORS order)
 function showWho(){
+  if (showWhoKit()) return;   // new-kit child switcher (old markup below kept as fallback)
   $('#whoList').innerHTML=Store.children().map((c,i)=>`<button type="button" class="who-card tw-card" data-who="${c.id}"><span class="tw-bead">${TOY.bead(KID_COLORS[i%KID_COLORS.length], 128, {tall:true})}</span><span class="tw-name">${esc(childLabel(c))}</span></button>`).join('');
   $$('#whoList [data-who]').forEach(b=>b.onclick=()=>{ Speaker.unlock(); Sfx.tap(); if(b.dataset.who===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); show('home'); renderHome(); } else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(b.dataset.who); location.reload(); } });
   if (!$('#whoSky').innerHTML){ $('#whoSky').innerHTML=TOY.skyMoon('calm', 1);   /* nobody is picked yet: a neutral full moon, not somebody's phase */ $('#whoShelf').innerHTML=TOY.prop('rainbow', 150) + TOY.prop('plant', 170); }
@@ -3209,6 +3211,24 @@ function showWho(){
   if (!showWho.bound){ showWho.bound=true; $('#who').addEventListener('click', e=>{ if (!e.target.closest('button') && !showWho.spoke){ showWho.spoke=true; juniSayOn($('#whoJuni'), $('#whoSky'), 'j_onboard_who', 'Who’s practising today?'); } }); }
 }
 $('#switchKid').addEventListener('click', ()=>{ sessionStorage.removeItem('abacus.who'); showWho(); });
+
+// New-kit child switcher (profile). Switch-only; add/remove stay behind the grown-up gate in the Grown-ups area.
+function whoKitEl(){ return document.getElementById('whoKit'); }
+function showWhoKit(){
+  const w = whoKitEl(); if (!w) return false;
+  const act = Store.activeId();
+  w.configure({ children: Store.children().map((c,i)=>{ const nm = childLabel(c);
+    return { id:c.id, name:nm, color:KID_HEX[i%KID_HEX.length], initial:(nm.trim().charAt(0)||'?').toUpperCase(), active:c.id===act }; }) });
+  w.say('Who’s practising today?');
+  if (!w._wired){ w._wired = true; w.addEventListener('ab-action', e=>{ const a = e.detail && e.detail.action;
+    if (a==='back'){ Sfx.tap(); w.hidden = true; show('home'); renderHome(); return; }
+    if (a==='pick'){ Speaker.unlock(); Sfx.tap(); const id = e.detail.id;
+      if (id===Store.activeId()){ sessionStorage.setItem('abacus.who','1'); w.hidden = true; show('home'); renderHome(); }
+      else { sessionStorage.setItem('abacus.who','1'); Store.switchTo(id); location.reload(); } } }); }
+  w.hidden = false; show('who');
+  if (window.Classroom) Promise.resolve(Classroom.Voice.play('juni','j_onboard_who', null)).catch(()=>{});
+  return true;
+}
 
 /* ---------------- bridge for fun.js and games.js ---------------- */
 window.App = {
@@ -3269,7 +3289,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.101';
+const APP_VERSION='4.102';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
