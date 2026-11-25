@@ -1533,8 +1533,8 @@ async function renderLesson(){
   }
   if (L.phase==='numbers'){ // beads node: set each number
     const v=n.lesson.numbers[L.demoIdx]; L.target=v; lessonAb.reset();
-    if (ownerAbacus()){ lessonAb.setReadOnly(true); L.ownerTurn=true; $('#lessonHint').style.display='none';
-      cap('Your turn', `Make <b>${v}</b> on your own abacus, then tap <b>I did it</b>.`, String(v)); lessonBtn('I did it', 'play');
+    if (ownerAbacus()){ lessonAb.setReadOnly(false); lessonAb.reset(); L.ownerTurn=true; L.ownerReady=false; $('#lessonHint').style.display='none'; lessonSkip();
+      cap('Your turn', `Make <b>${v}</b> on your own abacus — then show it here too!`, String(v));   // do it physically, mirror it on screen (which checks it), then "I did it"
       if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return; }
     L.ownerTurn=false;
     cap('Your turn', `Show <b>${v}</b> on the abacus. Tap beads to move them.`, String(v)); lessonSkip(); $('#lessonHint').style.display=''; if (L.demoIdx===0){ juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } return;   // Juni gives the "your turn" cue (number-agnostic); "Show me" lets a stuck child be shown how to form this number
@@ -1555,8 +1555,8 @@ async function renderLesson(){
     { const ab$=$('#lessonAbacus'); if (ab$ && n.kind==='flash'){ const t = n.guided.length>1 ? L.guidedIdx/(n.guided.length-1) : 0; ab$.style.opacity = (0.55 - 0.25*t).toFixed(2); } }
     { const f=friendOfSteps(ls.steps); if (f || !n.family) lessonPair(f); }
     const narrateTurn = ()=>{ if (L.guidedIdx===0){ const sc=lessonScript(n.id), yt=sc&&sc.your_turn&&sc.your_turn.id; if (yt){ juniNarrate(yt); capVoice(yt,'juni'); } else { juniNarrate('juni_turn'); capVoice('juni_turn','juni'); } } };
-    if (ownerAbacus()){ lessonAb.setReadOnly(true); L.ownerTurn=true; $('#lessonHint').style.display='none';
-      cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `Do <b>${probHtml(ls.label)}</b> on your own abacus, then tap <b>I did it</b>.`, ls.label); lessonBtn('I did it', 'play');
+    if (ownerAbacus()){ lessonAb.setReadOnly(false); lessonAb.value=ls.start; L.ownerTurn=true; L.ownerReady=false; $('#lessonHint').style.display='none'; lessonSkip();
+      cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, `Do <b>${probHtml(ls.label)}</b> on your abacus — then show the answer here!`, ls.label);
       narrateTurn(); return; }
     L.ownerTurn=false;
     cap(`Your turn ${L.guidedIdx+1} of ${n.guided.length}`, guidedText(ls, n.guided[L.guidedIdx], ''), ls.label);
@@ -1682,7 +1682,12 @@ function onLessonBeads(v){
     return;
   }
   if (L.phase==='numbers' || L.phase==='guided'){
-    if (L.ownerTurn) return;   // owner does the bead work on their own abacus; the "I did it" button advances instead
+    if (L.ownerTurn){   // owner: they did it on their own abacus and are now mirroring it here. Reaching the target confirms it, then "I did it" advances.
+      if (v===L.target && !L.ownerReady){ L.ownerReady=true; clearTimeout(L.skipT); Sfx.ok(); Fun.Mascot.react($('#bixLesson'), 'happy');
+        const pr=nextPraise(); cap('Yes!', `<b>${v}</b> — ${pr.text} Tap <b>I did it</b>.`); juniNarrate(pr.k); capVoice(pr.k,'juni'); lessonBtn('I did it', 'play'); }
+      else if (v!==L.target && L.ownerReady){ L.ownerReady=false; $('#lessonNext').style.visibility='hidden'; }   // moved off the answer: hide the confirm until it matches again
+      return;
+    }
     clearTimeout(L.tryT);
     if (v!==L.target){ const l=L, at=l.phase+turnIdx();   // the beads rest on another number: a try. After two, Skip turns up.
       l.tryT=setTimeout(()=>{ if (L!==l || l.phase+turnIdx()!==at || l.busy || lessonAb.value===l.target) return; if (++l.tries>=2 && l.showSkip) l.showSkip(); }, 1500); }
@@ -1743,12 +1748,12 @@ function advanceLesson(){
 // Owner "I did it": the child did the bead work on their own abacus, so this counts as a done turn (like reaching the
 // target on screen), then the lesson advances.
 function ownerTurnDone(){
-  if (!L || L.busy || !L.ownerTurn) return;
-  L.ownerTurn=false; $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok();
+  if (!L || L.busy || !L.ownerTurn || !L.ownerReady) return;   // only once they've shown the right answer on screen
+  L.ownerTurn=false; L.ownerReady=false; $('#lessonNext').style.visibility='hidden'; L.marks[turnIdx()]=true; L.did++; L.won=true; Sfx.ok();
   const pr=nextPraise(); cap('Great!', pr.text); juniNarrate(pr.k); capVoice(pr.k,'juni'); Fun.Mascot.react($('#bixLesson'), 'happy');
   L.busy=true; setTimeout(()=>{ L.busy=false; advanceLesson(); }, 800);
 }
-$('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; if (L.ownerTurn && (L.phase==='numbers'||L.phase==='guided')) return ownerTurnDone(); advanceLesson(); });   // (the step she just got right moves on by itself)
+$('#lessonNext').addEventListener('click', ()=>{ if (L.won) return; if (L.ownerTurn && (L.phase==='numbers'||L.phase==='guided')){ if (L.ownerReady) return ownerTurnDone(); return advanceLesson(); } advanceLesson(); });   // owner: "I did it" (shown it on screen) finishes the turn; otherwise Skip advances. (On-screen path: the step she got right moves on by itself.)
 $('#lessonBack').addEventListener('click', ()=>{ Speaker.unlock(); lessonBack(); });        // go back a step if the child missed something
 // Other screens and the tests can open any skill's lesson.
 window.Lessons = { start: (n, from)=>startLesson(typeof n==='string' ? C.BY_ID[n] : n, from) };
@@ -2664,16 +2669,19 @@ const ReadTeach = (function(){
         ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(500); ab.reset(); $count().textContent='0'; ab.setReadOnly(false); }, 6500);
     });
   }
-  // Owner path: the child makes the number on their OWN abacus. No on-screen beads — just "Show me" (a reveal to
-  // self-check) and "I did it" to move on.
-  function waitMakeOwner(N, demoFn){
+  // Owner path: the child makes the number on their OWN abacus, then mirrors it on the on-screen abacus (which checks
+  // it). When the screen shows the number, an "I did it" button appears to move on. No passive reveal.
+  function waitMakeInteractive(N){
     return new Promise(res=>{
-      const my=token; ab.setReadOnly(true); waitKind='makeown:'+N; $count().textContent='';
-      const pad=$pad(); pad.innerHTML=''; pad.onclick=null;
-      const mk=(label,wood)=>{ const b=document.createElement('button'); b.type='button'; b.className='toy-block toy-block--'+(wood?'wood':'teal'); b.innerHTML=`<span class="toy-block-label">${label}</span>`; pad.appendChild(b); return b; };
-      const show=mk('Show me', true), next=mk('I did it', false);
-      show.onclick=async()=>{ if (token!==my) return; show.disabled=true; ab.setReadOnly(true); await demoFn(); if (token!==my) return; await sleep(600); ab.reset(); $count().textContent=''; show.disabled=false; };
-      next.onclick=()=>{ if (token!==my) return; pad.innerHTML=''; waitKind=null; Sfx.ok(); bixReact('cheer'); res(true); };
+      const my=token; ab.reset(); $count().textContent='0'; ab.setReadOnly(false); waitKind='make:'+N;
+      const pad=$pad(); pad.innerHTML=''; pad.onclick=null; let nextB=null;
+      const finish=()=>{ ab._rtOnChange=null; waitKind=null; ab.setReadOnly(true); pad.innerHTML=''; };
+      ab._rtOnChange=(v)=>{ if (token!==my) return; $count().textContent=String(v);
+        if (v===N && !nextB){ Sfx.ok(); bixReact('cheer');
+          nextB=document.createElement('button'); nextB.type='button'; nextB.className='toy-block toy-block--teal'; nextB.innerHTML='<span class="toy-block-label">I did it</span>'; pad.appendChild(nextB);
+          nextB.onclick=()=>{ if (token!==my) return; finish(); res(true); };
+        } else if (v!==N && nextB){ nextB.remove(); nextB=null; }   // moved off the number: hide the confirm until it matches again
+      };
     });
   }
   // a few friendly choices including the answer (single digit, within the taught range)
@@ -2747,8 +2755,8 @@ const ReadTeach = (function(){
     const nums = pickRounds(ROUNDS);
     for (let i=0;i<nums.length;i++){ if (token!==my) return; const N=nums[i];
       ab.reset(); ab.setReadOnly(true); $count().textContent='';
-      await beat('j_pr_make_'+N, ownerAbacus() ? 'Can you make '+N+' on your abacus?' : 'Can you make '+N+'?'); if (token!==my) return;
-      if (ownerAbacus()) await waitMakeOwner(N, async()=>{ await demoBuild(N); });
+      await beat('j_pr_make_'+N, ownerAbacus() ? 'Make '+N+' on your abacus, then show it here!' : 'Can you make '+N+'?'); if (token!==my) return;
+      if (ownerAbacus()) await waitMakeInteractive(N);
       else await waitBead(N, async()=>{ await demoBuild(N); });
       if (token!==my) return;
       await gap(); await beat(nextYes(),'Yes!'); if (token!==my) return;
@@ -3336,7 +3344,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.105';
+const APP_VERSION='4.106';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
