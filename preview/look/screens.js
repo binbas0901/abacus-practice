@@ -118,8 +118,8 @@
               </ab-card>
               <div class="tiles">
                 <ab-tile icon="book" data-a="learn">Learn</ab-tile>
-                <ab-tile icon="headphones" data-a="listen">Listen</ab-tile>
                 <ab-tile icon="star" tone="orange" data-a="play">Play</ab-tile>
+                <ab-tile icon="heart" data-a="room">My Room</ab-tile>
               </div>
             </div>
           </main>
