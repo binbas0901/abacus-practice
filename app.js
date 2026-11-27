@@ -1041,7 +1041,7 @@ function drivePlayKit(){
   const el = document.getElementById('playKit'); if (!el || !el.configure) return;
   const best = Fun.data.best || {};
   const popTotal = best.popTotal || best.pop || 0;   // mirror games.js popTotal(best)
-  const ICON = { pop:'heart', reader:'abacus', build:'star' };   // closest existing kit icons (flag: no bead-pair/magnifier/number-tile glyph)
+  const ICON = { pop:'game_pop', reader:'game_reader', build:'game_build' };   // custom game marks matching the illustrations
   const TONE = { pop:'orange' };
   const chipOf = (id)=> id==='pop'    ? (popTotal ? `${popTotal} friends popped` : '')
                       : id==='reader' ? (best.reader ? `Best: ${best.reader} shiny beads` : '')
@@ -1061,6 +1061,20 @@ function drivePlayKit(){
     });
   }
   el.hidden = false;
+}
+
+// New-kit game frame: overlays #game chrome while a mini-game runs. The live #gameStage is slotted
+// in; games.js mirrors its score/title/Juni/Bixi writes into the kit (see getElementById('gameKit')).
+let gameKitWired = false;
+function driveGameKit(on, info){
+  const el = document.getElementById('gameKit'); if (!el || !el.configure) return;
+  if (!gameKitWired){
+    gameKitWired = true;
+    el.addEventListener('ab-action', (e)=>{ if (e.detail && e.detail.action === 'back') $('#exitGame').click(); });   // reuse the existing exit routing
+  }
+  const sec = document.getElementById('game'); if (sec) sec.classList.toggle('kit-on', !!on);
+  if (on && info){ el.configure({ id: info.id, title: info.title, icon: info.id ? 'game_'+info.id : '', back: info.back !== false }); }
+  el.hidden = !on;
 }
 
 function goPlay(){ stopVoices(); Games.renderHub(); drivePlayKit(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
@@ -3423,7 +3437,7 @@ function showWhoKit(){
 window.App = {
   show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
   nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
-  unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist,
+  unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist, driveGameKit,
   goRoom, startMode, openPractice, renderHome: ()=>renderHome(),
   quietNow: ()=> $('#drill').classList.contains('active') && mode==='listen' && (locked || dictateToken>0 && $('#listenMsg').textContent!=='Your answer?'),
   nodes: ()=>NODES, nodeTitle: id=>(C.BY_ID[id]||{}).title||id,
@@ -3478,7 +3492,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.116';
+const APP_VERSION='4.117';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

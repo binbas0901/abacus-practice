@@ -1229,6 +1229,83 @@
     }
   });
 
+  /* ---------- ab-game-screen ----------
+     A kit frame around a live mini-game. The game area is light-DOM (#gameStage) slotted in, so it
+     keeps its own stylesheet + JS (canvas/board, listeners) and measures its own clientWidth/Height.
+     The kit owns the chrome the engine used to drive by id: sky backdrop, header (back + title +
+     native score pips), a Juni teacher bubble (overlay, top) and a persistent Bixi (corner). The
+     engine mirrors its writes in via these methods:
+       el.configure({id, title, icon, back})   el.setScore(dotsHtml)   el.setTitle(text)
+       el.juniSay(text)   el.bixiSay(text)   el.bixi
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-game-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        /* Sky is an absolute backdrop (not a flow row) so the stage keeps the full height budget the
+           games measure via clientWidth/Height. */
+        .sky{position:absolute;left:0;right:0;top:0;height:26%;z-index:0;border-radius:0 0 50% 50%/0 0 56px 56px}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:8px;
+          padding:max(14px,env(safe-area-inset-top)) 22px max(12px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:12px;flex:none}
+        .title{flex:1;min-width:0;display:flex;align-items:center;gap:9px;font-size:clamp(19px,2.3cqw,25px);font-weight:900;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .title .ic{flex:none;width:34px;height:34px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center}
+        .score{flex:none;display:flex;align-items:center;gap:5px}
+        .score:empty{display:none}
+        .score .gdot{width:13px;height:13px;border-radius:50%;background:${v('purple-line', '#DCD3EC')};flex:none}
+        .score .gdot.ok{background:${v('gold', '#F5A623')}}
+        .score .gdot.miss{background:${v('ink-faint', '#9A90B0')}}
+        .score .gdot.cur{background:${v('gold', '#F5A623')};box-shadow:0 0 0 3px rgba(245,166,35,.32)}
+        .stage{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch}
+        ::slotted(*){flex:1;min-height:0;max-width:100%}
+        .juni{position:absolute;left:22px;top:max(62px,calc(env(safe-area-inset-top) + 50px));right:160px;z-index:4;pointer-events:none}
+        .juni[hidden]{display:none}
+        .bx{position:absolute;right:16px;bottom:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;width:200px;z-index:4;pointer-events:none}
+        .bx ab-bubble{max-width:190px}
+        .bx ab-bubble[hidden]{display:none}
+        .bx[hidden]{display:none}
+        @container (max-aspect-ratio: 1/1){ .bx{width:148px} .juni{right:88px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header>
+            <ab-icon-button icon="back" label="Back to the games" data-a="back"></ab-icon-button>
+            <div class="title"></div>
+            <div class="score"></div>
+          </header>
+          <div class="stage"><slot></slot></div>
+        </div>
+        <div class="juni" hidden><ab-bubble tail="top" size="17"></ab-bubble></div>
+        <div class="bx" hidden><ab-bubble tone="bixi" tail="bottom-right" size="17" hidden></ab-bubble><ab-bixi pose="cheer" size="112"></ab-bixi></div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action }, bubbles: true, composed: true })); }
+    _fit() {
+      const b = this.shadowRoot.querySelector('.bx ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; b.setAttribute('size', Math.round(Math.max(88, Math.min(r.width * 0.13, r.height * 0.2)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ id = '', title = '', icon = '', back = true } = {}) {
+      const t = this.shadowRoot.querySelector('.title');
+      t.innerHTML = (icon ? `<span class="ic"><ab-icon name="${esc(icon)}" size="20"></ab-icon></span>` : '') + `<span class="nm">${esc(title)}</span>`;
+      const bk = this.shadowRoot.querySelector('[data-a="back"]'); if (bk) bk.style.visibility = back ? '' : 'hidden';
+      this.setScore(''); this.juniSay('');
+      this.shadowRoot.querySelector('.bx').hidden = false;   // Bixi mascot is persistent while a game runs
+    }
+    setTitle(text) { const s = this.shadowRoot.querySelector('.title .nm'); if (s) s.textContent = text == null ? '' : text; }
+    setScore(html) { this.shadowRoot.querySelector('.score').innerHTML = html == null ? '' : html; }
+    juniSay(text) { const j = this.shadowRoot.querySelector('.juni'); j.hidden = !text; if (text) j.querySelector('ab-bubble').say(text); }
+    bixiSay(text) { const b = this.shadowRoot.querySelector('.bx ab-bubble'); b.hidden = !text; if (text) b.say(text); }
+    get bixi() { return this.shadowRoot.querySelector('.bx ab-bixi'); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then

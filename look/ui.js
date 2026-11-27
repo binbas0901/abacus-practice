@@ -33,7 +33,12 @@
     home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/>',
     pause: '<path d="M8 5v14M16 5v14"/>',
     heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
-    book: '<path d="M12 6c-2-1.3-5-1.3-8 0v12c3-1.3 6-1.3 8 0 2-1.3 5-1.3 8 0V6c-3-1.3-6-1.3-8 0z"/><path d="M12 6v12"/>'
+    book: '<path d="M12 6c-2-1.3-5-1.3-8 0v12c3-1.3 6-1.3 8 0 2-1.3 5-1.3 8 0V6c-3-1.3-6-1.3-8 0z"/><path d="M12 6v12"/>',
+    // Custom game marks (match the Play-hub illustrations): Friend Pop = two bead friends;
+    // Bead Detective = magnifier over a bead; Bead Builder = a number tile with beads.
+    game_pop: '<circle cx="9.5" cy="13" r="5"/><circle cx="16.5" cy="8.8" r="3.4"/><path d="M4.4 6.2h.01M20 16.5h.01"/>',
+    game_reader: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><circle cx="10.5" cy="10.5" r="1.9" fill="currentColor" stroke="none"/>',
+    game_build: '<rect x="4" y="5" width="16" height="14" rx="3"/><path d="M4 11.5h16"/><circle cx="9" cy="8.3" r="1.6" fill="currentColor" stroke="none"/><circle cx="14.6" cy="14.8" r="1.6" fill="currentColor" stroke="none"/>'
   };
   const svg = (name, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[name] || ''}</svg>`;
 

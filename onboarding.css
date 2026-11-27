@@ -141,4 +141,14 @@ html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
 #readTeach > #rtKit[hidden]{ display:none !important; }
 #lesson > #lesKit{ position:absolute; inset:0; z-index:5; }
 #lesson > #lesKit[hidden]{ display:none !important; }
+#game > #gameKit{ position:absolute; inset:0; z-index:5; }
+#game > #gameKit[hidden]{ display:none !important; }
+/* When the kit frame is active, hide the old chrome it replaces (sky, Juni bubble, tr-top, Bixi).
+   #gameStage is NOT hidden — it is the live widget, slotted into the kit. */
+#game.kit-on > #gameSky,
+#game.kit-on > #gameJuni,
+#game.kit-on > .tr-top,
+#game.kit-on > .tr-gbix{ display:none !important; }
+/* The slotted stage fills the kit content region; the frame already supplies outer padding. */
+#game > #gameKit #gameStage{ padding-top:6px; }
 #who > #whoKit[hidden]{ display:none !important; }
