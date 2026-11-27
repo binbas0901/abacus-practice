@@ -1161,9 +1161,11 @@
         :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
           color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
         ${SKY}
-        .sky{height:28%;border-radius:0 0 50% 50%/0 0 60px 60px}
-        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:10px;
-          padding:max(18px,env(safe-area-inset-top)) 24px max(18px,env(safe-area-inset-bottom));box-sizing:border-box}
+        /* Sky is an ABSOLUTE backdrop, not a flow row, so the stage keeps near-full height and the
+           viewport-sized abacus (height:calc(100vh - wall - 120)) still fits inside the kit. */
+        .sky{position:absolute;left:0;right:0;top:0;height:30%;z-index:0;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:8px;
+          padding:max(18px,env(safe-area-inset-top)) 24px max(14px,env(safe-area-inset-bottom));box-sizing:border-box}
         header{display:flex;align-items:center;gap:14px;flex:none}
         .title{flex:1;min-width:0;font-size:clamp(20px,2.4cqw,26px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .teacher{display:flex;align-items:center;gap:12px;flex:none}
@@ -1208,9 +1210,11 @@
         :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
           color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
         ${SKY}
-        .sky{height:24%;border-radius:0 0 50% 50%/0 0 60px 60px}
-        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:8px;
-          padding:max(16px,env(safe-area-inset-top)) 22px max(16px,env(safe-area-inset-bottom));box-sizing:border-box}
+        /* Sky is an ABSOLUTE backdrop, not a flow row, so the slotted body keeps near-full height
+           and the lesson abacus (max-height:calc(100vh - wall - 150)) still fits inside the kit. */
+        .sky{position:absolute;left:0;right:0;top:0;height:26%;z-index:0;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:6px;
+          padding:max(14px,env(safe-area-inset-top)) 22px max(12px,env(safe-area-inset-bottom));box-sizing:border-box}
         header{display:flex;align-items:center;gap:14px;flex:none;min-height:0}
         header ::slotted(*){flex:1;min-width:0}
         .body{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch}
