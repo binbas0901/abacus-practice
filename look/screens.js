@@ -1306,6 +1306,40 @@
     get bixi() { return this.shadowRoot.querySelector('.bx ab-bixi'); }
   });
 
+  /* ---------- ab-drill-screen ----------
+     The arithmetic drill — June's daily core. Its keypad/abacus are sized by pixel-exact viewport
+     math (calc(var(--vh) - var(--toy-wall-h) - var(--foot) ...)) set on #drill, so the kit must NOT
+     add any chrome in the flow. It supplies only an absolute sky backdrop and an overlay Juni bubble;
+     the control bar, body grid and energy bar are slotted in their ORIGINAL flow via display:contents,
+     so every #drill-scoped rule and CSS var still applies and the layout is unchanged.
+       slot="top" -> .tp-top controls     default slot -> .tp-body     slot="energy" -> energy bar
+       el.say(text) pushes Juni's words in (from the JB funnel). */
+  customElements.define('ab-drill-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{position:absolute;left:0;right:0;top:0;height:17%;z-index:0;border-radius:0 0 50% 50%/0 0 40px 40px;pointer-events:none}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+        slot{display:contents}   /* slotted .tp-top/.tp-body/energy become direct flex items -> original flow preserved */
+        .juni{position:absolute;left:clamp(14px,3.5vw,36px);top:max(12px,env(safe-area-inset-top));right:clamp(170px,44vw,580px);z-index:4;pointer-events:none}
+        .juni[hidden]{display:none}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <slot name="top"></slot>
+          <slot></slot>
+          <slot name="energy"></slot>
+        </div>
+        <div class="juni" hidden><ab-bubble tail="left" size="17"></ab-bubble></div>`;
+    }
+    say(text) { const j = this.shadowRoot.querySelector('.juni'); const t = (text == null ? '' : String(text)); j.hidden = !t; if (t) j.querySelector('ab-bubble').say(t); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then

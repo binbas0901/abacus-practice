@@ -2026,13 +2026,13 @@ const JB = {
   base:null, cur:null, t:null,
   bubble(){ return $('#drillJuni'); },
   figure(){ return $('#drillSky'); },
-  show(text, key){ this.cur={text:text||'', key:key||null}; const b=this.bubble(); if (b) b.classList.toggle('empty', !text); juniSayOn(this.bubble(), this.figure(), key||null, text==null?'':text, 0); },
+  show(text, key){ this.cur={text:text||'', key:key||null}; const b=this.bubble(); if (b) b.classList.toggle('empty', !text); juniSayOn(this.bubble(), this.figure(), key||null, text==null?'':text, 0); const k=document.getElementById('drillKit'); if (k && k.say) k.say(text||''); },
   // the line Juni returns to for this problem (the instruction); silent is fine
   setBase(text, key){ this.base={text:text||'', key:key||null}; this.show(text, key); },
   // a reaction; after ms she returns to the base instruction
   say(text, key, ms){ this.show(text, key); clearTimeout(this.t); if (ms && this.base){ const b=this.base; this.t=setTimeout(()=>{ if (this.base===b) this.show(b.text, null); }, ms); } },
   replay(){ const c=this.cur; if (!c || !c.key || !CL() || App.quietNow()) return; Speaker.unlock(); CL().say(c.key, {who:'juni', figure:this.figure()}); },
-  clear(){ clearTimeout(this.t); this.base=null; this.cur=null; const b=this.bubble(); if (b){ b.classList.remove('on'); b.classList.add('empty'); const t=b.querySelector('.ctext'); if (t) t.textContent=''; } },
+  clear(){ clearTimeout(this.t); this.base=null; this.cur=null; const b=this.bubble(); if (b){ b.classList.remove('on'); b.classList.add('empty'); const t=b.querySelector('.ctext'); if (t) t.textContent=''; } const k=document.getElementById('drillKit'); if (k && k.say) k.say(''); },
 };
 if ($('#drillJuni')) $('#drillJuni').addEventListener('click', ()=>JB.replay());
 
@@ -2225,6 +2225,7 @@ async function startDrill(m, n){
 }
 // Show only the stage for the current mode (Look: number tiles; Listen: the listening card; Flash: the flash card). Used by drills, the fix pass and level tests.
 function setStages(){
+  { const dk=document.getElementById('drillKit'); if (dk) dk.hidden=false; }   // reveal the new-kit frame (old chrome stays behind as fallback)
   $('#problemArea').innerHTML='';
   $('#problemArea').style.display = mode==='visual'?'':'none';
   $('#listenStage').style.display = mode==='listen'?'':'none';
@@ -3492,7 +3493,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.117';
+const APP_VERSION='4.118';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });

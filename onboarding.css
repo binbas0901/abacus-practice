@@ -141,6 +141,8 @@ html.kb-tiny #setup.cl-onboard[data-step=suName] #juniStage{display:none}
 #readTeach > #rtKit[hidden]{ display:none !important; }
 #lesson > #lesKit{ position:absolute; inset:0; z-index:5; }
 #lesson > #lesKit[hidden]{ display:none !important; }
+#drill > #drillKit{ position:absolute; inset:0; z-index:5; }
+#drill > #drillKit[hidden]{ display:none !important; }
 #game > #gameKit{ position:absolute; inset:0; z-index:5; }
 #game > #gameKit[hidden]{ display:none !important; }
 /* When the kit frame is active, hide the old chrome it replaces (sky, Juni bubble, tr-top, Bixi).
