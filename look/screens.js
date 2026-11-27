@@ -1193,6 +1193,38 @@
     get juni() { return this.shadowRoot.querySelector('ab-juni'); }
   });
 
+  /* ---------- ab-lesson-screen ----------
+     The Learn/teaching flow. Its chrome is richly engine-driven (a caption with several parts, a
+     pointing hand, a bead-pair diagram, step dots, four nav buttons, the big demo soroban), so the
+     kit supplies only the new sky + a header, and the whole lesson is slotted in with ids intact:
+       slot="head" -> the title + step-dots board      default slot -> the lesson body
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-lesson-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{height:24%;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:8px;
+          padding:max(16px,env(safe-area-inset-top)) 22px max(16px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:14px;flex:none;min-height:0}
+        header ::slotted(*){flex:1;min-width:0}
+        .body{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch}
+        .body ::slotted(*){flex:1;min-height:0;max-width:100%}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header><ab-icon-button icon="back" label="Stop the lesson" data-a="back"></ab-icon-button><slot name="head"></slot></header>
+          <div class="body"><slot></slot></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this.dispatchEvent(new CustomEvent('ab-action', { detail: { action: 'back' }, bubbles: true, composed: true })));
+    }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then

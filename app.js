@@ -1482,6 +1482,7 @@ function startLesson(n, from){
   let friendly=false; try{ friendly=[...(n.demos||[]), ...(n.guided||[])].some(pr=>friendOfSteps(lessonStep(n, pr).steps)); }catch(e){}
   $('#lesson').classList.toggle('may-pair', friendly); $('#lesson').dataset.rods=rods;
   $('#lessonPair').dataset.k=''; lessonPair(n.family && n.demos ? friendOfSteps(lessonStep(n, n.demos[0]).steps) : null);
+  const lk=document.getElementById('lesKit'); if (lk) lk.hidden=false;   // reveal the new-kit frame (old chrome stays behind as fallback)
   show('lesson'); renderLesson();
 }
 // One demo/guided pair of any skill -> {start, target, label, op, steps} (Curriculum.lessonStep knows multiplication).
@@ -1902,6 +1903,7 @@ $('#lessonHint').addEventListener('click', async()=>{ if (L.busy || ownerAbacus(
   }
   const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
 $('#exitLesson').addEventListener('click', ()=>{ stopVoices(); leaveLesson(); });
+{ const lk=document.getElementById('lesKit'); if (lk) lk.addEventListener('ab-action', (e)=>{ if (e.detail && e.detail.action==='back'){ stopVoices(); leaveLesson(); } }); }   // kit back == #exitLesson
 
 /* ---------------- Juni the teacher: a speaker in her own right (Part 2) ---------------- */
 // Juni leads from the window. juniSay shows her bubble (the lesson caption) and animates her mouth on the sky moon.
@@ -3476,7 +3478,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.114';
+const APP_VERSION='4.115';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
