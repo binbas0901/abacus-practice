@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AbacusInput demo</title>
+<link rel="stylesheet" href="abacus-input.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #3a2a1e; font-family: system-ui, -apple-system, sans-serif; }
+  .ipad { width: 1180px; height: 820px; margin: 0 auto; background: #FFF8EC; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 22px; box-sizing: border-box; padding: 24px; }
+  h1 { margin: 0; font-size: 26px; color: #5E3519; }
+  .problem { display: flex; gap: 12px; align-items: center; }
+  .term { font-size: 40px; font-weight: 800; color: #5E3519; padding: 6px 18px; border-radius: 16px; background: #F4E3C3; min-width: 60px; text-align: center; }
+  .term.now { background: #E2452F; color: #fff; }
+  .term.done { opacity: .45; }
+  .term .tick { font-size: 18px; margin-left: 4px; }
+  .eq { font-size: 40px; font-weight: 800; color: #B07A45; }
+  .row { display: flex; gap: 14px; align-items: center; }
+  button { font: 700 24px system-ui, sans-serif; border: 0; border-radius: 18px; padding: 14px 30px; min-height: 60px; cursor: pointer; }
+  .check { background: #2F9E5B; color: #fff; }
+  .clear { background: #F4E3C3; color: #5E3519; }
+  label { font-size: 18px; color: #6E4126; display: flex; align-items: center; gap: 6px; }
+  .result { min-height: 64px; max-width: 760px; text-align: center; font-size: 22px; color: #5E3519; }
+  .result small { display: block; font-size: 15px; color: #8A5530; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="ipad">
+  <h1>Show it on the abacus</h1>
+  <div class="problem" id="problem"></div>
+  <div id="abacus"></div>
+  <div class="row">
+    <button class="clear" id="clear">Clear</button>
+    <button class="check" id="check">Check</button>
+    <label><input type="checkbox" id="readout" checked> readout</label>
+  </div>
+  <div class="result" id="result" aria-live="polite">Do one number at a time, then tap Check.</div>
+</div>
+<script src="engine.js"></script>
+<script src="abacus-input.js"></script>
+<script>
+  const terms = [7, 8, -4, 1];
+  let idx = 0, running = 0, termStart = 0;   // termStart = index into ab.moves() where this term began
+  const $ = id => document.getElementById(id);
+  const ab = AbacusInput.create($('abacus'), { rods: 3, showReadout: true,
+    onChange: () => { $('result').textContent = ''; },
+    onBead: () => {} /* sound hook: play a click here */ });
+  window.ab = ab;
+
+  function drawProblem(marks) {
+    $('problem').innerHTML = terms.map((t, i) => {
+      const s = i === 0 ? String(t) : (t < 0 ? '− ' : '+ ') + Math.abs(t);
+      const cls = i < idx ? 'done' : i === idx ? 'now' : '';
+      return `<span class="term ${cls}">${s}${marks[i] ? '<span class="tick">' + marks[i] + '</span>' : ''}</span>`;
+    }).join('') + '<span class="eq">= ?</span>';
+  }
+  const marks = [];
+  drawProblem(marks);
+
+  $('check').addEventListener('click', () => {
+    if (idx >= terms.length) return;
+    const term = terms[idx];
+    const r = AbacusInput.checkMethod(running, term, ab.moves(termStart));
+    window.lastCheck = r;
+    if (!r.valueOk) {
+      $('result').innerHTML = `The beads show ${ab.value()}. Try again! <small>${r.hint}</small>`;
+      return;
+    }
+    marks[idx] = r.ok ? '★' : '✓';
+    running += term; idx++; termStart = ab.moves().length;
+    drawProblem(marks);
+    const tail = idx >= terms.length ? ` All done: ${running}!` : '';
+    $('result').innerHTML = (r.ok ? r.hint : 'Right number! ' + r.hint) + tail +
+      `<small>expected: ${r.expected.text} — you did: ${r.actual.text || 'nothing'}</small>`;
+  });
+  $('clear').addEventListener('click', () => {
+    idx = 0; running = 0; termStart = 0; marks.length = 0; ab.clear(); drawProblem(marks);
+    $('result').textContent = 'Do one number at a time, then tap Check.';
+  });
+  $('readout').addEventListener('change', e => ab.setReadout(e.target.checked));
+</script>
+</body>
+</html>

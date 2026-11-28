@@ -42,6 +42,7 @@
   // Bix says a line (main or extra voice pack; app.js provides BixSay), else just the bubble.
   // quiet: show the caption without speaking (the bubble's speaker mark says it on tap).
   function bixLine(text, id, ms, quiet) {
+    { const gk = document.getElementById('gameKit'); if (gk && gk.bixiSay) gk.bixiSay(text || ''); }   // mirror into the kit's Bixi bubble
     const el = bix();
     if (quiet) { root.Fun.Mascot.say(el, text, ms, null, id); if (el) el.dataset.line = JSON.stringify([text, id || '']); }
     else if (root.BixSay) root.BixSay(el, text, id, ms); else root.Fun.Mascot.say(el, text, ms, id);
@@ -50,6 +51,7 @@
   // Juni leads a game instruction from the window moon (#gameSky); Bixi stays the reacting sidekick.
   // quiet: show her caption without replaying audio (a gentle re-prompt, or a dynamic caption with no clip).
   function juniLine(key, text, quiet) {
+    { const gk = document.getElementById('gameKit'); if (gk && gk.juniSay && text != null) gk.juniSay(text); }   // mirror her caption into the kit bubble
     const CLr = root.Classroom, jb = $('#gameJuni'), sky = $('#gameSky');
     if (!CLr) { if (jb) { const t = jb.querySelector('.ctext') || jb; if (text != null) t.textContent = text; jb.classList.add('on'); } return Promise.resolve(); }
     if (quiet) { CLr.showBubble(jb, text, 'juni', 0); return Promise.resolve(); }
@@ -68,7 +70,7 @@
     if (i < a.idx('combined')) return 10;
     return 'mix';
   }
-  function setScore(t) { $('#gameScore').innerHTML = t; }
+  function setScore(t) { $('#gameScore').innerHTML = t; const gk = document.getElementById('gameKit'); if (gk && gk.setScore) gk.setScore(t); }
   function bix() { return $('#bixGame'); }
 
   // One abacus look everywhere: the practice soroban (AbacusInput, abacus-input.js) also draws the lessons and games.
@@ -359,6 +361,7 @@
     const g = GAMES[id]; const gname = (cameFrom === 'practice' && practiceTitle) ? practiceTitle : g.name; $('#gameTitle').innerHTML = `<span class="gt-art g-${g.block}">${g.mark()}</span><span>${gname}</span>`; $('#game').dataset.game = id; setScore('');
     root.Fun.Mascot.mount(bix(), { size: 76 }); if (root.ToyRoom.sky) root.ToyRoom.sky('#gameSky');
     a.show('game');
+    if (a.driveGameKit) a.driveGameKit(true, { id, title: gname, back: true });   // reveal + configure the new-kit frame (title + custom icon)
     const r = id === 'pop' ? await pop(my) : id === 'reader' ? await reader(my, practiceOpts) : await build(my, practiceOpts);
     if (!r || my !== token) return;
     // Practice set (orchestrated by the level flow): no results card / leveling here — hand the result back and stop.
@@ -386,7 +389,7 @@
     if (my !== token) return;
     if (choice === 'again') open(id); else { token++; clearScrim(); leave(); }
   }
-  function leave() { const a = App(), f = cameFrom; cameFrom = ''; if (f === 'home') a.goHome(); else if (f === 'door') a.goDoor(); else a.goPlay(); }
+  function leave() { const a = App(); if (a.driveGameKit) a.driveGameKit(false); const f = cameFrom; cameFrom = ''; if (f === 'home') a.goHome(); else if (f === 'door') a.goDoor(); else a.goPlay(); }
   function stop() { token++; clearScrim(); practiceCB = null; practiceOpts = null; }   // bumping token aborts any in-flight set; clear the practice callback so no stale set-done fires
   function clearScrim() { document.querySelectorAll('#game .gscrim').forEach(e => e.remove()); }
   // Friends popped so far. Older versions kept only a best round in best.pop (a timed score): a child who played

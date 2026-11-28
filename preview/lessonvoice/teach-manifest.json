@@ -1,0 +1,78 @@
+[
+{
+"id": "j_rt_stuck",
+"text": "Here — watch me do it."
+},
+{
+"id": "j_rt_count",
+"text": "Let’s count together."
+},
+{
+"id": "j_rt_intro",
+"text": "Let’s learn to read the beads! Every bead you push up to the bar counts."
+},
+{
+"id": "j_rt_show1",
+"text": "Watch — I push one bead up to the bar."
+},
+{
+"id": "j_rt_show1b",
+"text": "One bead at the bar — that’s 1!"
+},
+{
+"id": "j_rt_you1",
+"text": "Now you — push one bead up to the bar."
+},
+{
+"id": "j_rt_you1ok",
+"text": "Yes! One bead — that’s 1."
+},
+{
+"id": "j_rt_ladder",
+"text": "Each bead adds one more. Count with me…"
+},
+{
+"id": "j_rt_ladder3",
+"text": "One, two, three — that’s 3!"
+},
+{
+"id": "j_rt_read",
+"text": "How many beads are at the bar? Count them, then tap the number."
+},
+{
+"id": "j_rt_readok",
+"text": "That’s 3 — you read it!"
+},
+{
+"id": "j_rt_heaven",
+"text": "This top bead is special — it’s worth 5 all by itself!"
+},
+{
+"id": "j_rt_heaven5",
+"text": "One top bead down — that’s 5!"
+},
+{
+"id": "j_rt_you5",
+"text": "Now you — push the big top bead down. What number is that?"
+},
+{
+"id": "j_rt_you5ok",
+"text": "Yes — the top bead is 5!"
+},
+{
+"id": "j_rt_combine",
+"text": "5 up here… and 1 more down here… 5 and 1 makes 6!"
+},
+{
+"id": "j_rt_read6",
+"text": "Your turn to read. How many is this?"
+},
+{
+"id": "j_rt_read6ok",
+"text": "5 and 1 — that’s 6. Brilliant!"
+},
+{
+"id": "j_rt_done",
+"text": "You can read the beads now! High five!"
+}
+]

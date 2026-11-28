@@ -4,7 +4,7 @@
 // When the app moves to native iOS storage, only this file changes.
 (function () {
   'use strict';
-  const P = 'abacus.preview.';
+  const P = 'abacus.';
   // Settings that belong to one child; every other setting is family-wide.
   const CHILD_KEYS = ['name', 'count', 'operands', 'voiceRate', 'termGap', 'flashSec', 'flashGap', 'flashOwn', 'flashN', 'treats', 'hasAbacus'];
   const PER_CHILD = ['progress', 'history', 'days', 'fun', 'certificates', 'times'];   // certificates: [{nodeId,title,date,accuracy}] from level tests; times: per-set/mode best solving times

@@ -1035,11 +1035,79 @@ async function activityDone(kind, info={}){
   if ($('#home').classList.contains('active')){ renderHome(); setTimeout(()=>{ if ($('#home').classList.contains('active')) maybeBixiMoment($('#bixHome')); }, 900); }   // a Bixi moment between activities
 }
 // (The old "Today" Start button is gone — the big Practice button, #doorPractice, launches the level run below.)
-function goPlay(){ stopVoices(); Games.renderHub(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
+// New-kit Play hub: drives <ab-play-screen> over the old #playCards markup (kept as fallback).
+let playKitWired = false;
+function drivePlayKit(){
+  const el = document.getElementById('playKit'); if (!el || !el.configure) return;
+  const best = Fun.data.best || {};
+  const popTotal = best.popTotal || best.pop || 0;   // mirror games.js popTotal(best)
+  const ICON = { pop:'game_pop', reader:'game_reader', build:'game_build' };   // custom game marks matching the illustrations
+  const TONE = { pop:'orange' };
+  const chipOf = (id)=> id==='pop'    ? (popTotal ? `${popTotal} friends popped` : '')
+                      : id==='reader' ? (best.reader ? `Best: ${best.reader} shiny beads` : '')
+                      :                 (best.buildTotal ? `${best.buildTotal} numbers built` : '');
+  const games = Object.entries(Games.GAMES).map(([id, g]) => {
+    const chip = chipOf(id);
+    return { id, label: g.name, desc: g.desc, icon: ICON[id] || 'star', tone: TONE[id], chip, isNew: !chip && id !== 'build' };
+  });
+  el.configure({ games, bixiLine: '' });
+  el.say('Pick a game! Every game gives you a sticker.');   // matches Juni's j_play_pick caption
+  if (!playKitWired){
+    playKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action;
+      if (a === 'back'){ stopVoices(); renderHome(); show('home'); return; }   // == #exitPlay
+      if (a === 'pick'){ Sfx.tap(); el.hidden = true; Games.open(e.detail.gameId, { from: '' }); return; }
+    });
+  }
+  el.hidden = false;
+}
+
+// New-kit game frame: overlays #game chrome while a mini-game runs. The live #gameStage is slotted
+// in; games.js mirrors its score/title/Juni/Bixi writes into the kit (see getElementById('gameKit')).
+let gameKitWired = false;
+function driveGameKit(on, info){
+  const el = document.getElementById('gameKit'); if (!el || !el.configure) return;
+  if (!gameKitWired){
+    gameKitWired = true;
+    el.addEventListener('ab-action', (e)=>{ if (e.detail && e.detail.action === 'back') $('#exitGame').click(); });   // reuse the existing exit routing
+  }
+  const sec = document.getElementById('game'); if (sec) sec.classList.toggle('kit-on', !!on);
+  if (on && info){ el.configure({ id: info.id, title: info.title, icon: info.id ? 'game_'+info.id : '', back: info.back !== false }); }
+  el.hidden = !on;
+}
+
+function goPlay(){ stopVoices(); Games.renderHub(); drivePlayKit(); toySky('#playSky'); const bp=$('#bixPlay'); toyBix(bp, 'happy', {size:84, keep:false, bubble:false});
   // Juni leads the hub invite from the window; Bixi is the quiet, reacting sidekick (his joke moment still fires after her line).
   Fun.Mascot.quiet(bp); juniSayOn($('#playJuni'), $('#playSky'), 'j_play_pick', 'Pick a game! Every game gives you a sticker.');   // caption matches the recorded clip
   show('play'); setTimeout(()=>{ if ($('#play').classList.contains('active')) maybeBixiMoment(bp); }, 2600); }
-function goAlbum(){ Fun.renderAlbum(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
+// New-kit sticker album: drives <ab-album-screen> over the old #albumPages markup (kept as fallback).
+let albumKitWired = false;
+function driveAlbumKit(){
+  const el = document.getElementById('albumKit'); if (!el || !el.configure) return;
+  const packs = Fun.PACKS.map(p => {
+    const got = p.items.filter((_, i) => Fun.data.stickers[p.id + ':' + i]).length;
+    return {
+      name: p.name, got, total: p.items.length, full: got === p.items.length,
+      items: p.items.map((_, i) => {
+        const id = p.id + ':' + i, n = Fun.data.stickers[id] || 0, gold = !!(Fun.data.gold && Fun.data.gold[id]);
+        return { has: n > 0, gold, n, svg: n > 0 ? TOY.sticker(id, 86, { gold }) : '' };
+      })
+    };
+  });
+  el.configure({ title: 'My stickers', count: Fun.count(), total: Fun.ALL.length, packs });
+  el.say(Fun.count() ? 'Here are all your stickers! Earn more by practising.'
+                     : 'Your sticker book is empty — practise to earn your first sticker!');
+  if (!albumKitWired){
+    albumKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      if (e.detail && e.detail.action === 'back'){ Sfx.tap(); el.hidden = true; goRoom(); }
+    });
+  }
+  el.hidden = false;
+}
+
+function goAlbum(){ Fun.renderAlbum(); driveAlbumKit(); Fun.data.albumSeen=Fun.count(); Fun.save(); show('album'); }
 $('#exitPlay').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#exitGame').addEventListener('click', ()=>{ stopVoices(); if (Practice.on){ Games.stop(); if (!isFlashNode(Practice.node)) return Practice.pick(); Practice.stop(); renderHome(); show('home'); return; } Games.stop(); Games.leave(); });   // G3: Back during a practice set returns to the Reading/Listening picker (never home mid-session, never the Play hub)
 // The three doors. Practice opens the Practice door screen (#door).
@@ -1096,6 +1164,29 @@ $('#exitShop').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitPlay').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#exitGame').innerHTML = TOY.icon('back', 30, 'currentColor');
 $('#roomWishIc').innerHTML = TOY.icon('star', 30, '#4A2C06');
+// New-kit My Room: drives <ab-room-screen> over the old #room markup (kept as fallback).
+// The live garden (#roomGarden) and jar (#jar) are slotted in — Fun.renderGarden / Treats.renderJar
+// and their existing click listeners keep working untouched.
+let roomKitWired = false;
+function driveRoomKit(){
+  const el = document.getElementById('roomKit'); if (!el || !el.configure) return;
+  const garden = document.getElementById('roomGarden'), jar = document.getElementById('jar');
+  if (garden && garden.getAttribute('slot') !== 'garden') garden.setAttribute('slot', 'garden');
+  if (jar && jar.getAttribute('slot') !== 'jar') jar.setAttribute('slot', 'jar');
+  if (garden && garden.parentElement !== el) el.appendChild(garden);   // re-parent into #roomKit (still light DOM; listeners survive)
+  if (jar && jar.parentElement !== el) el.appendChild(jar);
+  el.configure({ title: 'My room', beads: Treats.wallet().beads, nudge: !Treats.goal() });
+  if (!roomKitWired){
+    roomKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action;
+      if (a === 'back'){ stopVoices(); renderHome(); show('home'); return; }   // == #exitRoom
+      if (a === 'treats'){ Sfx.tap(); Treats.wish(); return; }                 // == #roomWish
+    });
+  }
+  el.hidden = false;
+}
+
 function renderRoom(){
   toySky('#roomSky');
   // The garden is the one progress visual: it grows a flower for every skill mastered (not for days shown up).
@@ -1104,6 +1195,7 @@ function renderRoom(){
   $('#roomGarden').setAttribute('aria-label', `My garden: ${$('#gardenLabel').textContent}`);
   Treats.renderJar();
   $('#roomWish').classList.toggle('tr-nudge', !Treats.goal());   // nudge only to pick a goal, never to spend
+  driveRoomKit();            // overlay the kit; keeps #garden/#jar live via slots
   return n;
 }
 function goRoom(){ stopVoices();
@@ -1114,6 +1206,7 @@ function goRoom(){ stopVoices();
   const jKey = vid==='shop_pick' ? 'j_room_jar_pick' : vid==='shop_saving' ? 'j_room_jar_saving' : 'j_room_jar_full';
   const jText = vid==='shop_pick' ? 'Pick a treat to save for. Tap Treats.' : vid==='shop_saving' ? text : 'Your jar is full enough for your treat!';
   juniSayOn($('#roomJuni'), $('#roomSky'), jKey, jText);
+  { const rk = document.getElementById('roomKit'); if (rk && rk.say) rk.say(jText); }   // mirror Juni's line into the kit bubble (audio stays on hidden #roomJuni)
 }
 $('#exitRoom').addEventListener('click', ()=>{ stopVoices(); renderHome(); show('home'); });
 $('#roomGarden').addEventListener('click', ()=>{
@@ -1317,6 +1410,37 @@ function renderPracticePick(id){
   }
   const jb = $('#ppJuni'); if (jb){ const c = jb.querySelector('.ctext'); if (c) c.textContent = anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.' : noSums ? 'Pick how to practise — read the beads, or make a number.' : 'Pick how to practise — Reading or Listening.'; jb.classList.add('on'); }
   toySky('#ppSky');
+  drivePracticePickKit(id);
+}
+
+// New-kit practice picker: drives <ab-practice-pick> over the old #ppCards markup (kept as fallback).
+let ppKitWired = false;
+function drivePracticePickKit(id){
+  const el = document.getElementById('ppKit'); if (!el || !el.configure) return;
+  const cur = NODES[NODE_IDX[id]], T = window.__level.MODE_SESSIONS;
+  const noSums = cur && !cur.drill;
+  const bestLab = (mode)=>{ const b = bestSetMs(id, mode); return b != null ? `Best ${TM.fmt(b)}` : ''; };
+  const mk = (mode, label, icon) => ({ mode, label, icon, done: modeDone(id, mode), total: T, best: bestLab(mode), full: modeDone(id, mode) >= T });
+  const cards = [
+    mk('reading',   noSums ? L1_LABELS.reading   : 'Reading',   'abacus'),
+    mk('listening', noSums ? L1_LABELS.listening : 'Listening', noSums ? 'abacus' : 'headphones'),
+  ];
+  if (anzanEligible()) cards.push(mk('mental', 'Mental math', 'sparkle'));
+  const n = NODES[curIdx()];
+  el.configure({ title: cur ? cur.title : 'Practice', cards, watch: !!(n && hasLesson(n)) });
+  el.say(anzanEligible() ? 'Pick how to practise — Reading, Listening or Mental math.'
+    : noSums ? 'Pick how to practise — read the beads, or make a number.'
+    : 'Pick how to practise — Reading or Listening.');
+  if (!ppKitWired){
+    ppKitWired = true;
+    el.addEventListener('ab-action', (e)=>{
+      const a = e.detail && e.detail.action;
+      if (a === 'back'){ stopVoices(); Practice.stop(); renderHome(); show('home'); return; }
+      if (a === 'watch'){ Sfx.tap(); Speaker.unlock(); startLesson(lessonTarget(NODES[curIdx()]), 'practice'); return; }
+      if (a === 'pick'){ Sfx.tap(); el.hidden = true; Practice.runMode(e.detail.mode); return; }
+    });
+  }
+  el.hidden = false;
 }
 $('#exitPick').innerHTML = TOY.icon('back', 32, 'currentColor');
 $('#exitPick').addEventListener('click', ()=>{ stopVoices(); Practice.stop(); renderHome(); show('home'); });
@@ -1372,6 +1496,7 @@ function startLesson(n, from){
   let friendly=false; try{ friendly=[...(n.demos||[]), ...(n.guided||[])].some(pr=>friendOfSteps(lessonStep(n, pr).steps)); }catch(e){}
   $('#lesson').classList.toggle('may-pair', friendly); $('#lesson').dataset.rods=rods;
   $('#lessonPair').dataset.k=''; lessonPair(n.family && n.demos ? friendOfSteps(lessonStep(n, n.demos[0]).steps) : null);
+  const lk=document.getElementById('lesKit'); if (lk) lk.hidden=false;   // reveal the new-kit frame (old chrome stays behind as fallback)
   show('lesson'); renderLesson();
 }
 // One demo/guided pair of any skill -> {start, target, label, op, steps} (Curriculum.lessonStep knows multiplication).
@@ -1792,6 +1917,7 @@ $('#lessonHint').addEventListener('click', async()=>{ if (L.busy || ownerAbacus(
   }
   const gi=L.guidedIdx, pair=L.node.guided[gi], ls=lessonStep(L.node, pair); lessonAb.value=ls.start; lessonAb.setReadOnly(true); const tok=animToken+1; await playSteps(lessonAb, ls.steps, s=>cap('Show me', s.say.replace(/(\d+)/g,'<b>$1</b>'))); if (tok!==animToken || L.phase!=='guided' || L.guidedIdx!==gi) return; lessonAb.value=ls.start; lessonAb.setReadOnly(false); cap(`Your turn ${gi+1} of ${L.node.guided.length}`, guidedText(ls, pair, 'Now you: ')); });
 $('#exitLesson').addEventListener('click', ()=>{ stopVoices(); leaveLesson(); });
+{ const lk=document.getElementById('lesKit'); if (lk) lk.addEventListener('ab-action', (e)=>{ if (e.detail && e.detail.action==='back'){ stopVoices(); leaveLesson(); } }); }   // kit back == #exitLesson
 
 /* ---------------- Juni the teacher: a speaker in her own right (Part 2) ---------------- */
 // Juni leads from the window. juniSay shows her bubble (the lesson caption) and animates her mouth on the sky moon.
@@ -1900,13 +2026,13 @@ const JB = {
   base:null, cur:null, t:null,
   bubble(){ return $('#drillJuni'); },
   figure(){ return $('#drillSky'); },
-  show(text, key){ this.cur={text:text||'', key:key||null}; const b=this.bubble(); if (b) b.classList.toggle('empty', !text); juniSayOn(this.bubble(), this.figure(), key||null, text==null?'':text, 0); },
+  show(text, key){ this.cur={text:text||'', key:key||null}; const b=this.bubble(); if (b) b.classList.toggle('empty', !text); juniSayOn(this.bubble(), this.figure(), key||null, text==null?'':text, 0); const k=document.getElementById('drillKit'); if (k && k.say) k.say(text||''); },
   // the line Juni returns to for this problem (the instruction); silent is fine
   setBase(text, key){ this.base={text:text||'', key:key||null}; this.show(text, key); },
   // a reaction; after ms she returns to the base instruction
   say(text, key, ms){ this.show(text, key); clearTimeout(this.t); if (ms && this.base){ const b=this.base; this.t=setTimeout(()=>{ if (this.base===b) this.show(b.text, null); }, ms); } },
   replay(){ const c=this.cur; if (!c || !c.key || !CL() || App.quietNow()) return; Speaker.unlock(); CL().say(c.key, {who:'juni', figure:this.figure()}); },
-  clear(){ clearTimeout(this.t); this.base=null; this.cur=null; const b=this.bubble(); if (b){ b.classList.remove('on'); b.classList.add('empty'); const t=b.querySelector('.ctext'); if (t) t.textContent=''; } },
+  clear(){ clearTimeout(this.t); this.base=null; this.cur=null; const b=this.bubble(); if (b){ b.classList.remove('on'); b.classList.add('empty'); const t=b.querySelector('.ctext'); if (t) t.textContent=''; } const k=document.getElementById('drillKit'); if (k && k.say) k.say(''); },
 };
 if ($('#drillJuni')) $('#drillJuni').addEventListener('click', ()=>JB.replay());
 
@@ -2099,6 +2225,7 @@ async function startDrill(m, n){
 }
 // Show only the stage for the current mode (Look: number tiles; Listen: the listening card; Flash: the flash card). Used by drills, the fix pass and level tests.
 function setStages(){
+  { const dk=document.getElementById('drillKit'); if (dk) dk.hidden=false; }   // reveal the new-kit frame (old chrome stays behind as fallback)
   $('#problemArea').innerHTML='';
   $('#problemArea').style.display = mode==='visual'?'':'none';
   $('#listenStage').style.display = mode==='listen'?'':'none';
@@ -2645,7 +2772,13 @@ const ReadTeach = (function(){
   const SAY_BUFFER=1800, SAY_CEILING=6500, SAY_FLOOR=650, SAY_OFF=950;
   const voiceOn=()=> !!(settings.bixTalks!==false && typeof Speaker!=='undefined' && Speaker && Speaker.gestured && !navigator.webdriver);
   function clipMs(key){ try{ const V=CL()&&CL().Voice; if (V&&V.find){ const r=V.find('juni',key); if (r&&r[1]&&typeof r[1][1]==='number') return Math.round(r[1][1]*1000); } }catch(e){} return 0; }
-  function say(key, text){ return juniSayOn($bub(), $sky(), key, text, 0); }
+  // Juni speaks: caption on the kit bubble + voice via Classroom (bubble:null). Falls back to the old
+  // in-place bubble if the kit isn't present. (kitBeat pattern — same as the onboarding kit screens.)
+  function say(key, text){
+    const el = document.getElementById('rtKit');
+    if (el && el.say){ el.say(text); return CL() ? Promise.resolve(CL().say(key, { who:'juni', text, bubble:null })).catch(()=>{}) : Promise.resolve(); }
+    return juniSayOn($bub(), $sky(), key, text, 0);
+  }
   function beat(key, text){ const p=say(key,text); if (!alive) return Promise.resolve(); if (!voiceOn()) return sleep(SAY_OFF);
     const cap=(clipMs(key) ? clipMs(key)+SAY_BUFFER : SAY_CEILING);
     return Promise.race([ Promise.all([Promise.resolve(p).catch(()=>{}), sleep(SAY_FLOOR)]), sleep(cap) ]); }
@@ -2787,13 +2920,17 @@ const ReadTeach = (function(){
     try { toySky($sky()); } catch(e){}
     try { toyBix($bix(), 'happy', {size:132, keep:false}); } catch(e){}
     bixIdleStart();
-    const t=$('#rtTitle'); if (t) t.textContent = (typeof L1_LABELS!=='undefined' && L1_LABELS[teachMode==='make'?'listening':'reading']) || (teachMode==='make'?'Make the number':'Read the beads');
+    const title = (typeof L1_LABELS!=='undefined' && L1_LABELS[teachMode==='make'?'listening':'reading']) || (teachMode==='make'?'Make the number':'Read the beads');
+    const t=$('#rtTitle'); if (t) t.textContent = title;
+    const rtk=document.getElementById('rtKit'); if (rtk){ if (rtk.setTitle) rtk.setTitle(title); rtk.hidden=false; }   // show the new-kit chrome (old markup stays behind as fallback)
     const host=$('#rtAbacus');
     if (!ab){ ab=DemoAbacus(host, {rods:1, readout:false, onBead:()=>Sfx.tap(), onChange:(v)=>{ if (ab && ab._rtOnChange) ab._rtOnChange(v); }}); }
     ab.reset(); ab.setReadOnly(true); $count().textContent=''; clearPad(); showNext(false);
     if (!start._wired){ start._wired=true;
       $next().addEventListener('click', onNextClick);
-      $('#exitReadTeach').addEventListener('click', ()=>{ Sfx.tap(); stop(); if (Practice && Practice.on) Practice.pick(); else { renderHome(); show('home'); } });
+      const back = ()=>{ Sfx.tap(); stop(); if (Practice && Practice.on) Practice.pick(); else { renderHome(); show('home'); } };
+      $('#exitReadTeach').addEventListener('click', back);
+      const rtk2=document.getElementById('rtKit'); if (rtk2) rtk2.addEventListener('ab-action', (e)=>{ if (e.detail && e.detail.action==='back') back(); });
     }
     show('readTeach');
     (teachMode==='make'?runMake:runRead)().catch(()=>{});
@@ -3301,7 +3438,7 @@ function showWhoKit(){
 window.App = {
   show, Sfx, Speaker, get settings(){ return settings; }, saveSettings,
   nodeIndex: ()=>curIdx(), idx: id=>NODE_IDX[id], currentNode: ()=>NODES[curIdx()],
-  unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist,
+  unlock: ()=>Speaker.unlock(), activityDone, goPlay, renderChecklist, driveGameKit,
   goRoom, startMode, openPractice, renderHome: ()=>renderHome(),
   quietNow: ()=> $('#drill').classList.contains('active') && mode==='listen' && (locked || dictateToken>0 && $('#listenMsg').textContent!=='Your answer?'),
   nodes: ()=>NODES, nodeTitle: id=>(C.BY_ID[id]||{}).title||id,
@@ -3356,7 +3493,7 @@ window.__drillAnswer = async(v)=>{ setEntry(String(v)); await submit(); };   // 
 // Test hook: Bixi's snack bar — live state plus the goal and streak, for the energy-bar suite.
 window.__energy = ()=>{ const el=document.querySelector('#drillEnergy'), s=feedState(); return { n:s.n, full:!!s.full, goal:FEED_GOAL, streak:feedStreak, width: el?el.querySelector('.tp-en-fill').style.width:null, vis: el?getComputedStyle(el).visibility:null }; };
 window.__setFeedDay = d=>{ feedState(); Fun.data.feed.day=d; Fun.save(); };   // test hook: age the snack bar to another day
-const APP_VERSION='4.108';
+const APP_VERSION='4.118';
 { const _v=document.getElementById('ver'); if (_v) _v.textContent='v'+APP_VERSION; }   // show the real version on Home so updates are visible at a glance
 // Bixi's reserved speech card (home/play/room): give each his face once; his lines render here instead of a bubble that floats over Juni.
 ['bixHomeCard','bixPlayCard','bixRoomCard'].forEach(id=>{ const c=document.getElementById(id), f=c&&c.querySelector('.bix-card-face'); if (f && !f.firstChild){ try{ f.innerHTML=bixArt('happy',34); }catch(e){} } });
@@ -3384,7 +3521,7 @@ document.addEventListener('visibilitychange', ()=>{
 // focus / pageshow fire on some returns where visibilitychange does not; revive now and arm the gesture fallback too.
 window.addEventListener('pageshow', ()=>{ Speaker.revive(); Speaker.armResume(); });
 window.addEventListener('focus', ()=>{ Speaker.revive(); Speaker.armResume(); });
-if (false && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   // Auto-update: when a NEW service worker takes control (sw.js does skipWaiting + clients.claim on deploy),
   // reload once so the device runs the new build instead of stale cached files. Only wire this when a worker
   // already controls the page — i.e. this is an update, not the first-ever install — so first load never reloads.

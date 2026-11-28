@@ -1,0 +1,223 @@
+we.add.1.2	We have 1. Now let's add 2.
+d+.2.0	There are enough beads, so just push 2 up.
+end.3	And now it shows 3.
+we.add.3.5	We have 3. Now let's add 5.
+d+.5.0	There are enough beads, so just push 5 up.
+end.8	And now it shows 8.
+we.add.5.3	We have 5. Now let's add 3.
+d+.3.0	There are enough beads, so just push 3 up.
+we.add.11.6	We have 11. Now let's add 6.
+d+.6.0	There are enough beads, so just push 6 up.
+end.17	And now it shows 17.
+we.sub.3.2	We have 3. Now let's take away 2.
+d-.2.0	There are enough to take, so push 2 down.
+end.1	And now it shows 1.
+we.sub.8.3	We have 8. Now let's take away 3.
+d-.3.0	There are enough to take, so push 3 down.
+end.5	And now it shows 5.
+we.sub.7.5	We have 7. Now let's take away 5.
+d-.5.0	There are enough to take, so push 5 down.
+end.2	And now it shows 2.
+we.sub.19.4	We have 19. Now let's take away 4.
+d-.4.0	There are enough to take, so push 4 down.
+end.15	And now it shows 15.
+we.add.4.1	We have 4. Now let's add 1.
+f+.1.0	There aren't enough one-beads for 1. That's okay — the small friend of 1 is 4. So add five, and take away 4.
+we.add.3.2	We have 3. Now let's add 2.
+f+.2.0	There aren't enough one-beads for 2. That's okay — the small friend of 2 is 3. So add five, and take away 3.
+we.add.2.3	We have 2. Now let's add 3.
+f+.3.0	There aren't enough one-beads for 3. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+we.add.1.4	We have 1. Now let's add 4.
+f+.4.0	There aren't enough one-beads for 4. That's okay — the small friend of 4 is 1. So add five, and take away 1.
+we.add.4.4	We have 4. Now let's add 4.
+we.sub.5.1	We have 5. Now let's take away 1.
+f-.1.0	There aren't enough one-beads to take 1. The small friend of 1 is 4. So take away five, and add 4.
+end.4	And now it shows 4.
+we.sub.6.2	We have 6. Now let's take away 2.
+f-.2.0	There aren't enough one-beads to take 2. The small friend of 2 is 3. So take away five, and add 3.
+we.sub.7.3	We have 7. Now let's take away 3.
+f-.3.0	There aren't enough one-beads to take 3. The small friend of 3 is 2. So take away five, and add 2.
+we.sub.8.4	We have 8. Now let's take away 4.
+f-.4.0	There aren't enough one-beads to take 4. The small friend of 4 is 1. So take away five, and add 1.
+we.add.8.9	We have 8. Now let's add 9.
+t+i.9.0	There's no room for 9. The big friend of 9 is 1. So we add ten on the next rod…
+c+.1	Add one on the tens rod.
+t+f.1	Then take away 1 from this rod.
+we.add.7.8	We have 7. Now let's add 8.
+t+i.8.0	There's no room for 8. The big friend of 8 is 2. So we add ten on the next rod…
+t+f.2	Then take away 2 from this rod.
+we.add.4.7	We have 4. Now let's add 7.
+t+i.7.0	There's no room for 7. The big friend of 7 is 3. So we add ten on the next rod…
+t+f.3	Then take away 3 from this rod.
+end.11	And now it shows 11.
+we.add.9.6	We have 9. Now let's add 6.
+t+i.6.0	There's no room for 6. The big friend of 6 is 4. So we add ten on the next rod…
+t+f.4	Then take away 4 from this rod.
+we.add.9.1	We have 9. Now let's add 1.
+t+i.1.0	There's no room for 1. The big friend of 1 is 9. So we add ten on the next rod…
+t+f.9	Then take away 9 from this rod.
+end.10	And now it shows 10.
+we.add.8.2	We have 8. Now let's add 2.
+t+i.2.0	There's no room for 2. The big friend of 2 is 8. So we add ten on the next rod…
+t+f.8	Then take away 8 from this rod.
+we.add.7.3	We have 7. Now let's add 3.
+t+i.3.0	There's no room for 3. The big friend of 3 is 7. So we add ten on the next rod…
+t+f.7	Then take away 7 from this rod.
+we.add.6.4	We have 6. Now let's add 4.
+t+i.4.0	There's no room for 4. The big friend of 4 is 6. So we add ten on the next rod…
+t+f.6	Then take away 6 from this rod.
+we.add.5.5	We have 5. Now let's add 5.
+t+i.5.0	There's no room for 5. The big friend of 5 is 5. So we add ten on the next rod…
+t+f.5	Then take away 5 from this rod.
+we.sub.10.9	We have 10. Now let's take away 9.
+t-i.9.0	There aren't enough to take 9. The big friend of 9 is 1. So we take ten from the next rod…
+c-.1	Take one on the tens rod.
+t-f.1	Then add 1 to this rod.
+we.sub.11.8	We have 11. Now let's take away 8.
+t-i.8.0	There aren't enough to take 8. The big friend of 8 is 2. So we take ten from the next rod…
+t-f.2	Then add 2 to this rod.
+we.sub.16.7	We have 16. Now let's take away 7.
+t-i.7.0	There aren't enough to take 7. The big friend of 7 is 3. So we take ten from the next rod…
+t-f.3	Then add 3 to this rod.
+end.9	And now it shows 9.
+we.sub.15.6	We have 15. Now let's take away 6.
+t-i.6.0	There aren't enough to take 6. The big friend of 6 is 4. So we take ten from the next rod…
+t-f.4	Then add 4 to this rod.
+we.sub.10.1	We have 10. Now let's take away 1.
+t-i.1.0	There aren't enough to take 1. The big friend of 1 is 9. So we take ten from the next rod…
+t-f.9	Then add 9 to this rod.
+we.sub.11.2	We have 11. Now let's take away 2.
+t-i.2.0	There aren't enough to take 2. The big friend of 2 is 8. So we take ten from the next rod…
+t-f.8	Then add 8 to this rod.
+we.sub.10.3	We have 10. Now let's take away 3.
+t-i.3.0	There aren't enough to take 3. The big friend of 3 is 7. So we take ten from the next rod…
+t-f.7	Then add 7 to this rod.
+end.7	And now it shows 7.
+we.sub.12.4	We have 12. Now let's take away 4.
+t-i.4.0	There aren't enough to take 4. The big friend of 4 is 6. So we take ten from the next rod…
+t-f.6	Then add 6 to this rod.
+we.sub.10.5	We have 10. Now let's take away 5.
+t-i.5.0	There aren't enough to take 5. The big friend of 5 is 5. So we take ten from the next rod…
+t-f.5	Then add 5 to this rod.
+we.add.6.7	We have 6. Now let's add 7.
+t+fc.3	Then take away 3 using the small friend: take away five, then add 2 back.
+end.13	And now it shows 13.
+we.add.5.8	We have 5. Now let's add 8.
+t+fc.2	Then take away 2 using the small friend: take away five, then add 3 back.
+we.sub.12.7	We have 12. Now let's take away 7.
+t-fc.3	Then add 3 using the small friend: add five, then take 2 off.
+we.sub.11.6	We have 11. Now let's take away 6.
+t-fc.4	Then add 4 using the small friend: add five, then take 1 off.
+we.add.23.45	We have 23. Now let's add 45.
+f+.4.1	There aren't enough one-beads for 4 on the tens rod. That's okay — the small friend of 4 is 1. So add five, and take away 1.
+end.68	And now it shows 68.
+we.add.38.27	We have 38. Now let's add 27.
+f+.2.1	There aren't enough one-beads for 2 on the tens rod. That's okay — the small friend of 2 is 3. So add five, and take away 3.
+end.65	And now it shows 65.
+we.sub.64.29	We have 64. Now let's take away 29.
+f-.2.1	There aren't enough one-beads to take 2 on the tens rod. The small friend of 2 is 3. So take away five, and add 3.
+t-fc.1	Then add 1 using the small friend: add five, then take 4 off.
+end.35	And now it shows 35.
+we.add.9.7	We have 9. Now let's add 7.
+end.16	And now it shows 16.
+we.sub.16.8	We have 16. Now let's take away 8.
+we.add.8.6	We have 8. Now let's add 6.
+t+fc.4	Then take away 4 using the small friend: take away five, then add 1 back.
+end.14	And now it shows 14.
+we.add.46.38	We have 46. Now let's add 38.
+f+.3.1	There aren't enough one-beads for 3 on the tens rod. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+end.84	And now it shows 84.
+we.add.84.57	We have 84. Now let's add 57.
+t+i.5.1	There's no room for 5 on the tens rod. The big friend of 5 is 5. So we add ten on the next rod…
+c+.2	Add one on the hundreds rod.
+end.141	And now it shows 141.
+we.sub.141.65	We have 141. Now let's take away 65.
+t-i.6.1	There aren't enough to take 6 on the tens rod. The big friend of 6 is 4. So we take ten from the next rod…
+c-.2	Take one on the hundreds rod.
+end.76	And now it shows 76.
+we.add.15.6	We have 15. Now let's add 6.
+end.21	And now it shows 21.
+we.add.125.341	We have 125. Now let's add 341.
+d+.3.2	There are enough beads, so just push 3 on the hundreds rod up.
+d+.1.0	There are enough beads, so just push 1 up.
+end.466	And now it shows 466.
+we.add.468.275	We have 468. Now let's add 275.
+f+.2.2	There aren't enough one-beads for 2 on the hundreds rod. That's okay — the small friend of 2 is 3. So add five, and take away 3.
+t+i.7.1	There's no room for 7 on the tens rod. The big friend of 7 is 3. So we add ten on the next rod…
+end.743	And now it shows 743.
+we.sub.703.458	We have 703. Now let's take away 458.
+f-.4.2	There aren't enough one-beads to take 4 on the hundreds rod. The small friend of 4 is 1. So take away five, and add 1.
+t-i.5.1	There aren't enough to take 5 on the tens rod. The big friend of 5 is 5. So we take ten from the next rod…
+f-.1.1	There aren't enough one-beads to take 1 on the tens rod. The small friend of 1 is 4. So take away five, and add 4.
+t-fc.2	Then add 2 using the small friend: add five, then take 3 off.
+end.245	And now it shows 245.
+m.cu.3.4	3 × 4 means 3 groups of 4. Count up by 4s.
+m.cua.4.1	Add 4: 4.
+m.cua.4.2	Add 4: 4, 8.
+m.cua.4.3	Add 4: 4, 8, 12.
+m.cue.3.4	3 × 4 = 12. Say it by heart: 3 times 4 is 12.
+m.cu.6.2	6 × 2 means 2 groups of 6. Count up by 6s.
+m.cua.6.1	Add 6: 6.
+m.cua.6.2	Add 6: 6, 12.
+m.cue.6.2	6 × 2 = 12. Say it by heart: 6 times 2 is 12.
+m.cu.4.5	4 × 5 means 4 groups of 5. Count up by 5s.
+m.cua.5.1	Add 5: 5.
+m.cua.5.2	Add 5: 5, 10.
+m.cua.5.3	Add 5: 5, 10, 15.
+m.cua.5.4	Add 5: 5, 10, 15, 20.
+m.cue.4.5	4 × 5 = 20. Say it by heart: 4 times 5 is 20.
+m.cu.3.6	3 × 6 means 3 groups of 6. Count up by 6s.
+m.cua.6.3	Add 6: 6, 12, 18.
+m.cue.3.6	3 × 6 = 18. Say it by heart: 3 times 6 is 18.
+m.cu.4.8	4 × 8 means 4 groups of 8. Count up by 8s.
+m.cua.8.1	Add 8: 8.
+m.cua.8.2	Add 8: 8, 16.
+m.cua.8.3	Add 8: 8, 16, 24.
+m.cua.8.4	Add 8: 8, 16, 24, 32.
+m.cue.4.8	4 × 8 = 32. Say it by heart: 4 times 8 is 32.
+we.add.24.35	We have 24. Now let's add 35.
+end.59	And now it shows 59.
+we.add.59.47	We have 59. Now let's add 47.
+d+.4.1	There are enough beads, so just push 4 on the tens rod up.
+t+i.1.1	There's no room for 1 on the tens rod. The big friend of 1 is 9. So we add ten on the next rod…
+end.106	And now it shows 106.
+we.add.1234.2345	We have 1234. Now let's add 2345.
+d+.2.3	There are enough beads, so just push 2 on the thousands rod up.
+f+.3.2	There aren't enough one-beads for 3 on the hundreds rod. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+end.3579	And now it shows 3579.
+we.add.4876.3459	We have 4876. Now let's add 3459.
+f+.3.3	There aren't enough one-beads for 3 on the thousands rod. That's okay — the small friend of 3 is 2. So add five, and take away 2.
+t+i.4.2	There's no room for 4 on the hundreds rod. The big friend of 4 is 6. So we add ten on the next rod…
+c+.3	Add one on the thousands rod.
+end.8335	And now it shows 8335.
+we.sub.8205.3768	We have 8205. Now let's take away 3768.
+d-.3.3	There are enough to take, so push 3 on the thousands rod down.
+t-i.7.2	There aren't enough to take 7 on the hundreds rod. The big friend of 7 is 3. So we take ten from the next rod…
+f-.1.3	There aren't enough one-beads to take 1 on the thousands rod. The small friend of 1 is 4. So take away five, and add 4.
+f-.1.2	There aren't enough one-beads to take 1 on the hundreds rod. The small friend of 1 is 4. So take away five, and add 4.
+end.4437	And now it shows 4437.
+m.l.23.3	23 × 3. Start at 0. Go left to right: times each digit of 23 by 3.
+m.lp.2.3.1.1	2 × 3 = 06. 2 is on the tens rod, so 06 goes on the hundreds and tens rods: add 60.
+m.lp.3.3.0.1	3 × 3 = 09. 3 is on the units rod, so 09 goes on the tens and units rods: add 9.
+m.le.23.3	Now it shows 69. 23 × 3 = 69.
+m.l.34.6	34 × 6. Start at 0. Go left to right: times each digit of 34 by 6.
+m.lp.3.6.1.1	3 × 6 = 18. 3 is on the tens rod, so 18 goes on the hundreds and tens rods: add 180.
+m.lp.4.6.0.1	4 × 6 = 24. 4 is on the units rod, so 24 goes on the tens and units rods: add 24.
+m.le.34.6	Now it shows 204. 34 × 6 = 204.
+m.l.78.9	78 × 9. Start at 0. Go left to right: times each digit of 78 by 9.
+m.lp.7.9.1.1	7 × 9 = 63. 7 is on the tens rod, so 63 goes on the hundreds and tens rods: add 630.
+m.lp.8.9.0.1	8 × 9 = 72. 8 is on the units rod, so 72 goes on the tens and units rods: add 72.
+m.le.78.9	Now it shows 702. 78 × 9 = 702.
+m.l.123.3	123 × 3. Start at 0. Go left to right: times each digit of 123 by 3.
+m.lp.1.3.2.1	1 × 3 = 03. 1 is on the hundreds rod, so 03 goes on the thousands and hundreds rods: add 300.
+m.le.123.3	Now it shows 369. 123 × 3 = 369.
+m.l.406.7	406 × 7. Start at 0. Go left to right: times each digit of 406 by 7.
+m.lp.4.7.2.1	4 × 7 = 28. 4 is on the hundreds rod, so 28 goes on the thousands and hundreds rods: add 2800.
+m.lz.0.7	0 × 7 = 00. Nothing to add: move one rod to the right.
+m.lp.6.7.0.1	6 × 7 = 42. 6 is on the units rod, so 42 goes on the tens and units rods: add 42.
+m.le.406.7	Now it shows 2842. 406 × 7 = 2842.
+m.l.358.6	358 × 6. Start at 0. Go left to right: times each digit of 358 by 6.
+m.lp.3.6.2.1	3 × 6 = 18. 3 is on the hundreds rod, so 18 goes on the thousands and hundreds rods: add 1800.
+m.lp.5.6.1.1	5 × 6 = 30. 5 is on the tens rod, so 30 goes on the hundreds and tens rods: add 300.
+m.lp.8.6.0.1	8 × 6 = 48. 8 is on the units rod, so 48 goes on the tens and units rods: add 48.
+m.le.358.6	Now it shows 2148. 358 × 6 = 2148.

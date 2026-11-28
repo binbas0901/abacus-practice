@@ -14,17 +14,17 @@
 <link rel="icon" href="icon.png">
 
 
-<link rel="stylesheet" href="look/tokens.css?v=4.108">
-<link rel="stylesheet" href="styles.css?v=4.108">
-<link rel="stylesheet" href="abacus-input.css?v=4.108">
-<link rel="stylesheet" href="toy.css?v=4.108">
-<link rel="stylesheet" href="toy-home.css?v=4.108">
-<link rel="stylesheet" href="toy-practice.css?v=4.108">
-<link rel="stylesheet" href="toy-door.css?v=4.108">
-<link rel="stylesheet" href="toy-room.css?v=4.108">
-<link rel="stylesheet" href="toy-grown.css?v=4.108">
-<link rel="stylesheet" href="classroom.css?v=4.108">
-<link rel="stylesheet" href="onboarding.css?v=4.108">
+<link rel="stylesheet" href="look/tokens.css?v=4.118">
+<link rel="stylesheet" href="styles.css?v=4.118">
+<link rel="stylesheet" href="abacus-input.css?v=4.118">
+<link rel="stylesheet" href="toy.css?v=4.118">
+<link rel="stylesheet" href="toy-home.css?v=4.118">
+<link rel="stylesheet" href="toy-practice.css?v=4.118">
+<link rel="stylesheet" href="toy-door.css?v=4.118">
+<link rel="stylesheet" href="toy-room.css?v=4.118">
+<link rel="stylesheet" href="toy-grown.css?v=4.118">
+<link rel="stylesheet" href="classroom.css?v=4.118">
+<link rel="stylesheet" href="onboarding.css?v=4.118">
 </head>
 <body>
 <div id="app">
@@ -55,7 +55,7 @@
     <div class="th-bowl"><span class="th-bowl-art" id="homeBowl" aria-hidden="true"></span><span class="toy-chip th-beadchip" id="roomBeads" aria-label="golden beads"></span></div>
   </div>
   <div id="bixHomeCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
-  <div id="ver" class="th-ver">v4.108</div>
+  <div id="ver" class="th-ver">v4.118</div>
   </div>
 </section>
 
@@ -85,6 +85,8 @@
     <button class="toy-block toy-block--mustard toy-block--sm tr-wish" id="roomWish" aria-label="Treats: pick a treat to save for"><span id="roomWishIc"></span>Treats</button>
   </footer>
   <div id="bixRoomCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
+  <!-- New-kit My Room overlay (old markup above kept as fallback; live #roomGarden/#jar are slotted in). -->
+  <ab-room-screen id="roomKit" hidden></ab-room-screen>
 </section>
 <section id="setup" class="screen toy-scene to cl-onboard">
   <div id="setupSky" aria-hidden="true"></div>
@@ -170,6 +172,8 @@
   <div class="tr-play-body"><div class="tr-boxes" id="playCards"></div></div>
   <div class="tr-play-bix" id="bixPlay"></div>
   <div id="bixPlayCard" class="bix-card" role="status" aria-live="polite"><span class="bix-card-face" aria-hidden="true"></span><span class="ctext"></span></div>
+  <!-- New-kit Play hub overlay (old #playCards markup above kept as fallback). -->
+  <ab-play-screen id="playKit" hidden></ab-play-screen>
 </section>
 
 <section id="door" class="screen toy-scene td-door">
@@ -197,14 +201,20 @@
   <div class="pp-jbub cl-bubble" id="ppJuni" data-who="juni" aria-live="polite"><span class="ctext"></span></div>
   <div class="pp-cards" id="ppCards" role="group" aria-label="How do you want to practise?"></div>
   <div class="pp-extra" id="ppExtra"></div>
+  <!-- New-kit practice picker overlay (old markup above kept as fallback). -->
+  <ab-practice-pick id="ppKit" hidden></ab-practice-pick>
 </section>
 
 <section id="game" class="screen toy-scene toy-scene--calm tr-game">
+  <!-- Old chrome kept as hidden fallback (hidden by CSS when #game has .kit-on); #gameSky still carries Juni's audio figure. -->
   <div id="gameSky"></div>
   <div id="gameJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
   <header class="tr-top"><button class="toy-iconbtn" id="exitGame" aria-label="Back to the games"></button><div class="toy-plaque tr-title tr-gtitle" id="gameTitle"></div><div class="tr-gscore" id="gameScore" aria-live="polite"></div></header>
-  <div class="tr-stage" id="gameStage"></div>
   <div class="tr-gbix" id="bixGame"></div>
+  <!-- New-kit game frame; the live #gameStage is slotted in with its id unchanged so games.js keeps driving it. -->
+  <ab-game-screen id="gameKit" hidden>
+    <div class="tr-stage" id="gameStage"></div>
+  </ab-game-screen>
 </section>
 
 <!-- Level-1 "Read the beads": Juni-led interactive teaching (not the Bead Detective quiz). -->
@@ -212,15 +222,18 @@
   <div id="rtSky" aria-hidden="true"></div>
   <div id="rtJuni" class="tr-jbub cl-bubble cl-sign" data-who="juni" aria-live="polite"><i class="cl-jhang" aria-hidden="true"></i><span class="ctext"></span></div>
   <header class="rt-top"><button class="toy-iconbtn exit" id="exitReadTeach" aria-label="Back"></button><div class="toy-plaque rt-title" id="rtTitle">Read the beads</div></header>
-  <div class="rt-stage">
-    <div class="rt-abwrap"><div id="rtAbacus" class="rt-ab"></div></div>
-    <div class="rt-side">
-      <div class="rt-count" id="rtCount" aria-live="polite"></div>
-      <div class="rt-pad" id="rtPad" role="group" aria-label="Pick the number"></div>
-      <button class="toy-block toy-block--teal rt-next" id="rtNext"><span class="toy-block-label">Next</span></button>
+  <!-- New-kit Read/Make overlay; the live stage + Bixi are slotted in (ids unchanged). Old chrome above (sky/Juni/header) kept as hidden fallback behind the opaque kit. -->
+  <ab-readteach-screen id="rtKit" hidden>
+    <div class="rt-stage">
+      <div class="rt-abwrap"><div id="rtAbacus" class="rt-ab"></div></div>
+      <div class="rt-side">
+        <div class="rt-count" id="rtCount" aria-live="polite"></div>
+        <div class="rt-pad" id="rtPad" role="group" aria-label="Pick the number"></div>
+        <button class="toy-block toy-block--teal rt-next" id="rtNext"><span class="toy-block-label">Next</span></button>
+      </div>
     </div>
-  </div>
-  <div class="rt-bix" id="rtBix"></div>
+    <div class="rt-bix" id="rtBix"></div>
+  </ab-readteach-screen>
 </section>
 
 <section id="shop" class="screen toy-scene toy-scene--table tr-shop">
@@ -232,17 +245,24 @@
     <div class="tr-how">Golden beads come from real practice: finishing a practice set +1 · mastering a new skill +5. Games are just for fun — they don't give beads.</div>
   </div>
   <div id="shopAsk" class="tr-ask"><div class="toy-paper tr-ask-card"><div class="tr-ask-t" id="askText"></div><div class="tr-ask-row"><button type="button" class="toy-block toy-block--teal toy-block--sm" id="askYes">Yes please!</button><button type="button" class="toy-block toy-block--wood toy-block--sm" id="askNo">Not yet</button></div></div></div>
+  <!-- New-kit Treat Shop overlay (old markup above kept as fallback; #shopAsk confirm stays, z-index:60 above the kit). -->
+  <ab-shop-screen id="shopKit" hidden></ab-shop-screen>
 </section>
 
 <section id="album" class="screen toy-scene toy-scene--table tr-album">
   <header class="tr-top"><button class="toy-iconbtn" id="exitAlbum" aria-label="Back to My Room"></button><h1 class="toy-plaque tr-title">My stickers</h1><span class="tr-gap"></span><span class="toy-plaque tr-wallet" id="albumCount"></span></header>
   <div class="tr-album-body toy-scroll" id="albumPages"></div>
+  <!-- New-kit sticker album overlay (old #albumPages markup above kept as fallback). -->
+  <ab-album-screen id="albumKit" hidden></ab-album-screen>
 </section>
 
 <section id="lesson" class="screen toy-scene toy-scene--calm td-lesson">
-  <header class="td-top"><button class="toy-iconbtn exit" id="exitLesson" aria-label="Stop the lesson"></button>
-    <div class="td-board"><div class="lvl" id="lessonTitle"></div><div class="lesson-steps" id="lessonSteps" role="img" aria-label=""></div></div></header>
+  <!-- Old exit + sky kept as hidden fallback behind the opaque kit (#lessonSky still carries Juni's talking-moon audio figure). -->
+  <header class="td-top"><button class="toy-iconbtn exit" id="exitLesson" aria-label="Stop the lesson"></button></header>
   <div class="td-sky" id="lessonSky" aria-hidden="true"></div>
+  <!-- New-kit Lesson frame; the title/steps board and the whole lesson body are slotted in (ids unchanged). -->
+  <ab-lesson-screen id="lesKit" hidden>
+    <div class="td-board" slot="head"><div class="lvl" id="lessonTitle"></div><div class="lesson-steps" id="lessonSteps" role="img" aria-label=""></div></div>
   <div class="lesson-body">
     <div class="lesson-left"><div class="lesson-ab" id="lessonAbacus"></div><img id="lessonHand" class="lesson-hand" alt="" aria-hidden="true"><div class="lesson-pair" id="lessonPair"></div></div>
     <div class="lesson-side">
@@ -254,12 +274,15 @@
       </div>
     </div>
   </div>
+  </ab-lesson-screen>
 </section>
 
 <section id="drill" class="screen toy-scene toy-scene--calm tp">
   <div id="drillSky" aria-hidden="true"></div>
   <div id="drillJuni" class="tp-jbub cl-bubble toy-bubble" data-who="juni" aria-live="polite"><span class="ctext"></span></div>
-  <div class="tp-top">
+  <!-- New-kit Drill frame; control bar, body and energy are slotted in their ORIGINAL flow (display:contents), so #drill's viewport-calc sizing is unchanged. Old sky/Juni above kept behind as the audio figure/fallback; #speedPop stays a sibling below (z-index 20, above the kit z-index 5). -->
+  <ab-drill-screen id="drillKit" hidden>
+  <div class="tp-top" slot="top">
     <button class="toy-iconbtn" id="exitDrill" aria-label="Leave practice"><span class="pr-ic" data-ic="close" data-sz="30"></span></button>
     <button class="toy-iconbtn tp-gear" id="speedGear" aria-label="Speed" aria-haspopup="dialog" hidden><span class="pr-ic" data-ic="gear" data-sz="30"></span></button>
     <div class="tp-topright">
@@ -306,10 +329,11 @@
       <div class="tp-sr" id="feedback" aria-live="polite"></div>
     </div>
   </div>
-  <div id="drillEnergy" class="tp-energy" role="img" aria-label="Bixi's snack bar: empty">
+  <div id="drillEnergy" class="tp-energy" slot="energy" role="img" aria-label="Bixi's snack bar: empty">
     <span class="tp-en-face" aria-hidden="true"></span>
     <div class="tp-en-track"><i class="tp-en-fill"></i><i class="tp-en-pop" aria-hidden="true"></i></div>
   </div>
+  </ab-drill-screen>
   <!-- Speed panel (Listen and Flash): before a set (with Start) and from the gear during one (with Done). SpeedPanel in app.js. -->
   <div class="sp" id="speedPop" role="dialog" aria-labelledby="spTitle" hidden>
     <div class="toy-paper sp-card">
@@ -542,27 +566,27 @@
 </section>
 
 </div>
-<script src="store.js?v=4.108"></script>
-<script src="toykit.js?v=4.108"></script>
-<script src="toystickers.js?v=4.108"></script>
-<script src="engine.js?v=4.108"></script>
-<script src="timemodel.js?v=4.108"></script>
-<script src="curriculum.js?v=4.108"></script>
-<script src="audio/bix-lines.js?v=4.108"></script>
-<script src="abacus-input.js?v=4.108"></script>
-<script src="parent-brain.js?v=4.108"></script>
-<script src="fun.js?v=4.108"></script>
-<script src="audio/lines-manifest.js?v=4.108"></script>
-<script src="audio/lessons.js?v=4.108"></script>
+<script src="store.js?v=4.118"></script>
+<script src="toykit.js?v=4.118"></script>
+<script src="toystickers.js?v=4.118"></script>
+<script src="engine.js?v=4.118"></script>
+<script src="timemodel.js?v=4.118"></script>
+<script src="curriculum.js?v=4.118"></script>
+<script src="audio/bix-lines.js?v=4.118"></script>
+<script src="abacus-input.js?v=4.118"></script>
+<script src="parent-brain.js?v=4.118"></script>
+<script src="fun.js?v=4.118"></script>
+<script src="audio/lines-manifest.js?v=4.118"></script>
+<script src="audio/lessons.js?v=4.118"></script>
 <script>window.LINE_PACKS=["juni","bixi","juni-lesson","juni-intro","juni-anat","juni-praise","juni-practice","juni-hardfix","bixi-hardfix"];</script>
-<script src="classroom.js?v=4.108"></script>
-<script src="games.js?v=4.108"></script>
-<script src="treats.js?v=4.108"></script>
-<script src="onboarding.js?v=4.108"></script>
-<script src="look/characters.js?v=4.108"></script>
-<script src="look/abacus.js?v=4.108"></script>
-<script src="look/ui.js?v=4.108"></script>
-<script src="look/screens.js?v=4.108"></script>
-<script src="app.js?v=4.108"></script>
+<script src="classroom.js?v=4.118"></script>
+<script src="games.js?v=4.118"></script>
+<script src="treats.js?v=4.118"></script>
+<script src="onboarding.js?v=4.118"></script>
+<script src="look/characters.js?v=4.118"></script>
+<script src="look/abacus.js?v=4.118"></script>
+<script src="look/ui.js?v=4.118"></script>
+<script src="look/screens.js?v=4.118"></script>
+<script src="app.js?v=4.118"></script>
 </body>
 </html>

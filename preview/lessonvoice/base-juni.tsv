@@ -1,0 +1,180 @@
+j_end_amazing	Amazing work!
+j_end_good	Good practice! Every try makes you stronger.
+j_end_great	Great job! Want to polish these with me?
+j_fact_bigfriends	Big friends make ten. Like four and six.
+j_fact_fingers	Thumb pushes beads up. Pointer finger pushes them down.
+j_fact_fuller	I get a little fuller every time you finish a step.
+j_fact_moon	My name means moon.
+j_fact_nine	Nine needs one to make ten.
+j_fact_picture	Close your eyes and picture the beads. That is mental maths.
+j_fact_seven	Seven needs three to make ten.
+j_fact_smallfriends	Small friends make five. One and four, two and three.
+j_fact_soroban	In Japan, the abacus is called a soroban.
+j_fact_topbead	The top bead is worth five. Each bottom bead is worth one.
+j_habit_daily	A little practice every day. That's the whole secret.
+j_habit_hand1	Lift your bead hand. Let it float above the beads.
+j_habit_hand2	Left hand holds the abacus still. Finger ready on the reset button.
+j_habit_slow	No need to go fast. Slow and right comes first. Fast comes later, all by itself.
+j_hello_afternoon	Good afternoon! Let's do some abacus!
+j_hello_back	You're back! I missed you!
+j_hello_big	Big friends make ten. Let's practise!
+j_hello_evening	Good evening! A little practice before bed?
+j_hello_morning	Good morning! Ready to move some beads?
+j_hello_small	Small friends make five. Let's practise!
+j_intro_abacususe	Use your abacus for each one. No rush!
+j_intro_begin	All set. Let's begin. A little every day. That's the whole secret.
+j_intro_bixi1	There's someone I'd like you to meet.
+j_intro_bixi2	Bixi is learning too. You'll be classmates.
+j_intro_grownup	Now a grown-up can help me get ready.
+j_intro_hello	Hello. I am Juni, your abacus teacher.
+j_intro_help	Sometimes Bixi gets a little mixed up. When that happens, you can help him. Helping is how we learn best.
+j_intro_meet	Lovely to meet you!
+j_intro_name	What should I call you? Type it in for me.
+j_intro_pick	Grown-up, please pick the skill they're working on.
+j_intro_welcome	Welcome. I am so glad you are here.
+j_jokereply_1	Oh, Bixi.
+j_jokereply_2	That was a very silly one.
+j_jokereply_3	Back to the beads now.
+j_jokereply_4	I will laugh later.
+j_onboard_abacus	Do you have an abacus at home?
+j_onboard_who	Who's practising today?
+j_praise_bf	You used a big friend. Nice work.
+j_praise_both	Both friends together. Two tricks in one move.
+j_praise_sf	You used a small friend. Nice work.
+j_showme	Watch the beads move.
+j_start_flash	Watch the numbers carefully.
+j_start_listen	Listen carefully to each number.
+j_start_look	Look at each problem and work it out. Take your time.
+j_start_lookbeads	Use your abacus for each one. Slow and careful.
+l_add_direct_close	When there are enough beads, no tricks. Just push them to the bar.
+l_add_direct_open	Adding is easy. When there is room, just push beads to the bar.
+l_add_direct_turn1	Your turn. The abacus shows 2. Add 2.
+l_add_direct_turn2	One more. Show 1, then add 3.
+l_add_direct_watch1	We have 1. Add 2. Plenty of room, so push 2 little beads up. Now it shows 3.
+l_add_direct_watch2	We have 3. Add 5. Pull the 5-bead down to the bar. Now it shows 8.
+l_anzan_2d_close	Tens first, then units, just like the real beads. Keep the picture still.
+l_anzan_2d_open	Two rods in your head now: tens and units. Add the tens first, then the units.
+l_anzan_2d_turn1	Your turn. Picture 31. Add 26 in your head.
+l_anzan_2d_watch1	Picture 24. Add 35. Tens: 2 and 3. Units: 4 and 5. Now you see 59.
+l_anzan_close	The picture lives in your head now. Slow and clear comes first. Fast comes later, all by itself.
+l_anzan_more_close	Keep the picture calm, like a still pond. A little practice every day, that is the whole secret.
+l_anzan_more_open	More numbers in your head now. Add each one as it flashes, and keep the picture still between them.
+l_anzan_more_turn1	Your turn. Picture 6. Add 9 in your head.
+l_anzan_more_watch1	Picture 7. Add 8, a big friend. Now you see 15.
+l_anzan_more_watch2	Hold 15 in the picture. Add 6. Now it shows 21.
+l_anzan_open	Now we move the beads in our head. Close your eyes and picture the abacus.
+l_anzan_turn1	Your turn. Picture 6. Add 3 in your head. What do you see?
+l_anzan_watch1	Picture 5. Add 2. See the two little beads slide up. Now the picture shows 7.
+l_anzan_watch2	Keep the picture still. Add 1 more. Now it shows 8.
+l_beads_close	A bead only counts when it touches the bar. Now you know your beads.
+l_beads_open	This is your abacus. Every bead is ready to help you count.
+l_beads_turn1	Your turn. Show me 7. That is the 5-bead and two little ones.
+l_beads_watch1	The bead up top is worth 5. Pull it down to the bar and it says five.
+l_beads_watch2	Each little bead at the bottom is worth 1. Push one up to the bar and it says one.
+l_bf_add_a_close	Big-friend add: 10 next door first, then take the friend away.
+l_bf_add_a_help	Bixi took the big friend away. But something is missing next door. What do we add first?
+l_bf_add_a_open	When the rod is full, call a big friend. Add 10 next door and take away the big friend. 1 and 9, 2 and 8, 3 and 7, 4 and 6 make 10.
+l_bf_add_a_turn1	Your turn. Show 4 and add 7.
+l_bf_add_a_watch1	We have 8. Add 9. No room. The big friend of 9 is 1. Add 10 on the next rod, take away 1. Now it shows 17.
+l_bf_add_a_watch2	We have 7. Add 8. The big friend of 8 is 2. Add 10 next door, take away 2. Now it shows 15.
+l_bf_add_b_close	Rod full? Add 10 next door, take the big friend away. Every time.
+l_bf_add_b_open	The same big-friend trick, with smaller adds. Add 10, take away the big friend.
+l_bf_add_b_turn1	Your turn. Show 7 and add 3.
+l_bf_add_b_watch1	We have 9. Add 1. No room. The big friend of 1 is 9. Add 10, take away 9. Now it shows 10.
+l_bf_add_b_watch2	We have 8. Add 2. The big friend of 2 is 8. Add 10, take away 8. Now it shows 10.
+l_bf_sub_a_close	Not enough to take? Borrow 10 next door, then add the big friend back.
+l_bf_sub_a_open	Taking away with big friends. Take 10 from next door, then add back the big friend.
+l_bf_sub_a_turn1	Your turn. Show 16, then take away 7.
+l_bf_sub_a_watch1	We have 10. Take away 9. No beads to take here. The big friend of 9 is 1. Take 10 from next door, add back 1. Now it shows 1.
+l_bf_sub_a_watch2	We have 11. Take away 8. The big friend of 8 is 2. Take 10 from next door, add back 2. Now it shows 3.
+l_bf_sub_b_close	Borrow 10, then always add the big friend back. Never stop halfway.
+l_bf_sub_b_help	Bixi took the 10. We are not finished yet. What do we add back for the 2?
+l_bf_sub_b_open	The same borrow, with smaller takes. Take 10 next door, add back the big friend.
+l_bf_sub_b_turn1	Your turn. Show 10 and take away 3.
+l_bf_sub_b_watch1	We have 10. Take away 1. The big friend of 1 is 9. Take 10 from next door, add back 9. Now it shows 9.
+l_bf_sub_b_watch2	We have 11. Take away 2. The big friend of 2 is 8. Take 10 next door, add back 8. Now it shows 9.
+l_combined_close	When the big friend will not come off, let the small friend help inside. Two tricks, one move.
+l_combined_help	Bixi is so close. We cannot take 3 little beads, so we use a small friend. How do we take away 3?
+l_combined_open	Here both friends work together. Add 10, and take the big friend away using a small friend.
+l_combined_turn1	Your turn. Show 12 and take away 7.
+l_combined_watch1	We have 6. Add 7. The big friend of 7 is 3. Add 10 next door. Now take away 3, but no little beads, so take 5 and add 2. Now it shows 13.
+l_combined_watch2	We have 5. Add 8. The big friend of 8 is 2. Add 10, then take away 2 with the small friend: take 5, add 3. Now it shows 13.
+l_four_digit_close	Big numbers, same friends. One rod at a time, left to right.
+l_four_digit_open	Four rods for each number: thousands, hundreds, tens, units. Left to right, as always.
+l_four_digit_turn1	Your turn. Show 2513 and add 1264.
+l_four_digit_watch1	Start at 1234. Add 2345. Thousands first, then hundreds, then tens, then units. Now it shows 3579.
+l_long_rows_close	No need to go fast. Slow and right comes first. One bead, then the next.
+l_long_rows_open	Long rows use every friend you know. Keep a finger on your place and do one number at a time.
+l_long_rows_turn1	Your turn, step by step. Show 24 and add 8.
+l_long_rows_watch1	Watch one long row. Start at 9. Add 7, that is 16. Take away 8, that is 8. Add 6, that is 14.
+l_mul_2x1_close	Every times-answer takes two rods. Last digit on its own rod, first digit one rod to its left.
+l_mul_2x1_open	Now we multiply on the abacus. Start at 0. Times each digit by the small number, left to right.
+l_mul_2x1_turn1	Your turn. 13 times 2. Start at 0 and work left to right.
+l_mul_2x1_watch1	23 times 3. Start at 0. 2 times 3 is 06, so add 60. 3 times 3 is 09, so add 9. Now it shows 69.
+l_mul_3x1_close	A 0 digit gives 00, so nothing to add, just move one rod to the right. Everything else is the fact in its place.
+l_mul_3x1_open	One more digit: hundreds, tens, units. Same method, start at 0.
+l_mul_3x1_turn1	Your turn. 213 times 3. Left to right, start at 0.
+l_mul_3x1_watch1	123 times 3. 1 times 3 is 03. 2 times 3 is 06. 3 times 3 is 09. Add each one in its place. Now it shows 369.
+l_rows_2d_close	When the tens rod fills up, a big friend carries onto the hundreds. Same friends, bigger numbers.
+l_rows_2d_open	Five two-digit numbers in a row. Tens rod first, then units, every time.
+l_rows_2d_turn1	Your turn. Show 35 and add 47.
+l_rows_2d_watch1	Start at 46. Add 38. Tens first: 4 plus 3. Then units: 6 plus 8, and a big friend carries over. Now it shows 84.
+l_sf_add_close	Not enough little beads? Use 5 and take away the small friend.
+l_sf_add_help	Good start, Bixi pulled the 5 down. Now, which friend do we take away for the 1? Show Bixi.
+l_sf_add_open	Sometimes there are not enough little beads. Meet the small friends. 1 and 4 make 5. 2 and 3 make 5.
+l_sf_add_turn1	Your turn. Show 4 and add 2.
+l_sf_add_watch1	We have 4. Add 1, but no little bead is free. The small friend of 1 is 4. So pull down 5 and take away 4. Now it shows 5.
+l_sf_add_watch2	We have 3. Add 2. The small friend of 2 is 3. Pull down 5, take away 3. Now it shows 5.
+l_sf_sub_close	Take the 5 away, then add back the small friend. Do not forget the friend.
+l_sf_sub_open	Taking away with small friends. Take the 5 away, then add back the small friend.
+l_sf_sub_turn1	Your turn. Show 7, then take away 3.
+l_sf_sub_watch1	We have 5. Take away 1. The 1-beads are not there. The small friend of 1 is 4. Take away 5 and add back 4. Now it shows 4.
+l_sf_sub_watch2	We have 6. Take away 2. The small friend of 2 is 3. Take away 5, add back 3. Now it shows 4.
+l_sub_direct_close	Beads at the bar? Just push them away. That is taking away.
+l_sub_direct_open	Taking away is just as easy. If the beads are at the bar, push them back.
+l_sub_direct_turn1	Your turn. Show 4, then take away 1.
+l_sub_direct_turn2	Now show 9 and take away 4.
+l_sub_direct_watch1	We have 3. Take away 2. Push 2 little beads back from the bar. Now it shows 1.
+l_sub_direct_watch2	We have 8. Take away 3. Push 3 little beads away. Now it shows 5.
+l_three_digit_close	Each rod is just a little sum you already know. Left to right, one rod at a time.
+l_three_digit_open	Three rods for each number now: hundreds, tens, units. Always start on the left.
+l_three_digit_turn1	Your turn. Show 214 and add 352.
+l_three_digit_watch1	Start at 125. Add 341. Hundreds first: 1 plus 3. Then tens: 2 plus 4. Then units: 5 plus 1. Now it shows 466.
+l_times_a_close	Times means groups. Count them up a few times, then learn the fact by heart.
+l_times_a_help	Bixi added them. But times means groups. 4 times 5 is five 4s. Can you count them up with Bixi?
+l_times_a_open	Times tables are groups. 3 times 4 means three 4s. Count them up: 4, 8, 12.
+l_times_a_turn1	Your turn. Count up 2 times 3. That is two 3s.
+l_times_a_watch1	3 times 4. Count up by fours. 4. 8. 12. So 3 times 4 is 12.
+l_times_a_watch2	6 times 2 means six 2s. Count up: 2, 4, 6, 8, 10, 12. So 6 times 2 is 12.
+l_times_b_close	Count up a few times, then say the fact without counting. Fast facts make big sums easy.
+l_times_b_open	The bigger tables, same idea. Three 7s are 7, 14, 21.
+l_times_b_turn1	Your turn. Two 6s. Count them up.
+l_times_b_watch1	3 times 6 means three 6s. Count up: 6, 12, 18. So 3 times 6 is 18.
+l_times_b_watch2	4 times 8 is four 8s: 8, 16, 24, 32. So 4 times 8 is 32.
+l_two_digit_close	Tens rod first, then units. Every rod uses the same friends you know.
+l_two_digit_help	Good question, Bixi. On the abacus we start on the left. Which rod is that, the tens or the units?
+l_two_digit_open	Big numbers use more rods. Always start on the left, with the tens.
+l_two_digit_turn1	Your turn. Show 12 and add 34.
+l_two_digit_watch1	We have 23. Add 45. Start on the tens: 2 plus 4. Then the units: 3 plus 5. Now it shows 68.
+l_two_digit_watch2	We have 38. Add 27. Tens first: 3 plus 2. Then units: 8 plus 7, a big friend. Now it shows 65.
+j_fix_one	Let's polish this one together.
+j_fix_start	Let's polish these together.
+j_sum_fixed	All polished! So shiny!
+j_unlock	Hooray! You unlocked a new skill!
+j_play_pick	Pick a game! Every game gives you a sticker.
+j_pop_go	Find the friend and pop it!
+j_read_look	Look closely at the beads.
+j_read_ask	What number was it?
+j_read_levelup	Wonderful! Let's try more beads now.
+j_build_go	Make this number on the abacus.
+j_build_half	You're halfway there!
+j_room_jar_pick	Pick a treat to save for. Tap Treats.
+j_room_jar_saving	Keep practising to fill your jar. You can do it!
+j_room_jar_full	Your jar is full enough for your treat!
+j_room_garden	Every day you practise, a new flower grows.
+j_room_garden_none	Practise today and a flower will grow!
+j_door_play	How would you like to practise today?
+j_path_locked	Not yet! Finish the skills before it to open this one.
+j_path_here	This is your skill right now. Tap Learn to start.
+j_path_done	You've already learned this one. Well done!
+j_gate_grownup	This part is for a grown-up. Can you go and get one?

@@ -1,0 +1,13 @@
+l_three_digit_slip	The units made a ten, so I carry one to the tens rod. But the tens rod is already full! There is no room for the extra ten. I am stuck.
+l_three_digit_thanks	It carries again, onto the hundreds! One carry can wake up the next one. Thank you!
+l_rows_2d_slip	I added on the tens rod, and now it has more than nine tens on it. But the tens rod cannot hold that many! Where does the extra ten go?
+l_rows_2d_thanks	The hundreds rod! The ten jumps left onto the hundreds. Thank you, I nearly left it behind!
+l_sf_add_slip	I want to add, but there aren't enough little beads left on this rod! Hmm... I'm stuck.
+l_sf_add_thanks	Slide five down, then take the small friend off! That makes it. Thank you!
+l_bf_add_a_slip	There's no room on this rod for that many beads! Where do they all go? I'm stuck.
+l_bf_add_a_thanks	Add ten next door, then take the big friend away! Now it fits. Thank you!
+l_bf_sub_b_slip	I need to take some away, but there aren't enough beads on this rod to take! I'm stuck.
+l_bf_sub_b_thanks	Take ten from next door, then add the big friend back! There it is. Thank you so much.
+l_times_a_slip	Times? Easy — I'll just add the two numbers together!
+l_times_a_thanks	Ohhh — groups, not plus! Count them up, one at a time. Thank you, that is so much more!
+b_qw_cheer	Yay! You made one bead!

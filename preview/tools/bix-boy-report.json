@@ -1,0 +1,762 @@
+[
+ {
+  "id": "intro_hi",
+  "text": "Hi there! I'm Bix! I'm a little bead from an abacus, and I love numbers!",
+  "heard": "Hi there, I'm Bix. I'm a little bead from an abacus, and I love numbers.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 174,
+  "sec": 5.0,
+  "wpm": 180
+ },
+ {
+  "id": "intro_name",
+  "text": "What's your name? Type it in for me!",
+  "heard": "What's your name? Type it in for me.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 167,
+  "sec": 1.97,
+  "wpm": 243
+ },
+ {
+  "id": "intro_meet",
+  "text": "Yay! Nice to meet you! Now, where should we start?",
+  "heard": "Yay nice to meet you. Now where should we start?",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 180,
+  "sec": 2.96,
+  "wpm": 202
+ },
+ {
+  "id": "intro_pick",
+  "text": "Grown-up, please pick the skill they're working on.",
+  "heard": "grown up please pick the skill they're working on",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 168,
+  "sec": 2.71,
+  "wpm": 199
+ },
+ {
+  "id": "intro_check",
+  "text": "Use your abacus for each one. No rush!",
+  "heard": "Use your abacus for each one. No rush.",
+  "clarity": 1.0,
+  "take": "! 0.62 plain",
+  "pitch": 176,
+  "sec": 2.73,
+  "wpm": 176
+ },
+ {
+  "id": "intro_done",
+  "text": "Yay! Let's go! This is going to be so much fun!",
+  "heard": "Yay, let's go. This is going to be so much fun.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 3.19,
+  "wpm": 207
+ },
+ {
+  "id": "ask_name",
+  "text": "I don't know your name yet! Tap me and tell me!",
+  "heard": "I don't know your name yet, but tap me and tell me.",
+  "clarity": 0.909,
+  "take": "! 0.57 plain",
+  "pitch": 168,
+  "sec": 2.91,
+  "wpm": 227
+ },
+ {
+  "id": "got_name",
+  "text": "Now I know you! Hooray!",
+  "heard": "Now I know you. Hooray.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 183,
+  "sec": 1.94,
+  "wpm": 154
+ },
+ {
+  "id": "hello_morning",
+  "text": "Good morning! Ready to move some beads?",
+  "heard": "Good morning, ready to move some beads.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 166,
+  "sec": 2.13,
+  "wpm": 197
+ },
+ {
+  "id": "hello_afternoon",
+  "text": "Good afternoon! Let's do some abacus!",
+  "heard": "Good afternoon, let's do some abacus.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 166,
+  "sec": 2.33,
+  "wpm": 155
+ },
+ {
+  "id": "hello_evening",
+  "text": "Good evening! A little practice before bed?",
+  "heard": "Good evening, little practice before bed.",
+  "clarity": 0.857,
+  "take": "! 0.57 plain",
+  "pitch": 166,
+  "sec": 2.58,
+  "wpm": 163
+ },
+ {
+  "id": "hello_back",
+  "text": "You're back! I missed you!",
+  "heard": "You're back, I missed you.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 182,
+  "sec": 1.39,
+  "wpm": 217
+ },
+ {
+  "id": "hello_ready",
+  "text": "Hi friend! Tap Start when you're ready!",
+  "heard": "Hi friend tap start when you're ready",
+  "clarity": 1.0,
+  "take": "! 0.54 cut",
+  "pitch": 167,
+  "sec": 2.14,
+  "wpm": 196
+ },
+ {
+  "id": "hello_big",
+  "text": "Big friends make ten. Let's practise!",
+  "heard": "Big friends make 10. Let's practice.",
+  "clarity": 0.833,
+  "take": "! 0.57 cut",
+  "pitch": 171,
+  "sec": 2.73,
+  "wpm": 132
+ },
+ {
+  "id": "hello_small",
+  "text": "Small friends make five. Let's practise!",
+  "heard": "Small friends make five. Let's practice.",
+  "clarity": 0.833,
+  "take": "! 0.57 cut",
+  "pitch": 171,
+  "sec": 2.82,
+  "wpm": 128
+ },
+ {
+  "id": "all_done",
+  "text": "You did all of today's practice! Want to play a game?",
+  "heard": "You did all of today's practice. Want to play a game?",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 169,
+  "sec": 3.43,
+  "wpm": 192
+ },
+ {
+  "id": "locked",
+  "text": "That one is locked! Finish the skills before it first.",
+  "heard": "That one is locked. Finish these skills before at first.",
+  "clarity": 0.8,
+  "take": "! 0.57 plain",
+  "pitch": 174,
+  "sec": 3.65,
+  "wpm": 164
+ },
+ {
+  "id": "tap_1",
+  "text": "Hee hee! That tickles!",
+  "heard": "You hear that tickles",
+  "clarity": 0.5,
+  "take": "! 0.57 plain",
+  "pitch": 175,
+  "sec": 1.45,
+  "wpm": 166
+ },
+ {
+  "id": "tap_2",
+  "text": "Boing! Boing! I'm a bouncy bead!",
+  "heard": "Boing, boing, I'm a bouncy beard.",
+  "clarity": 0.833,
+  "take": "! 0.57 cut",
+  "pitch": 170,
+  "sec": 1.72,
+  "wpm": 209
+ },
+ {
+  "id": "tap_3",
+  "text": "Why was six afraid of seven? Because seven ate nine!",
+  "heard": "Why was 6 afraid of 7? Because 7, 8, 9.",
+  "clarity": 0.9,
+  "take": "! 0.57 plain",
+  "pitch": 167,
+  "sec": 3.64,
+  "wpm": 165
+ },
+ {
+  "id": "tap_4",
+  "text": "What did the zero say to the eight? Nice belt!",
+  "heard": "What did the zero say to the eight? Nice belt.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 3.03,
+  "wpm": 198
+ },
+ {
+  "id": "tap_5",
+  "text": "Four and six are big friends. Together they make ten!",
+  "heard": "Four and six are big friends. Together they make ten.",
+  "clarity": 1.0,
+  "take": ". 0.54 cut",
+  "pitch": 171,
+  "sec": 3.58,
+  "wpm": 167
+ },
+ {
+  "id": "tap_6",
+  "text": "Two and three are small friends. They make five!",
+  "heard": "2 and 3 are small friends. They make 5.",
+  "clarity": 1.0,
+  "take": "! 0.54 plain",
+  "pitch": 176,
+  "sec": 3.33,
+  "wpm": 162
+ },
+ {
+  "id": "tap_7",
+  "text": "The top bead is worth five. Each bottom bead is worth one!",
+  "heard": "The top bead is worth 5. Each bottom bead is worth 1.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 166,
+  "sec": 3.83,
+  "wpm": 188
+ },
+ {
+  "id": "tap_8",
+  "text": "Thumb pushes beads up. Pointer finger pushes them down!",
+  "heard": "Thumb pushes beads up, a pointer finger pushes them down.",
+  "clarity": 0.889,
+  "take": "! 0.57 cut",
+  "pitch": 169,
+  "sec": 3.74,
+  "wpm": 144
+ },
+ {
+  "id": "tap_9",
+  "text": "In Japan, the abacus is called a soroban!",
+  "heard": "In Japan, the abacus is called a saraban.",
+  "clarity": 0.875,
+  "take": "! 0.57 plain",
+  "pitch": 164,
+  "sec": 2.74,
+  "wpm": 175
+ },
+ {
+  "id": "tap_10",
+  "text": "The abacus is thousands of years old. Older than dinosaurs! Just kidding.",
+  "heard": "The abacus is thousands of years old, older than dinosaurs just kidding.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 164,
+  "sec": 4.99,
+  "wpm": 144
+ },
+ {
+  "id": "tap_11",
+  "text": "What's a bead's favorite dance? The slide!",
+  "heard": "What's a Bead's favorite dance? The Slide.",
+  "clarity": 1.0,
+  "take": ". 0.57 plain",
+  "pitch": 176,
+  "sec": 2.9,
+  "wpm": 145
+ },
+ {
+  "id": "tap_12",
+  "text": "Close your eyes and picture the beads. That's mental math!",
+  "heard": "Close your eyes and picture the beads. That's mental math.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 166,
+  "sec": 3.51,
+  "wpm": 171
+ },
+ {
+  "id": "tap_13",
+  "text": "Seven needs three to make ten!",
+  "heard": "7 needs 3 to make 10",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 168,
+  "sec": 1.77,
+  "wpm": 204
+ },
+ {
+  "id": "tap_14",
+  "text": "Nine needs one to make ten!",
+  "heard": "9 needs one to make 10.",
+  "clarity": 1.0,
+  "take": "! 0.62 plain",
+  "pitch": 167,
+  "sec": 1.68,
+  "wpm": 215
+ },
+ {
+  "id": "tap_15",
+  "text": "Why did the math book look sad? It had too many problems!",
+  "heard": "Why did the math book look sad? It had too many problems.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 170,
+  "sec": 3.78,
+  "wpm": 190
+ },
+ {
+  "id": "tap_16",
+  "text": "Again! Again! Tap me again!",
+  "heard": "Again, again, tap me again.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 161,
+  "sec": 1.75,
+  "wpm": 171
+ },
+ {
+  "id": "drill_look",
+  "text": "You can do it!",
+  "heard": "You can do it.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 173,
+  "sec": 1.11,
+  "wpm": 216
+ },
+ {
+  "id": "drill_flash",
+  "text": "Watch the numbers carefully!",
+  "heard": "Watch the numbers carefully.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 172,
+  "sec": 1.66,
+  "wpm": 145
+ },
+ {
+  "id": "drill_listen",
+  "text": "Listen carefully!",
+  "heard": "Listen carefully.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 1.31,
+  "wpm": 92
+ },
+ {
+  "id": "yes_1",
+  "text": "Yes!",
+  "heard": "Yes",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 204,
+  "sec": 0.64,
+  "wpm": 94
+ },
+ {
+  "id": "yes_2",
+  "text": "Nice!",
+  "heard": "Nice",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 200,
+  "sec": 0.68,
+  "wpm": 88
+ },
+ {
+  "id": "yes_3",
+  "text": "You got it!",
+  "heard": "You got it.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 175,
+  "sec": 0.98,
+  "wpm": 183
+ },
+ {
+  "id": "yes_4",
+  "text": "Fantastic!",
+  "heard": "Fantastic",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 175,
+  "sec": 1.09,
+  "wpm": 55
+ },
+ {
+  "id": "yes_5",
+  "text": "Super!",
+  "heard": "As you per",
+  "clarity": 0.0,
+  "take": "! 0.57 plain",
+  "pitch": 180,
+  "sec": 0.75,
+  "wpm": 80
+ },
+ {
+  "id": "yes_6",
+  "text": "Wow!",
+  "heard": "Wow",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 192,
+  "sec": 0.64,
+  "wpm": 94
+ },
+ {
+  "id": "oops_1",
+  "text": "Oops! We'll fix it later.",
+  "heard": "Loops will fix it later.",
+  "clarity": 0.6,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 1.62,
+  "wpm": 185
+ },
+ {
+  "id": "oops_2",
+  "text": "Almost! Keep going.",
+  "heard": "Almost keep going.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 175,
+  "sec": 1.39,
+  "wpm": 130
+ },
+ {
+  "id": "oops_3",
+  "text": "That's okay. Next one!",
+  "heard": "That's okay next one.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 1.62,
+  "wpm": 148
+ },
+ {
+  "id": "fix_start",
+  "text": "Let's fix these together!",
+  "heard": "Let's fix these together.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 169,
+  "sec": 1.71,
+  "wpm": 140
+ },
+ {
+  "id": "fix_one",
+  "text": "Let's fix this one!",
+  "heard": "Let's fix this one.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 166,
+  "sec": 1.45,
+  "wpm": 165
+ },
+ {
+  "id": "fix_watch",
+  "text": "Let's watch the beads together.",
+  "heard": "Let's watch the beads together.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 174,
+  "sec": 1.83,
+  "wpm": 164
+ },
+ {
+  "id": "sum_amazing",
+  "text": "Amazing work!",
+  "heard": "amazing work",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 181,
+  "sec": 1.05,
+  "wpm": 115
+ },
+ {
+  "id": "sum_great",
+  "text": "Great job! Want to fix the red ones with me?",
+  "heard": "Great job, want to fix the red ones with me.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 158,
+  "sec": 2.79,
+  "wpm": 215
+ },
+ {
+  "id": "sum_good",
+  "text": "Good practice! Every try makes you stronger.",
+  "heard": "Good practice every try makes you stronger.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 163,
+  "sec": 2.88,
+  "wpm": 146
+ },
+ {
+  "id": "sum_fixed",
+  "text": "You fixed every one! You're a star!",
+  "heard": "You fixed everyone. You're a star.",
+  "clarity": 0.857,
+  "take": "! 0.54 plain",
+  "pitch": 178,
+  "sec": 2.76,
+  "wpm": 152
+ },
+ {
+  "id": "sum_unlock",
+  "text": "Hooray! You unlocked a new skill!",
+  "heard": "Hooray you unlocked a new skill",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 171,
+  "sec": 1.71,
+  "wpm": 211
+ },
+ {
+  "id": "gift",
+  "text": "Ooh, a present for you! Tap it to open it!",
+  "heard": "You a present for you, tap it to open it.",
+  "clarity": 0.9,
+  "take": ". 0.62 plain",
+  "pitch": 175,
+  "sec": 2.61,
+  "wpm": 230
+ },
+ {
+  "id": "gift_gold",
+  "text": "Whoa, a gold sticker! Tap it!",
+  "heard": "Whoa a gold sticker, and tap it.",
+  "clarity": 0.833,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 2.32,
+  "wpm": 155
+ },
+ {
+  "id": "today_done",
+  "text": "Today's practice is all done! Hooray!",
+  "heard": "Today's practice is all done. Hooray!",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 170,
+  "sec": 2.74,
+  "wpm": 132
+ },
+ {
+  "id": "play_pick",
+  "text": "Pick a game! Every game gives a sticker.",
+  "heard": "Pick a game every game gives a sticker",
+  "clarity": 1.0,
+  "take": "! 0.62 plain",
+  "pitch": 163,
+  "sec": 2.33,
+  "wpm": 206
+ },
+ {
+  "id": "pop_go",
+  "text": "Find the friend and pop it!",
+  "heard": "Find the befriend and pop it.",
+  "clarity": 0.833,
+  "take": ". 0.62 plain",
+  "pitch": 175,
+  "sec": 1.57,
+  "wpm": 229
+ },
+ {
+  "id": "pop_cheer",
+  "text": "Great popping!",
+  "heard": "Great popping.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 1.07,
+  "wpm": 112
+ },
+ {
+  "id": "pop_fast",
+  "text": "You're so fast!",
+  "heard": "You're so fast.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 173,
+  "sec": 1.2,
+  "wpm": 150
+ },
+ {
+  "id": "game_best",
+  "text": "A new best! Wow!",
+  "heard": "A new best wow",
+  "clarity": 1.0,
+  "take": "! 0.54 plain",
+  "pitch": 180,
+  "sec": 1.36,
+  "wpm": 176
+ },
+ {
+  "id": "game_good",
+  "text": "Great playing!",
+  "heard": "Great playing.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 170,
+  "sec": 0.9,
+  "wpm": 134
+ },
+ {
+  "id": "reader_more",
+  "text": "Super detective! More beads now!",
+  "heard": "Super Detective, more beads now.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 164,
+  "sec": 1.91,
+  "wpm": 157
+ },
+ {
+  "id": "build_half",
+  "text": "You're halfway there!",
+  "heard": "You're halfway there.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 1.2,
+  "wpm": 151
+ },
+ {
+  "id": "shop_pick",
+  "text": "Pick a treat to save for!",
+  "heard": "Pick a treat to save for",
+  "clarity": 1.0,
+  "take": "! 0.54 cut",
+  "pitch": 178,
+  "sec": 1.72,
+  "wpm": 210
+ },
+ {
+  "id": "shop_saving",
+  "text": "Keep practising to fill the jar. You can do it!",
+  "heard": "Keep practicing to fill the jar. You can do it.",
+  "clarity": 0.9,
+  "take": "! 0.57 cut",
+  "pitch": 170,
+  "sec": 3.19,
+  "wpm": 188
+ },
+ {
+  "id": "shop_ready",
+  "text": "You have enough now! Go get it!",
+  "heard": "You have enough now, go get it.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 174,
+  "sec": 2.29,
+  "wpm": 184
+ },
+ {
+  "id": "shop_choice",
+  "text": "Great choice! Let's save for it!",
+  "heard": "Great choice, let's save for it.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 171,
+  "sec": 1.81,
+  "wpm": 199
+ },
+ {
+  "id": "shop_yum",
+  "text": "Yum! Show your ticket to a grown-up!",
+  "heard": "Yum, show your ticket to a grown-up.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 170,
+  "sec": 2.1,
+  "wpm": 228
+ },
+ {
+  "id": "lesson_watch",
+  "text": "Watch me first!",
+  "heard": "Watch me first.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 183,
+  "sec": 1.32,
+  "wpm": 137
+ },
+ {
+  "id": "lesson_turn",
+  "text": "Your turn! Move the beads.",
+  "heard": "Your turn, move the beads.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 176,
+  "sec": 1.49,
+  "wpm": 201
+ },
+ {
+  "id": "lesson_yes",
+  "text": "Yes! That's it!",
+  "heard": "Yes, that's it.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 173,
+  "sec": 1.08,
+  "wpm": 167
+ },
+ {
+  "id": "lesson_done",
+  "text": "You learned a new skill! I'm so proud of you!",
+  "heard": "You learned a new skill. I'm so proud of you.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 182,
+  "sec": 2.91,
+  "wpm": 206
+ },
+ {
+  "id": "showme",
+  "text": "Watch the beads move.",
+  "heard": "Watch the beads move.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 175,
+  "sec": 1.32,
+  "wpm": 181
+ },
+ {
+  "id": "bead_earn",
+  "text": "Golden beads for you!",
+  "heard": "Golden beads for you.",
+  "clarity": 1.0,
+  "take": "! 0.57 plain",
+  "pitch": 178,
+  "sec": 1.36,
+  "wpm": 176
+ },
+ {
+  "id": "unlock_next",
+  "text": "A new skill is open on the bead path!",
+  "heard": "A new skill is open on the Bead path.",
+  "clarity": 1.0,
+  "take": "! 0.57 cut",
+  "pitch": 167,
+  "sec": 2.27,
+  "wpm": 238
+ }
+]

@@ -1,0 +1,28 @@
+intro_beads	The top bead is worth 5. Each bottom bead is worth 1. A bead counts when it touches the bar.
+intro_add_direct	When there are enough beads, just push them to the bar. No tricks yet.
+intro_sub_direct	If the beads are already at the bar, just push them away.
+intro_sf_add	Not enough 1-beads? Use the 5-bead and take away its small friend. 1↔4 and 2↔3 are small friends: they make 5.
+intro_sf_sub	Need to take away but the 1-beads are not there? Take away the 5-bead and add back its small friend.
+intro_bf_add_a	Not enough room on the rod? Add 10 on the next rod and take away the big friend. 1↔9, 2↔8, 3↔7, 4↔6, 5↔5 make 10.
+intro_bf_add_b	Same trick with smaller numbers: add 10, take away the big friend.
+intro_bf_sub_a	Not enough beads to take away? Take 10 from the next rod and add back the big friend.
+intro_bf_sub_b	Same trick with smaller numbers: take 10, add back the big friend.
+intro_combined	Adding 6, 7, 8 or 9 and the big friend will not come off? Use the small friend inside the big-friend move. Taking away works the same way. Two tricks, one move.
+intro_two_digit	Work left to right: tens rod first, then units. Every rod uses the same friends.
+intro_anzan	Picture the beads in your head. Numbers flash by; move the beads in your mind; say the answer.
+intro_long_rows	Long rows use every friend you know. Keep going number after number, keep your finger on your place, and let the beads do the thinking.
+intro_rows_2d	Five two-digit numbers in a row. Tens rod first, then units. When the tens rod is full, a big friend carries onto the hundreds rod.
+intro_anzan_more	Same mental beads, more numbers. Picture the abacus, add each number as it flashes, and keep the picture still between numbers.
+intro_three_digit	Now three rods for each number: hundreds, tens, units. Always start on the left. Each rod is just a one-digit sum you already know.
+intro_times_a	3 × 4 means three 4s: 4, 8, 12. Count up on the abacus to see it, then learn the answer by heart. Fast facts make abacus multiplying easy.
+intro_times_b	The bigger tables. 3 × 7 is three 7s: 7, 14, 21. Count up a few times, then say the fact without counting.
+intro_anzan_2d	Picture two rods now: tens and units. Add the tens first, then the units, just like on the real abacus.
+intro_four_digit	Thousands, hundreds, tens, units: four rods for each number. Left to right, one rod at a time, every friend still works.
+intro_mul_2x1	Start at 0. Go left to right: times each digit by the small number and add the answer to the abacus. Every times answer takes two rods.
+intro_mul_3x1	Same method, one more digit: hundreds, then tens, then units. A 0 digit gives 00, so nothing to add: just move one rod right.
+j_door_first	Tap Learn and I'll show you the beads. More practice opens as you learn new skills.
+fingers_intro	You move the beads with just two fingers — your thumb and your pointer.
+fingers_thumb	Your thumb pushes the little earth beads up to the beam.
+fingers_pointer	Your pointer pushes them back down, away from the beam.
+fingers_heaven	Your pointer also moves the big heaven bead on top — pull it down to make five.
+fingers_recap	Thumb for up, pointer for down. That is the whole secret!

@@ -701,6 +701,645 @@
     get goBtn() { return this.shadowRoot.querySelector('.go'); }
   });
 
+  /* ---------- ab-practice-pick ----------
+     "Pick how to practise" — reading / listening / (mental). Each card shows its progress (sessions done of total,
+     pips, best time). The engine configures it and reacts:
+       el.configure({title, cards:[{mode,label,icon,done,total,best,full}], watch})   el.say(text)   el.juni
+     Sends 'ab-action' with detail.action = back | watch | pick (detail.mode). */
+  customElements.define('ab-practice-pick', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+        .cards{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;width:100%;max-width:760px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:28px;padding:24px 20px;
+          flex:1 1 0;min-width:180px;max-width:240px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};border:3px solid transparent;transition:transform .08s;position:relative;-webkit-tap-highlight-color:transparent}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .card.full{border-color:${v('gold', '#F5A623')}}
+        .ic{width:64px;height:64px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center}
+        .card.orange .ic{background:${v('orange-soft', '#FFF1DE')};color:${v('orange-deep', '#C66A0C')}}
+        .lab{font-size:21px;font-weight:900}
+        .prog{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .pips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:150px}
+        .pip{width:9px;height:9px;border-radius:50%;background:${v('purple-line', '#DCD3EC')}}
+        .pip.on{background:${v('gold', '#F5A623')}}
+        .best{font-size:12px;font-weight:700;color:${v('ink-faint', '#9A90B0')}}
+        .best:empty{display:none}
+        .done-badge{position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;background:${v('gold', '#F5A623')};color:#fff;display:flex;align-items:center;justify-content:center}
+        .card:not(.full) .done-badge{display:none}
+        .watch{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;align-self:center;color:${v('purple', '#5B3596')};font-weight:800;font-size:15px;padding:8px 14px;border-radius:999px}
+        .watch:focus-visible{outline:3px solid ${v('purple', '#5B3596')};outline-offset:2px}
+        .extra{min-height:24px;display:flex;justify-content:center}
+        @container (max-aspect-ratio: 1/1){ .cards{flex-direction:column;align-items:center} .card{width:100%;max-width:420px;flex-direction:row;justify-content:flex-start;text-align:left} .card .pips{justify-content:flex-start} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back" data-a="back"></ab-icon-button>
+            <span class="title"></span>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="mid"><div class="cards"></div></div>
+          <div class="extra"></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, mode) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, mode }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ title = 'Practice', cards = [], watch = false } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      const check = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+      const box = this.shadowRoot.querySelector('.cards');
+      box.innerHTML = cards.map(c => {
+        const total = c.total || 7, done = Math.max(0, Math.min(total, c.done || 0));
+        const pips = Array.from({ length: total }, (_, i) => `<span class="pip${i < done ? ' on' : ''}"></span>`).join('');
+        return `<button class="card${c.full ? ' full' : ''}${c.mode === 'mental' ? ' orange' : ''}" data-mode="${esc(c.mode)}">`
+          + `<span class="done-badge">${check}</span>`
+          + `<span class="ic"><ab-icon name="${esc(c.icon || 'abacus')}" size="32"></ab-icon></span>`
+          + `<span class="lab">${esc(c.label)}</span>`
+          + `<span class="prog">${c.full ? 'Done!' : done + ' / ' + total}</span>`
+          + `<span class="pips">${pips}</span>`
+          + `<span class="best">${c.best ? esc(c.best) : ''}</span></button>`;
+      }).join('');
+      box.querySelectorAll('.card').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.mode)));
+      const ex = this.shadowRoot.querySelector('.extra');
+      ex.innerHTML = watch ? `<button class="watch" data-a="watch"><ab-icon name="play" size="20"></ab-icon>Watch the lesson again</button>` : '';
+      if (watch) ex.querySelector('[data-a="watch"]').addEventListener('click', () => this._emit('watch'));
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
+  /* ---------- ab-room-screen ----------
+     "My Room" — the rewards room: Juni's moon window, a golden-bead treat jar and a flower garden
+     (both SLOTTED so the engine keeps drawing them live via Treats.renderJar / Fun.renderGarden and
+     their existing click listeners), plus the "Treats" button.
+       el.configure({title, beads, nudge})   el.say(text)   el.juni / el.bixi
+       slots: slot="garden" (live #roomGarden), slot="jar" (live #jar)
+     Sends 'ab-action' with detail.action = back | treats. */
+  customElements.define('ab-room-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
+        .thing{display:flex;flex-direction:column;align-items:center;gap:10px}
+        .thing .cap{font-size:15px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        ::slotted(*){max-width:100%}
+        .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;min-height:0}
+        .bx{z-index:3;pointer-events:none}
+        @container (max-aspect-ratio: 1/1){ .mid{flex-direction:column;gap:22px} .bx{display:none} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back home" data-a="back"></ab-icon-button>
+            <span class="title">My room</span>
+            <ab-chip icon="star"><span class="beads">0</span></ab-chip>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="mid">
+            <div class="thing"><slot name="garden"></slot><span class="cap">My garden</span></div>
+            <div class="thing"><slot name="jar"></slot><span class="cap">Treat jar</span></div>
+          </div>
+          <div class="foot">
+            <span class="bx"><ab-bixi pose="wave" size="112"></ab-bixi></span>
+            <ab-button class="treats" variant="primary" icon="star" data-a="treats">Treats</ab-button>
+          </div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      root.querySelector('[data-a="treats"]').addEventListener('click', () => this._emit('treats'));
+      this._fit();
+    }
+    _emit(action) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ title = 'My room', beads = 0, nudge = false } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      this.shadowRoot.querySelector('.beads').textContent = String(beads);
+      this.shadowRoot.querySelector('.treats').classList.toggle('nudge', !!nudge);
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('ab-bixi'); }
+  });
+
+  /* ---------- ab-shop-screen ----------
+     The Treat Shop (Bix's stall): golden-bead wallet, treat cards, "show a grown-up" tickets.
+     One featured card carries the loud buttons (Get it / Save for this); the rest are quiet pick
+     cards that bring a treat into the featured slot. The engine (inside treats.js) owns the money.
+       el.configure({title, beads, featuredId, goalId, treats:[{id,name,emoji,price,have,can}], tickets:[{name}]})
+       el.say(text)   Bix speaks     el.bixi   the character
+     Sends 'ab-action' with detail.action = back | pick (id) | goal (id) | buy (id). */
+  customElements.define('ab-shop-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:12px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900;flex:1;min-width:0}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .tickets{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:0}
+        .tickets:empty{display:none}
+        .tk-head{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .ticket{display:inline-flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:6px 14px;
+          font-size:15px;font-weight:800;box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')}}
+        .mid{flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:4px}
+        .cards{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;width:100%;max-width:820px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:26px;padding:18px 16px;
+          width:150px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};border:3px solid transparent;
+          transition:transform .08s;position:relative;-webkit-tap-highlight-color:transparent}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .card.goal{border-color:${v('gold', '#F5A623')}}
+        .art{font-size:48px;line-height:1}
+        .nm{font-size:17px;font-weight:900}
+        .price{display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:900;color:${v('orange-ink', '#7A4300')}}
+        .bar{width:100%;height:9px;border-radius:999px;background:${v('purple-line', '#DCD3EC')};overflow:hidden}
+        .bar i{display:block;height:100%;background:${v('gold', '#F5A623')}}
+        .card.hi{width:min(94%,300px);padding:24px 22px;gap:12px;border-color:transparent}
+        .card.hi.goal{border-color:${v('gold', '#F5A623')}}
+        .card.hi .art{font-size:92px}
+        .card.hi .nm{font-size:22px}
+        .card.hi .price{font-size:20px}
+        .tgoal{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:900;color:${v('orange-deep', '#C66A0C')};
+          letter-spacing:.04em;text-transform:uppercase}
+        .need{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .card.hi.can .need{color:#2FA36B}
+        .btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+        @container (max-aspect-ratio: 1/1){ .cards{flex-direction:column;align-items:center} .card{width:100%;max-width:420px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back to My Room" data-a="back"></ab-icon-button>
+            <span class="title">Treats</span>
+            <ab-chip icon="star"><b class="beads">0</b></ab-chip>
+          </div>
+          <div class="teacher"><ab-bixi pose="wave" size="84" idle></ab-bixi><ab-bubble tone="bixi" tail="left" size="18"></ab-bubble></div>
+          <div class="tickets"></div>
+          <div class="mid"><div class="cards"></div></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, id) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, id }, bubbles: true, composed: true })); }
+    _fit() {
+      const b = this.shadowRoot.querySelector('.teacher ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; b.setAttribute('size', Math.round(Math.max(72, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ title = 'Treats', beads = 0, featuredId = null, goalId = null, treats = [], tickets = [] } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      this.shadowRoot.querySelector('.beads').textContent = beads;
+      const tk = this.shadowRoot.querySelector('.tickets');
+      tk.innerHTML = tickets.length
+        ? `<span class="tk-head">Show a grown-up:</span>` + tickets.map(x =>
+            `<span class="ticket"><ab-icon name="star" size="18"></ab-icon>${esc(x.name)}</span>`).join('')
+        : '';
+      const feat = treats.find(t => t.id === featuredId) || treats[0] || null;
+      const rest = treats.filter(t => !feat || t.id !== feat.id);
+      const box = this.shadowRoot.querySelector('.cards');
+      const bead = '<ab-icon name="star" size="18"></ab-icon>';
+      const bigCard = t => {
+        const isGoal = goalId && goalId === t.id, can = !!t.can;
+        const need = can ? 'You have enough' : `${t.price - (t.have || 0)} more to go`;
+        const getBtn = can ? `<ab-button size="sm" variant="${isGoal ? 'primary' : 'soft'}" data-get="${esc(t.id)}">Get it</ab-button>` : '';
+        const goalBtn = isGoal ? '' : `<ab-button size="sm" variant="soft" icon="star" data-goal="${esc(t.id)}">Save for this</ab-button>`;
+        return `<div class="card hi${can ? ' can' : ''}${isGoal ? ' goal' : ''}">`
+          + (isGoal ? `<span class="tgoal"><ab-icon name="star" size="14"></ab-icon>Saving for this</span>` : '')
+          + `<span class="art">${esc(t.emoji || '🎁')}</span>`
+          + `<span class="nm">${esc(t.name)}</span>`
+          + `<span class="price">${bead}${t.price}</span>`
+          + `<span class="bar"><i style="width:${Math.min(100, Math.round(100 * (t.have || 0) / t.price))}%"></i></span>`
+          + `<span class="need">${esc(need)}</span>`
+          + `<span class="btns">${goalBtn}${getBtn}</span></div>`;
+      };
+      const smallCard = t => {
+        const isGoal = goalId && goalId === t.id;
+        return `<button class="card${isGoal ? ' goal' : ''}" data-pick="${esc(t.id)}" aria-label="${esc(t.name)}: ${t.price} golden beads">`
+          + `<span class="art">${esc(t.emoji || '🎁')}</span>`
+          + `<span class="nm">${esc(t.name)}</span>`
+          + `<span class="price">${bead}${t.price}</span>`
+          + `<span class="bar"><i style="width:${Math.min(100, Math.round(100 * (t.have || 0) / t.price))}%"></i></span></button>`;
+      };
+      box.innerHTML = (feat ? bigCard(feat) : '') + rest.map(smallCard).join('');
+      box.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.pick)));
+      box.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => this._emit('goal', b.dataset.goal)));
+      box.querySelectorAll('[data-get]').forEach(b => b.addEventListener('click', () => this._emit('buy', b.dataset.get)));
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get bixi() { return this.shadowRoot.querySelector('.teacher ab-bixi'); }
+  });
+
+  /* ---------- ab-play-screen ----------
+     The "Play" games hub: a grid of game tiles. Juni leads from the top; Bixi waves in the corner.
+     Rendering/launching still live in games.js; the engine just configures the frame:
+       el.configure({games:[{id,label,desc,icon,chip,isNew,tone}], bixiLine})
+       el.say(text)  Juni's line    el.bixiSay(text)  Bixi corner line ('' hides)   el.juni / el.bixi
+     Sends 'ab-action' with detail.action = back | pick (detail.gameId). */
+  customElements.define('ab-play-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:14px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+        .cards{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;width:100%;max-width:820px}
+        .card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:28px;padding:24px 20px;
+          flex:1 1 0;min-width:190px;max-width:250px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+          box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};border:3px solid transparent;transition:transform .08s;position:relative;-webkit-tap-highlight-color:transparent}
+        .card:active{transform:scale(.97)}
+        .card:focus-visible{outline:none;border-color:${v('purple', '#5B3596')}}
+        .ic{width:64px;height:64px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center}
+        .card.orange .ic{background:${v('orange-soft', '#FFF1DE')};color:${v('orange-deep', '#C66A0C')}}
+        .lab{font-size:21px;font-weight:900}
+        .desc{font-size:14px;font-weight:600;line-height:1.35;color:${v('ink-soft', '#5E5478')}}
+        .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .chip:empty{display:none}
+        .new{font-size:13px;font-weight:900;color:${v('orange-deep', '#C66A0C')};background:${v('orange-soft', '#FFF1DE')};padding:3px 10px;border-radius:999px}
+        .bixi{position:absolute;right:22px;bottom:12px;display:flex;align-items:flex-end;gap:6px;pointer-events:none;z-index:3}
+        .bixi ab-bubble{max-width:220px;margin-bottom:14px}
+        @container (max-aspect-ratio: 1/1){
+          .cards{flex-direction:column;align-items:center}
+          .card{width:100%;max-width:440px;flex-direction:row;justify-content:flex-start;text-align:left}
+          .bixi{display:none}
+        }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back home" data-a="back"></ab-icon-button>
+            <span class="title">Play</span>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="mid"><div class="cards"></div></div>
+          <div class="bixi"><ab-bubble tone="bixi" tail="bottom-right" size="16" style="display:none"></ab-bubble><ab-bixi pose="wave" size="112"></ab-bixi></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action, gameId) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action, gameId }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('.teacher ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ games = [], bixiLine = '' } = {}) {
+      const box = this.shadowRoot.querySelector('.cards');
+      box.innerHTML = games.map(g => {
+        const tag = g.chip ? `<span class="chip"><ab-icon name="star" size="16"></ab-icon>${esc(g.chip)}</span>`
+                  : g.isNew ? `<span class="new">New!</span>` : '';
+        return `<button class="card${g.tone === 'orange' ? ' orange' : ''}" data-game="${esc(g.id)}" aria-label="${esc(g.label)}: ${esc(g.desc || '')}">`
+          + `<span class="ic"><ab-icon name="${esc(g.icon || 'star')}" size="32"></ab-icon></span>`
+          + `<span class="lab">${esc(g.label)}</span>`
+          + (g.desc ? `<span class="desc">${esc(g.desc)}</span>` : '')
+          + tag
+          + `</button>`;
+      }).join('');
+      box.querySelectorAll('.card').forEach(b => b.addEventListener('click', () => this._emit('pick', b.dataset.game)));
+      this.bixiSay(bixiLine);
+    }
+    say(text) { this.shadowRoot.querySelector('.teacher ab-bubble').say(text); }
+    bixiSay(text) { const b = this.shadowRoot.querySelector('.bixi ab-bubble'); b.style.display = text ? '' : 'none'; if (text) b.say(text); }
+    get juni() { return this.shadowRoot.querySelector('.teacher ab-juni'); }
+    get bixi() { return this.shadowRoot.querySelector('.bixi ab-bixi'); }
+  });
+
+  /* ---------- ab-album-screen ----------
+     "My stickers" — the sticker book. One page per pack; collected stickers are drawn, empty
+     spots are inviting dashed wells (never locked/grey). Read-only: the only control is Back.
+       el.configure({ title, count, total, packs })   el.say(text)   el.juni
+         packs: [{ name, got, total, full, items:[{ has, gold, n, svg }] }]  (svg = TOY.sticker string, '' when empty)
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-album-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{height:30%;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;height:100%;display:flex;flex-direction:column;gap:12px;
+          padding:max(20px,env(safe-area-inset-top)) 28px max(22px,env(safe-area-inset-bottom));box-sizing:border-box}
+        .top{display:flex;align-items:center;gap:14px}
+        .title{font-size:clamp(20px,2.6cqw,26px);font-weight:900;flex:1;min-width:0}
+        .top ab-chip{flex:none}
+        .teacher{display:flex;align-items:center;gap:14px}
+        .teacher ab-bubble{max-width:min(78cqw,520px)}
+        .book{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 2px 8px;
+          display:flex;flex-direction:column;gap:18px}
+        .page{background:#fff;border-radius:${v('radius-lg', '32px')};box-shadow:${v('shadow-soft', '0 6px 18px rgba(91,53,150,.12)')};
+          padding:18px 20px;border:3px solid transparent}
+        .page.full{border-color:${v('gold', '#F5A623')}}
+        .phead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
+        .phead h2{margin:0;font-size:20px;font-weight:900}
+        .pgot{font-size:14px;font-weight:800;color:${v('ink-soft', '#5E5478')}}
+        .page.full .pgot{color:${v('orange-deep', '#C66A0C')}}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:12px;justify-items:center}
+        .slot{position:relative;width:86px;height:86px;display:flex;align-items:center;justify-content:center}
+        .slot svg{width:100%;height:100%}
+        .slot.empty{border-radius:50%;background:${v('purple-soft', '#EEE6FA')};
+          border:2px dashed ${v('purple-line', '#DCD3EC')};color:${v('ink-faint', '#9A90B0')}}
+        .slot.empty ab-icon{opacity:.5}
+        .slot .mult{position:absolute;right:-2px;bottom:-2px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;
+          background:${v('purple', '#5B3596')};color:#fff;font:900 13px ${FONT};display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+        .slot.gold .mult{background:${v('star', '#F5A623')};color:#4A2D00}
+        @container (max-aspect-ratio: 1/1){ .teacher ab-bubble{max-width:min(86cqw,420px)} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <div class="top">
+            <ab-icon-button icon="back" label="Back to My Room" data-a="back"></ab-icon-button>
+            <span class="title">My stickers</span>
+            <ab-chip icon="star"><b class="count">0</b>&nbsp;<span class="of">of 0</span></ab-chip>
+          </div>
+          <div class="teacher"><ab-juni pose="point" size="96" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="book"></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action }, bubbles: true, composed: true })); }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(80, Math.min(r.width * 0.09, r.height * 0.14)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    // Clone the shared toy <defs> sprite into THIS shadow root once, so TOY.sticker's url(#...) fills resolve.
+    _ensureDefs() {
+      if (this._defsDone) return;
+      const src = document.getElementById('toy-defs');
+      if (src) { this.shadowRoot.appendChild(src.cloneNode(true)); this._defsDone = true; }
+    }
+    configure({ title = 'My stickers', count = 0, total = 0, packs = [] } = {}) {
+      this.shadowRoot.querySelector('.title').textContent = title;
+      this.shadowRoot.querySelector('.count').textContent = count;
+      this.shadowRoot.querySelector('.of').textContent = 'of ' + total;
+      this.renderGrid(packs);
+    }
+    renderGrid(packs = []) {
+      this._ensureDefs();
+      const spark = '<ab-icon name="sparkle" size="30"></ab-icon>';
+      const book = this.shadowRoot.querySelector('.book');
+      book.innerHTML = packs.map(p => {
+        const slots = (p.items || []).map(it => it.has
+          ? `<div class="slot has${it.gold ? ' gold' : ''}">${it.svg || ''}${it.n > 1 ? `<b class="mult">×${it.n}</b>` : ''}</div>`
+          : `<div class="slot empty" aria-label="not found yet">${spark}</div>`).join('');
+        return `<section class="page${p.full ? ' full' : ''}">`
+          + `<div class="phead"><h2>${esc(p.name)}</h2><span class="pgot">${esc(p.got)} of ${esc(p.total)}</span></div>`
+          + `<div class="grid">${slots}</div></section>`;
+      }).join('');
+    }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
+  /* ---------- ab-readteach-screen ----------
+     Level-1 practice (Read the beads / Make the number). Kit chrome only: new sky + header (back +
+     title) + Juni teacher who speaks the captions; the live interactive stage (the soroban, the
+     running count, the choice/Next pad, Bixi) is a light-DOM child slotted in, so the ReadTeach
+     engine keeps driving it by id. Juni's voice plays via Classroom; the caption shows here.
+       el.setTitle(t)   el.say(text)   el.get juni
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-readteach-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        /* Sky is an ABSOLUTE backdrop, not a flow row, so the stage keeps near-full height and the
+           viewport-sized abacus (height:calc(100vh - wall - 120)) still fits inside the kit. */
+        .sky{position:absolute;left:0;right:0;top:0;height:30%;z-index:0;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:8px;
+          padding:max(18px,env(safe-area-inset-top)) 24px max(14px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:14px;flex:none}
+        .title{flex:1;min-width:0;font-size:clamp(20px,2.4cqw,26px);font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .teacher{display:flex;align-items:center;gap:12px;flex:none}
+        .teacher ab-bubble{max-width:min(80cqw,560px)}
+        .stage{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:center}
+        ::slotted(*){max-width:100%}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header>
+            <ab-icon-button icon="back" label="Back" data-a="back"></ab-icon-button>
+            <span class="title">Read the beads</span>
+          </header>
+          <div class="teacher"><ab-juni pose="point" size="84" idle></ab-juni><ab-bubble tail="left" size="19"></ab-bubble></div>
+          <div class="stage"><slot></slot></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this.dispatchEvent(new CustomEvent('ab-action', { detail: { action: 'back' }, bubbles: true, composed: true })));
+      this._fit();
+    }
+    _fit() {
+      const j = this.shadowRoot.querySelector('ab-juni');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; j.setAttribute('size', Math.round(Math.max(72, Math.min(r.width * 0.08, r.height * 0.12)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    setTitle(t) { this.shadowRoot.querySelector('.title').textContent = t || ''; }
+    say(text) { this.shadowRoot.querySelector('ab-bubble').say(text); }
+    get juni() { return this.shadowRoot.querySelector('ab-juni'); }
+  });
+
+  /* ---------- ab-lesson-screen ----------
+     The Learn/teaching flow. Its chrome is richly engine-driven (a caption with several parts, a
+     pointing hand, a bead-pair diagram, step dots, four nav buttons, the big demo soroban), so the
+     kit supplies only the new sky + a header, and the whole lesson is slotted in with ids intact:
+       slot="head" -> the title + step-dots board      default slot -> the lesson body
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-lesson-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        /* Sky is an ABSOLUTE backdrop, not a flow row, so the slotted body keeps near-full height
+           and the lesson abacus (max-height:calc(100vh - wall - 150)) still fits inside the kit. */
+        .sky{position:absolute;left:0;right:0;top:0;height:26%;z-index:0;border-radius:0 0 50% 50%/0 0 60px 60px}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:6px;
+          padding:max(14px,env(safe-area-inset-top)) 22px max(12px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:14px;flex:none;min-height:0}
+        header ::slotted(*){flex:1;min-width:0}
+        .body{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch}
+        .body ::slotted(*){flex:1;min-height:0;max-width:100%}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header><ab-icon-button icon="back" label="Stop the lesson" data-a="back"></ab-icon-button><slot name="head"></slot></header>
+          <div class="body"><slot></slot></div>
+        </div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this.dispatchEvent(new CustomEvent('ab-action', { detail: { action: 'back' }, bubbles: true, composed: true })));
+    }
+  });
+
+  /* ---------- ab-game-screen ----------
+     A kit frame around a live mini-game. The game area is light-DOM (#gameStage) slotted in, so it
+     keeps its own stylesheet + JS (canvas/board, listeners) and measures its own clientWidth/Height.
+     The kit owns the chrome the engine used to drive by id: sky backdrop, header (back + title +
+     native score pips), a Juni teacher bubble (overlay, top) and a persistent Bixi (corner). The
+     engine mirrors its writes in via these methods:
+       el.configure({id, title, icon, back})   el.setScore(dotsHtml)   el.setTitle(text)
+       el.juniSay(text)   el.bixiSay(text)   el.bixi
+     Sends 'ab-action' with detail.action = back. */
+  customElements.define('ab-game-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        /* Sky is an absolute backdrop (not a flow row) so the stage keeps the full height budget the
+           games measure via clientWidth/Height. */
+        .sky{position:absolute;left:0;right:0;top:0;height:26%;z-index:0;border-radius:0 0 50% 50%/0 0 56px 56px}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:8px;
+          padding:max(14px,env(safe-area-inset-top)) 22px max(12px,env(safe-area-inset-bottom));box-sizing:border-box}
+        header{display:flex;align-items:center;gap:12px;flex:none}
+        .title{flex:1;min-width:0;display:flex;align-items:center;gap:9px;font-size:clamp(19px,2.3cqw,25px);font-weight:900;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .title .ic{flex:none;width:34px;height:34px;border-radius:50%;background:${v('purple-soft', '#EEE6FA')};color:${v('purple', '#5B3596')};display:flex;align-items:center;justify-content:center}
+        .score{flex:none;display:flex;align-items:center;gap:5px}
+        .score:empty{display:none}
+        .score .gdot{width:13px;height:13px;border-radius:50%;background:${v('purple-line', '#DCD3EC')};flex:none}
+        .score .gdot.ok{background:${v('gold', '#F5A623')}}
+        .score .gdot.miss{background:${v('ink-faint', '#9A90B0')}}
+        .score .gdot.cur{background:${v('gold', '#F5A623')};box-shadow:0 0 0 3px rgba(245,166,35,.32)}
+        .stage{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch}
+        ::slotted(*){flex:1;min-height:0;max-width:100%}
+        .juni{position:absolute;left:22px;top:max(62px,calc(env(safe-area-inset-top) + 50px));right:160px;z-index:4;pointer-events:none}
+        .juni[hidden]{display:none}
+        .bx{position:absolute;right:16px;bottom:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;width:200px;z-index:4;pointer-events:none}
+        .bx ab-bubble{max-width:190px}
+        .bx ab-bubble[hidden]{display:none}
+        .bx[hidden]{display:none}
+        @container (max-aspect-ratio: 1/1){ .bx{width:148px} .juni{right:88px} }
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <header>
+            <ab-icon-button icon="back" label="Back to the games" data-a="back"></ab-icon-button>
+            <div class="title"></div>
+            <div class="score"></div>
+          </header>
+          <div class="stage"><slot></slot></div>
+        </div>
+        <div class="juni" hidden><ab-bubble tail="top" size="17"></ab-bubble></div>
+        <div class="bx" hidden><ab-bubble tone="bixi" tail="bottom-right" size="17" hidden></ab-bubble><ab-bixi pose="cheer" size="112"></ab-bixi></div>`;
+      root.querySelector('[data-a="back"]').addEventListener('click', () => this._emit('back'));
+      this._fit();
+    }
+    _emit(action) { this.dispatchEvent(new CustomEvent('ab-action', { detail: { action }, bubbles: true, composed: true })); }
+    _fit() {
+      const b = this.shadowRoot.querySelector('.bx ab-bixi');
+      const set = () => { const r = this.getBoundingClientRect(); if (!r.width) return; b.setAttribute('size', Math.round(Math.max(88, Math.min(r.width * 0.13, r.height * 0.2)))); };
+      if (!this._ro) { this._ro = new ResizeObserver(set); this._ro.observe(this); } set();
+    }
+    configure({ id = '', title = '', icon = '', back = true } = {}) {
+      const t = this.shadowRoot.querySelector('.title');
+      t.innerHTML = (icon ? `<span class="ic"><ab-icon name="${esc(icon)}" size="20"></ab-icon></span>` : '') + `<span class="nm">${esc(title)}</span>`;
+      const bk = this.shadowRoot.querySelector('[data-a="back"]'); if (bk) bk.style.visibility = back ? '' : 'hidden';
+      this.setScore(''); this.juniSay('');
+      this.shadowRoot.querySelector('.bx').hidden = false;   // Bixi mascot is persistent while a game runs
+    }
+    setTitle(text) { const s = this.shadowRoot.querySelector('.title .nm'); if (s) s.textContent = text == null ? '' : text; }
+    setScore(html) { this.shadowRoot.querySelector('.score').innerHTML = html == null ? '' : html; }
+    juniSay(text) { const j = this.shadowRoot.querySelector('.juni'); j.hidden = !text; if (text) j.querySelector('ab-bubble').say(text); }
+    bixiSay(text) { const b = this.shadowRoot.querySelector('.bx ab-bubble'); b.hidden = !text; if (text) b.say(text); }
+    get bixi() { return this.shadowRoot.querySelector('.bx ab-bixi'); }
+  });
+
+  /* ---------- ab-drill-screen ----------
+     The arithmetic drill — June's daily core. Its keypad/abacus are sized by pixel-exact viewport
+     math (calc(var(--vh) - var(--toy-wall-h) - var(--foot) ...)) set on #drill, so the kit must NOT
+     add any chrome in the flow. It supplies only an absolute sky backdrop and an overlay Juni bubble;
+     the control bar, body grid and energy bar are slotted in their ORIGINAL flow via display:contents,
+     so every #drill-scoped rule and CSS var still applies and the layout is unchanged.
+       slot="top" -> .tp-top controls     default slot -> .tp-body     slot="energy" -> energy bar
+       el.say(text) pushes Juni's words in (from the JB funnel). */
+  customElements.define('ab-drill-screen', class extends HTMLElement {
+    connectedCallback() { if (!this._built) this._build(); }
+    _build() {
+      this._built = true;
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `<style>
+        :host{display:block;position:relative;width:100%;height:100%;overflow:hidden;background:${v('cream', '#FFF7EC')};
+          color:${v('ink', '#2E2348')};font-family:${FONT};container-type:size}
+        ${SKY}
+        .sky{position:absolute;left:0;right:0;top:0;height:17%;z-index:0;border-radius:0 0 50% 50%/0 0 40px 40px;pointer-events:none}
+        .wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+        slot{display:contents}   /* slotted .tp-top/.tp-body/energy become direct flex items -> original flow preserved */
+        .juni{position:absolute;left:clamp(14px,3.5vw,36px);top:max(12px,env(safe-area-inset-top));right:clamp(170px,44vw,580px);z-index:4;pointer-events:none}
+        .juni[hidden]{display:none}
+        </style>
+        <div class="sky">${STARS}</div>
+        <div class="wrap">
+          <slot name="top"></slot>
+          <slot></slot>
+          <slot name="energy"></slot>
+        </div>
+        <div class="juni" hidden><ab-bubble tail="left" size="17"></ab-bubble></div>`;
+    }
+    say(text) { const j = this.shadowRoot.querySelector('.juni'); const t = (text == null ? '' : String(text)); j.hidden = !t; if (t) j.querySelector('ab-bubble').say(t); }
+  });
+
   /* ---------- ab-gate-screen ----------
      The grown-up gate (Apple Kids-category parental gate). Two steps, both beyond a young child:
        1. press and hold for 3 seconds (the bar fills; letting go early restarts), then

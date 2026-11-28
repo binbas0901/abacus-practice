@@ -129,6 +129,46 @@
     return `<div class="trod${t.price > 16 ? ' many' : ''}" aria-hidden="true">${b}</div>`;
   }
   const lenClass = n => { n = String(n).length; return n > 26 ? ' xlong' : n > 16 ? ' long' : ''; };
+  // New-kit treat shop: drives <ab-shop-screen> over the old #shopCards markup (kept as fallback).
+  // Lives inside this IIFE so it can reach the module-private ask()/buy()/picked. Called at the end
+  // of renderShop(), which every buy/pick/goal re-runs — re-configuring the kit with fresh state.
+  let shopKitWired = false;
+  function driveShopKit() {
+    const el = document.getElementById('shopKit'); if (!el || !el.configure) return;
+    const w = wallet(), g = goal(), top = featured();
+    const ordered = (top ? [top] : []).concat(list().slice().sort((a, b) => a.price - b.price).filter(t => !top || t.id !== top.id));
+    el.configure({
+      title: 'Treats',
+      beads: w.beads,
+      featuredId: top ? top.id : null,
+      goalId: g ? g.id : null,
+      treats: ordered.map(t => ({ id: t.id, name: t.name, emoji: t.emoji, price: t.price, have: w.beads, can: w.beads >= t.price })),
+      tickets: w.tickets.filter(x => !x.given).map(x => ({ name: x.name })),
+    });
+    if (!shopKitWired) {
+      shopKitWired = true;
+      el.addEventListener('ab-action', (e) => {
+        const a = e.detail && e.detail.action, id = e.detail && e.detail.id;
+        if (a === 'back') { App().goRoom(); return; }                 // == old #exitShop handler
+        if (a === 'pick') {                                           // == old [data-pick] branch
+          picked = id; App().Sfx.tap(); renderShop();
+          const t = byId(id), more = t.price - wallet().beads;
+          F().Mascot.say($('#bixShop'), more > 0 ? `${t.name}: ${more} more bead${more === 1 ? '' : 's'}.` : `${t.name}. You have enough beads.`, 0, null);
+          return;
+        }
+        if (a === 'goal') {                                          // == old [data-goal] branch
+          wallet().goal = id; picked = null; F().save(); App().Sfx.ok();
+          F().Mascot.say($('#bixShop'), `Great choice! Let's save for ${byId(id).name}!`, 3000, 'shop_choice');
+          F().Mascot.react($('#bixShop'), 'happy');
+          renderShop(); renderJar();
+          return;
+        }
+        if (a === 'buy') { ask(byId(id)); return; }                  // == old [data-get] branch → ask()→buy()
+      });
+    }
+    el.hidden = false;
+  }
+
   function renderShop() {
     const w = wallet(), g = goal(), K = root.TOY, top = featured(); $('#shopBeads').textContent = w.beads;
     const bi = $('#shopBeadIc'); if (bi && !bi.firstChild) bi.innerHTML = K.bead('mustard', 40);
@@ -161,6 +201,7 @@
     box.querySelectorAll('[data-get]').forEach(b => b.onclick = () => ask(byId(b.dataset.get)));
     const open = w.tickets.filter(x => !x.given);
     $('#shopTickets').innerHTML = open.length ? `<div class="tk-head">Show a grown-up:</div>` + open.map(x => `<div class="ticket">${K.icon('star', 22, '#C98A16')}<span>${esc(x.name)}</span></div>`).join('') : '';
+    driveShopKit();   // overlay the kit (old #shopCards stays as fallback)
   }
   function ask(t) {
     const m = $('#shopAsk'); $('#askText').innerHTML = `Get <b>${esc(t.name)}</b> for <b class="ask-price">${root.TOY.bead('mustard', 38)}${t.price}</b>?`; m.classList.add('active');

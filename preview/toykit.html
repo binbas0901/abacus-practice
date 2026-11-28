@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toy Table kit</title><link rel="stylesheet" href="toy.css">
+<style>
+  body{margin:0}
+  .top{position:relative;height:var(--toy-wall-h)}
+  .top .tagpos{position:absolute;left:30px;top:6px}
+  .top .lockpos{position:absolute;right:30px;top:28px}
+  .top .shelf{position:absolute;right:120px;bottom:-22px;display:flex;align-items:flex-end;gap:10px}
+  main{padding:34px clamp(20px,3.4vw,44px) 70px}
+  section{margin:0 0 46px}
+  section > .toy-plaque{display:table;margin:0 0 22px}
+  .row{display:flex;flex-wrap:wrap;gap:18px 14px;align-items:flex-end}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .cap{font:600 18px/1 var(--toy-display);color:var(--toy-ink);background:rgba(255,253,246,.82);padding:5px 12px;border-radius:99px}
+  .hero{display:flex;flex-wrap:wrap;align-items:center;gap:26px 40px}
+  .sum{display:grid;grid-template-columns:auto auto;gap:0 22px;justify-content:end;align-items:center;min-width:170px}
+  .sum .op{font:700 54px/1 var(--toy-display)} .sum .line{grid-column:1/3;height:6px;border-radius:3px;background:var(--toy-ink);margin:8px 0}
+  .sum .ans{grid-column:2;justify-self:end;width:96px;height:92px;border:4px dashed var(--toy-mustard-dk);border-radius:18px;background:#FFF4CF;display:flex;align-items:center;justify-content:center;font:700 60px/1 var(--toy-display);color:#A86F08}
+  .mini{position:relative;width:520px;max-width:88vw;height:330px;min-height:0;border-radius:22px;box-shadow:var(--toy-shadow-lg);--toy-wall-h:120px;--toy-window-x:70px}
+  .mini .stage{position:absolute;left:0;right:0;bottom:16px;display:flex;align-items:flex-end;justify-content:center;gap:14px}
+  .icons .cell{width:84px}
+  .icondot{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:18px}
+</style></head>
+<body>
+<div class="toy-scene" id="scene">
+  <div class="top">
+    <div class="tagpos" id="tag"></div>
+    <div class="lockpos" id="lock"></div>
+    <div class="shelf" id="shelf"></div>
+  </div>
+  <main>
+    <section class="hero" id="hero"></section>
+
+    <section><h2 class="toy-plaque toy-h2">Bix: eight moods</h2>
+      <div class="row" id="bix-row"></div>
+      <div class="row" id="bix-small" style="margin-top:18px"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">The moon: calm second lead</h2>
+      <div class="row" id="moon-row"></div>
+      <div class="row" id="moon-phase" style="margin-top:22px"></div>
+      <div class="row" id="moon-progress" style="margin-top:22px;align-items:center"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">Number friends 1 to 9</h2>
+      <div class="row" id="buddy-row"></div>
+      <div class="row" id="buddy-moods" style="margin-top:14px"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">Friends that make 5 and 10</h2>
+      <div class="row" id="pairs"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">Scenes</h2>
+      <div class="row" id="scenes" style="align-items:flex-start;gap:30px"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">Blocks and buttons</h2>
+      <div class="toy-felt" style="display:inline-block"><div class="toy-blocks" id="blocks"></div></div>
+      <div class="row" id="buttons" style="margin-top:28px;align-items:center"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">Practice: clipboard, keypad, progress</h2>
+      <div id="rod" style="margin-bottom:24px"></div>
+      <div class="row" id="practice" style="align-items:flex-start;gap:34px"></div></section>
+
+    <section><h2 class="toy-plaque toy-h2">Bubbles, chips, beads</h2>
+      <div class="row" id="bubbles" style="align-items:flex-start;gap:34px"></div>
+      <div class="row" id="beads" style="margin-top:34px;align-items:center"></div></section>
+
+    <section class="icons"><h2 class="toy-plaque toy-h2">Icons</h2>
+      <div class="toy-paper" style="display:inline-block"><div class="row" id="icons" style="gap:14px 6px"></div></div>
+      <div class="row" id="icons-on" style="margin-top:22px"></div></section>
+  </main>
+</div>
+<script src="toykit.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const cell = (html, cap) => `<div class="cell">${html}${cap ? `<span class="cap">${cap}</span>` : ''}</div>`;
+$('#tag').innerHTML = TOY.tag('June', { hang: true });
+$('#lock').innerHTML = TOY.iconButton('lock', 'Grown-ups');
+$('#shelf').innerHTML = TOY.prop('rainbow', 150) + TOY.prop('plant', 170);
+$('#scene').insertAdjacentHTML('afterbegin', TOY.skyMoon('calm', .7));
+
+$('#hero').innerHTML = TOY.bix('wave', 250) + `<div>${TOY.bubble('Three beads to slide today.', { title: 'Good morning, June!', tail: 'side' })}<div style="margin-top:22px">${TOY.moonPhases(1, 3)}</div></div>`
+  + TOY.start('Start') + TOY.pair(4, 6, 130) + TOY.buddy(9, 130, 'happy', { prop: 'book' }) + TOY.buddy(7, 130, 'happy', { prop: 'magnifier' }) + TOY.moon('calm', 150);
+
+$('#bix-row').innerHTML = TOY.MOODS.map(m => cell(TOY.bix(m, 124), m)).join('');
+$('#bix-small').innerHTML = TOY.MOODS.map(m => cell(TOY.bix(m, 96, { still: true }))).join('') + '<span class="cap">at 96px</span>';
+
+$('#moon-row').innerHTML = TOY.MOON_MOODS.map(m => cell(TOY.moon(m, 150), m)).join('');
+$('#moon-phase').innerHTML = [.3, .5, .75, 1].map((p, i) => cell(TOY.moon(['calm', 'happy', 'wink', 'proud'][i], 112, { phase: p }), ['crescent', 'half', 'gibbous', 'full'][i])).join('')
+  + cell(TOY.moon('sleepy', 96, { phase: .5, sky: true }), 'sky, no stand');
+$('#moon-progress').innerHTML = cell(TOY.moonPhases(1, 3), 'today, 1 of 3') + cell(TOY.moonPhases(3, 3), 'today, done') + cell(TOY.moonPhases(4, 7), 'this week') + cell(TOY.moonPhases(5, 7, { arc: true }), 'week, as an arc');
+
+$('#buddy-row').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => cell(TOY.buddy(n, 108))).join('');
+$('#buddy-moods').innerHTML = cell(TOY.buddy(1, 96, 'wave'), 'wave') + cell(TOY.buddy(2, 96, 'cheer'), 'cheer') + cell(TOY.buddy(3, 96, 'wow'), 'wow') + cell(TOY.buddy(4, 96, 'oops'), 'oops')
+  + cell(TOY.buddy(6, 96, 'sleepy'), 'sleepy') + cell(TOY.buddy(8, 96, 'think'), 'think') + cell(TOY.buddy(5, 96, 'happy', { prop: 'book' }), 'reading')
+  + cell(TOY.buddy(7, 96, 'happy', { prop: 'magnifier' }), 'looking') + cell(TOY.buddy(9, 96, 'happy', { prop: 'glasses' }), 'glasses');
+
+$('#pairs').innerHTML = TOY.FRIENDS.small.map(p => cell(TOY.pair(p[0], p[1], 124), 'small friends')).join('') + TOY.FRIENDS.big.map(p => cell(TOY.pair(p[0], p[1], 124), 'big friends')).join('');
+
+$('#scenes').innerHTML =
+  cell(`<div class="toy-scene mini">${TOY.skyMoon('calm', .5)}<div class="stage">${TOY.bix('happy', 130)}${TOY.block('Play', { color: 'mustard', icon: 'star', small: true })}</div></div>`, 'toy-scene (day)')
+  + cell(`<div class="toy-scene toy-scene--calm mini"><div class="stage">${TOY.bix('think', 130)}<div class="toy-paper toy-num" style="padding:10px 26px">7</div></div></div>`, 'toy-scene--calm (practice)')
+  + cell(`<div class="toy-scene toy-scene--evening mini">${TOY.skyMoon('happy', 1)}<div class="stage">${TOY.bix('sleepy', 130)}${TOY.bubble('See you tomorrow.', { tail: 'side' })}</div></div>`, 'toy-scene--evening')
+  + cell(`<div class="toy-scene toy-scene--table mini" style="height:200px;--toy-wall-h:0px"><div class="stage">${TOY.buddy(3, 110)}${TOY.buddy(7, 110)}${TOY.bead('teal', 70)}</div></div>`, 'toy-scene--table');
+
+$('#blocks').innerHTML = TOY.block('Practice', { color: 'indigo', icon: 'practice' }) + TOY.block('Play', { color: 'mustard', icon: 'star' }) + TOY.block('My room', { color: 'red', icon: 'room' });
+$('#buttons').innerHTML = TOY.start('Start') + TOY.start('Check', { icon: 'check', small: true })
+  + TOY.block('Look', { color: 'teal', icon: 'eye' }) + TOY.block('Listen', { color: 'plum', icon: 'ear' }) + TOY.block('Wood', { color: 'wood', icon: 'book' })
+  + TOY.block('Next', { color: 'teal', small: true }) + TOY.block('Not now', { color: 'wood', small: true })
+  + `<button type="button" class="toy-block toy-block--indigo is-pressed"><span class="toy-block-label">Pressed</span></button>`
+  + TOY.iconButton('close', 'Close') + TOY.iconButton('back', 'Back') + TOY.iconButton('speaker', 'Say it again') + TOY.iconButton('gear', 'Settings')
+  + `<button type="button" class="toy-block toy-block--wood toy-block--sm" id="dlg"><span class="toy-block-label">Open dialog</span></button>`;
+$('#dlg').onclick = () => TOY.confirm('Stop for today?', 'Your beads are saved.\nYou can carry on tomorrow.', { ok: 'Stop', cancel: 'Keep going' });
+
+$('#rod').innerHTML = TOY.rodProgress(3, 10);
+$('#practice').innerHTML = `<div class="toy-clipboard"><div class="toy-paper toy-paper--tilt"><div class="sum"><span></span><span class="toy-num">7</span><span class="op" style="color:#A86F08">+</span><span class="toy-num">5</span><span class="op" style="color:var(--toy-red)">&minus;</span><span class="toy-num">2</span><span class="line"></span><span class="ans">?</span></div></div></div><div id="pad"></div>`
+  + `<div class="cell">${TOY.bix('think', 170)}${TOY.prop('bowl', 170)}</div>`;
+TOY.keypad($('#pad'), { onKey() {}, onBackspace() {}, onCheck() {} });
+
+$('#bubbles').innerHTML = TOY.bubble('Three beads to slide today.', { title: 'Good morning, June!' }) + TOY.bubble('Nearly. Try sliding one more bead.', { tail: 'right' }) + TOY.bubble('Tap the red bead.', { tail: 'side' })
+  + `<div><span class="toy-chip"><span class="toy-chip-n">1</span>Learn</span> <span class="toy-chip toy-chip--quiet"><span class="toy-chip-n mustard">2</span>Friend pop</span> <span class="toy-chip toy-chip--quiet"><span class="toy-chip-n indigo">3</span>Look</span>`
+  + `<div style="margin-top:18px">${TOY.tag('June')} ${TOY.tag('Mia', { color: 'teal' })}</div></div>`;
+$('#beads').innerHTML = ['red', 'mustard', 'indigo', 'teal', 'plum'].map(c => TOY.bead(c, 84)).join('') + TOY.bead('red', 84, { dim: true })
+  + ['red', 'mustard', 'indigo', 'teal'].map(c => TOY.bead(c, 96, { tall: true })).join('') + TOY.bead('teal', 96, { tall: true, dim: true });
+
+$('#icons').innerHTML = TOY.ICONS.map(n => cell(TOY.icon(n, 40, '#2B3674', { accent: '#F2B632' }), n)).join('');
+$('#icons-on').innerHTML = [['indigo', '#fff'], ['red', '#fff'], ['teal', '#fff'], ['mustard', '#4A2C06']].map((c, i) =>
+  ['practice', 'room', 'eye', 'star', 'ear', 'flash', 'book', 'speaker'].slice(i * 2, i * 2 + 2).map(n => `<span class="icondot toy-lac--${c[0]}" style="color:${c[1]}">${TOY.icon(n, 40, 'currentColor', c[0] === 'mustard' ? { accent: '#FFFDF6' } : {})}</span>`).join('')).join('');
+</script>
+</body></html>
